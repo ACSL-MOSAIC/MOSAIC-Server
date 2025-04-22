@@ -28,6 +28,7 @@ async def direction(direction: str):
         await queue.put({"direction": direction})
     return {"direction": direction}
 
+
 async def generate_events():
     # if len(connected_state) > 0:
     if connected_state['dummy']:
@@ -39,9 +40,11 @@ async def generate_events():
         yield "data: disable_buttons\n\n"
         await asyncio.sleep(2)
 
+
 @app.get("/events")
 async def events():
     return StreamingResponse(generate_events(), media_type="text/event-stream")
+
 
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
