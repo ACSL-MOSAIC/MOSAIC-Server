@@ -70,10 +70,3 @@ async def ice_candidate(sid, data):
 @app.get("/")
 def read_root():
     return FileResponse("./static/public/index.html")
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    # 서버 설정 (포트, 호스트 등)
-    uvicorn.run(app, host="0.0.0.0", port=3001)

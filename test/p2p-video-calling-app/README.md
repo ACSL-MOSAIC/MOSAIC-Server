@@ -7,7 +7,7 @@ poetry install
 **서버 실행**
 
 ```bash
-poetry run python server.py
+poetry run uwsgi --ini uwsgi.ini
 ```
 
 **브라우저에서 서버 접속**

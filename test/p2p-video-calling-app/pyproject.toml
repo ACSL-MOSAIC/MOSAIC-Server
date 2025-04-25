@@ -44,6 +44,7 @@ tomli = "^2.0.1"
 watchgod = "^0.8.2"
 win32-setctime = "^1.1.0"
 yarl = "^1.7.2"
+uwsgi = "^2.0.29"
 
 
 [build-system]
