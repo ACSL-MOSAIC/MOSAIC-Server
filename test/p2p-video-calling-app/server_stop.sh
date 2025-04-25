@@ -24,17 +24,10 @@ if ! ps -p "$PID" > /dev/null; then
 fi
 
 echo "서버 종료 중 (PID: $PID)..."
-sudo kill -15 "$PID"
+sudo kill -9 "$PID"
 
 # 프로세스가 정상적으로 종료될 때까지 잠시 기다립니다
 sleep 2
-
-# 여전히 실행 중인지 확인
-if ps -p "$PID" > /dev/null; then
-    echo "정상 종료 실패. 강제 종료 시도 중..."
-    sudo kill -9 "$PID"
-    sleep 1
-fi
 
 if ! ps -p "$PID" > /dev/null; then
     echo "서버가 성공적으로 종료되었습니다."
