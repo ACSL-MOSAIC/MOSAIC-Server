@@ -7,7 +7,7 @@ poetry install
 **서버 실행**
 
 ```bash
-poetry run uwsgi --ini uwsgi.ini
+poetry run gunicorn -c gunicorn_config.py server:app
 ```
 
 **브라우저에서 서버 접속**
