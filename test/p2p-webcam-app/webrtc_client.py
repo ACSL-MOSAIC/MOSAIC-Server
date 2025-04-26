@@ -86,19 +86,25 @@ class WebRTCClient(object):
     is_connecting = False
     RETRY_DELAY = 1 # 재연결 대기 시간 (초)
 
+    create_track_func = None
+
     cached_track = None
     current_sender = None
     is_track_active = False
 
-    def __init__(self, turn_server, turn_username, turn_credential):
+    def __init__(self, turn_server, turn_username, turn_credential, create_track_func):
         self.sio = socketio.AsyncClient()
         self.ice_server_config["turn_server"] = turn_server
         self.ice_server_config["turn_username"] = turn_username
         self.ice_server_config["turn_credential"] = turn_credential
         self.pc = get_peer_connection(turn_server, turn_username, turn_credential)
 
+        self.create_track_func = create_track_func
+
         self.__register_sio_events()
         self.__register_peer_connection_events()
+
+        self.add_track_to_peer_connection(self.create_track_func())
 
     def __register_sio_events(self):
         # 선택된 사용자 ID
@@ -195,6 +201,8 @@ class WebRTCClient(object):
                 if not self.is_track_active and self.cached_track:
                     print("연결 후 트랙 상태 확인 - 트랙 재추가 시도")
                     await self._ensure_track_is_active()
+                else:
+                    print("트랙이 이미 활성 상태입니다. 추가 작업 필요 없음")
             if self.pc.connectionState == "failed" or self.pc.connectionState == "closed":
                 print("연결이 실패하거나 닫혔습니다. 재연결을 시도합니다.")
                 await self._reset_connection()
@@ -248,7 +256,6 @@ class WebRTCClient(object):
         """
         연결 재설정을 위한 메소드
         """
-        print(self.is_connecting)
         if self.is_connecting:
             return  # 이미 연결 시도 중이면 무시
 
@@ -266,6 +273,7 @@ class WebRTCClient(object):
             if senders:
                 print(f"{len(senders)}개의 sender가 있습니다. 정리합니다.")
                 for sender in senders:
+                    await sender.stop()
                     if sender.track:
                         print(f"sender의 트랙 정보: {sender.track.kind}")
 
@@ -356,6 +364,10 @@ class WebRTCClient(object):
             if self.cached_track is None:
                 print("캐시된 트랙이 없어 추가할 수 없습니다.")
                 return
+
+            if self.cached_track.readyState == 'ended':
+                print("캐시된 트랙이 종료 상태입니다. 추가할 수 없습니다.")
+                self.cached_track = self.create_track_func()
 
             print(f'캐시된 트랙 추가: {self.cached_track.kind}')
 

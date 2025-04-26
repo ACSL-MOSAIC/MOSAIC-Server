@@ -5,14 +5,15 @@ from webcam_video_track import WebcamVideoTrack
 from webrtc_client import WebRTCClient
 
 
+def create_webcam_track(framerate=60):
+    """Create a webcam video track."""
+    webcam = WebcamVideoTrack(framerate=framerate)
+    return webcam
+
+
 async def run_webrtc_client(signal_server_url, turn_server, turn_username, turn_credential):
 
-    web_rtc_client = WebRTCClient(turn_server, turn_username, turn_credential)
-
-    # 웹캠 트랙 생성 및 등록
-    webcam = WebcamVideoTrack(framerate=60)
-    # web_rtc_client.cached_track = webcam
-    web_rtc_client.add_track_to_peer_connection(webcam)
+    web_rtc_client = WebRTCClient(turn_server, turn_username, turn_credential, create_webcam_track)
 
     await web_rtc_client.run(signal_server_url)
 
