@@ -87,12 +87,13 @@ class WebRTCClient(object):
     RETRY_DELAY = 1 # 재연결 대기 시간 (초)
 
     create_track_func = None
+    close_track_func = None
 
     cached_track = None
     current_sender = None
     is_track_active = False
 
-    def __init__(self, turn_server, turn_username, turn_credential, create_track_func):
+    def __init__(self, turn_server, turn_username, turn_credential, create_track_func, close_track_func):
         self.sio = socketio.AsyncClient()
         self.ice_server_config["turn_server"] = turn_server
         self.ice_server_config["turn_username"] = turn_username
@@ -100,6 +101,7 @@ class WebRTCClient(object):
         self.pc = get_peer_connection(turn_server, turn_username, turn_credential)
 
         self.create_track_func = create_track_func
+        self.close_track_func = close_track_func
 
         self.__register_sio_events()
         self.__register_peer_connection_events()
@@ -413,6 +415,7 @@ class WebRTCClient(object):
             print("WebRTCClient 종료 중...")
             if self.cached_track:
                 print("트랙 정리 중...")
+                self.close_track_func(self.cached_track)
                 self.is_track_active = False
                 self.cached_track = None
 
