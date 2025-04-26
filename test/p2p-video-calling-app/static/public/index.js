@@ -2,12 +2,9 @@
 const peer = new RTCPeerConnection({
     iceServers: [
         {
-            urls: "stun:acslgcs.com:3478"
-        },
-        {
-            urls: "turn:acslgcs.com:3478",
+            urls: "turn:turn.acslgcs.com:3478",
             username: "gistacsl",
-            credential: "qwqw!123"
+            credential: "qwqw!12321"
         }
     ]
 });
@@ -71,18 +68,41 @@ peer.ontrack = (event) => {
 };
 
 const onSocketConnected = async () => {
-    const constraints = {
-        audio: true,
-        video: {
-            frameRate: {
-                ideal:  60,
-                max: 60,
-            }
-        },
-    };
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    document.querySelector('#localVideo').srcObject = stream;
-    stream.getTracks().forEach(track => peer.addTrack(track, stream));
+    try {
+        const constraints = {
+            audio: true,
+            video: {
+                frameRate: {
+                    ideal: 60,
+                    max: 60,
+                }
+            },
+        };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        document.querySelector('#localVideo').srcObject = stream;
+        stream.getTracks().forEach(track => peer.addTrack(track, stream));
+    } catch (error) {
+        console.warn("로컬 미디어를 가져올 수 없습니다:", error.message);
+        // 상태 표시 추가
+        const localVideo = document.querySelector('#localVideo');
+        if (localVideo) {
+            // 로컬 비디오 대신 텍스트 표시
+            const container = localVideo.parentElement;
+            const statusMsg = document.createElement('div');
+            statusMsg.textContent = "카메라를 사용할 수 없습니다";
+            statusMsg.style.color = "white";
+            statusMsg.style.background = "rgba(0,0,0,0.7)";
+            statusMsg.style.padding = "10px";
+            statusMsg.style.borderRadius = "5px";
+            statusMsg.style.position = "absolute";
+            statusMsg.style.top = "50%";
+            statusMsg.style.left = "50%";
+            statusMsg.style.transform = "translate(-50%, -50%)";
+            container.style.position = "relative";
+            container.appendChild(statusMsg);
+        }
+        return false;
+    }
 }
 
 let callButton = document.querySelector('#call');
@@ -127,6 +147,7 @@ let selectedUser;
 
 const sendMediaAnswer = (peerAnswer, data) => {
     console.log('sendMediaAnswer: data.from', data.from);
+    selectedUser = data.from;
     socket.emit('mediaAnswer', {
         answer: peerAnswer,
         from: socket.id,
@@ -177,7 +198,7 @@ const onUpdateUserList = ({userIds}) => {
 socket.on('update-user-list', onUpdateUserList);
 
 const handleSocketConnected = async () => {
-    onSocketConnected();
+    await onSocketConnected();
     socket.emit('requestUserList');
 };
 
