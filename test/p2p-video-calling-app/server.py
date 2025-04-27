@@ -11,58 +11,58 @@ socket_manager = SocketManager(app=app, mount_location="/ws")
 connected_users = []
 
 
-@app.sio.on("connect")
+@socket_manager.on("connect")
 async def connect(sid, environ):
     """Handle initial connection of socket user."""
     connected_users.append(sid)
     print(f"User {sid} connected")
 
 
-@app.sio.on("disconnect")
+@socket_manager.on("disconnect")
 async def disconnect(sid):
     """Handle disconnection."""
     connected_users.remove(sid)
-    await app.sio.emit("update-user-list", {"userIds": connected_users})
+    await socket_manager.emit("update-user-list", {"userIds": connected_users})
     print(f"User {sid} disconnected")
 
 
-@app.sio.on("retrieveSID")
+@socket_manager.on("retrieveSID")
 async def retrieve_sid(sid):
     """Send SID to client."""
-    await app.sio.emit("retrieveSID", {"sid": sid})
+    await socket_manager.emit("retrieveSID", {"sid": sid}, to=sid)
     print(f"User {sid} requested SID")
 
 
-@app.sio.on("requestUserList")
+@socket_manager.on("requestUserList")
 async def request_user_list(sid):
     """Update list of users."""
-    await app.sio.emit("update-user-list", {"userIds": connected_users})
+    await socket_manager.emit("update-user-list", {"userIds": connected_users}, to=sid)
     print(f"{sid} requested user list update")
 
 
-@app.sio.on("mediaOffer")
+@socket_manager.on("mediaOffer")
 async def media_offer(sid, data):
     """Handle offer to communicate."""
-    await app.sio.emit(
-        "mediaOffer", {"from": data["from"], "offer": data["offer"]}, room=data["to"]
+    await socket_manager.emit(
+        "mediaOffer", {"from": data["from"], "offer": data["offer"]}, to=data["to"]
     )
     print(f"Media Offer from {data['from']}")
 
 
-@app.sio.on("mediaAnswer")
+@socket_manager.on("mediaAnswer")
 async def media_answer(sid, data):
     """Handle media answer."""
-    await app.sio.emit(
-        "mediaAnswer", {"from": data["from"], "answer": data["answer"]}, room=data["to"]
+    await socket_manager.emit(
+        "mediaAnswer", {"from": data["from"], "answer": data["answer"]}, to=data["to"]
     )
     print(f"Media Answer from {data['from']}")
 
 
-@app.sio.on("iceCandidate")
+@socket_manager.on("iceCandidate")
 async def ice_candidate(sid, data):
     """Handle Ice Candidate."""
-    await app.sio.emit(
-        "remotePeerIceCandidate", {"candidate": data["candidate"]}, room=data["to"]
+    await socket_manager.emit(
+        "remotePeerIceCandidate", {"candidate": data["candidate"]}, to=data["to"]
     )
     print(f"Ice candidate for  {data['to']}")
 
