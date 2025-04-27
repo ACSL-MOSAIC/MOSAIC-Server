@@ -30,7 +30,6 @@ async def run_webrtc_client(signal_server_url, turn_server, turn_username, turn_
         print("종료 중...")
     finally:
         # 연결 정리
-        webcam.cap.release()
         await web_rtc_client.close()
 
 
