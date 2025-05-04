@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, UsersLoginAccessTokenData, UsersLoginAccessTokenResponse, UsersTestTokenResponse, UsersRecoverPasswordData, UsersRecoverPasswordResponse, UsersResetPasswordData, UsersResetPasswordResponse, UsersRecoverPasswordHtmlContentData, UsersRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, UsersLoginAccessTokenData, UsersLoginAccessTokenResponse, UsersTestTokenResponse, UsersRecoverPasswordData, UsersRecoverPasswordResponse, UsersResetPasswordData, UsersResetPasswordResponse, UsersRecoverPasswordHtmlContentData, UsersRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, RobotsReadRobotsData, RobotsReadRobotsResponse, RobotsCreateRobotData, RobotsCreateRobotResponse, RobotsReadRobotData, RobotsReadRobotResponse, RobotsUpdateRobotData, RobotsUpdateRobotResponse, RobotsDeleteRobotData, RobotsDeleteRobotResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class ItemsService {
     /**
@@ -230,6 +230,118 @@ export class PrivateService {
             url: '/api/v1/private/users/',
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+}
+
+export class RobotsService {
+    /**
+     * Read Robots
+     * Retrieve robots.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns RobotsPublic Successful Response
+     * @throws ApiError
+     */
+    public static readRobots(data: RobotsReadRobotsData = {}): CancelablePromise<RobotsReadRobotsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/robots/robots/',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Robot
+     * Create new robot.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns RobotPublic Successful Response
+     * @throws ApiError
+     */
+    public static createRobot(data: RobotsCreateRobotData): CancelablePromise<RobotsCreateRobotResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/robots/robots/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Robot
+     * Get robot by ID.
+     * @param data The data for the request.
+     * @param data.id
+     * @returns RobotPublic Successful Response
+     * @throws ApiError
+     */
+    public static readRobot(data: RobotsReadRobotData): CancelablePromise<RobotsReadRobotResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/robots/robots/{id}',
+            path: {
+                id: data.id
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Robot
+     * Update a robot.
+     * @param data The data for the request.
+     * @param data.id
+     * @param data.requestBody
+     * @returns RobotPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateRobot(data: RobotsUpdateRobotData): CancelablePromise<RobotsUpdateRobotResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/robots/robots/{id}',
+            path: {
+                id: data.id
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Robot
+     * Delete a robot.
+     * @param data The data for the request.
+     * @param data.id
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static deleteRobot(data: RobotsDeleteRobotData): CancelablePromise<RobotsDeleteRobotResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/robots/robots/{id}',
+            path: {
+                id: data.id
+            },
             errors: {
                 422: 'Validation Error'
             }

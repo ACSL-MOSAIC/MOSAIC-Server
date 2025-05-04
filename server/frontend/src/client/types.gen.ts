@@ -51,6 +51,33 @@ export type PrivateUserCreate = {
     is_verified?: boolean;
 };
 
+export type RobotCreate = {
+    name: string;
+    description?: (string | null);
+    status?: RobotStatus;
+};
+
+export type RobotPublic = {
+    name: string;
+    description?: (string | null);
+    status?: RobotStatus;
+    id: string;
+    owner_id: string;
+};
+
+export type RobotsPublic = {
+    data: Array<RobotPublic>;
+    count: number;
+};
+
+export type RobotStatus = 'active' | 'inactive';
+
+export type RobotUpdate = {
+    name?: (string | null);
+    description?: (string | null);
+    status?: (RobotStatus | null);
+};
+
 export type Token = {
     access_token: string;
     token_type?: string;
@@ -165,6 +192,38 @@ export type PrivateCreateUserData = {
 };
 
 export type PrivateCreateUserResponse = (UserPublic);
+
+export type RobotsReadRobotsData = {
+    limit?: number;
+    skip?: number;
+};
+
+export type RobotsReadRobotsResponse = (RobotsPublic);
+
+export type RobotsCreateRobotData = {
+    requestBody: RobotCreate;
+};
+
+export type RobotsCreateRobotResponse = (RobotPublic);
+
+export type RobotsReadRobotData = {
+    id: string;
+};
+
+export type RobotsReadRobotResponse = (RobotPublic);
+
+export type RobotsUpdateRobotData = {
+    id: string;
+    requestBody: RobotUpdate;
+};
+
+export type RobotsUpdateRobotResponse = (RobotPublic);
+
+export type RobotsDeleteRobotData = {
+    id: string;
+};
+
+export type RobotsDeleteRobotResponse = (Message);
 
 export type UsersReadUsersData = {
     limit?: number;
