@@ -28,7 +28,7 @@ def get_users(
 def create_user(session: Session, *, user_create: UserCreate) -> User:
     db_obj = User(
         email=user_create.email,
-        hashed_password=user_create.password,  # type: ignore
+        hashed_password=get_password_hash(user_create.password),  # type: ignore
         full_name=user_create.full_name,
         is_superuser=user_create.is_superuser,
     )
