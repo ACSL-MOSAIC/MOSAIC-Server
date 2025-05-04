@@ -12,17 +12,16 @@ from app.api.deps import (
 )
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
-from app.models import (
-    Item,
+from app.schemas import (
     Message,
-    UpdatePassword,
     User,
     UserCreate,
     UserPublic,
-    UserRegister,
-    UsersPublic,
     UserUpdate,
-    UserUpdateMe,
+    UsersPublic,
+    UpdatePassword,
+    UserRegister,
+    Item,
 )
 from app.utils import generate_new_account_email, send_email
 
@@ -77,7 +76,7 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
 
 @router.patch("/me", response_model=UserPublic)
 def update_user_me(
-    *, session: SessionDep, user_in: UserUpdateMe, current_user: CurrentUser
+    *, session: SessionDep, user_in: UserUpdate, current_user: CurrentUser
 ) -> Any:
     """
     Update own user.
