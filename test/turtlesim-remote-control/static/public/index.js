@@ -136,6 +136,8 @@ const updateRobotList = async (robots) => {
     const robotsList = document.querySelector('#robotsList');
     robotsList.innerHTML = '';
 
+    let isSelectedRobotAlive = false;
+
     robots.forEach(robot => {
         const robotItem = document.createElement('div');
         robotItem.innerHTML = robot;
@@ -153,12 +155,30 @@ const updateRobotList = async (robots) => {
             selectedRobotId = robot;
         });
         if (robot === selectedRobotId) {
+            isSelectedRobotAlive = true;
             robotItem.classList.add('robot-item--touched');
         }
         robotsList.appendChild(robotItem);
     });
+
+    if (isSelectedRobotAlive === false) {
+        closePeerConnection();
+    }
 }
 
+const closePeerConnection = () => {
+    try {
+        clearInterval(connectingCheckInterval);
+        peer.close();
+        isConnected = false;
+        lastConnectionCheckTime = null;
+        remoteControlDataChannel = null;
+        selectedRobotId = null;
+        robotSelectionDisabled = false;
+    } catch (e) {
+        console.log(e);
+    }
+}
 const onIceCandidate = (candidate) => {
     const sendIceCandidateData = {
         type: 'send_ice_candidate',

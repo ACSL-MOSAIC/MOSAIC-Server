@@ -22,7 +22,7 @@ def root():
 @app.websocket("/ws/control/{user_id}")
 async def websocket_control_endpoint(websocket: WebSocket, user_id: str):
     if user_id in connected_users:
-        await websocket.close(code=1000, reason="User already connected")
+        await websocket.close(code=1000)
         return
 
     await websocket.accept()
@@ -56,13 +56,16 @@ async def websocket_control_endpoint(websocket: WebSocket, user_id: str):
 
 async def handle_get_robot_list(user_ws: WebSocket):
     """Handle request to get the list of connected robots."""
+    await send_robot_list(user_ws)
+
+
+async def send_robot_list(user_ws: WebSocket):
     robot_list = list(connected_robots.keys())
 
     await user_ws.send_json({
         'type': 'robot_list',
         'robots': robot_list
     })
-    return {"robots": robot_list}
 
 
 async def handle_send_sdp_offer(user_id: str, robot_id: str, sdp_offer: str):
@@ -96,12 +99,13 @@ async def handle_send_ice_candidate_to_robot(user_id: str, robot_id: str, ice_ca
 @app.websocket("/ws/robot/{robot_id}")
 async def websocket_robot_endpoint(websocket: WebSocket, robot_id: str):
     if robot_id in connected_robots:
-        await websocket.close(code=1000, reason="Robot already connected")
+        await websocket.close(code=1000)
         return
 
     await websocket.accept()
     connected_robots[robot_id] = websocket
     print(f"{robot_id} connected.")
+    await broadcast_robot_list()
 
     while True:
         try:
@@ -120,10 +124,16 @@ async def websocket_robot_endpoint(websocket: WebSocket, robot_id: str):
             print(e)
             del connected_robots[robot_id]
             print(f"{robot_id} disconnected.")
+            await broadcast_robot_list()
             break
         except Exception as e:
             print(f"Error: {e}")
             break
+
+
+async def broadcast_robot_list():
+    for user_ws in connected_users.values():
+        await send_robot_list(user_ws)
 
 
 async def handle_send_sdp_answer(robot_id: str, user_id: str, sdp_answer: str):
