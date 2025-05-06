@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PID_FILE="/tmp/gunicorn-p2p-video-calling.pid"
+PID_FILE="/tmp/gunicorn-turtlesim-remote-control.pid"
 
 if [ ! -f "$PID_FILE" ]; then
     echo "PID 파일이 존재하지 않습니다: $PID_FILE"
