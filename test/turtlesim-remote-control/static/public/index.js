@@ -9,6 +9,7 @@ let selectedRobotId = null;
 let robotSelectionDisabled = false;
 
 let connectButton = document.querySelector('#connect');
+let positionElement = document.querySelector('#position');
 
 const createPeer = async () => {
     // Creating the peer
@@ -32,7 +33,32 @@ const createPeer = async () => {
         onIceCandidate(iceCandidateEvent.candidate.toJSON());
     }
 
+    peer.ondatachannel = (event) => {
+        let dataChannel = event.channel;
+        if (dataChannel.label === 'position_data_channel') {
+            setUpPositionDataChannel(dataChannel);
+        } else {
+            console.log(dataChannel.label)
+        }
+    }
+
     return peer;
+}
+
+const setUpPositionDataChannel = (channel) => {
+    channel.onopen = () => {
+    };
+
+    channel.onmessage = (event) => {
+        const message = event.data;
+
+        try {
+            const jsonData = JSON.parse(message);
+            positionElement.textContent = JSON.stringify(jsonData, null, 2);
+        } catch (e) {
+            console.log(e);
+        }
+    }
 }
 
 const createRemoteControlDataChannel = async (peer) => {
@@ -169,7 +195,9 @@ const updateRobotList = async (robots) => {
 const closePeerConnection = () => {
     try {
         clearInterval(connectingCheckInterval);
-        peer.close();
+        if (!!peer) {
+            peer.close();
+        }
         isConnected = false;
         lastConnectionCheckTime = null;
         remoteControlDataChannel = null;
