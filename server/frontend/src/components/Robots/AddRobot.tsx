@@ -56,6 +56,7 @@ const AddRobot = () => {
       name: "",
       status: "inactive" as RobotStatus,
       description: "",
+      id: "",
     },
   })
 
@@ -102,6 +103,19 @@ const AddRobot = () => {
           <DialogBody>
             <Text mb={4}>Fill in the details to add a new robot.</Text>
             <VStack gap={4}>
+              <Field
+                invalid={!!errors.id}
+                errorText={errors.id?.message}
+                label="ID (Optional)"
+              >
+                <Input
+                  id="id"
+                  {...register("id")}
+                  placeholder="Enter custom ID (optional)"
+                  type="text"
+                />
+              </Field>
+
               <Field
                 required
                 invalid={!!errors.name}

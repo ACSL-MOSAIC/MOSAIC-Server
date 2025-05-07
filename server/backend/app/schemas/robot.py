@@ -18,7 +18,7 @@ class RobotBase(SQLModel):
 
 # Properties to receive on robot creation
 class RobotCreate(RobotBase):
-    pass
+    id: uuid.UUID | None = Field(default_factory=uuid.uuid4)
 
 
 # Properties to receive on robot update

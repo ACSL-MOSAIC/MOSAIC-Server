@@ -12,7 +12,8 @@ class RobotRepository:
 
     def create(self, robot_create: RobotCreate, owner_id: UUID) -> Robot:
         db_robot = Robot(
-            **robot_create.model_dump(),
+            id=robot_create.id,
+            **robot_create.model_dump(exclude={'id'}),
             owner_id=owner_id
         )
         self.session.add(db_robot)

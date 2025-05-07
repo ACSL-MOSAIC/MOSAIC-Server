@@ -52,6 +52,7 @@ export type PrivateUserCreate = {
 };
 
 export type RobotCreate = {
+    id?: string;
     name: string;
     description?: (string | null);
     status?: RobotStatus;
