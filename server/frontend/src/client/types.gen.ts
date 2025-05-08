@@ -71,7 +71,7 @@ export type RobotsPublic = {
     count: number;
 };
 
-export type RobotStatus = 'active' | 'inactive';
+export type RobotStatus = 'ready_to_connect' | 'connecting' | 'connected' | 'disconnected' | 'removed';
 
 export type RobotUpdate = {
     name?: (string | null);

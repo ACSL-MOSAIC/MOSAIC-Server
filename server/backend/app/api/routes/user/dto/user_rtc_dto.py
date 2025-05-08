@@ -1,0 +1,29 @@
+from pydantic import BaseModel
+from typing import List
+
+class WebSocketBaseMsg(BaseModel):
+    type: str
+
+class WebSocketErrorMsg(WebSocketBaseMsg):
+    error: str
+    detail: str | None = None
+
+class GetRobotListMsg(WebSocketBaseMsg):
+    user_id: str
+
+class RobotInfo(BaseModel):
+    robot_id: str
+    state: str
+
+class RobotListMsg(WebSocketBaseMsg):
+    robots: List[RobotInfo]
+
+class SendSdpOfferMsg(WebSocketBaseMsg):
+    user_id: str
+    robot_id: str
+    sdp_offer: str
+
+class ReceiveSdpOfferMsg(WebSocketBaseMsg):
+    user_id: str
+    robot_id: str
+    sdp_offer: str 

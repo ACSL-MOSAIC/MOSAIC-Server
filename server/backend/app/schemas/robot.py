@@ -5,15 +5,19 @@ from sqlmodel import Field, Relationship, SQLModel
 
 
 class RobotStatus(str, Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
+    READY_TO_CONNECT = "ready_to_connect"
+    CONNECTING = "connecting"
+    CONNECTED = "connected"
+    DISCONNECTED = "disconnected"
+    REMOVED = "removed"
+    
 
 
 # Shared properties
 class RobotBase(SQLModel):
     name: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=255)
-    status: RobotStatus = Field(default=RobotStatus.INACTIVE)
+    status: RobotStatus = Field(default=RobotStatus.DISCONNECTED)
 
 
 # Properties to receive on robot creation

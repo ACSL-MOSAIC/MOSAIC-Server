@@ -32,8 +32,11 @@ import { Field } from "../ui/field"
 
 const statusOptions = createListCollection({
   items: [
-    { label: "Inactive", value: "inactive" as RobotStatus },
-    { label: "Active", value: "active" as RobotStatus },
+    { label: "Ready to Connect", value: "ready_to_connect" as RobotStatus },
+    { label: "Connecting", value: "connecting" as RobotStatus },
+    { label: "Connected", value: "connected" as RobotStatus },
+    { label: "Disconnected", value: "disconnected" as RobotStatus },
+    { label: "Removed", value: "removed" as RobotStatus },
   ],
 })
 
@@ -54,7 +57,7 @@ const AddRobot = () => {
     criteriaMode: "all",
     defaultValues: {
       name: "",
-      status: "inactive" as RobotStatus,
+      status: "disconnected" as RobotStatus,
       description: "",
       id: "",
     },
