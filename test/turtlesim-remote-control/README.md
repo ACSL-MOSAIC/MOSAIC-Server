@@ -18,7 +18,7 @@ sudo ./server_start.sh
 
 
 **브라우저에서 서버 접속**
-<https://acslgcs.com:3001/>
+<https://acslgcs.com:3002/>
 
 **참조**
 - https://github.com/matacoder/p2p-video-calling-app
