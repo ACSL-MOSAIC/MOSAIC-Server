@@ -204,9 +204,13 @@ socket.addEventListener('message', async function (event) {
     }
 })
 
+iceCandidateList = []
 const receiveSdpAnswer = async (sdp_answer) => {
     console.log('sdp_answer', sdp_answer);
     await peer.setRemoteDescription(new RTCSessionDescription({sdp: sdp_answer, type: "answer"}));
+    for (const candidate of iceCandidateList) {
+        await peer.addIceCandidate(candidate);
+    }
 }
 
 const receiveIceCandidate = async (ice_candidate) => {
@@ -216,7 +220,11 @@ const receiveIceCandidate = async (ice_candidate) => {
             sdpMLineIndex: ice_candidate.sdpMLineIndex,
             sdpMid: ice_candidate.sdpMid
         })
-        await peer.addIceCandidate(candidate);
+        // ice candidate 를 받는 시점은 sdpAnswer 보다 먼저일 수 있습니다.
+        // 먼저 ice candidate 가 오는 경우 addIceCandidate 를 못해주기 때문에 우선 리스트에 담아둔 후
+        // sdpAnswer 가 와서 setRemoteDescription 호출 후에 일괄적으로 addIceCandidate 를 진행해 줍니다. (바로 위 메소드)
+        // await peer.addIceCandidate(candidate);
+        iceCandidateList.push(candidate)
     } catch (error) {
         console.error('Error adding received ice candidate', error);
     }
