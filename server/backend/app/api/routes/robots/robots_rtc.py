@@ -1,3 +1,4 @@
+from app.schemas.robot import RobotStatus
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from sqlmodel import Session
 from app.repositories.robot_repository import RobotRepository
@@ -102,7 +103,7 @@ async def robot_rtc_endpoint(websocket: WebSocket, session: Session = Depends(ge
         unregister_robot_ws(robot_id)
         try:
             robot_uuid = uuid.UUID(robot_id)
-            update = RobotUpdate(status="disconnected")
+            update = RobotUpdate(status=RobotStatus.DISCONNECTED)
             repo.update(robot_uuid, update)
         except Exception:
             pass 

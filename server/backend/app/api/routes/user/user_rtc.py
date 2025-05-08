@@ -1,3 +1,4 @@
+from app.schemas.robot import RobotStatus, RobotUpdate
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from app.api.routes.user.dto.user_rtc_dto import (
     WebSocketBaseMsg, WebSocketErrorMsg, GetRobotListMsg, RobotListMsg, RobotInfo, SendSdpOfferMsg, ReceiveSdpOfferMsg, SendIceCandidateMsg, ReceiveIceCandidateMsg
@@ -38,6 +39,17 @@ async def handle_send_sdp_offer(websocket: WebSocket, data: dict, repo: RobotRep
     robot_ws = get_robot_ws(msg.robot_id)
     if robot_ws is None:
         error = WebSocketErrorMsg(type="error", error="Robot websocket not found", detail=f"robot_id: {msg.robot_id}")
+        await websocket.send_json(error.model_dump())
+        return
+
+    try:
+        updated = repo.update(msg.robot_id, RobotUpdate(status=RobotStatus.CONNECTING))
+        if not updated:
+            error = WebSocketErrorMsg(type="error", error="Failed to update robot state to CONNECTING", detail=f"robot_id: {msg.robot_id}")
+            await websocket.send_json(error.model_dump())
+            return
+    except Exception as e:
+        error = WebSocketErrorMsg(type="error", error="Exception during robot state update", detail=str(e))
         await websocket.send_json(error.model_dump())
         return
 
