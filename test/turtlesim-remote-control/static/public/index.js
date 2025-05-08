@@ -24,25 +24,87 @@ const createPeer = async () => {
         // iceTransportPolicy: "relay"
     });
 
-    // ICE layer
-    peer.onicecandidate = (iceCandidateEvent) => {
-        if (iceCandidateEvent.candidate === null) {
-            console.log('ICE candidate gathering complete');
-            return;
-        }
-        onIceCandidate(iceCandidateEvent.candidate.toJSON());
-    }
-
-    peer.ondatachannel = (event) => {
-        let dataChannel = event.channel;
-        if (dataChannel.label === 'position_data_channel') {
-            setUpPositionDataChannel(dataChannel);
-        } else {
-            console.log(dataChannel.label)
-        }
-    }
+    peer.onicecandidate = peerOnIceCandidate;
+    peer.ondatachannel = peerOnDataChannel;
+    peer.ontrack = peerOnTrack;
 
     return peer;
+}
+
+const peerOnIceCandidate = (iceCandidateEvent) => {
+    if (iceCandidateEvent.candidate === null) {
+        console.log('ICE candidate gathering complete');
+        return;
+    }
+
+    const sendIceCandidateData = {
+        type: 'send_ice_candidate',
+        user_id: 'user_1',
+        robot_id: selectedRobotId,
+        ice_candidate: iceCandidateEvent.candidate
+    }
+    socket.send(JSON.stringify(sendIceCandidateData))
+}
+
+const peerOnDataChannel = (event) => {
+    let dataChannel = event.channel;
+    if (dataChannel.label === 'position_data_channel') {
+        setUpPositionDataChannel(dataChannel);
+    } else {
+        console.log(dataChannel.label)
+    }
+}
+
+const remoteVideo = document.querySelector('#remoteVideo');
+const fpsElement = document.querySelector('#fps');
+let fpsInterval = null;
+let frameCount = 0;
+const peerOnTrack = (event) => {
+    if (!remoteVideo) {
+        return;
+    }
+    console.log(event);
+    // WebRTC 로 오는 영상을 remoteVideo element 에 그대로 뿌리기
+    remoteVideo.srcObject = event.streams[0];
+
+    // Start FPS monitoring once video starts playing
+    remoteVideo.onloadedmetadata = () => {
+        console.log('Start')
+        // Setup frame counter
+        frameCount = 0;
+
+        // Use requestVideoFrameCallback if available
+        if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
+            function countFrames() {
+                frameCount++;
+                remoteVideo.requestVideoFrameCallback(countFrames);
+            }
+
+            remoteVideo.requestVideoFrameCallback(countFrames);
+        } else {
+            // Fallback for browsers not supporting requestVideoFrameCallback
+            console.warn("requestVideoFrameCallback not supported, FPS monitoring may be less accurate");
+            remoteVideo.addEventListener('timeupdate', () => {
+                frameCount++;
+            });
+        }
+
+        fpsInterval = setInterval(updateFPSElement, 1000);
+    }
+
+    remoteVideo.onended = () => {
+        if (fpsInterval) {
+            clearInterval(fpsInterval);
+            fpsInterval = null;
+        }
+    }
+}
+
+const updateFPSElement = () => {
+    const currentFPS = frameCount;
+    console.log(`${currentFPS} fps`);
+    frameCount = 0;
+    fpsElement.innerHTML = `${currentFPS} fps`;
 }
 
 const setUpPositionDataChannel = (channel) => {
@@ -77,6 +139,8 @@ const createRemoteControlDataChannel = async (peer) => {
 }
 
 const sendSdpOffer = async (peer, robotId) => {
+    peer.addTransceiver('video', {direction: 'sendrecv'});
+
     const sdpOffer = await peer.createOffer();
     await peer.setLocalDescription(new RTCSessionDescription(sdpOffer));
 
@@ -206,15 +270,6 @@ const closePeerConnection = () => {
     } catch (e) {
         console.log(e);
     }
-}
-const onIceCandidate = (candidate) => {
-    const sendIceCandidateData = {
-        type: 'send_ice_candidate',
-        user_id: 'user_1',
-        robot_id: selectedRobotId,
-        ice_candidate: candidate
-    }
-    socket.send(JSON.stringify(sendIceCandidateData))
 }
 
 // register remote control button

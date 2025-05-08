@@ -11,6 +11,13 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
+            margin-top: 2.0rem;
+        }
+
+        .controls_row {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
         }
 
         .blank_control {
@@ -64,36 +71,45 @@
             <h2>TurtleSim Remote Control</h2>
         </div>
         <div style="display: flex; flex-direction: row;">
-            <div class="box">
+            <div class="box" style="flex: 1; margin-right: 1.0rem">
                 <h2>Remote Controller</h2>
                 <div class="controls" id="controlBox">
-                    <div style="display: flex; flex-direction: row;">
+                    <div class="controls_row">
                         <div class="blank_control"></div>
                         <button class="control_button" id="up">↑</button>
                         <div class="blank_control"></div>
                     </div>
-                    <div style="display: flex; flex-direction: row;">
+                    <div class="controls_row">
                         <button class="control_button" id="left">←</button>
                         <button class="control_button disconnect_button" id="disconnect">■</button>
                         <button class="control_button" id="right">→</button>
                     </div>
-                    <div style="display: flex; flex-direction: row;">
+                    <div class="controls_row">
                         <div class="blank_control"></div>
                         <button class="control_button" id="down">↓</button>
                         <div class="blank_control"></div>
                     </div>
                 </div>
             </div>
-            <div class="box" style="flex: 1; margin-bottom: 1.5rem">
+            <div class="box" style="flex: 1; margin-right: 1.0rem; margin-bottom: 1.5rem">
                 <h2>Position</h2>
                 <p id="position"></p>
+            </div>
+            <div class="box" style="flex: 1; margin-bottom: 1.5rem">
+                <div style="display: flex; align-items: center;">
+                    <h2>Camera</h2>
+                    <p id="fps" style="margin-left: 1.0rem">0 fps</p>
+                </div>
+                <div class="box" style="min-height: 250px; border: #333333">
+                    <video id="remoteVideo" playsinline autoplay></video>
+                </div>
             </div>
         </div>
 
         <div class="box">
-            <h2>Connected Robots:</h2>
+            <h2>Connected Robots</h2>
 
-            <div id="robotsList">
+            <div id="robotsList" style="margin-bottom: 1.0rem">
                 No robots connected
             </div>
 
