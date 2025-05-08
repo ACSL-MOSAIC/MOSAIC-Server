@@ -4,7 +4,7 @@ from app.repositories.robot_repository import RobotRepository
 from app.schemas import RobotUpdate
 from app.api.deps import get_session
 import uuid
-from app.api.routes.robots.dto.robot_rtc_dto import UpdateRobotStateMsg, WebSocketErrorMsg, SendSdpAnswerMsg, ReceiveSdpAnswerMsg
+from app.api.routes.robots.dto.robot_rtc_dto import UpdateRobotStateMsg, WebSocketErrorMsg, SendSdpAnswerMsg, ReceiveSdpAnswerMsg, SendIceCandidateMsg, ReceiveIceCandidateMsg
 from pydantic import ValidationError
 from app.api.routes.session_manager import register_robot_ws, unregister_robot_ws, get_user_ws
 
@@ -50,9 +50,30 @@ async def handle_send_sdp_answer(websocket: WebSocket, data: dict, repo: RobotRe
     )
     await user_ws.send_json(receive_msg.model_dump())
 
+async def handle_send_ice_candidate(websocket: WebSocket, data: dict, repo: RobotRepository):
+    try:
+        msg = SendIceCandidateMsg(**data)
+    except ValidationError as e:
+        error = WebSocketErrorMsg(error="Invalid send_ice_candidate message", detail=str(e))
+        await websocket.send_json(error.model_dump())
+        return
+    user_ws = get_user_ws(msg.user_id)
+    if user_ws is None:
+        error = WebSocketErrorMsg(error="User websocket not found", detail=f"user_id: {msg.user_id}")
+        await websocket.send_json(error.model_dump())
+        return
+    receive_msg = ReceiveIceCandidateMsg(
+        type="receive_ice_candidate",
+        user_id=msg.user_id,
+        robot_id=msg.robot_id,
+        ice_candidate=msg.ice_candidate
+    )
+    await user_ws.send_json(receive_msg.model_dump())
+
 handlers = {
     "update_robot_state": handle_update_robot_state,
     "send_sdp_answer": handle_send_sdp_answer,
+    "send_ice_candidate": handle_send_ice_candidate,
     # 추후 다른 타입 추가 가능
 }
 

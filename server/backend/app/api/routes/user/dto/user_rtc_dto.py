@@ -26,4 +26,14 @@ class SendSdpOfferMsg(WebSocketBaseMsg):
 class ReceiveSdpOfferMsg(WebSocketBaseMsg):
     user_id: str
     robot_id: str
-    sdp_offer: str 
+    sdp_offer: str
+
+class SendIceCandidateMsg(WebSocketBaseMsg):
+    user_id: str
+    robot_id: str
+    ice_candidate: dict
+
+class ReceiveIceCandidateMsg(WebSocketBaseMsg):
+    user_id: str
+    robot_id: str
+    ice_candidate: dict 

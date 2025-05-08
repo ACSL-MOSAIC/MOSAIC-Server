@@ -1,6 +1,6 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from app.api.routes.user.dto.user_rtc_dto import (
-    WebSocketBaseMsg, WebSocketErrorMsg, GetRobotListMsg, RobotListMsg, RobotInfo, SendSdpOfferMsg, ReceiveSdpOfferMsg
+    WebSocketBaseMsg, WebSocketErrorMsg, GetRobotListMsg, RobotListMsg, RobotInfo, SendSdpOfferMsg, ReceiveSdpOfferMsg, SendIceCandidateMsg, ReceiveIceCandidateMsg
 )
 from app.repositories.robot_repository import RobotRepository
 from sqlmodel import Session
@@ -49,9 +49,31 @@ async def handle_send_sdp_offer(websocket: WebSocket, data: dict, repo: RobotRep
     )
     await robot_ws.send_json(receive_msg.model_dump())
 
+async def handle_send_ice_candidate(websocket: WebSocket, data: dict, repo: RobotRepository):
+    try:
+        msg = SendIceCandidateMsg(**data)
+    except ValidationError as e:
+        error = WebSocketErrorMsg(type="error", error="Invalid send_ice_candidate message", detail=str(e))
+        await websocket.send_json(error.model_dump())
+        return
+    robot_ws = get_robot_ws(msg.robot_id)
+    if robot_ws is None:
+        error = WebSocketErrorMsg(type="error", error="Robot websocket not found", detail=f"robot_id: {msg.robot_id}")
+        await websocket.send_json(error.model_dump())
+        return
+    # 타입을 receive_ice_candidate로 바꿔서 전달
+    receive_msg = ReceiveIceCandidateMsg(
+        type="receive_ice_candidate",
+        user_id=msg.user_id,
+        robot_id=msg.robot_id,
+        ice_candidate=msg.ice_candidate
+    )
+    await robot_ws.send_json(receive_msg.model_dump())
+
 handlers = {
     "get_robot_list": handle_get_robot_list,
     "send_sdp_offer": handle_send_sdp_offer,
+    "send_ice_candidate": handle_send_ice_candidate,
     # 추후 메시지 타입별 핸들러 추가
 }
 

@@ -21,3 +21,13 @@ class ReceiveSdpAnswerMsg(WebSocketBaseMsg):
     robot_id: str
     sdp_answer: str
 
+class SendIceCandidateMsg(WebSocketBaseMsg):
+    user_id: str
+    robot_id: str
+    ice_candidate: dict
+
+class ReceiveIceCandidateMsg(WebSocketBaseMsg):
+    user_id: str
+    robot_id: str
+    ice_candidate: dict
+
