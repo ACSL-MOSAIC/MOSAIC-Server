@@ -8,7 +8,7 @@ from app.api.deps import CurrentUser, SessionDep
 from app.repositories import RobotRepository
 from app.schemas import Robot, RobotCreate, RobotPublic, RobotsPublic, RobotUpdate, Message
 
-router = APIRouter(prefix="/robots", tags=["robots"])
+router = APIRouter( tags=["robots"])
 
 
 @router.get("/", response_model=RobotsPublic)
