@@ -69,7 +69,7 @@ async def robot_rtc_endpoint(websocket: WebSocket, session: Session = Depends(ge
     register_robot_ws(robot_id, websocket)
     repo = RobotRepository(session)
     robot_uuid = uuid.UUID(robot_id)
-    update = RobotUpdate(status=RobotStatus.CONNECTING)
+    update = RobotUpdate(status=RobotStatus.READY_TO_CONNECT)
     repo.update(robot_uuid, update)
     try:
         while True:
