@@ -5,12 +5,11 @@ from sqlmodel import Field, Relationship, SQLModel
 
 
 class RobotStatus(str, Enum):
-    READY_TO_CONNECT = "ready_to_connect"
-    CONNECTING = "connecting"
-    CONNECTED = "connected"
-    DISCONNECTED = "disconnected"
-    REMOVED = "removed"
-    
+    READY_TO_CONNECT = "READY_TO_CONNECT"
+    CONNECTING = "CONNECTING"
+    CONNECTED = "CONNECTED"
+    DISCONNECTED = "DISCONNECTED"
+    REMOVED = "REMOVED"
 
 
 # Shared properties

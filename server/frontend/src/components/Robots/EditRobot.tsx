@@ -40,11 +40,11 @@ interface RobotUpdateForm {
 
 const statusOptions = createListCollection({
   items: [
-    { label: "Ready to Connect", value: "ready_to_connect" as RobotStatus },
-    { label: "Connecting", value: "connecting" as RobotStatus },
-    { label: "Connected", value: "connected" as RobotStatus },
-    { label: "Disconnected", value: "disconnected" as RobotStatus },
-    { label: "Removed", value: "removed" as RobotStatus },
+    { label: "Ready to Connect", value: "READY_TO_CONNECT" as RobotStatus },
+    { label: "Connecting", value: "CONNECTING" as RobotStatus },
+    { label: "Connected", value: "CONNECTED" as RobotStatus },
+    { label: "Disconnected", value: "DISCONNECTED" as RobotStatus },
+    { label: "Removed", value: "REMOVED" as RobotStatus },
   ],
 })
 
