@@ -1,6 +1,6 @@
 from app.schemas.robot import RobotStatus, RobotUpdate
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
-from app.api.routes.user.dto.user_rtc_dto import (
+from app.api.routes.ws.dto.user_rtc_dto import (
     WebSocketBaseMsg, WebSocketErrorMsg, GetRobotListMsg, RobotListMsg, RobotInfo, SendSdpOfferMsg, ReceiveSdpOfferMsg, SendIceCandidateMsg, ReceiveIceCandidateMsg
 )
 from app.repositories.robot_repository import RobotRepository
@@ -8,7 +8,7 @@ from sqlmodel import Session
 from app.api.deps import get_session
 from pydantic import ValidationError
 from app.api.routes.session_manager import register_user_ws, unregister_user_ws, get_robot_ws
-from app.api.routes.robots.dto.robot_rtc_dto import ReceiveSdpOfferMsg
+from app.api.routes.ws.dto.robot_rtc_dto import ReceiveSdpOfferMsg
 
 router = APIRouter()
 
@@ -90,7 +90,7 @@ handlers = {
 }
 
 # 유저 웹소켓 엔드포인트 (query_params로 user_id 전달 받음)
-@router.websocket("/rtc")
+@router.websocket("/user")
 async def user_rtc_endpoint(websocket: WebSocket, session: Session = Depends(get_session)):
     user_id = websocket.query_params.get("user_id")
     if not user_id:

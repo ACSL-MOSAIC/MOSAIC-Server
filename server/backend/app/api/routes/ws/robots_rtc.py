@@ -5,7 +5,7 @@ from app.repositories.robot_repository import RobotRepository
 from app.schemas import RobotUpdate
 from app.api.deps import get_session
 import uuid
-from app.api.routes.robots.dto.robot_rtc_dto import UpdateRobotStateMsg, WebSocketErrorMsg, SendSdpAnswerMsg, ReceiveSdpAnswerMsg, SendIceCandidateMsg, ReceiveIceCandidateMsg
+from app.api.routes.ws.dto.robot_rtc_dto import UpdateRobotStateMsg, WebSocketErrorMsg, SendSdpAnswerMsg, ReceiveSdpAnswerMsg, SendIceCandidateMsg, ReceiveIceCandidateMsg
 from pydantic import ValidationError
 from app.api.routes.session_manager import register_robot_ws, unregister_robot_ws, get_user_ws
 
@@ -80,7 +80,7 @@ handlers = {
 
 
 # 로봇 웹소켓 엔드포인트 (query_params로 robot_id 전달 받음)
-@router.websocket("/rtc")
+@router.websocket("/robot")
 async def robot_rtc_endpoint(websocket: WebSocket, session: Session = Depends(get_session)):
     robot_id = websocket.query_params.get("robot_id")
     if not robot_id:
