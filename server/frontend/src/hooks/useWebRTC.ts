@@ -1,161 +1,241 @@
-import { useEffect, useRef, useCallback, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef, useState } from "react"
+import { useWebSocket } from "@/contexts/WebSocketContext"
+
+interface WebRTCConnection {
+  isConnected: boolean
+  startConnection: () => Promise<void>
+  disconnect: () => void
+  peerConnection: RTCPeerConnection | null
+  dataChannel: RTCDataChannel | null
+  fps: number
+}
 
 interface WebSocketMessage {
   type: string
   [key: string]: any
 }
 
-export const useWebRTC = (userId: string, robotId: string) => {
-  const ws = useRef<WebSocket | null>(null)
-  const peerConnection = useRef<RTCPeerConnection | null>(null)
-  const dataChannel = useRef<RTCDataChannel | null>(null)
-  const [isConnected, setIsConnected] = useState(false)
-  const queryClient = useQueryClient()
+interface SendSdpOfferMessage extends WebSocketMessage {
+  type: "send_sdp_offer"
+  user_id: string
+  robot_id: string
+  sdp_offer: string
+}
 
-  const createPeerConnection = useCallback(() => {
+interface ReceiveSdpAnswerMessage extends WebSocketMessage {
+  type: "receive_sdp_answer"
+  user_id: string
+  robot_id: string
+  sdp_answer: string
+}
+
+interface SendIceCandidateMessage extends WebSocketMessage {
+  type: "send_ice_candidate"
+  user_id: string
+  robot_id: string
+  ice_candidate: string
+}
+
+interface ReceiveIceCandidateMessage extends WebSocketMessage {
+  type: "receive_ice_candidate"
+  user_id: string
+  robot_id: string
+  ice_candidate: string
+}
+
+export function useWebRTC(userId: string, robotId: string, videoRef: React.RefObject<HTMLVideoElement>): WebRTCConnection {
+  const { sendMessage, onMessage } = useWebSocket()
+  const [isConnected, setIsConnected] = useState(false)
+  const [fps, setFps] = useState(0)
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null)
+  const dataChannelRef = useRef<RTCDataChannel | null>(null)
+  const fpsInterval = useRef<NodeJS.Timeout | null>(null)
+  const frameCount = useRef(0)
+  const lastConnectionCheckTime = useRef<number | null>(null)
+  const connectionCheckInterval = useRef<NodeJS.Timeout | null>(null)
+
+  const createPeerConnection = () => {
     const configuration = {
       iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-      ],
+        {
+          urls: "turn:turn.acslgcs.com:3478",
+          username: "gistacsl",
+          credential: "qwqw!12321"
+        }
+      ]
     }
-    const pc = new RTCPeerConnection(configuration)
+    return new RTCPeerConnection(configuration)
+  }
 
-    // 데이터 채널 생성
-    dataChannel.current = pc.createDataChannel('robot-control')
-    dataChannel.current.onopen = () => {
-      console.log('Data channel opened')
-    }
-    dataChannel.current.onclose = () => {
-      console.log('Data channel closed')
+  const updateFPS = () => {
+    const currentFPS = frameCount.current
+    setFps(currentFPS)
+    frameCount.current = 0
+  }
+
+  const handleTrack = (event: RTCTrackEvent) => {
+    if (!videoRef.current) return
+
+    videoRef.current.srcObject = event.streams[0]
+
+    videoRef.current.onloadedmetadata = () => {
+      frameCount.current = 0
+
+      if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
+        const countFrames = () => {
+          frameCount.current++
+          videoRef.current?.requestVideoFrameCallback(countFrames)
+        }
+        if (videoRef.current) {
+          videoRef.current.requestVideoFrameCallback(countFrames)
+        }
+      } else {
+        if (videoRef.current) {
+          videoRef.current.addEventListener('timeupdate', () => {
+            frameCount.current++
+          })
+        }
+      }
+
+      fpsInterval.current = setInterval(updateFPS, 1000)
     }
 
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        sendMessage({
-          type: 'send_ice_candidate',
-          user_id: userId,
-          robot_id: robotId,
-          ice_candidate: event.candidate,
-        })
+    videoRef.current.onended = () => {
+      if (fpsInterval.current) {
+        clearInterval(fpsInterval.current)
+        fpsInterval.current = null
       }
     }
+  }
 
-    pc.onconnectionstatechange = () => {
-      setIsConnected(pc.connectionState === 'connected')
+  const connectionCheck = () => {
+    const currentTime = Date.now()
+    if (lastConnectionCheckTime.current && (currentTime - lastConnectionCheckTime.current) < 10000) {
+      setIsConnected(true)
     }
 
-    return pc
-  }, [userId, robotId])
-
-  const connect = useCallback(() => {
-    if (!userId || !robotId) return
-
-    const wsUrl = `ws://localhost:8000/api/v1/ws/user?user_id=${userId}`
-    ws.current = new WebSocket(wsUrl)
-
-    ws.current.onopen = () => {
-      console.log('WebSocket Connected')
-      // 연결 후 로봇 리스트 요청
-      sendMessage({
-        type: 'get_robot_list',
-        user_id: userId,
-      })
+    const connectionCheckData = {
+      type: 'connection_check',
+      user_id: userId,
+      robot_id: robotId,
     }
 
-    ws.current.onmessage = async (event) => {
-      const data = JSON.parse(event.data)
-      console.log('Received:', data)
-
-      switch (data.type) {
-        case 'robot_list':
-          queryClient.setQueryData(['robots'], data.robots)
-          break
-        case 'receive_sdp_answer':
-          if (peerConnection.current) {
-            const answer = new RTCSessionDescription({
-              type: 'answer',
-              sdp: data.sdp_answer,
-            })
-            await peerConnection.current.setRemoteDescription(answer)
-          }
-          break
-        case 'receive_ice_candidate':
-          if (peerConnection.current) {
-            await peerConnection.current.addIceCandidate(
-              new RTCIceCandidate(data.ice_candidate)
-            )
-          }
-          break
-        case 'error':
-          console.error('WebSocket Error:', data.error, data.detail)
-          break
-      }
+    if (dataChannelRef.current?.readyState === 'open') {
+      dataChannelRef.current.send(JSON.stringify(connectionCheckData))
     }
+  }
 
-    ws.current.onerror = (error) => {
-      console.error('WebSocket Error:', error)
-    }
-
-    ws.current.onclose = () => {
-      console.log('WebSocket Disconnected')
-      setTimeout(connect, 3000)
-    }
-  }, [userId, robotId, queryClient])
-
-  const sendMessage = useCallback((message: WebSocketMessage) => {
-    if (ws.current?.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify(message))
-    } else {
-      console.error('WebSocket is not connected')
-    }
-  }, [])
-
-  const startConnection = useCallback(async () => {
-    if (!peerConnection.current) {
-      peerConnection.current = createPeerConnection()
-    }
-
+  const startConnection = async () => {
     try {
-      const offer = await peerConnection.current.createOffer()
-      await peerConnection.current.setLocalDescription(offer)
+      const peerConnection = createPeerConnection()
+      peerConnectionRef.current = peerConnection
+
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          sendMessage({
+            type: "send_ice_candidate",
+            user_id: userId,
+            robot_id: robotId,
+            ice_candidate: JSON.stringify(event.candidate)
+          })
+        }
+      }
+
+      peerConnection.ontrack = handleTrack
+
+      const dataChannel = peerConnection.createDataChannel('remote_control')
+      dataChannelRef.current = dataChannel
+
+      dataChannel.onopen = () => {
+        console.log('remote_control_data_channel opened')
+        setIsConnected(true)
+      }
+
+      dataChannel.onmessage = (event) => {
+        const data = JSON.parse(event.data)
+        if (data.type === 'connection_check') {
+          lastConnectionCheckTime.current = Date.now()
+        }
+      }
+
+      const offer = await peerConnection.createOffer()
+      await peerConnection.setLocalDescription(offer)
 
       sendMessage({
-        type: 'send_sdp_offer',
+        type: "send_sdp_offer",
         user_id: userId,
         robot_id: robotId,
-        sdp_offer: offer.sdp,
+        sdp_offer: JSON.stringify(offer)
       })
-    } catch (error) {
-      console.error('Error creating offer:', error)
-    }
-  }, [userId, robotId, createPeerConnection, sendMessage])
 
-  const disconnect = useCallback(() => {
-    if (peerConnection.current) {
-      peerConnection.current.close()
-      peerConnection.current = null
+      connectionCheckInterval.current = setInterval(connectionCheck, 5000)
+    } catch (error) {
+      console.error("Failed to start WebRTC connection:", error)
+      throw error
     }
-    if (ws.current) {
-      ws.current.close()
-      ws.current = null
+  }
+
+  const disconnect = () => {
+    if (connectionCheckInterval.current) {
+      clearInterval(connectionCheckInterval.current)
+      connectionCheckInterval.current = null
+    }
+    if (fpsInterval.current) {
+      clearInterval(fpsInterval.current)
+      fpsInterval.current = null
+    }
+    if (dataChannelRef.current) {
+      dataChannelRef.current.close()
+    }
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close()
     }
     setIsConnected(false)
-  }, [])
+    lastConnectionCheckTime.current = null
+  }
 
+  // SDP Answer 수신 처리
   useEffect(() => {
-    connect()
+    const unsubscribe = (onMessage<ReceiveSdpAnswerMessage>("receive_sdp_answer", async (data) => {
+      if (!peerConnectionRef.current) return
+
+      try {
+        const answer = JSON.parse(data.sdp_answer)
+        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer))
+      } catch (error) {
+        console.error("Failed to set remote description:", error)
+      }
+    }) as unknown) as () => void
+
     return () => {
-      disconnect()
+      unsubscribe()
     }
-  }, [connect, disconnect])
+  }, [onMessage])
+
+  // ICE Candidate 수신 처리
+  useEffect(() => {
+    const unsubscribe = (onMessage<ReceiveIceCandidateMessage>("receive_ice_candidate", async (data) => {
+      if (!peerConnectionRef.current) return
+
+      try {
+        const candidate = JSON.parse(data.ice_candidate)
+        await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate))
+      } catch (error) {
+        console.error("Failed to add ICE candidate:", error)
+      }
+    }) as unknown) as () => void
+
+    return () => {
+      unsubscribe()
+    }
+  }, [onMessage])
 
   return {
     isConnected,
     startConnection,
     disconnect,
-    peerConnection: peerConnection.current,
-    dataChannel: dataChannel.current,
+    peerConnection: peerConnectionRef.current,
+    dataChannel: dataChannelRef.current,
+    fps
   }
 } 

@@ -20,7 +20,11 @@ function ConnectList() {
   return (
     <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={6}>
       {readyRobots.map((robot) => (
-        <RouterLink key={robot.robot_id} to={`/connect/${robot.robot_id}`}>
+        <RouterLink 
+          key={robot.robot_id} 
+          to="/_layout/connect/$robotId"
+          params={{ robotId: robot.robot_id }}
+        >
           <Box
             p={6}
             cursor="pointer"
