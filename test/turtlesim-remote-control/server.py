@@ -96,7 +96,7 @@ async def handle_send_ice_candidate_to_robot(user_id: str, robot_id: str, ice_ca
         print(f"Robot {robot_id} not connected.")
 
 
-@app.websocket("/ws/robot/{robot_id}")
+@app.websocket("/ws/robot")
 async def websocket_robot_endpoint(websocket: WebSocket, robot_id: str):
     if robot_id in connected_robots:
         await websocket.close(code=1000)

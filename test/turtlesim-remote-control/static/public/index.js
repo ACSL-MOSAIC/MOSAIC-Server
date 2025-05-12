@@ -1,5 +1,17 @@
-// connect to the signaling server
-const socket = new WebSocket("/ws/control/user_1");
+let socket;
+let userId;
+const userIdInputElement = document.querySelector('#user_id_input');
+const wsConnectButton = document.querySelector('#ws_connect_btn');
+const wsDisconnectButton = document.querySelector('#ws_disconnect_btn');
+wsConnectButton.addEventListener('click', async () => {
+    userId = userIdInputElement.value;
+    socket = new WebSocket("/ws/control/" + userId);
+    addSocketEventListener(socket);
+});
+wsDisconnectButton.addEventListener('click', async () => {
+    socket.close();
+})
+
 let peer = null;
 let connectingCheckInterval = null;
 let isConnected = false;
@@ -8,7 +20,7 @@ let remoteControlDataChannel = null;
 let selectedRobotId = null;
 let robotSelectionDisabled = false;
 
-let connectButton = document.querySelector('#connect');
+let peerConnectButton = document.querySelector('#peer-connect');
 let positionElement = document.querySelector('#position');
 
 const createPeer = async () => {
@@ -21,12 +33,12 @@ const createPeer = async () => {
                 credential: "qwqw!12321"
             }
         ],
-        // iceTransportPolicy: "relay"
     });
 
     peer.onicecandidate = peerOnIceCandidate;
     peer.ondatachannel = peerOnDataChannel;
     peer.ontrack = peerOnTrack;
+    peer.onconnectionstatechange = peerOnStateChange;
 
     return peer;
 }
@@ -138,6 +150,19 @@ const createRemoteControlDataChannel = async (peer) => {
     return remote_control_data_channel;
 }
 
+const connectedRobotIdElement = document.querySelector('#connected_robot');
+const peerOnStateChange = async (e) => {
+    const pc = e.currentTarget;
+    console.log(pc.connectionState);
+
+    if (pc.connectionState === 'connected') {
+        isConnected = true;
+        connectedRobotIdElement.textContent = selectedRobotId;
+        peerConnectButton.disabled = true;
+        peerDisconnectButton.disabled = false;
+    }
+}
+
 const sendSdpOffer = async (peer, robotId) => {
     peer.addTransceiver('video', {direction: 'sendrecv'});
 
@@ -155,7 +180,7 @@ const sendSdpOffer = async (peer, robotId) => {
 }
 
 // Handle connect button
-connectButton.addEventListener('click', async () => {
+peerConnectButton.addEventListener('click', async () => {
     if (!selectedRobotId) {
         alert('Please select a robot first');
         return;
@@ -177,7 +202,7 @@ const connectionCheck = () => {
 
     const connectionCheckData = {
         type: 'connection_check',
-        user_id: 'user_1',
+        user_id: userId,
         robot_id: selectedRobotId,
     }
     if (remoteControlDataChannel.readyState !== 'open') {
@@ -186,27 +211,41 @@ const connectionCheck = () => {
     remoteControlDataChannel.send(JSON.stringify(connectionCheckData))
 }
 
-socket.addEventListener('open', function (event) {
-    const getRobotListData = {
-        type: 'get_robot_list',
-    }
-    socket.send(JSON.stringify(getRobotListData))
-})
+const wsConnectionStatusElement = document.querySelector('#ws_connection_status');
+const addSocketEventListener = (ws) => {
+    ws.addEventListener('open', function (event) {
+        wsConnectionStatusElement.textContent = 'Connected!'
+        userIdInputElement.disabled = true;
+        wsConnectButton.disabled = true;
+        wsDisconnectButton.disabled = false;
+        const getRobotListData = {
+            type: 'get_robot_list',
+        }
+        ws.send(JSON.stringify(getRobotListData))
+    })
 
-socket.addEventListener('message', async function (event) {
-    const data = JSON.parse(event.data)
-    if (data.type === 'receive_sdp_answer') {
-        await receiveSdpAnswer(data.sdp_answer)
-    } else if (data.type === 'receive_ice_candidate') {
-        await receiveIceCandidate(data.ice_candidate)
-    } else if (data.type === 'robot_list') {
-        await updateRobotList(data.robots)
-    }
-})
+    ws.addEventListener('close', function () {
+        wsConnectionStatusElement.textContent = 'Disconnected!'
+        userIdInputElement.disabled = false;
+        wsConnectButton.disabled = false;
+        wsDisconnectButton.disabled = true;
+        resetRobotList()
+    })
+
+    ws.addEventListener('message', async function (event) {
+        const data = JSON.parse(event.data)
+        if (data.type === 'receive_sdp_answer') {
+            await receiveSdpAnswer(data.sdp_answer)
+        } else if (data.type === 'receive_ice_candidate') {
+            await receiveIceCandidate(data.ice_candidate)
+        } else if (data.type === 'robot_list') {
+            updateRobotList(data.robots)
+        }
+    })
+}
 
 iceCandidateList = []
 const receiveSdpAnswer = async (sdp_answer) => {
-    console.log('sdp_answer', sdp_answer);
     await peer.setRemoteDescription(new RTCSessionDescription({sdp: sdp_answer, type: "answer"}));
     for (const candidate of iceCandidateList) {
         await peer.addIceCandidate(candidate);
@@ -230,7 +269,7 @@ const receiveIceCandidate = async (ice_candidate) => {
     }
 }
 
-const updateRobotList = async (robots) => {
+const updateRobotList = (robots) => {
     const robotsList = document.querySelector('#robotsList');
     robotsList.innerHTML = '';
 
@@ -262,6 +301,11 @@ const updateRobotList = async (robots) => {
     if (isSelectedRobotAlive === false) {
         closePeerConnection();
     }
+}
+
+const resetRobotList = () => {
+    const robotsList = document.querySelector('#robotsList');
+    robotsList.innerHTML = 'No robots connected';
 }
 
 const closePeerConnection = () => {
@@ -301,21 +345,19 @@ controlLeftBtn.addEventListener('click', () => {
 })
 
 const sendControlData = (direction) => {
-    // if (!isConnected || !remoteControlDataChannel) {
-    //     console.error('remoteControlDataChannel is not initialized');
-    //     return;
-    // }
-
-    const controlData = {
-        direction: direction
+    if (!isConnected || !remoteControlDataChannel) {
+        console.error('remoteControlDataChannel is not initialized');
+        return;
     }
-    console.log(JSON.stringify(controlData));
-    remoteControlDataChannel.send(JSON.stringify(controlData));
+
+    remoteControlDataChannel.send(JSON.stringify({
+        direction: direction
+    }));
 }
 
 // Handle disconnect button
-const disconnectButton = document.querySelector('#disconnect');
-disconnectButton.addEventListener('click', () => {
+const peerDisconnectButton = document.querySelector('#peer_disconnect');
+peerDisconnectButton.addEventListener('click', () => {
     if (connectingCheckInterval) {
         clearInterval(connectingCheckInterval);
         connectingCheckInterval = null;
@@ -329,9 +371,14 @@ disconnectButton.addEventListener('click', () => {
     remoteControlDataChannel = null;
     selectedRobotId = null;
     robotSelectionDisabled = false;
+    positionElement.textContent = '';
 
     const robotElements = document.querySelectorAll('.robot-item');
     robotElements.forEach((element) => {
         element.classList.remove('robot-item--touched');
     })
+
+    connectedRobotIdElement.textContent = '...';
+    peerConnectButton.disabled = false;
+    peerDisconnectButton.disabled = true;
 })
