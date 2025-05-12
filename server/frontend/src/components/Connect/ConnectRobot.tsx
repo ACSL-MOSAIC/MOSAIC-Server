@@ -10,12 +10,15 @@ interface ConnectRobotProps {
 }
 
 function ConnectRobot({ robotId }: ConnectRobotProps) {
+  console.log("ConnectRobot component rendered with robotId:", robotId)
   const videoRef = useRef<HTMLVideoElement>(null)
   const { user } = useAuth()
   const { data: robot } = useQuery({
     queryKey: ["robots", robotId],
     queryFn: () => RobotsService.readRobot({ id: robotId }),
   })
+
+  console.log("Robot data:", robot)
 
   const { isConnected, startConnection, disconnect, dataChannel, fps } = useWebRTC(user?.id || "", robotId, videoRef)
 
@@ -47,6 +50,7 @@ function ConnectRobot({ robotId }: ConnectRobotProps) {
   }
 
   if (!robot) {
+    console.log("Robot data is not available")
     return (
       <Box textAlign="center" py={8}>
         <Text fontSize="lg" color="gray.500">

@@ -1,6 +1,5 @@
 import { Container, Heading } from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
-
 import ConnectRobot from "@/components/Connect/ConnectRobot"
 
 export const Route = createFileRoute("/_layout/connect/$robotId")({
@@ -9,6 +8,7 @@ export const Route = createFileRoute("/_layout/connect/$robotId")({
 
 function ConnectRobotPage() {
   const { robotId } = Route.useParams()
+  console.log("ConnectRobotPage rendered with robotId:", robotId)
 
   return (
     <Container maxW="full">

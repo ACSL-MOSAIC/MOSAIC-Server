@@ -22,7 +22,7 @@ function ConnectList() {
       {readyRobots.map((robot) => (
         <RouterLink 
           key={robot.robot_id} 
-          to="/_layout/connect/$robotId"
+          to="/connect/$robotId"
           params={{ robotId: robot.robot_id }}
         >
           <Box
