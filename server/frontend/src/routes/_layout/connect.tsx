@@ -1,6 +1,6 @@
 import { Container, Heading } from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
-
+import { WebSocketProvider } from "@/contexts/WebSocketContext"
 import ConnectList from "@/components/Connect/ConnectList"
 
 export const Route = createFileRoute("/_layout/connect")({
@@ -9,11 +9,13 @@ export const Route = createFileRoute("/_layout/connect")({
 
 function ConnectPage() {
   return (
-    <Container maxW="full">
-      <Heading size="lg" textAlign={{ base: "center", md: "left" }} py={12}>
+    <Container maxW="container.xl" py={8}>
+      <Heading size="lg" mb={8}>
         로봇 연결
       </Heading>
-      <ConnectList />
+      <WebSocketProvider>
+        <ConnectList />
+      </WebSocketProvider>
     </Container>
   )
 } 

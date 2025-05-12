@@ -1,74 +1,9 @@
 import { Box, Grid, Heading, Text } from "@chakra-ui/react"
-import { useQuery } from "@tanstack/react-query"
 import { Link as RouterLink } from "@tanstack/react-router"
-import { useEffect, useState, useRef } from "react"
-import { RobotsService, type RobotsPublic, type RobotPublic } from "@/client"
-
-interface RobotInfo {
-  robot_id: string
-  state: string
-}
-
-function useRobotWebSocket(userId: string) {
-  const [robots, setRobots] = useState<RobotInfo[]>([])
-  const [ws, setWs] = useState<WebSocket | null>(null)
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
-
-  const connectWebSocket = () => {
-    const websocket = new WebSocket(`ws://localhost:8000/ws/user?user_id=${userId}`)
-
-    websocket.onopen = () => {
-      console.log("WebSocket 연결됨")
-      // 로봇 리스트 요청
-      websocket.send(JSON.stringify({
-        type: "get_robot_list",
-        user_id: userId
-      }))
-    }
-
-    websocket.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-      if (data.type === "robot_list") {
-        setRobots(data.robots)
-      }
-    }
-
-    websocket.onerror = (error) => {
-      console.error("WebSocket 에러:", error)
-    }
-
-    websocket.onclose = () => {
-        console.log("WebSocket 연결 종료")
-        
-      reconnectTimeoutRef.current = setTimeout(() => {
-        console.log("WebSocket 재연결 시도...")
-        connectWebSocket()
-      }, 5000)
-    }
-
-    setWs(websocket)
-  }
-
-  useEffect(() => {
-    connectWebSocket()
-
-    return () => {
-      if (ws) {
-        ws.close()
-      }
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current)
-      }
-    }
-  }, [userId])
-
-  return robots
-}
+import { useWebSocket } from "@/contexts/WebSocketContext"
 
 function ConnectList() {
-  // 임시로 하드코딩된 userId 사용 (실제로는 인증된 사용자의 ID를 사용해야 함)
-  const userId = "9942c844-0ec6-4f1f-9df6-07397950af58"
-  const robots = useRobotWebSocket(userId)
+  const { robots } = useWebSocket()
 
   const readyRobots = robots.filter((robot) => robot.state === "ready_to_connect")
 
