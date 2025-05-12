@@ -242,8 +242,8 @@ export function useWebRTC(userId: string, robotId: string, videoRef: React.RefOb
 
       try {
         console.log("SDP Answer 수신:", data)
-        const answer = JSON.parse(data.sdp_answer)
-        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer))
+        const answer = data.sdp_answer
+        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({sdp: answer, type: 'answer'}))
         console.log("Remote Description 설정 완료")
         isRemoteDescriptionSet.current = true
         for (const candidate of pendingCandidates.current) {
