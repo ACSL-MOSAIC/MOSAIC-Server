@@ -5,6 +5,8 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
 from app.core.config import settings
+from app.api.routes.ws.user_rtc import user_rtc_endpoint
+from app.api.routes.ws.robots_rtc import robot_rtc_endpoint
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -40,3 +42,7 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# WebSocket 엔드포인트 등록
+app.websocket("/ws/user")(user_rtc_endpoint)
+app.websocket("/ws/robot")(robot_rtc_endpoint)
