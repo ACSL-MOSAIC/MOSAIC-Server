@@ -1,5 +1,8 @@
 from fastapi import WebSocket
 from typing import Dict, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ConnectionManager:
     def __init__(self):
@@ -23,6 +26,7 @@ class ConnectionManager:
 
     async def send_to_user(self, message: dict, user_id: str):
         if user_id in self.active_connections:
+            logger.info(f"Sending message to user {user_id}: {message}")
             await self.active_connections[user_id].send_json(message)
 
     async def send_to_robot(self, message: dict, robot_id: str):

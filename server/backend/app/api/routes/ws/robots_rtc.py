@@ -5,12 +5,15 @@ from app.repositories.robot_repository import RobotRepository
 from app.schemas import RobotUpdate
 from app.api.deps import get_db
 import uuid
+import logging
 from app.api.routes.ws.dto.robot_rtc_dto import (
     WebSocketBaseMsg, WebSocketErrorMsg, SendSdpAnswerMsg, ReceiveSdpAnswerMsg,
     SendIceCandidateMsg, ReceiveIceCandidateMsg
 )
 from pydantic import ValidationError
 from app.api.routes.ws import manager
+
+logger = logging.getLogger(__name__)
 
 async def handle_send_sdp_answer(websocket: WebSocket, data: dict):
     try:
@@ -25,6 +28,8 @@ async def handle_send_sdp_answer(websocket: WebSocket, data: dict):
         error = WebSocketErrorMsg(type="error", error="User websocket not found", detail=f"user_id: {msg.user_id}")
         await websocket.send_json(error.model_dump())
         return
+    
+    logger.info(f"Received sdp answer from user {msg.user_id} to robot {msg.robot_id}")
 
     receive_msg = ReceiveSdpAnswerMsg(
         type="receive_sdp_answer",
@@ -41,8 +46,11 @@ async def handle_send_ice_candidate(websocket: WebSocket, data: dict):
         error = WebSocketErrorMsg(type="error", error="Invalid send_ice_candidate message", detail=str(e))
         await websocket.send_json(error.model_dump())
         return
-
+    
+    logger.info(f"Received ice candidate from user {msg.user_id} to robot {msg.robot_id}")
     user_ws = manager.get_user_connection(msg.user_id)
+
+    logger.info(f"User websocket: {user_ws}")
     if user_ws is None:
         error = WebSocketErrorMsg(type="error", error="User websocket not found", detail=f"user_id: {msg.user_id}")
         await websocket.send_json(error.model_dump())
@@ -76,6 +84,7 @@ async def robot_rtc_endpoint(websocket: WebSocket, session: Session = Depends(ge
         while True:
             data = await websocket.receive_json()
             msg_type = data.get("type")
+            logger.info(f"Received message from robot {robot_id}: {data}")
             handler = handlers.get(msg_type)
             if handler:
                 await handler(websocket, data)
