@@ -16,10 +16,8 @@ import { Route as RobotsImport } from './routes/robots'
 import { Route as ResetPasswordImport } from './routes/reset-password'
 import { Route as RecoverPasswordImport } from './routes/recover-password'
 import { Route as LoginImport } from './routes/login'
-import { Route as ConnectImport } from './routes/connect'
 import { Route as LayoutImport } from './routes/_layout'
 import { Route as LayoutIndexImport } from './routes/_layout/index'
-import { Route as ConnectRobotIdImport } from './routes/connect.$robotId'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutRobotsImport } from './routes/_layout/robots'
 import { Route as LayoutConnectImport } from './routes/_layout/connect'
@@ -53,11 +51,6 @@ const LoginRoute = LoginImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const ConnectRoute = ConnectImport.update({
-  path: '/connect',
-  getParentRoute: () => rootRoute,
-} as any)
-
 const LayoutRoute = LayoutImport.update({
   id: '/_layout',
   getParentRoute: () => rootRoute,
@@ -66,11 +59,6 @@ const LayoutRoute = LayoutImport.update({
 const LayoutIndexRoute = LayoutIndexImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
-} as any)
-
-const ConnectRobotIdRoute = ConnectRobotIdImport.update({
-  path: '/$robotId',
-  getParentRoute: () => ConnectRoute,
 } as any)
 
 const LayoutSettingsRoute = LayoutSettingsImport.update({
@@ -104,10 +92,6 @@ declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/_layout': {
       preLoaderRoute: typeof LayoutImport
-      parentRoute: typeof rootRoute
-    }
-    '/connect': {
-      preLoaderRoute: typeof ConnectImport
       parentRoute: typeof rootRoute
     }
     '/login': {
@@ -146,10 +130,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsImport
       parentRoute: typeof LayoutImport
     }
-    '/connect/$robotId': {
-      preLoaderRoute: typeof ConnectRobotIdImport
-      parentRoute: typeof ConnectImport
-    }
     '/_layout/': {
       preLoaderRoute: typeof LayoutIndexImport
       parentRoute: typeof LayoutImport
@@ -171,7 +151,6 @@ export const routeTree = rootRoute.addChildren([
     LayoutSettingsRoute,
     LayoutIndexRoute,
   ]),
-  ConnectRoute.addChildren([ConnectRobotIdRoute]),
   LoginRoute,
   RecoverPasswordRoute,
   ResetPasswordRoute,
