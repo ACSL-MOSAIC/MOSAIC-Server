@@ -1,5 +1,6 @@
+import React from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { RobotControl } from '../components/Robots/RobotControl'
+import { RobotControl } from '../src/components/Robots/RobotControl'
 
 interface Robot {
   id: string
