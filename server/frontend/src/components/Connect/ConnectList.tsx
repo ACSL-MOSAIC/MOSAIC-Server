@@ -5,7 +5,7 @@ import { useWebSocket } from "@/contexts/WebSocketContext"
 function ConnectList() {
   const { robots } = useWebSocket()
 
-  const readyRobots = robots.filter((robot) => robot.state === "ready_to_connect")
+  const readyRobots = robots.filter((robot) => robot.state === "READY_TO_CONNECT")
 
   if (readyRobots.length === 0) {
     return (
