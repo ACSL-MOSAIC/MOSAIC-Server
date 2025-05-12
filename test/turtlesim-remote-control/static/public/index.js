@@ -419,4 +419,6 @@ peerDisconnectButton.addEventListener('click', () => {
     connectedRobotIdElement.textContent = '...';
     peerConnectButton.disabled = false;
     peerDisconnectButton.disabled = true;
+
+    positionCtx.clearRect(0, 0, positionCanvas.width, positionCanvas.height);
 })
