@@ -119,6 +119,43 @@ const updateFPSElement = () => {
     fpsElement.innerHTML = `${currentFPS} fps`;
 }
 
+const positionCanvas = document.querySelector('#position_canvas');
+const positionCtx = positionCanvas.getContext('2d');
+const canvasSize = 300;
+positionCanvas.width = canvasSize;
+positionCanvas.height = canvasSize;
+
+const MAX_COORDINATE = 12;
+const scale = canvasSize / MAX_COORDINATE;
+
+const drawPoint = (x, y, theta) => {
+    positionCtx.clearRect(0, 0, positionCanvas.width, positionCanvas.height);
+
+    const canvasX = x * scale;
+    const canvasY = y * scale;
+
+    positionCtx.beginPath();
+    positionCtx.arc(canvasX, canvasSize - canvasY, 5, 0, Math.PI * 2);
+    positionCtx.fillStyle = 'red';
+    positionCtx.fill();
+    positionCtx.closePath();
+
+    const arrowLength = 30;
+
+    // 화살표 끝점 계산 (theta 방향으로)
+    const arrowEndX = canvasX + Math.cos(-theta) * arrowLength;
+    const arrowEndY = canvasSize - canvasY + Math.sin(-theta) * arrowLength;
+
+    // 화살표 선 그리기
+    positionCtx.beginPath();
+    positionCtx.moveTo(canvasX, canvasSize - canvasY);
+    positionCtx.lineTo(arrowEndX, arrowEndY);
+    positionCtx.strokeStyle = 'blue';
+    positionCtx.lineWidth = 2;
+    positionCtx.stroke();
+    positionCtx.closePath();
+}
+
 const setUpPositionDataChannel = (channel) => {
     channel.onopen = () => {
     };
@@ -128,6 +165,7 @@ const setUpPositionDataChannel = (channel) => {
 
         try {
             const jsonData = JSON.parse(message);
+            drawPoint(jsonData.x, jsonData.y, jsonData.theta)
             positionElement.textContent = JSON.stringify(jsonData, null, 2);
         } catch (e) {
             console.log(e);
