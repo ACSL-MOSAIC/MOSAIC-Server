@@ -69,6 +69,8 @@ async def robot_rtc_endpoint(websocket: WebSocket, session: Session = Depends(ge
         return
 
     await manager.connect_robot(websocket, robot_id)
+    repo = RobotRepository(session)
+    repo.update(robot_id, RobotUpdate(status=RobotStatus.READY_TO_CONNECT))
     
     try:
         while True:
@@ -82,3 +84,4 @@ async def robot_rtc_endpoint(websocket: WebSocket, session: Session = Depends(ge
                 await websocket.send_json(error.model_dump())
     except WebSocketDisconnect:
         manager.disconnect_robot(robot_id) 
+        repo.update(robot_id, RobotUpdate(status=RobotStatus.DISCONNECTED))
