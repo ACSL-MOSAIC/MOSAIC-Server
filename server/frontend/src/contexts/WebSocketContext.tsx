@@ -63,14 +63,22 @@ interface ReceiveSdpAnswerMessage extends WebSocketBaseMessage {
 interface SendIceCandidateMessage extends WebSocketBaseMessage {
   type: "send_ice_candidate"
   robot_id: string
-  ice_candidate: string
+  ice_candidate: {
+    candidate: string
+    sdpMid: string | null
+    sdpMLineIndex: number | null
+  }
 }
 
 interface ReceiveIceCandidateMessage extends WebSocketBaseMessage {
   type: "receive_ice_candidate"
   user_id: string
   robot_id: string
-  ice_candidate: string
+  ice_candidate: {
+    candidate: string
+    sdpMid: string | null
+    sdpMLineIndex: number | null
+  }
 }
 
 // 모든 메시지 타입을 유니온 타입으로 정의

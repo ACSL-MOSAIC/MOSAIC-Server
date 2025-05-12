@@ -21,13 +21,13 @@ class ConnectionManager:
         if robot_id in self.active_connections:
             del self.active_connections[robot_id]
 
-    async def send_to_user(self, message: str, user_id: str):
+    async def send_to_user(self, message: dict, user_id: str):
         if user_id in self.active_connections:
-            await self.active_connections[user_id].send_text(message)
+            await self.active_connections[user_id].send_json(message)
 
-    async def send_to_robot(self, message: str, robot_id: str):
+    async def send_to_robot(self, message: dict, robot_id: str):
         if robot_id in self.active_connections:
-            await self.active_connections[robot_id].send_text(message)
+            await self.active_connections[robot_id].send_json(message)
 
     def get_robot_connection(self, robot_id: str) -> Optional[WebSocket]:
         return self.active_connections.get(robot_id)
