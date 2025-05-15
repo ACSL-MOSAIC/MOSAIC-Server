@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { useWebSocket } from "@/contexts/WebSocketContext"
 import useCustomToast from "@/hooks/useCustomToast"
 import { createControlChannel, sendControlCommand, sendConnectionCheck } from "@/rtc/control"
+import { setupPositionChannel } from "@/rtc/position"
 
 interface WebRTCConnection {
   isConnected: boolean
@@ -54,7 +55,13 @@ interface ReceiveIceCandidateMessage extends WebSocketMessage {
   }
 }
 
-export function useWebRTC(userId: string, robotId: string, videoRef: React.RefObject<HTMLVideoElement>): WebRTCConnection {
+export function useWebRTC(
+  userId: string, 
+  robotId: string, 
+  videoRef: React.RefObject<HTMLVideoElement>,
+  canvasRef: React.RefObject<HTMLCanvasElement>,
+  positionElementRef: React.RefObject<HTMLElement>
+): WebRTCConnection {
   const { sendMessage, onMessage } = useWebSocket()
   const [isConnected, setIsConnected] = useState(false)
   const [fps, setFps] = useState(0)
@@ -191,6 +198,17 @@ export function useWebRTC(userId: string, robotId: string, videoRef: React.RefOb
           }
         } catch (error) {
           console.error('Error parsing control data:', error)
+        }
+      }
+
+      peerConnection.ondatachannel = (event) => {
+        const channel = event.channel
+        if (channel.label === 'position_data_channel' && canvasRef.current && positionElementRef.current) {
+          console.log('Position channel received')
+          setupPositionChannel(channel, {
+            canvas: canvasRef.current,
+            positionElement: positionElementRef.current
+          })
         }
       }
 

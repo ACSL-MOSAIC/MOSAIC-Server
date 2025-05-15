@@ -8,16 +8,31 @@ export interface PositionData {
 // Channel Configuration
 interface PositionChannelConfig {
   onPositionUpdate?: (data: PositionData) => void
+  canvas: HTMLCanvasElement
+  positionElement: HTMLElement
 }
+
+// Canvas Configuration
+const CANVAS_SIZE = 300
+const MAX_COORDINATE = 12
+const SCALE = CANVAS_SIZE / MAX_COORDINATE
 
 // Channel Setup
 export const setupPositionChannel = (
   channel: RTCDataChannel,
   config: PositionChannelConfig
 ): void => {
+  // Canvas 초기화
+  const canvas = config.canvas
+  canvas.width = CANVAS_SIZE
+  canvas.height = CANVAS_SIZE
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
   channel.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data) as PositionData
+      handlePositionUpdate(data, canvas, config.positionElement)
       config.onPositionUpdate?.(data)
     } catch (error) {
       console.error('Error parsing position data:', error)
@@ -34,19 +49,15 @@ export const handlePositionUpdate = (
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
-  const canvasSize = 300
-  const MAX_COORDINATE = 12
-  const scale = canvasSize / MAX_COORDINATE
-
   // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
   // Draw point
-  const canvasX = data.x * scale
-  const canvasY = data.y * scale
+  const canvasX = data.x * SCALE
+  const canvasY = data.y * SCALE
 
   ctx.beginPath()
-  ctx.arc(canvasX, canvasSize - canvasY, 5, 0, Math.PI * 2)
+  ctx.arc(canvasX, CANVAS_SIZE - canvasY, 5, 0, Math.PI * 2)
   ctx.fillStyle = 'red'
   ctx.fill()
   ctx.closePath()
@@ -54,10 +65,10 @@ export const handlePositionUpdate = (
   // Draw direction arrow
   const arrowLength = 30
   const arrowEndX = canvasX + Math.cos(-data.theta) * arrowLength
-  const arrowEndY = canvasSize - canvasY + Math.sin(-data.theta) * arrowLength
+  const arrowEndY = CANVAS_SIZE - canvasY + Math.sin(-data.theta) * arrowLength
 
   ctx.beginPath()
-  ctx.moveTo(canvasX, canvasSize - canvasY)
+  ctx.moveTo(canvasX, CANVAS_SIZE - canvasY)
   ctx.lineTo(arrowEndX, arrowEndY)
   ctx.strokeStyle = 'blue'
   ctx.lineWidth = 2

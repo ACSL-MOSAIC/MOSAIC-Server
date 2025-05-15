@@ -13,6 +13,8 @@ interface ConnectRobotProps {
 function ConnectRobot({ robotId }: ConnectRobotProps) {
   console.log("ConnectRobot component rendered with robotId:", robotId)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const positionElementRef = useRef<HTMLDivElement>(null)
   const { user } = useAuth()
   const { data: robot } = useQuery({
     queryKey: ["robots", robotId],
@@ -21,7 +23,13 @@ function ConnectRobot({ robotId }: ConnectRobotProps) {
 
   console.log("Robot data:", robot)
 
-  const { isConnected, startConnection, disconnect, fps, sendControlData } = useWebRTC(user?.id || "", robotId, videoRef)
+  const { isConnected, startConnection, disconnect, fps, sendControlData } = useWebRTC(
+    user?.id || "",
+    robotId,
+    videoRef,
+    canvasRef,
+    positionElementRef
+  )
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isConnected) return
@@ -102,6 +110,22 @@ function ConnectRobot({ robotId }: ConnectRobotProps) {
           </Text>
         </Box>
       </Box>
+
+      <Box w="300px" h="300px" border="1px" borderColor="gray.200" rounded="md" overflow="hidden">
+        <canvas
+          ref={canvasRef}
+          style={{
+            width: "100%",
+            height: "100%",
+          }}
+        />
+      </Box>
+      <Text
+        ref={positionElementRef}
+        fontFamily="monospace"
+        fontSize="sm"
+        color="gray.600"
+      />
 
       <Flex gap={4}>
         <Button
