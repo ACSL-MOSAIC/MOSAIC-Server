@@ -26,8 +26,10 @@ class ConnectionManager:
 
     async def send_to_user(self, message: dict, user_id: str):
         if user_id in self.active_connections:
-            logger.info(f"Sending message to user {user_id}: {message}")
-            await self.active_connections[user_id].send_json(message)
+            try:
+                await self.active_connections[user_id].send_json(message)
+            except Exception as e:
+                logger.error(f"Error sending message to user {user_id}: {e}")
 
     async def send_to_robot(self, message: dict, robot_id: str):
         if robot_id in self.active_connections:
