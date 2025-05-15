@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useWebSocket } from "@/contexts/WebSocketContext"
 import useCustomToast from "@/hooks/useCustomToast"
+import { createControlChannel, sendControlCommand, sendConnectionCheck } from "@/rtc/control"
 
 interface WebRTCConnection {
   isConnected: boolean
@@ -9,6 +10,7 @@ interface WebRTCConnection {
   peerConnection: RTCPeerConnection | null
   dataChannel: RTCDataChannel | null
   fps: number
+  sendControlData: (direction: 'up' | 'down' | 'left' | 'right') => void
 }
 
 interface WebSocketMessage {
@@ -134,14 +136,8 @@ export function useWebRTC(userId: string, robotId: string, videoRef: React.RefOb
       setIsConnected(true)
     }
 
-    const connectionCheckData = {
-      type: 'connection_check',
-      user_id: userId,
-      robot_id: robotId,
-    }
-
     if (dataChannelRef.current?.readyState === 'open') {
-      dataChannelRef.current.send(JSON.stringify(connectionCheckData))
+      sendConnectionCheck(dataChannelRef.current, userId, robotId)
     }
   }
 
@@ -181,26 +177,32 @@ export function useWebRTC(userId: string, robotId: string, videoRef: React.RefOb
 
       peerConnection.ontrack = handleTrack
 
-      const dataChannel = peerConnection.createDataChannel('remote_control')
-      dataChannelRef.current = dataChannel
-
-      dataChannel.onopen = () => {
+      dataChannelRef.current = createControlChannel(peerConnection)
+      dataChannelRef.current.onopen = () => {
         console.log('remote_control_data_channel opened')
         setIsConnected(true)
       }
 
-      dataChannel.onmessage = (event) => {
-        const data = JSON.parse(event.data)
-        if (data.type === 'connection_check') {
-          lastConnectionCheckTime.current = Date.now()
+      dataChannelRef.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.type === 'connection_check') {
+            lastConnectionCheckTime.current = Date.now()
+          }
+        } catch (error) {
+          console.error('Error parsing control data:', error)
         }
       }
 
-      peerConnection.addTransceiver('video', {direction: 'sendrecv'});
+      peerConnection.addTransceiver('video', {direction: 'sendrecv'})
+      
+      console.log("SDP Offer 생성 시작...")
       const offer = await peerConnection.createOffer()
-        
-      console.log("SDP Offer 생성:", offer)
+      console.log("SDP Offer 생성 완료:", offer)
+      
+      console.log("Local Description 설정 시작...")
       await peerConnection.setLocalDescription(offer)
+      console.log("Local Description 설정 완료")
 
       console.log("SDP Offer 전송:", offer)
       sendMessage({
@@ -236,27 +238,40 @@ export function useWebRTC(userId: string, robotId: string, videoRef: React.RefOb
     lastConnectionCheckTime.current = null
   }
 
+  const sendControlData = (direction: 'up' | 'down' | 'left' | 'right') => {
+    if (!dataChannelRef.current || dataChannelRef.current.readyState !== 'open') {
+      console.error('Control channel is not open')
+      return
+    }
+    sendControlCommand(dataChannelRef.current, direction)
+  }
+
   useEffect(() => {
-    const unsubscribe = (onMessage<ReceiveSdpAnswerMessage>("receive_sdp_answer", async (data) => {
-      if (!peerConnectionRef.current) return
+    const unsubscribe = (onMessage("receive_ice_candidate", async (data: any) => {
+      if (!peerConnectionRef.current) {
+        console.error("PeerConnection이 초기화되지 않았습니다.")
+        return
+      }
+
+      const candidate = (data as ReceiveIceCandidateMessage).ice_candidate
+      console.log("ICE Candidate 수신:", candidate)
+      console.log("Remote Description 설정 여부:", isRemoteDescriptionSet.current)
+      console.log("현재 PeerConnection 상태:", peerConnectionRef.current.signalingState)
 
       try {
-        console.log("SDP Answer 수신:", data)
-        const answer = data.sdp_answer
-        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({sdp: answer, type: 'answer'}))
-        console.log("Remote Description 설정 완료")
-        isRemoteDescriptionSet.current = true
-        for (const candidate of pendingCandidates.current) {
-          try {
-            await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate))
-            console.log("Pending ICE Candidate 추가 완료", candidate)
-          } catch (error) {
-            console.error("Pending ICE candidate 추가 실패", error)
-          }
+        if (!isRemoteDescriptionSet.current || peerConnectionRef.current.signalingState === 'closed') {
+          console.log("Remote Description이 아직 설정되지 않아 ICE Candidate 임시 저장")
+          pendingCandidates.current.push(candidate)
+          return
         }
-        pendingCandidates.current = []
+
+        console.log("Remote Description이 설정되어 있어 ICE Candidate 추가 시도")
+        await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate))
+        console.log("ICE Candidate 추가 완료")
       } catch (error) {
-        console.error("Failed to set remote description:", error)
+        console.error("ICE Candidate 처리 실패:", error)
+        console.log("ICE Candidate 임시 저장")
+        pendingCandidates.current.push(candidate)
       }
     }) as unknown) as () => void
 
@@ -266,19 +281,43 @@ export function useWebRTC(userId: string, robotId: string, videoRef: React.RefOb
   }, [onMessage])
 
   useEffect(() => {
-    const unsubscribe = (onMessage("receive_ice_candidate", async (data: any) => {
-      if (!peerConnectionRef.current) return
+    const unsubscribe = (onMessage<ReceiveSdpAnswerMessage>("receive_sdp_answer", async (data) => {
+      if (!peerConnectionRef.current) {
+        console.error("PeerConnection이 초기화되지 않았습니다.")
+        return
+      }
+
       try {
-        const candidate = (data as ReceiveIceCandidateMessage).ice_candidate
-        if (isRemoteDescriptionSet.current) {
-          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate))
-          console.log("ICE Candidate 추가 완료")
-        } else {
-          pendingCandidates.current.push(candidate)
-          console.log("ICE Candidate 임시 저장", candidate)
+        console.log("SDP Answer 수신:", data)
+        const answer = data.sdp_answer
+        
+        console.log("현재 PeerConnection 상태:", peerConnectionRef.current.signalingState)
+        
+        if (peerConnectionRef.current.signalingState !== 'have-local-offer') {
+          console.error("잘못된 상태에서 Answer를 설정하려고 시도했습니다. 현재 상태:", peerConnectionRef.current.signalingState)
+          return
+        }
+
+        console.log("Remote Description 설정 시작...")
+        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription({sdp: answer, type: 'answer'}))
+        console.log("Remote Description 설정 완료")
+        isRemoteDescriptionSet.current = true
+
+        if (pendingCandidates.current.length > 0) {
+          console.log("저장된 ICE candidate 개수:", pendingCandidates.current.length)
+          for (const candidate of pendingCandidates.current) {
+            try {
+              console.log("Pending ICE Candidate 추가 시도:", candidate)
+              await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate))
+              console.log("Pending ICE Candidate 추가 완료")
+            } catch (error) {
+              console.error("Pending ICE candidate 추가 실패:", error)
+            }
+          }
+          pendingCandidates.current = []
         }
       } catch (error) {
-        console.error("Failed to add ICE candidate:", error)
+        console.error("Remote Description 설정 실패:", error)
       }
     }) as unknown) as () => void
 
@@ -293,6 +332,7 @@ export function useWebRTC(userId: string, robotId: string, videoRef: React.RefOb
     disconnect,
     peerConnection: peerConnectionRef.current,
     dataChannel: dataChannelRef.current,
-    fps
+    fps,
+    sendControlData
   }
 } 

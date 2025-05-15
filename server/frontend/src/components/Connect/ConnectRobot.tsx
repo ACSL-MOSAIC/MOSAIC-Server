@@ -1,9 +1,10 @@
-import { Box, Button, Flex, Text } from "@chakra-ui/react"
+import { Box, Button, Flex, Text, Icon, Grid, GridItem } from "@chakra-ui/react"
 import { useQuery } from "@tanstack/react-query"
 import { useRef } from "react"
 import { RobotsService } from "@/client"
 import { useWebRTC } from "@/hooks/useWebRTC"
 import useAuth from "@/hooks/useAuth"
+import { IoArrowUp, IoArrowDown, IoArrowBack, IoArrowForward } from "react-icons/io5"
 
 interface ConnectRobotProps {
   robotId: string
@@ -20,12 +21,12 @@ function ConnectRobot({ robotId }: ConnectRobotProps) {
 
   console.log("Robot data:", robot)
 
-  const { isConnected, startConnection, disconnect, dataChannel, fps } = useWebRTC(user?.id || "", robotId, videoRef)
+  const { isConnected, startConnection, disconnect, fps, sendControlData } = useWebRTC(user?.id || "", robotId, videoRef)
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!isConnected || !dataChannel) return
+    if (!isConnected) return
 
-    let direction = ''
+    let direction: 'up' | 'down' | 'left' | 'right' | null = null
     switch (e.key) {
       case "ArrowUp":
         direction = 'up'
@@ -43,10 +44,14 @@ function ConnectRobot({ robotId }: ConnectRobotProps) {
         return
     }
 
-    const controlData = {
-      direction: direction
+    if (direction) {
+      sendControlData(direction)
     }
-    dataChannel.send(JSON.stringify(controlData))
+  }
+
+  const handleDirectionClick = (direction: 'up' | 'down' | 'left' | 'right') => {
+    if (!isConnected) return
+    sendControlData(direction)
   }
 
   if (!robot) {
@@ -116,7 +121,54 @@ function ConnectRobot({ robotId }: ConnectRobotProps) {
       </Flex>
 
       <Box textAlign="center" color="gray.600">
-        <Text>방향키를 사용하여 로봇을 제어하세요</Text>
+        <Text mb={4}>방향키를 사용하여 로봇을 제어하세요</Text>
+        
+        <Grid templateColumns="repeat(3, 1fr)" gap={2} w="200px">
+          <GridItem colStart={2}>
+            <Button
+              aria-label="위로 이동"
+              size="lg"
+              onClick={() => handleDirectionClick('up')}
+              disabled={!isConnected}
+              colorScheme="blue"
+            >
+              <Icon as={IoArrowUp} boxSize={6} />
+            </Button>
+          </GridItem>
+          <GridItem colStart={1} rowStart={2}>
+            <Button
+              aria-label="왼쪽으로 이동"
+              size="lg"
+              onClick={() => handleDirectionClick('left')}
+              disabled={!isConnected}
+              colorScheme="blue"
+            >
+              <Icon as={IoArrowBack} boxSize={6} />
+            </Button>
+          </GridItem>
+          <GridItem colStart={2} rowStart={2}>
+            <Button
+              aria-label="아래로 이동"
+              size="lg"
+              onClick={() => handleDirectionClick('down')}
+              disabled={!isConnected}
+              colorScheme="blue"
+            >
+              <Icon as={IoArrowDown} boxSize={6} />
+            </Button>
+          </GridItem>
+          <GridItem colStart={3} rowStart={2}>
+            <Button
+              aria-label="오른쪽으로 이동"
+              size="lg"
+              onClick={() => handleDirectionClick('right')}
+              disabled={!isConnected}
+              colorScheme="blue"
+            >
+              <Icon as={IoArrowForward} boxSize={6} />
+            </Button>
+          </GridItem>
+        </Grid>
       </Box>
     </Box>
   )
