@@ -91,7 +91,7 @@ const drawGrid = (ctx: CanvasRenderingContext2D) => {
   ctx.beginPath()
   ctx.moveTo(0, CANVAS_SIZE - viewportOffset.y)
   ctx.lineTo(CANVAS_SIZE, CANVAS_SIZE - viewportOffset.y)
-  ctx.stroke()
+  ctx .stroke()
 
   // Y축
   ctx.beginPath()
