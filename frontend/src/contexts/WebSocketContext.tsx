@@ -116,7 +116,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     isConnectingRef.current = true
     console.log("WebSocket 연결 시도...")
 
-    const websocket = new WebSocket(`wss://api.acslgcs.com/ws/user?user_id=${user.id}`)
+    const websocket = new WebSocket(`ws://localhost:8000/ws/user?user_id=${user.id}`)
 
     websocket.onopen = () => {
       console.log("WebSocket 연결됨")
