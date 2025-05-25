@@ -19,8 +19,7 @@ export class WebRTCConnection {
   private frameCount: number = 0
   private lastConnectionCheckTime: number | null = null
   private connectionCheckInterval: NodeJS.Timeout | null = null
-  private isRemoteDescriptionSet: boolean = false
-  private pendingCandidates: any[] = []
+  private pendingCandidates: RTCIceCandidate[] = []
   private config: WebRTCConnectionConfig
 
   constructor(config: WebRTCConnectionConfig) {
@@ -92,15 +91,13 @@ export class WebRTCConnection {
     }
   }
 
-  public async startConnection(): Promise<void> {
+  public async startConnection(): Promise<RTCSessionDescriptionInit> {
     try {
-      console.log("WebRTC 연결 시작...", { userId: this.config.userId, robotId: this.config.robotId })
       this.peerConnection = this.createPeerConnection()
 
       this.peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
-          console.log("ICE Candidate 생성:", event.candidate)
-          // ICE candidate는 외부에서 처리
+          this.pendingCandidates.push(event.candidate)
         }
       }
 
@@ -108,7 +105,6 @@ export class WebRTCConnection {
 
       this.dataChannel = createControlChannel(this.peerConnection)
       this.dataChannel.onopen = () => {
-        console.log('remote_control_data_channel opened')
         this.config.onConnectionStateChange?.(true)
       }
 
@@ -128,7 +124,6 @@ export class WebRTCConnection {
         if (channel.label === 'position_data_channel' && 
             this.config.canvasRef.current && 
             this.config.positionElementRef.current) {
-          console.log('Position channel received')
           setupPositionChannel(channel, {
             canvas: this.config.canvasRef.current,
             positionElement: this.config.positionElementRef.current
@@ -142,9 +137,50 @@ export class WebRTCConnection {
       await this.peerConnection.setLocalDescription(offer)
 
       this.connectionCheckInterval = setInterval(() => this.connectionCheck(), 5000)
+
+      return offer
     } catch (error) {
-      console.error("Failed to start WebRTC connection:", error)
       this.config.onError?.(error instanceof Error ? error : new Error(String(error)))
+      throw error
+    }
+  }
+
+  public async setRemoteDescription(description: RTCSessionDescription): Promise<void> {
+    if (!this.peerConnection) {
+      throw new Error("PeerConnection이 초기화되지 않았습니다.")
+    }
+
+    try {
+      await this.peerConnection.setRemoteDescription(description)
+      
+      // 캐시된 ICE Candidate들을 적용
+      if (this.pendingCandidates.length > 0) {
+        for (const candidate of this.pendingCandidates) {
+          try {
+            await this.peerConnection.addIceCandidate(candidate)
+          } catch (error) {
+            console.error("ICE Candidate 적용 실패:", error)
+          }
+        }
+        this.pendingCandidates = []
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  public async addIceCandidate(candidate: RTCIceCandidate): Promise<void> {
+    if (!this.peerConnection) {
+      throw new Error("PeerConnection이 초기화되지 않았습니다.")
+    }
+
+    try {
+      if (this.peerConnection.remoteDescription) {
+        await this.peerConnection.addIceCandidate(candidate)
+      } else {
+        this.pendingCandidates.push(candidate)
+      }
+    } catch (error) {
       throw error
     }
   }

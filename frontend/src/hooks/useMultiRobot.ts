@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { useWebSocket } from "@/contexts/WebSocketContext"
 import { WebRTCConnection, WebRTCConnectionConfig } from "@/rtc/WebRTCConnection"
 import useCustomToast from "@/hooks/useCustomToast"
@@ -46,26 +46,24 @@ export function useMultiRobot(config: UseMultiRobotConfig) {
     showErrorToast(`로봇 ${robotId} 연결 오류: ${error.message}`)
   }
 
-  const createConnection = (robotId: string) => {
-    const connectionConfig: WebRTCConnectionConfig = {
-      userId: config.userId,
-      robotId,
-      videoRef: config.videoRefs[robotId],
-      canvasRef: config.canvasRefs[robotId],
-      positionElementRef: config.positionElementRefs[robotId],
-      onConnectionStateChange: (isConnected) => handleConnectionStateChange(robotId, isConnected),
-      onFpsChange: (fps) => handleFpsChange(robotId, fps),
-      onError: (error) => handleError(robotId, error)
-    }
-
-    const connection = new WebRTCConnection(connectionConfig)
-    return connection
-  }
-
   const connectToRobot = async (robotId: string) => {
     try {
-      const connection = createConnection(robotId)
-      await connection.startConnection()
+      const connectionConfig: WebRTCConnectionConfig = {
+        userId: config.userId,
+        robotId,
+        videoRef: config.videoRefs[robotId],
+        canvasRef: config.canvasRefs[robotId],
+        positionElementRef: config.positionElementRefs[robotId],
+        onConnectionStateChange: (isConnected) => handleConnectionStateChange(robotId, isConnected),
+        onFpsChange: (fps) => handleFpsChange(robotId, fps),
+        onError: (error) => handleError(robotId, error)
+      }
+
+      const connection = new WebRTCConnection(connectionConfig)
+      const offer = await connection.startConnection()
+      if (!offer.sdp) {
+        throw new Error("SDP offer 생성 실패")
+      }
 
       setConnections(prev => ({
         ...prev,
@@ -77,34 +75,13 @@ export function useMultiRobot(config: UseMultiRobotConfig) {
         }
       }))
 
-      const peerConnection = connection.getPeerConnection()
-      if (peerConnection) {
-        peerConnection.onicecandidate = (event) => {
-          if (event.candidate) {
-            sendMessage({
-              type: "send_ice_candidate",
-              user_id: config.userId,
-              robot_id: robotId,
-              ice_candidate: {
-                candidate: event.candidate.candidate,
-                sdpMid: event.candidate.sdpMid,
-                sdpMLineIndex: event.candidate.sdpMLineIndex
-              }
-            })
-          }
-        }
-
-        // SDP offer를 서버로 전송
-        const offer = peerConnection.localDescription
-        if (offer) {
-          sendMessage({
-            type: "send_sdp_offer",
-            user_id: config.userId,
-            robot_id: robotId,
-            sdp_offer: offer.sdp
-          })
-        }
-      }
+      // SDP offer를 서버로 전송
+      sendMessage({
+        type: "send_sdp_offer",
+        user_id: config.userId,
+        robot_id: robotId,
+        sdp_offer: offer.sdp
+      })
     } catch (error) {
       showErrorToast(`로봇 ${robotId} 연결 실패: ${error instanceof Error ? error.message : String(error)}`)
     }
@@ -138,13 +115,10 @@ export function useMultiRobot(config: UseMultiRobotConfig) {
       const connection = connections[robot_id]?.connection
       if (!connection) return
 
-      const peerConnection = connection.getPeerConnection()
-      if (!peerConnection) return
-
       switch (type) {
         case "receive_sdp_answer":
           if (sdp_answer) {
-            peerConnection.setRemoteDescription(new RTCSessionDescription({
+            connection.setRemoteDescription(new RTCSessionDescription({
               type: 'answer',
               sdp: sdp_answer
             }))
@@ -153,7 +127,7 @@ export function useMultiRobot(config: UseMultiRobotConfig) {
 
         case "receive_ice_candidate":
           if (ice_candidate) {
-            peerConnection.addIceCandidate(new RTCIceCandidate(ice_candidate))
+            connection.addIceCandidate(new RTCIceCandidate(ice_candidate))
           }
           break
       }
