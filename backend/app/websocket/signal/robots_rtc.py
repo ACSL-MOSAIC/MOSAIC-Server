@@ -6,12 +6,12 @@ from app.schemas import RobotUpdate
 from app.api.deps import get_db
 import uuid
 import logging
-from app.api.routes.ws.dto.robot_rtc_dto import (
+from app.websocket.signal.dto.robot_rtc_dto import (
     WebSocketBaseMsg, WebSocketErrorMsg, SendSdpAnswerMsg, ReceiveSdpAnswerMsg,
     SendIceCandidateMsg, ReceiveIceCandidateMsg
 )
 from pydantic import ValidationError
-from app.api.routes.ws import manager
+from app.websocket.signal import manager
 
 logger = logging.getLogger(__name__)
 

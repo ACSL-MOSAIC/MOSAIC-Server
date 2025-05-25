@@ -6,8 +6,8 @@ import logging
 
 from app.api.main import api_router
 from app.core.config import settings
-from app.api.routes.ws.user_rtc import user_rtc_endpoint
-from app.api.routes.ws.robots_rtc import robot_rtc_endpoint
+from app.websocket.signal.user_rtc import user_rtc_endpoint
+from app.websocket.signal.robots_rtc import robot_rtc_endpoint
 
 # 로깅 설정
 logging.basicConfig(

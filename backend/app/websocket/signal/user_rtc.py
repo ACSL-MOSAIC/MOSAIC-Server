@@ -1,14 +1,14 @@
 from app.schemas.robot import RobotStatus, RobotUpdate
 from fastapi import WebSocket, WebSocketDisconnect, Depends
 import logging
-from app.api.routes.ws.dto.user_rtc_dto import (
+from app.websocket.signal.dto.user_rtc_dto import (
     WebSocketBaseMsg, WebSocketErrorMsg, GetRobotListMsg, RobotListMsg, RobotInfo, SendSdpOfferMsg, ReceiveSdpOfferMsg, SendIceCandidateMsg, ReceiveIceCandidateMsg
 )
 from app.repositories.robot_repository import RobotRepository
 from sqlmodel import Session
 from app.api.deps import get_db
 from pydantic import ValidationError
-from app.api.routes.ws import manager
+from app.websocket.signal import manager
 
 logger = logging.getLogger(__name__)
 
