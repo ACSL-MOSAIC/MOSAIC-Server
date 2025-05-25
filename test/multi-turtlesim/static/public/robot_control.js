@@ -132,6 +132,8 @@ class RobotController {
         let dataChannel = event.channel;
         if (dataChannel.label === 'position_data_channel') {
             this.setPositionDataChannel(dataChannel);
+        } else if (dataChannel.label === 'go2_low_state_data_channel') {
+            this.setGo2LowStateDataChannel(dataChannel);
         } else {
             console.log(dataChannel.label)
         }
@@ -170,6 +172,7 @@ class RobotController {
 
     peerOnStateChange = async (e) => {
         const pc = e.currentTarget;
+        console.log('connection state: ', pc.connectionState);
 
         if (pc.connectionState === 'connected') {
             this.isConnected = true;
@@ -177,6 +180,8 @@ class RobotController {
             this.peerDisconnectButton.disabled = false;
 
             this.connectingCheckInterval = setInterval(this.connectionCheck, 5000);
+        } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+            await this.connect();
         }
     }
 
@@ -204,6 +209,33 @@ class RobotController {
             } catch (e) {
                 console.log(e);
             }
+        }
+    }
+
+    setGo2LowStateDataChannel = (channel) => {
+        channel.onopen = () => {
+            console.log('go2_low_state_data_channel opened');
+        };
+
+        channel.onmessage = (event) => {
+            const message = event.data;
+
+            try {
+                const jsonData = JSON.parse(message);
+                const imuState = jsonData.imu_state;
+                const q = imuState.quaternion;
+                this.updateQ(q[0], q[1], q[2], q[3]);
+            } catch (e) {
+                console.log(e);
+            }
+        }
+
+        channel.onerror = (event) => {
+            console.error('Error in go2_low_state_data_channel:', event);
+        }
+
+        channel.onclose = () => {
+            console.log('go2_low_state_data_channel closed');
         }
     }
 
@@ -316,5 +348,6 @@ class RobotController {
     removeFromBroadcastList = () => {}
     updatePosition = (x, y, theta) => {}
     deletePosition = () => {}
+    updateQ = (w, x, y, z) => {}
     broadcastControlData = (direction) => {}
 }
