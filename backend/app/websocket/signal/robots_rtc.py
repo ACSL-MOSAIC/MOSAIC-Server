@@ -15,7 +15,7 @@ from app.websocket.signal import manager
 
 logger = logging.getLogger(__name__)
 
-async def handle_send_sdp_answer(websocket: WebSocket, data: dict):
+async def handle_send_sdp_answer(websocket: WebSocket, data: dict, repo: RobotRepository):
     try:
         msg = SendSdpAnswerMsg(**data)
     except ValidationError as e:
@@ -39,7 +39,7 @@ async def handle_send_sdp_answer(websocket: WebSocket, data: dict):
     )
     await manager.send_to_user(receive_msg.model_dump(), msg.user_id)
 
-async def handle_send_ice_candidate(websocket: WebSocket, data: dict):
+async def handle_send_ice_candidate(websocket: WebSocket, data: dict, repo: RobotRepository):
     try:
         msg = SendIceCandidateMsg(**data)
     except ValidationError as e:
@@ -64,9 +64,22 @@ async def handle_send_ice_candidate(websocket: WebSocket, data: dict):
     )
     await manager.send_to_user(receive_msg.model_dump(), msg.user_id)
 
+async def handle_disconnected_robot_rtc(websocket: WebSocket, data: dict, repo: RobotRepository):
+    logger.info(f"Handling disconnected_robot_rtc request: {data}")
+    try:
+        logger.info(f"Updating robot {data['robot_id']} status to {RobotStatus.READY_TO_CONNECT}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        repo.update(data["robot_id"], RobotUpdate(status=RobotStatus.READY_TO_CONNECT))
+        
+    except ValidationError as e:
+        logger.error(f"Invalid disconnected_robot_rtc message: {str(e)}")
+        error = WebSocketErrorMsg(type="error", error="Invalid disconnected_robot_rtc message", detail=str(e))
+        await websocket.send_json(error.model_dump())
+
 handlers = {
     "send_sdp_answer": handle_send_sdp_answer,
     "send_ice_candidate": handle_send_ice_candidate,
+
+    "disconnected_robot_rtc": handle_disconnected_robot_rtc,
 }
 
 # 로봇 웹소켓 엔드포인트 (query_params로 robot_id 전달 받음)
@@ -87,7 +100,7 @@ async def robot_rtc_endpoint(websocket: WebSocket, session: Session = Depends(ge
             logger.info(f"Received message from robot {robot_id}: {data}")
             handler = handlers.get(msg_type)
             if handler:
-                await handler(websocket, data)
+                await handler(websocket, data, repo)
             else:
                 error = WebSocketErrorMsg(type="error", error=f"Unknown message type: {msg_type}")
                 await websocket.send_json(error.model_dump())

@@ -31,3 +31,6 @@ class ReceiveIceCandidateMsg(WebSocketBaseMsg):
     robot_id: str
     ice_candidate: dict
 
+class DisconnectedRobotRtcMsg(WebSocketBaseMsg):
+    user_id: str
+    robot_id: str

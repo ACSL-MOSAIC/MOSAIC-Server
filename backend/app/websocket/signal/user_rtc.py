@@ -34,6 +34,7 @@ async def handle_get_robot_list(websocket: WebSocket, data: dict, repo: RobotRep
         error = WebSocketErrorMsg(type="error", error="Exception during robot list fetch", detail=str(e))
         await websocket.send_json(error.model_dump())
 
+
 async def handle_send_sdp_offer(websocket: WebSocket, data: dict, repo: RobotRepository):
     logger.info(f"Handling send_sdp_offer request: {data}")
     try:
@@ -73,6 +74,7 @@ async def handle_send_sdp_offer(websocket: WebSocket, data: dict, repo: RobotRep
     logger.info(f"Forwarding SDP offer to robot: {receive_msg.model_dump()}")
     await manager.send_to_robot(receive_msg.model_dump(), msg.robot_id)
 
+
 async def handle_send_ice_candidate(websocket: WebSocket, data: dict, repo: RobotRepository):
     logger.info(f"Handling send_ice_candidate request: {data}")
     try:
@@ -107,6 +109,7 @@ async def handle_connected_robot_rtc(websocket: WebSocket, data: dict, repo: Rob
         logger.error(f"Invalid connected_robot_rtc message: {str(e)}")
         error = WebSocketErrorMsg(type="error", error="Invalid connected_robot_rtc message", detail=str(e))
         await websocket.send_json(error.model_dump())
+
 
 async def handle_disconnected_robot_rtc(websocket: WebSocket, data: dict, repo: RobotRepository):
     logger.info(f"Handling disconnected_robot_rtc request: {data}")
