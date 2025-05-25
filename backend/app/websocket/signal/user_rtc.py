@@ -21,12 +21,14 @@ async def handle_get_robot_list(websocket: WebSocket, data: dict, repo: RobotRep
         error = WebSocketErrorMsg(type="error", error="Invalid get_robot_list message", detail=str(e))
         await websocket.send_json(error.model_dump())
         return
+    
     try:
         robots = repo.get_by_owner(msg.user_id)
         robot_infos = [RobotInfo(robot_id=str(r.id), state=r.status) for r in robots]
         response = RobotListMsg(type="robot_list", robots=robot_infos)
         logger.info(f"Sending robot list response: {response.model_dump()}")
         await websocket.send_json(response.model_dump())
+
     except Exception as e:
         logger.error(f"Exception during robot list fetch: {str(e)}")
         error = WebSocketErrorMsg(type="error", error="Exception during robot list fetch", detail=str(e))
@@ -97,11 +99,37 @@ async def handle_send_ice_candidate(websocket: WebSocket, data: dict, repo: Robo
     logger.info(f"Forwarding ICE candidate to robot: {receive_msg.model_dump()}")
     await manager.send_to_robot(receive_msg.model_dump(), msg.robot_id)
 
+async def handle_connected_robot_rtc(websocket: WebSocket, data: dict, repo: RobotRepository):
+    logger.info(f"Handling connected_robot_rtc request: {data}")
+    try:
+        repo.update(data["robot_id"], RobotUpdate(status=RobotStatus.CONNECTED))
+    except ValidationError as e:
+        logger.error(f"Invalid connected_robot_rtc message: {str(e)}")
+        error = WebSocketErrorMsg(type="error", error="Invalid connected_robot_rtc message", detail=str(e))
+        await websocket.send_json(error.model_dump())
+
+async def handle_disconnected_robot_rtc(websocket: WebSocket, data: dict, repo: RobotRepository):
+    logger.info(f"Handling disconnected_robot_rtc request: {data}")
+    try:
+        robot_ws = manager.get_robot_connection(data["robot_id"])
+        if robot_ws is not None:
+            repo.update(data["robot_id"], RobotUpdate(status=RobotStatus.READY_TO_CONNECT))
+        else:
+            repo.update(data["robot_id"], RobotUpdate(status=RobotStatus.DISCONNECTED))
+
+    except ValidationError as e:
+        logger.error(f"Invalid disconnected_robot_rtc message: {str(e)}")
+        error = WebSocketErrorMsg(type="error", error="Invalid disconnected_robot_rtc message", detail=str(e))
+        await websocket.send_json(error.model_dump())
+
+
 handlers = {
     "get_robot_list": handle_get_robot_list,
     "send_sdp_offer": handle_send_sdp_offer,
     "send_ice_candidate": handle_send_ice_candidate,
-    # 추후 메시지 타입별 핸들러 추가
+
+    "connected_robot_rtc": handle_connected_robot_rtc,
+    "disconnected_robot_rtc": handle_disconnected_robot_rtc,
 }
 
 # 유저 웹소켓 엔드포인트 (query_params로 user_id 전달 받음)
@@ -119,7 +147,7 @@ async def user_rtc_endpoint(websocket: WebSocket, session: Session = Depends(get
     try:
         while True:
             data = await websocket.receive_json()
-            logger.info(f"Received WebSocket message from user {user_id}: {data}")
+            # logger.info(f"Received WebSocket message from user {user_id}: {data}")
             msg_type = data.get("type")
             handler = handlers.get(msg_type)
             if handler:

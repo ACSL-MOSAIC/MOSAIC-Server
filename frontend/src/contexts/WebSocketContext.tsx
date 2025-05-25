@@ -81,6 +81,17 @@ interface ReceiveIceCandidateMessage extends WebSocketBaseMessage {
   }
 }
 
+// WebRTC 연결 상태 메시지 타입
+interface ConnectedRobotRtcMessage extends WebSocketBaseMessage {
+  type: "connected_robot_rtc"
+  robot_id: string
+}
+
+interface DisconnectedRobotRtcMessage extends WebSocketBaseMessage {
+  type: "disconnected_robot_rtc"
+  robot_id: string
+}
+
 // 모든 메시지 타입을 유니온 타입으로 정의
 type WebSocketMessage =
   | GetRobotListMessage
@@ -92,6 +103,8 @@ type WebSocketMessage =
   | SendIceCandidateMessage
   | ReceiveIceCandidateMessage
   | WebSocketErrorMessage
+  | ConnectedRobotRtcMessage
+  | DisconnectedRobotRtcMessage
 
 interface WebSocketContextType {
   robots: RobotInfo[]

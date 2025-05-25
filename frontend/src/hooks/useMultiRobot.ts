@@ -54,7 +54,22 @@ export function useMultiRobot(config: UseMultiRobotConfig) {
         videoRef: config.videoRefs[robotId],
         canvasRef: config.canvasRefs[robotId],
         positionElementRef: config.positionElementRefs[robotId],
-        onConnectionStateChange: (isConnected) => handleConnectionStateChange(robotId, isConnected),
+        onConnectionStateChange: (isConnected) => {
+          handleConnectionStateChange(robotId, isConnected)
+          if (isConnected) {
+            sendMessage({
+              type: "connected_robot_rtc",
+              user_id: config.userId,
+              robot_id: robotId
+            })
+          } else {
+            sendMessage({
+              type: "disconnected_robot_rtc",
+              user_id: config.userId,
+              robot_id: robotId
+            })
+          }
+        },
         onFpsChange: (fps) => handleFpsChange(robotId, fps),
         onError: (error) => handleError(robotId, error)
       }
