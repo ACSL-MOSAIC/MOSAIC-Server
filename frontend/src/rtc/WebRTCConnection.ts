@@ -95,16 +95,6 @@ export class WebRTCConnection {
     try {
       this.peerConnection = this.createPeerConnection()
 
-      this.peerConnection.onconnectionstatechange = () => {
-        const state = this.peerConnection?.connectionState
-        
-        // 실제 연결이 수립된 경우에만 true 전달
-        if (state === 'connected') {
-          this.config.onConnectionStateChange?.(true)
-        } else if (state === 'disconnected' || state === 'failed' || state === 'closed') {
-          this.config.onConnectionStateChange?.(false)
-        }
-      }
 
       this.peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
