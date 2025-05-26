@@ -122,19 +122,22 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const refreshIntervalRef = useRef<NodeJS.Timeout>()
   const isConnectingRef = useRef(false)
   const messageHandlersRef = useRef<Map<string, ((data: any) => void)[]>>(new Map())
-
+  
   const connectWebSocket = () => {
     if (!user?.id || isConnectingRef.current) return
 
     isConnectingRef.current = true
     console.log("WebSocket 연결 시도...")
 
-    const environment = import.meta.env.ENVIRONMENT
+    // const environment = import.meta.env.ENVIRONMENT
+    const environment = import.meta.env.VITE_ENVIRONMENT
 
     const productionWsURL = 'wss://api.acslgcs.com'
     const localWsURL = "ws://localhost:8000"
     const wsURL = environment === "production" ? productionWsURL : localWsURL
 
+    console.log("environment", environment)
+    console.log("wsURL", wsURL)
 
     const websocket = new WebSocket(`${wsURL}/ws/user?user_id=${user.id}`)
 
