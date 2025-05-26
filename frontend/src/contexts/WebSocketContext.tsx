@@ -129,10 +129,14 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     isConnectingRef.current = true
     console.log("WebSocket 연결 시도...")
 
-    const productionWsURL = 'wss://api.acslgcs.com'
-    const devWsURL = "ws://localhost:8000"
+    const environment = import.meta.env.ENVIRONMENT
 
-    const websocket = new WebSocket(`${devWsURL}/ws/user?user_id=${user.id}`)
+    const productionWsURL = 'wss://api.acslgcs.com'
+    const localWsURL = "ws://localhost:8000"
+    const wsURL = environment === "production" ? productionWsURL : localWsURL
+
+
+    const websocket = new WebSocket(`${wsURL}/ws/user?user_id=${user.id}`)
 
     websocket.onopen = () => {
       console.log("WebSocket 연결됨")
