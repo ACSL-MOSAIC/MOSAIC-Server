@@ -8,6 +8,7 @@ class WebSocketErrorMsg(WebSocketBaseMsg):
     error: str
     detail: str | None = None
 
+# Signaling Messages
 class GetRobotListMsg(WebSocketBaseMsg):
     user_id: str
 
@@ -45,3 +46,8 @@ class ConnectedRobotRtcMsg(WebSocketBaseMsg):
 class DisconnectedRobotRtcMsg(WebSocketBaseMsg):
     user_id: str
     robot_id: str
+
+
+# Login Flow Message
+class ForceLogoutMsg(WebSocketBaseMsg):
+    message: str

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react"
 import useAuth from "@/hooks/useAuth"
+import { useNavigate } from "@tanstack/react-router"
 
 // 로봇 정보 타입
 interface RobotInfo {
@@ -92,6 +93,11 @@ interface DisconnectedRobotRtcMessage extends WebSocketBaseMessage {
   robot_id: string
 }
 
+interface ForceLogoutMessage extends WebSocketBaseMessage {
+  type: "force_logout"
+  message: string
+}
+
 // 모든 메시지 타입을 유니온 타입으로 정의
 type WebSocketMessage =
   | GetRobotListMessage
@@ -105,17 +111,20 @@ type WebSocketMessage =
   | WebSocketErrorMessage
   | ConnectedRobotRtcMessage
   | DisconnectedRobotRtcMessage
+  | ForceLogoutMessage
 
 interface WebSocketContextType {
   robots: RobotInfo[]
+  ws: WebSocket | null
   sendMessage: (message: WebSocketMessage) => void
-  onMessage: <T extends WebSocketMessage>(type: T["type"], callback: (data: T) => void) => void
+  onMessage: <T extends WebSocketMessage>(type: T["type"], callback: (data: T) => void) => () => void
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null)
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [robots, setRobots] = useState<RobotInfo[]>([])
   const [ws, setWs] = useState<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
@@ -124,7 +133,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const messageHandlersRef = useRef<Map<string, ((data: any) => void)[]>>(new Map())
   
   const connectWebSocket = () => {
-    if (!user?.id || isConnectingRef.current) return
+    if (isConnectingRef.current || !user?.id) return
 
     isConnectingRef.current = true
     console.log("WebSocket 연결 시도...")
@@ -149,21 +158,39 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       sendMessage({
         type: "get_robot_list"
       })
+
+      // 30초마다 ping 메시지 전송
+      refreshIntervalRef.current = setInterval(() => {
+        if (websocket.readyState === WebSocket.OPEN) {
+          websocket.send(JSON.stringify({ type: "ping" }))
+        }
+      }, 30000)
     }
 
     websocket.onmessage = (event) => {
-      console.log("WebSocket 메시지 수신:", event.data)
-      const data = JSON.parse(event.data) as WebSocketMessage
-      
-      // 로봇 리스트 처리
-      if (data.type === "robot_list") {
-        setRobots(data.robots)
-      }
+      try {
+        const data = JSON.parse(event.data)
+        console.log("WebSocket 메시지 수신:", data)
 
-      // 등록된 메시지 핸들러 호출
-      const handlers = messageHandlersRef.current.get(data.type)
-      if (handlers) {
-        handlers.forEach(handler => handler(data))
+        if (data.type === "force_logout") {
+          console.log("강제 로그아웃 메시지 수신:", data.message)
+          logout()
+          navigate({ to: "/login" })
+          return
+        }
+
+        // 로봇 리스트 처리
+        if (data.type === "robot_list") {
+          setRobots(data.robots)
+        }
+
+        // 등록된 메시지 핸들러 호출
+        const handlers = messageHandlersRef.current.get(data.type)
+        if (handlers) {
+          handlers.forEach(handler => handler(data))
+        }
+      } catch (error) {
+        console.error("WebSocket 메시지 처리 중 오류:", error)
       }
     }
 
@@ -258,7 +285,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   }, [ws?.readyState])
 
   return (
-    <WebSocketContext.Provider value={{ robots, sendMessage, onMessage }}>
+    <WebSocketContext.Provider value={{ robots, ws, sendMessage, onMessage }}>
       {children}
     </WebSocketContext.Provider>
   )

@@ -17,14 +17,17 @@ from app.utils import (
     send_email,
     verify_password_reset_token,
 )
+from app.websocket.signal import manager
+from app.websocket.signal.dto.user_rtc_dto import ForceLogoutMsg
+from app.api.dto.login_dto import LoginResponse, DisconnectRequest
 
 router = APIRouter(tags=["login"])
 
 
-@router.post("/login/access-token")
+@router.post("/login/access-token", response_model=LoginResponse)
 def login_access_token(
     session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
-) -> Token:
+) -> LoginResponse:
     """
     OAuth2 compatible token login, get an access token for future requests
     """
@@ -35,12 +38,47 @@ def login_access_token(
         raise HTTPException(status_code=400, detail="Incorrect email or password")
     elif not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
+
+    # Check for existing WebSocket connection
+    existing_ws = manager.get_user_connection(str(user.id))
+    if existing_ws:
+        return LoginResponse(
+            access_token="",
+            existing_connection=True,
+            message="Another session is already active. Do you want to disconnect it?",
+            user_id=str(user.id)
+        )
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    return Token(
+    return LoginResponse(
         access_token=security.create_access_token(
             user.id, expires_delta=access_token_expires
-        )
+        ),
+        existing_connection=False,
+        user_id=str(user.id)
     )
+
+
+@router.post("/disconnect")
+async def disconnect_existing_session(request: DisconnectRequest) -> Message:
+    """
+    Disconnect existing WebSocket connection and force logout
+    """
+    existing_ws = manager.get_user_connection(request.user_id)
+    if not existing_ws:
+        raise HTTPException(status_code=404, detail="No active session found")
+    
+    # Send force logout message to existing browser
+    force_logout_msg = ForceLogoutMsg(
+        type="force_logout",
+        message="You have been logged out because you logged in from another browser."
+    )
+    await manager.send_to_user(force_logout_msg.model_dump(), request.user_id)
+    
+    # Unregister WebSocket connection
+    manager.disconnect_user(request.user_id)
+    
+    return Message(message="Session disconnected successfully")
 
 
 @router.post("/login/test-token", response_model=UserPublic)

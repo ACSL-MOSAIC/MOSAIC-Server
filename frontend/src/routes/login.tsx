@@ -1,20 +1,25 @@
-import { Container, Image, Input, Text } from "@chakra-ui/react"
+import {
+  Container,
+  Image,
+  Input,
+  Text,
+  Button,
+} from "@chakra-ui/react"
 import {
   Link as RouterLink,
   createFileRoute,
   redirect,
 } from "@tanstack/react-router"
-import { type SubmitHandler, useForm } from "react-hook-form"
 import { FiLock, FiMail } from "react-icons/fi"
+import { useState } from "react"
 
 import type { Body_users_login_access_token as AccessToken } from "@/client"
-import { Button } from "@/components/ui/button"
 import { Field } from "@/components/ui/field"
 import { InputGroup } from "@/components/ui/input-group"
 import { PasswordInput } from "@/components/ui/password-input"
 import useAuth, { isLoggedIn } from "@/hooks/useAuth"
 import Logo from "/assets/images/fastapi-logo.svg"
-import { emailPattern, passwordRules } from "../utils"
+import { emailPattern } from "../utils"
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -28,88 +33,120 @@ export const Route = createFileRoute("/login")({
 })
 
 function Login() {
-  const { loginMutation, error, resetError } = useAuth()
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<AccessToken>({
-    mode: "onBlur",
-    criteriaMode: "all",
-    defaultValues: {
-      username: "",
-      password: "",
-    },
+  const { loginMutation, disconnectMutation, error, resetError } = useAuth()
+  const [formData, setFormData] = useState<AccessToken>({
+    username: "",
+    password: "",
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errors, setErrors] = useState<{ username?: string; password?: string }>({})
 
-  const onSubmit: SubmitHandler<AccessToken> = async (data) => {
-    if (isSubmitting) return
+  const validateForm = () => {
+    const newErrors: { username?: string; password?: string } = {}
+    
+    if (!formData.username) {
+      newErrors.username = "Username is required"
+    } else if (!emailPattern.value.test(formData.username)) {
+      newErrors.username = emailPattern.message
+    }
+    
+    if (!formData.password) {
+      newErrors.password = "Password is required"
+    } else if (formData.password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters"
+    }
 
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!validateForm() || isSubmitting) return
+
+    setIsSubmitting(true)
     resetError()
 
     try {
-      await loginMutation.mutateAsync(data)
-    } catch {
-      // error is handled by useAuth hook
+      const response = await loginMutation.mutateAsync(formData)
+      if (response.existing_connection && response.user_id) {
+        if (window.confirm("이미 다른 기기에서 로그인되어 있습니다. 기존 연결을 해제하고 로그인하시겠습니까?")) {
+          await disconnectMutation.mutateAsync(response.user_id)
+          await loginMutation.mutateAsync(formData)
+        }
+      }
+    } catch (error) {
+      console.error("Login error:", error)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
   return (
-    <>
-      <Container
-        as="form"
-        onSubmit={handleSubmit(onSubmit)}
-        h="100vh"
-        maxW="sm"
-        alignItems="stretch"
-        justifyContent="center"
-        gap={4}
-        centerContent
+    <Container
+      as="form"
+      onSubmit={handleSubmit}
+      h="100vh"
+      maxW="sm"
+      alignItems="stretch"
+      justifyContent="center"
+      gap={4}
+      centerContent
+    >
+      <Image
+        src={Logo}
+        alt="FastAPI logo"
+        height="auto"
+        maxW="2xs"
+        alignSelf="center"
+        mb={4}
+      />
+      <Field
+        invalid={!!errors.username}
+        errorText={errors.username || !!error}
       >
-        <Image
-          src={Logo}
-          alt="FastAPI logo"
-          height="auto"
-          maxW="2xs"
-          alignSelf="center"
-          mb={4}
-        />
-        <Field
-          invalid={!!errors.username}
-          errorText={errors.username?.message || !!error}
-        >
-          <InputGroup w="100%" startElement={<FiMail />}>
-            <Input
-              id="username"
-              {...register("username", {
-                required: "Username is required",
-                pattern: emailPattern,
-              })}
-              placeholder="Email"
-              type="email"
-            />
-          </InputGroup>
-        </Field>
-        <PasswordInput
-          type="password"
-          startElement={<FiLock />}
-          {...register("password", passwordRules())}
-          placeholder="Password"
-          errors={errors}
-        />
-        <RouterLink to="/recover-password" className="main-link">
-          Forgot Password?
+        <InputGroup w="100%" startElement={<FiMail />}>
+          <Input
+            id="username"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            placeholder="Email"
+            type="email"
+          />
+        </InputGroup>
+      </Field>
+      <PasswordInput
+        type="password"
+        name="password"
+        value={formData.password}
+        onChange={handleChange}
+        placeholder="Password"
+        errors={errors}
+        startElement={<FiLock />}
+      />
+      <RouterLink to="/recover-password" className="main-link">
+        Forgot Password?
+      </RouterLink>
+      <Button variant="solid" type="submit" loading={isSubmitting} size="md">
+        Log In
+      </Button>
+      <Text>
+        Don't have an account?{" "}
+        <RouterLink to="/signup" className="main-link">
+          Sign Up
         </RouterLink>
-        <Button variant="solid" type="submit" loading={isSubmitting} size="md">
-          Log In
-        </Button>
-        <Text>
-          Don't have an account?{" "}
-          <RouterLink to="/signup" className="main-link">
-            Sign Up
-          </RouterLink>
-        </Text>
-      </Container>
-    </>
+      </Text>
+    </Container>
   )
 }
+
