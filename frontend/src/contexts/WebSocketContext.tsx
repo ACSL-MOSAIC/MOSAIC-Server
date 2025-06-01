@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react"
 import useAuth from "@/hooks/useAuth"
-import { useNavigate } from "@tanstack/react-router"
 
 // 로봇 정보 타입
 interface RobotInfo {
@@ -118,13 +117,13 @@ interface WebSocketContextType {
   ws: WebSocket | null
   sendMessage: (message: WebSocketMessage) => void
   onMessage: <T extends WebSocketMessage>(type: T["type"], callback: (data: T) => void) => () => void
+  disconnect: () => void
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null)
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
+  const { user, logout: authLogout } = useAuth()
   const [robots, setRobots] = useState<RobotInfo[]>([])
   const [ws, setWs] = useState<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
@@ -132,15 +131,19 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const isConnectingRef = useRef(false)
   const messageHandlersRef = useRef<Map<string, ((data: any) => void)[]>>(new Map())
   
+  const logout = () => {
+    console.log("로그아웃 처리 중...")
+    disconnect()
+    authLogout()
+  }
+
   const connectWebSocket = () => {
     if (isConnectingRef.current || !user?.id) return
 
     isConnectingRef.current = true
     console.log("WebSocket 연결 시도...")
 
-    // const environment = import.meta.env.ENVIRONMENT
     const environment = import.meta.env.VITE_ENVIRONMENT
-
     const productionWsURL = 'wss://api.acslgcs.com'
     const localWsURL = "ws://localhost:8000"
     const wsURL = environment === "production" ? productionWsURL : localWsURL
@@ -175,7 +178,6 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         if (data.type === "force_logout") {
           console.log("강제 로그아웃 메시지 수신:", data.message)
           logout()
-          navigate({ to: "/login" })
           return
         }
 
@@ -245,9 +247,17 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const disconnect = () => {
+    if (ws) {
+      ws.close(1000, "User logged out")
+    }
+  }
+
   useEffect(() => {
     if (user?.id) {
       connectWebSocket()
+    } else {
+      disconnect()
     }
 
     return () => {
@@ -285,7 +295,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   }, [ws?.readyState])
 
   return (
-    <WebSocketContext.Provider value={{ robots, ws, sendMessage, onMessage }}>
+    <WebSocketContext.Provider value={{ robots, ws, sendMessage, onMessage, disconnect }}>
       {children}
     </WebSocketContext.Provider>
   )

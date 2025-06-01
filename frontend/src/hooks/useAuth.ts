@@ -46,7 +46,7 @@ const useAuth = () => {
       formData: data,
     })
     
-    if (response.existing_connection) {
+    if (response.existing_connection && response.user_id) {
       setExistingConnection({ userId: response.user_id })
       return response
     }
@@ -93,6 +93,7 @@ const useAuth = () => {
 
   const logout = () => {
     localStorage.removeItem("access_token")
+    queryClient.clear()
     navigate({ to: "/login" })
   }
 

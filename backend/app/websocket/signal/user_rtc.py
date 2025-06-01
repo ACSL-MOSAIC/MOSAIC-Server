@@ -161,4 +161,14 @@ async def user_rtc_endpoint(websocket: WebSocket, session: Session = Depends(get
                 await websocket.send_json(error.model_dump())
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected for user: {user_id}")
-        manager.disconnect_user(user_id) 
+        try:
+            manager.disconnect_user(user_id)
+            logger.info(f"Successfully disconnected user: {user_id}")
+        except Exception as e:
+            logger.error(f"Error during user disconnect: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error in WebSocket connection for user {user_id}: {str(e)}")
+        try:
+            manager.disconnect_user(user_id)
+        except Exception as disconnect_error:
+            logger.error(f"Error during user disconnect after unexpected error: {str(disconnect_error)}") 

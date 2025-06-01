@@ -6,6 +6,7 @@ import { FiLogOut } from "react-icons/fi"
 
 import type { UserPublic } from "@/client"
 import useAuth from "@/hooks/useAuth"
+import { useWebSocket } from "@/contexts/WebSocketContext"
 import {
   DrawerBackdrop,
   DrawerBody,
@@ -20,7 +21,13 @@ const Sidebar = () => {
   const queryClient = useQueryClient()
   const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
   const { logout } = useAuth()
+  const { disconnect } = useWebSocket()
   const [open, setOpen] = useState(false)
+
+  const handleLogout = () => {
+    disconnect() // WebSocket 연결 종료
+    logout()
+  }
 
   return (
     <>
@@ -52,9 +59,7 @@ const Sidebar = () => {
                 <SidebarItems onClose={() => setOpen(false)} />
                 <Flex
                   as="button"
-                  onClick={() => {
-                    logout()
-                  }}
+                  onClick={handleLogout}
                   alignItems="center"
                   gap={4}
                   px={4}
@@ -76,7 +81,6 @@ const Sidebar = () => {
       </DrawerRoot>
 
       {/* Desktop */}
-
       <Box
         display={{ base: "none", md: "flex" }}
         position="sticky"
