@@ -1,10 +1,11 @@
-import { Box, Button, Text, Icon, Grid } from "@chakra-ui/react"
+import { Box, Button, Text, Icon, Grid, GridItem, Flex } from "@chakra-ui/react"
 import { useQuery } from "@tanstack/react-query"
-import { useRef } from "react"
+import { useEffect, useRef } from "react"
 import { RobotsService } from "@/client"
 import { useMultiRobot } from "@/hooks/useMultiRobot"
 import useAuth from "@/hooks/useAuth"
 import { IoArrowUp, IoArrowDown, IoArrowBack, IoArrowForward, IoVideocam, IoLocation } from "react-icons/io5"
+import { Go2StateVisualizer } from "@/rtc/go2State"
 
 interface ConnectRobotProps {
   robotId: string
@@ -40,6 +41,12 @@ function ConnectRobot({ robotId }: ConnectRobotProps) {
     [id]: useRef<HTMLDivElement>(null)
   }), {} as { [key: string]: React.RefObject<HTMLDivElement> })
 
+  // Go2 상태 시각화를 위한 ref
+  const go2StateRefs = robotIdList.reduce((acc, id) => ({
+    ...acc,
+    [id]: useRef<Go2StateVisualizer | null>(null)
+  }), {} as { [key: string]: React.RefObject<Go2StateVisualizer | null> })
+
   // 각 로봇 정보 조회
   const robotQueries = robotIdList.map(id => 
     useQuery({
@@ -54,6 +61,22 @@ function ConnectRobot({ robotId }: ConnectRobotProps) {
     canvasRefs,
     positionElementRefs
   })
+
+  useEffect(() => {
+    // Go2 상태 시각화 초기화
+    robotIdList.forEach(id => {
+      if (!go2StateRefs[id].current) {
+        go2StateRefs[id].current = new Go2StateVisualizer(`go2-state-${id}`)
+      }
+    })
+
+    return () => {
+      // 컴포넌트 언마운트 시 정리
+      robotIdList.forEach(id => {
+        go2StateRefs[id].current?.dispose()
+      })
+    }
+  }, [])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     let direction: 'up' | 'down' | 'left' | 'right' | null = null
@@ -167,7 +190,7 @@ function ConnectRobot({ robotId }: ConnectRobotProps) {
                   </Box>
                 </Box>
 
-                {/* 오른쪽 섹션: 컨트롤 패널 */}
+                {/* 오른쪽 섹션: 컨트롤 패널과 Go2 상태 */}
                 <Box className="space-y-6">
                   {/* 연결 상태 */}
                   <Box className="bg-white rounded-2xl shadow-xl p-6">
@@ -192,6 +215,33 @@ function ConnectRobot({ robotId }: ConnectRobotProps) {
                         연결 해제
                       </Button>
                     </Box>
+                  </Box>
+
+                  {/* Go2 상태 모니터링 */}
+                  <Box className="bg-white rounded-2xl shadow-xl p-6">
+                    <Text className="text-lg font-semibold text-gray-700 mb-4">
+                      Go2 상태 모니터링
+                    </Text>
+                    <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                      <GridItem>
+                        <Box
+                          id={`go2-state-${robotId}`}
+                          className="w-full h-64 bg-gray-100 rounded-xl"
+                        />
+                      </GridItem>
+                      <GridItem>
+                        <Flex direction="column" gap={4}>
+                          <Box
+                            id={`motor-chart-${robotId}`}
+                            className="w-full h-32 bg-gray-100 rounded-xl"
+                          />
+                          <Box
+                            id={`foot-chart-${robotId}`}
+                            className="w-full h-32 bg-gray-100 rounded-xl"
+                          />
+                        </Flex>
+                      </GridItem>
+                    </Grid>
                   </Box>
 
                   {/* 방향 제어 */}
