@@ -3,6 +3,7 @@ export class DataStore<T> {
     data: T[] = []
     maxSize: number = 1000
     parser: (data: string) => T
+    private subscribers: ((data: T) => void)[] = []
 
     constructor(robotId: string, maxSize: number = 1000, parser: (data: string) => T) {
         this.maxSize = maxSize
@@ -16,6 +17,20 @@ export class DataStore<T> {
         this.data.push(parsedData)
         if (this.data.length > this.maxSize) {
             this.data.shift()
+        }
+        
+        this.subscribers.forEach(subscriber => subscriber(parsedData))
+    }
+
+    subscribe(callback: (data: T) => void) {
+        this.subscribers.push(callback)
+
+        if (this.data.length > 0) {
+            callback(this.getLast())
+        }
+
+        return () => {
+            this.subscribers = this.subscribers.filter(sub => sub !== callback)
         }
     }
 

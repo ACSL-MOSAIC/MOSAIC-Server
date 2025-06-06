@@ -1,6 +1,6 @@
-export type ParsedGo2LowState = Go2LowState & {
-    timestamp: number
-}
+import { ParsedData } from "./parsed.type"
+
+export type ParsedGo2LowState = ParsedData<Go2LowState>
 
 export interface Go2LowState {
     imu_state: Go2ImuStateData
