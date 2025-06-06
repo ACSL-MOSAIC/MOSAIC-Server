@@ -1,8 +1,8 @@
-export type ParsedGo2Imu = Go2Imu & {
+export type ParsedGo2LowState = Go2LowState & {
     timestamp: number
 }
 
-export interface Go2Imu {
+export interface Go2LowState {
     imu_state: Go2ImuStateData
     motor_state: Go2MotorStateData
     foot_force: Go2FootForceData
@@ -34,7 +34,7 @@ export type Go2FootForceEstData = [number, number, number, number]
 
 
 
-export const parseGo2Imu = (data: string): ParsedGo2Imu => {
+export const parseGo2LowState = (data: string): ParsedGo2LowState => {
     const json = JSON.parse(data)
     return {
         ...json,
@@ -42,4 +42,4 @@ export const parseGo2Imu = (data: string): ParsedGo2Imu => {
     }
 }
 
-export const GO_IMU_TYPE = Symbol('go2_imu')
+export const GO2_LOW_STATE_TYPE = Symbol('go2_low_state')

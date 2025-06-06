@@ -1,10 +1,11 @@
-import { GO_IMU_TYPE } from "../parser/go2_imu";
-import { Go2ImuStore } from "./go2_imu_store";
+import { GO2_LOW_STATE_TYPE } from "../parser/go2-low-state";
+import { Go2LowStateStore } from "./go2-low-state.store";
 import { DataStore } from "./store";
 
 export class StoreManager {
   private static instance: StoreManager;
-  private stores: Map<string, Map<string, DataStore<any>>> = new Map(); 
+  // robotId -> storeType -> store
+  private stores: Map<string, Map<symbol, DataStore<any>>> = new Map(); 
 
   private constructor() {}
 
@@ -16,9 +17,9 @@ export class StoreManager {
   }
 
   public initializeRobotStores(robotId: string) {
-    const robotStores = new Map<string, DataStore<any>>();
+    const robotStores = new Map<symbol, DataStore<any>>();
     
-    robotStores.set(GO_IMU_TYPE.toString(), new Go2ImuStore(robotId));
+    robotStores.set(GO2_LOW_STATE_TYPE, new Go2LowStateStore(robotId));
 
     this.stores.set(robotId, robotStores);
   }
@@ -27,7 +28,9 @@ export class StoreManager {
     this.stores.delete(robotId);
   }
 
-  public getStore<T>(robotId: string, storeType: string): DataStore<T> | undefined {
+  public getStore<T>(robotId: string, storeType: symbol): DataStore<T> | undefined {
     return this.stores.get(robotId)?.get(storeType) as DataStore<T>;
   }
+
+  
 }

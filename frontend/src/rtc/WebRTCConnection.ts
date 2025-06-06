@@ -1,5 +1,7 @@
 import { createControlChannel, sendControlCommand, sendConnectionCheck } from "./control"
 import { setupPositionChannel } from "./position"
+import { setupDataChannel, cleanupAllDataChannels } from "./webrtc-utils"
+import { StoreManager } from "@/dashboard/store/store-manager"
 
 export interface WebRTCConnectionConfig {
   userId: string
@@ -21,9 +23,12 @@ export class WebRTCConnection {
   private connectionCheckInterval: NodeJS.Timeout | null = null
   private pendingCandidates: RTCIceCandidate[] = []
   private config: WebRTCConnectionConfig
+  private storeManager: StoreManager
 
   constructor(config: WebRTCConnectionConfig) {
     this.config = config
+    this.storeManager = StoreManager.getInstance()
+    this.storeManager.initializeRobotStores(config.robotId)
   }
 
   private createPeerConnection(): RTCPeerConnection {
@@ -95,7 +100,6 @@ export class WebRTCConnection {
     try {
       this.peerConnection = this.createPeerConnection()
 
-
       this.peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
           this.pendingCandidates.push(event.candidate)
@@ -122,6 +126,8 @@ export class WebRTCConnection {
 
       this.peerConnection.ondatachannel = (event) => {
         const channel = event.channel
+        console.log('Data channel opened:', channel.label, channel.readyState)
+        
         if (channel.label === 'position_data_channel' && 
             this.config.canvasRef.current && 
             this.config.positionElementRef.current) {
@@ -129,6 +135,19 @@ export class WebRTCConnection {
             canvas: this.config.canvasRef.current,
             positionElement: this.config.positionElementRef.current
           })
+        } else if (channel.label === 'go2_low_state_data_channel') {
+          setupDataChannel(channel, this.config.robotId)
+        }
+
+        // 데이터 채널 상태 변경 모니터링
+        channel.onopen = () => {
+          console.log('Data channel ready:', channel.label)
+        }
+        channel.onclose = () => {
+          console.log('Data channel closed:', channel.label)
+        }
+        channel.onerror = (error) => {
+          console.error('Data channel error:', channel.label, error)
         }
       }
 
@@ -203,6 +222,7 @@ export class WebRTCConnection {
       this.peerConnection.close()
       this.peerConnection = null
     }
+    cleanupAllDataChannels(this.config.robotId)
     this.config.onConnectionStateChange?.(false)
   }
 

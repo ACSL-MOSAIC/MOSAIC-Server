@@ -11,7 +11,9 @@ export class DataStore<T> {
     }
 
     add(data: string) {
-        this.data.push(this.parser(data))
+        const parsedData = this.parser(data)
+        console.log(parsedData)
+        this.data.push(parsedData)
         if (this.data.length > this.maxSize) {
             this.data.shift()
         }
