@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { Box, Grid, GridItem, Button, Icon } from "@chakra-ui/react"
+import { Box, Grid, GridItem, Button, Icon, Heading } from "@chakra-ui/react"
 import { AddIcon } from "@chakra-ui/icons"
 import { WidgetConfig, WidgetType } from "./types"
 import { v4 as uuidv4 } from 'uuid'
@@ -60,16 +60,21 @@ export function DashboardGrid({
   };
 
   return (
-    <Box className="min-h-screen bg-gray-50 p-6">
-      <Box className="max-w-7xl mx-auto space-y-6">
+    <Box minH="100vh" bg="gray.50" p={6}>
+      <Box maxW="7xl" mx="auto">
         {/* 대시보드 헤더 */}
-        <Box className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">로봇 대시보드</h1>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={6}>
+          <Heading size="lg">로봇 대시보드</Heading>
           <Button
             colorScheme="blue"
             onClick={() => setIsModalOpen(true)}
           >
-            <Icon as={AddIcon} mr={2} />
+            <Icon viewBox="0 0 24 24" mr={2}>
+              <path
+                fill="currentColor"
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"
+              />
+            </Icon>
             위젯 추가
           </Button>
         </Box>
@@ -78,7 +83,10 @@ export function DashboardGrid({
         <Grid
           templateColumns="repeat(12, 1fr)"
           gap={4}
-          className="bg-white rounded-2xl shadow-xl p-6"
+          bg="white"
+          borderRadius="2xl"
+          boxShadow="xl"
+          p={6}
         >
           {widgets.map((widget) => (
             <GridItem
@@ -88,7 +96,7 @@ export function DashboardGrid({
               draggable
               onDragStart={(e) => handleDragStart(e, widget.id)}
               onDragEnd={handleDragEnd}
-              className="cursor-move"
+              cursor="move"
             >
               <Go2LowStateWidget
                 robotId={widget.robotId}
