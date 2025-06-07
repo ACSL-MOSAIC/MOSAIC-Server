@@ -6,6 +6,7 @@ import { AddWidgetModal } from "./AddWidgetModal"
 import { useNavigate } from '@tanstack/react-router'
 import { WebRTCConnection } from "@/rtc/webrtc-connection"
 import { useWebSocket } from "@/contexts/WebSocketContext"
+import { WidgetFactory } from "./widgets/WidgetFactory"
 
 interface DashboardGridProps {
   robotIdList: string[];
@@ -149,21 +150,25 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
             borderRadius="md"
             boxShadow="sm"
           >
-            <Box>
-              <Box mb={2}>
-                <strong>로봇 ID:</strong> {widget.robotId}
-              </Box>
-              <Box mb={2}>
-                <strong>위젯 타입:</strong> {widget.type}
-              </Box>
-              <Button 
-                size="sm" 
-                colorScheme="red" 
-                onClick={() => handleRemoveWidget(widget.id)}
-              >
-                제거
-              </Button>
+            <Box mb={2}>
+              <strong>로봇 ID:</strong> {widget.robotId}
             </Box>
+            <Box mb={2}>
+              <strong>위젯 타입:</strong> {widget.type}
+            </Box>
+            <Button 
+              size="sm" 
+              colorScheme="red" 
+              onClick={() => handleRemoveWidget(widget.id)}
+              mb={2}
+            >
+              제거
+            </Button>
+            <WidgetFactory 
+              type={widget.type}
+              robotId={widget.robotId}
+              dataType={widget.dataType}
+            />
           </GridItem>
         ))}
       </Grid>

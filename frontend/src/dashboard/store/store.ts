@@ -18,7 +18,7 @@ export class DataStore<T> {
         if (this.data.length > this.maxSize) {
             this.data.shift()
         }
-
+        
         this.subscribers.forEach(subscriber => subscriber(parsedData))
     }
 
