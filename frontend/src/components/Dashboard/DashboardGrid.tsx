@@ -124,7 +124,7 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
   }, []);
 
   return (
-    <Box p={4}>
+    <Box p={4} marginTop="64px">
       <Flex justify="space-between" mb={4}>
         <Button 
           colorScheme="green" 
