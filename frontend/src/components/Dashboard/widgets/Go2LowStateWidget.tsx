@@ -275,9 +275,9 @@ export function Go2LowStateWidget({ robotId, store }: Go2LowStateWidgetProps) {
   }
 
   return (
-    <Box className="bg-white rounded-lg p-4 h-full" minW="950px" minH="650px" maxW="1000px" maxH="650px" width="100%" height="100%">
-      <TabsRoot defaultValue="motor">
-        <TabsList>
+    <Box className="bg-white rounded-lg p-4 h-full" width="100%" height="100%" display="flex" flexDirection="column">
+      <TabsRoot defaultValue="motor" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <TabsList style={{ flexShrink: 0 }}>
           <TabsTrigger value="motor">모터 차트</TabsTrigger>
           <TabsTrigger value="footforce">FootForce 차트</TabsTrigger>
           <TabsTrigger value="power">Power 차트</TabsTrigger>
@@ -286,8 +286,8 @@ export function Go2LowStateWidget({ robotId, store }: Go2LowStateWidgetProps) {
         </TabsList>
 
         {/* 탭 1: 모터 차트 (2열 6행 그리드) */}
-        <TabsContent value="motor">
-          <Box width="100%" maxHeight="1100px" overflow="auto">
+        <TabsContent value="motor" style={{ flex: 1, overflow: 'auto' }}>
+          <Box width="100%" height="100%">
             <Grid templateColumns="repeat(2, 1fr)" gap={4}>
               {motorCharts}
             </Grid>
@@ -295,42 +295,38 @@ export function Go2LowStateWidget({ robotId, store }: Go2LowStateWidgetProps) {
         </TabsContent>
 
         {/* 탭 2: FootForce 차트 */}
-        <TabsContent value="footforce">
-          <Box width="1000px" height="400px" overflow="auto">
+        <TabsContent value="footforce" style={{ flex: 1, overflow: 'auto' }}>
+          <Box width="100%" height="100%">
             <Line
               data={footForceChartData}
               options={{
-                responsive: false,
+                responsive: true,
                 maintainAspectRatio: false,
                 animation: { duration: 0 },
                 scales: { y: { beginAtZero: true } }
               }}
-              width={1000}
-              height={400}
             />
           </Box>
         </TabsContent>
 
         {/* 탭 3: Power 차트 */}
-        <TabsContent value="power">
-          <Box width="1000px" height="400px" overflow="auto">
+        <TabsContent value="power" style={{ flex: 1, overflow: 'auto' }}>
+          <Box width="100%" height="100%">
             <Line
               data={powerChartData}
               options={{
-                responsive: false,
+                responsive: true,
                 maintainAspectRatio: false,
                 animation: { duration: 0 },
                 scales: { y: { beginAtZero: true } }
               }}
-              width={1000}
-              height={400}
             />
           </Box>
         </TabsContent>
 
         {/* 탭 4: IMU State */}
-        <TabsContent value="imu">
-          <Box width="100%" height="600px" position="relative">
+        <TabsContent value="imu" style={{ flex: 1, overflow: 'auto' }}>
+          <Box width="100%" height="100%" position="relative">
             {data && <IMUVisualizer imuState={data.imu_state} />}
             <Box position="absolute" bottom={4} left={4} bg="white" p={2} borderRadius="md" boxShadow="sm">
               <Text fontSize="sm" fontWeight="bold">IMU State</Text>
@@ -357,8 +353,8 @@ export function Go2LowStateWidget({ robotId, store }: Go2LowStateWidgetProps) {
         </TabsContent>
 
         {/* 탭 5: 상세 정보 */}
-        <TabsContent value="details">
-          <Box height="100%" maxHeight="600px" overflowY="auto">
+        <TabsContent value="details" style={{ flex: 1, overflow: 'auto' }}>
+          <Box height="100%">
             <Flex direction="column" gap={4}>
               <Text fontSize="lg" fontWeight="bold">Go2 Low State</Text>
               {/* IMU State */}

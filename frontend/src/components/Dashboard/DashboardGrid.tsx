@@ -7,6 +7,11 @@ import { useNavigate } from '@tanstack/react-router'
 import { WebRTCConnection } from "@/rtc/webrtc-connection"
 import { useWebSocket } from "@/contexts/WebSocketContext"
 import { WidgetFactory } from "./widgets/WidgetFactory"
+import { Responsive, WidthProvider } from "react-grid-layout"
+import "react-grid-layout/css/styles.css"
+import "react-resizable/css/styles.css"
+
+const ResponsiveGridLayout = WidthProvider(Responsive);
 
 interface DashboardGridProps {
   robotIdList: string[];
@@ -51,25 +56,19 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
   // 로봇 연결 함수
   const connectToRobot = async (robotId: string) => {
     try {
-      // 이미 연결된 경우 체크
       if (rtcConnections.current[robotId]) {
         console.log(`로봇 ${robotId}는 이미 연결되어 있습니다.`);
         return;
       }
 
-      // 새로운 WebRTC 연결 생성
       const connection = new WebRTCConnection({
         robotId,
         ws,
         onConnectionStateChange: (isConnected) => handleConnectionStateChange(robotId, isConnected)
       });
 
-      // 연결 시작
       await connection.startConnection();
-      
-      // 연결 객체 저장
       rtcConnections.current[robotId] = connection;
-      
       console.log(`로봇 ${robotId} 연결 완료`);
     } catch (error) {
       console.error(`로봇 ${robotId} 연결 실패:`, error);
@@ -114,6 +113,25 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
     setWidgets(prev => prev.filter(w => w.id !== widgetId));
   };
 
+  // 레이아웃 변경 핸들러
+  const handleLayoutChange = (layout: any) => {
+    setWidgets(prev => prev.map(widget => {
+      const newLayout = layout.find((l: any) => l.i === widget.id);
+      if (newLayout) {
+        return {
+          ...widget,
+          position: {
+            x: newLayout.x,
+            y: newLayout.y,
+            w: newLayout.w,
+            h: newLayout.h
+          }
+        };
+      }
+      return widget;
+    }));
+  };
+
   // 컴포넌트 언마운트 시 모든 연결 해제
   useEffect(() => {
     return () => {
@@ -140,38 +158,62 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
         </Button>
       </Flex>
 
-      <Grid templateColumns="repeat(3, 1fr)" gap={4}>
-        {widgets.map((widget, index) => (
-          <GridItem 
-            key={`${widget.robotId}-${widget.type}-${index}`}
-            colSpan={1}
+      <ResponsiveGridLayout
+        className="layout"
+        layouts={{ lg: widgets.map(w => ({
+          i: w.id,
+          x: w.position.x,
+          y: w.position.y,
+          w: w.position.w,
+          h: w.position.h,
+          minW: 2,
+          minH: 2,
+          maxW: 12,
+          maxH: 12
+        })) }}
+        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+        cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+        rowHeight={100}
+        width={1200}
+        onLayoutChange={handleLayoutChange}
+        isDraggable={true}
+        isResizable={true}
+        margin={[16, 16]}
+        draggableHandle=".widget-header"
+      >
+        {widgets.map((widget) => (
+          <Box
+            key={widget.id}
             bg="white"
             p={4}
             borderRadius="md"
             boxShadow="sm"
+            height="100%"
+            display="flex"
+            flexDirection="column"
           >
-            <Box mb={2}>
-              <strong>로봇 ID:</strong> {widget.robotId}
+            <Flex justify="space-between" mb={2} className="widget-header" cursor="move">
+              <Box>
+                <strong>로봇 ID:</strong> {widget.robotId}
+              </Box>
+              <Button 
+                size="sm" 
+                colorScheme="red" 
+                onClick={() => handleRemoveWidget(widget.id)}
+              >
+                제거
+              </Button>
+            </Flex>
+            <Box flex="1" overflow="hidden">
+              <WidgetFactory 
+                type={widget.type}
+                robotId={widget.robotId}
+                dataType={widget.dataType}
+              />
             </Box>
-            <Box mb={2}>
-              <strong>위젯 타입:</strong> {widget.type}
-            </Box>
-            <Button 
-              size="sm" 
-              colorScheme="red" 
-              onClick={() => handleRemoveWidget(widget.id)}
-              mb={2}
-            >
-              제거
-            </Button>
-            <WidgetFactory 
-              type={widget.type}
-              robotId={widget.robotId}
-              dataType={widget.dataType}
-            />
-          </GridItem>
+          </Box>
         ))}
-      </Grid>
+      </ResponsiveGridLayout>
 
       <AddWidgetModal
         isOpen={open}
