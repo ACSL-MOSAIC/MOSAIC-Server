@@ -3,47 +3,43 @@ import { createFileRoute } from "@tanstack/react-router"
 import { DashboardGrid } from "@/components/Dashboard/DashboardGrid"
 import { useState } from "react"
 import { WidgetConfig } from "@/components/Dashboard/types"
-import { useWebSocket } from "@/contexts/WebSocketContext"
+import useAuth from "@/hooks/useAuth"
+import { StoreManager } from "@/dashboard/store/store-manager"
+import { cleanupAllDataChannels } from "@/rtc/webrtc-utils"
 
 export const Route = createFileRoute("/_layout/connect/$robotId")({
+  beforeLoad: async ({ params }) => {
+    const robotIdList = params.robotId.split(',');
+    console.log('대시보드 라우트 진입, 스토어 정리 시작');
+    
+    // 1. 기존 스토어 cleanup
+    robotIdList.forEach(robotId => {
+      console.log(`로봇 ${robotId} 스토어 cleanup`);
+      cleanupAllDataChannels(robotId);
+      StoreManager.getInstance().cleanupRobotStores(robotId);
+    });
+
+    // 2. 새로운 스토어 초기화
+    robotIdList.forEach(robotId => {
+      console.log(`로봇 ${robotId} 스토어 초기화`);
+      StoreManager.getInstance().initializeRobotStores(robotId);
+    });
+
+    console.log('대시보드 라우트 진입, 스토어 정리 완료');
+  },
   component: DashboardPage,
 })
 
 function DashboardPage() {
   const { robotId } = Route.useParams()
-  const { robots } = useWebSocket()
-  const [widgets, setWidgets] = useState<WidgetConfig[]>([])
-
-  const handleWidgetAdd = (widget: WidgetConfig) => {
-    setWidgets(prev => [...prev, widget])
-  }
-
-  const handleWidgetRemove = (widgetId: string) => {
-    setWidgets(prev => prev.filter(w => w.id !== widgetId))
-  }
-
-  const handleWidgetMove = (widgetId: string, position: { x: number; y: number }) => {
-    setWidgets(prev => prev.map(w => 
-      w.id === widgetId 
-        ? { ...w, position: { ...w.position, ...position } }
-        : w
-    ))
-  }
-
-  const connectedRobots = robots.map(robot => robot.robot_id)
+  const { user } = useAuth()
+  const robotIdList = robotId.split(',')
 
   return (
     <Container maxW="full">
-      <Heading size="lg" textAlign={{ base: "center", md: "left" }} py={12}>
-        로봇 대시보드
-      </Heading>
       <DashboardGrid
-        robotId={robotId}
-        widgets={widgets}
-        onWidgetAdd={handleWidgetAdd}
-        onWidgetRemove={handleWidgetRemove}
-        onWidgetMove={handleWidgetMove}
-        connectedRobots={connectedRobots}
+        robotIdList={robotIdList}
+        userId={user?.id || ""}
       />
     </Container>
   )

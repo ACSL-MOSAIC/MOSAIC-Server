@@ -28,7 +28,7 @@ export class WebRTCConnection {
   constructor(config: WebRTCConnectionConfig) {
     this.config = config
     this.storeManager = StoreManager.getInstance()
-    this.storeManager.initializeRobotStores(config.robotId)
+    // this.storeManager.initializeRobotStores(config.robotId)
   }
 
   private createPeerConnection(): RTCPeerConnection {
@@ -222,7 +222,6 @@ export class WebRTCConnection {
       this.peerConnection.close()
       this.peerConnection = null
     }
-    cleanupAllDataChannels(this.config.robotId)
     this.config.onConnectionStateChange?.(false)
   }
 

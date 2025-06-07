@@ -1,35 +1,81 @@
-import React, { useState } from "react"
-import { Box, Grid, GridItem, Button, Icon, Heading } from "@chakra-ui/react"
-import { AddIcon } from "@chakra-ui/icons"
+import React, { useState, useEffect, useRef } from "react"
+import { Box, Grid, GridItem, Button, useDisclosure, Flex } from "@chakra-ui/react"
 import { WidgetConfig, WidgetType } from "./types"
 import { v4 as uuidv4 } from 'uuid'
-import { Go2LowStateWidget } from "./widgets/Go2LowStateWidget"
-import { Go2LowStateStore } from "../../dashboard/store/go2-low-state.store"
-import { GO2_LOW_STATE_TYPE } from "../../dashboard/parser/go2-low-state"
-import { StoreManager } from "../../dashboard/store/store-manager"
 import { AddWidgetModal } from "./AddWidgetModal"
+import { useMultiRobot } from "@/hooks/useMultiRobot"
+import { useNavigate } from '@tanstack/react-router'
 
 interface DashboardGridProps {
-  robotId: string;
-  widgets: WidgetConfig[];
-  onWidgetAdd: (widget: WidgetConfig) => void;
-  onWidgetRemove: (widgetId: string) => void;
-  onWidgetMove: (widgetId: string, position: { x: number; y: number }) => void;
-  connectedRobots: string[];
+  robotIdList: string[];
+  userId: string;
 }
 
-export function DashboardGrid({
-  robotId,
-  widgets,
-  onWidgetAdd,
-  onWidgetRemove,
-  onWidgetMove,
-  connectedRobots
-}: DashboardGridProps) {
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [currentWidget, setCurrentWidget] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
+  const { open, onOpen, onClose } = useDisclosure();
+  // const navigate = useNavigate();
+  // const [isDragging, setIsDragging] = useState(false);
+  // const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  // const [currentWidget, setCurrentWidget] = useState<string | null>(null);
+  const [isConnecting, setIsConnecting] = useState<{ [key: string]: boolean }>({});
+  const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
+
+  // 각 로봇별 ref 생성
+  const videoRefs = useRef<{ [key: string]: React.RefObject<HTMLVideoElement> }>({});
+  const canvasRefs = useRef<{ [key: string]: React.RefObject<HTMLCanvasElement> }>({});
+  const positionElementRefs = useRef<{ [key: string]: React.RefObject<HTMLDivElement> }>({});
+
+  // ref 초기화
+  robotIdList.forEach(id => {
+    if (!videoRefs.current[id]) {
+      videoRefs.current[id] = React.createRef<HTMLVideoElement>();
+    }
+    if (!canvasRefs.current[id]) {
+      canvasRefs.current[id] = React.createRef<HTMLCanvasElement>();
+    }
+    if (!positionElementRefs.current[id]) {
+      positionElementRefs.current[id] = React.createRef<HTMLDivElement>();
+    }
+  });
+
+  const { connections, connectToRobot, disconnectFromRobot, connectionRefs } = useMultiRobot({
+    userId,
+    videoRefs: videoRefs.current,
+    canvasRefs: canvasRefs.current,
+    positionElementRefs: positionElementRefs.current
+  });
+
+  // 연결 상태 모니터링 및 재연결
+  useEffect(() => {
+    console.log('현재 연결 상태:', connections);
+    
+    // 연결이 끊어진 로봇 확인
+    robotIdList.forEach(robotId => {
+      const isConnected = connections[robotId]?.isConnected;
+      const hasConnectionRef = connectionRefs.current && robotId in connectionRefs.current;
+      
+      // 연결이 끊어졌고, connectionRef가 있는 경우에만 재연결 시도
+      if (!isConnected && hasConnectionRef) {
+        console.log(`로봇 ${robotId} 연결 끊김, 재연결 시도`);
+        connectToRobot(robotId).catch(error => {
+          console.error(`로봇 ${robotId} 재연결 실패:`, error);
+        });
+      }
+    });
+  }, [connections, robotIdList, connectToRobot, connectionRefs]);
+
+  const handleConnectAllRobots = async () => {
+    console.log('모든 로봇 연결 시도');
+    for (const robotId of robotIdList) {
+      try {
+        console.log(`로봇 ${robotId} 연결 시도`);
+        await connectToRobot(robotId);
+        console.log(`로봇 ${robotId} 연결 완료`);
+      } catch (error) {
+        console.error(`로봇 ${robotId} 연결 실패:`, error);
+      }
+    }
+  };
 
   const handleAddWidget = (selectedRobotId: string, type: WidgetType) => {
     const newWidget: WidgetConfig = {
@@ -39,81 +85,76 @@ export function DashboardGrid({
       robotId: selectedRobotId,
       dataType: 'go2_low_state'
     };
-    onWidgetAdd(newWidget);
+    setWidgets(prev => [...prev, newWidget]);
   };
 
-  const handleDragStart = (e: React.DragEvent, widgetId: string) => {
-    setIsDragging(true);
-    setCurrentWidget(widgetId);
-    setDragStart({ x: e.clientX, y: e.clientY });
+  const handleRemoveWidget = (widgetId: string) => {
+    setWidgets(prev => prev.filter(w => w.id !== widgetId));
   };
 
-  const handleDragEnd = (e: React.DragEvent) => {
-    if (!isDragging || !currentWidget) return;
-
-    const dx = e.clientX - dragStart.x;
-    const dy = e.clientY - dragStart.y;
-
-    onWidgetMove(currentWidget, { x: dx, y: dy });
-    setIsDragging(false);
-    setCurrentWidget(null);
-  };
+  // 연결된 로봇 ID 목록을 useMemo로 메모이제이션
+  const connectedRobotIds = React.useMemo(() => 
+    Object.keys(connections).filter(robotId => 
+      connections[robotId]?.isConnected
+    ),
+    [connections]
+  );
 
   return (
-    <Box minH="100vh" bg="gray.50" p={6}>
-      <Box maxW="7xl" mx="auto">
-        {/* 대시보드 헤더 */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={6}>
-          <Heading size="lg">로봇 대시보드</Heading>
-          <Button
-            colorScheme="blue"
-            onClick={() => setIsModalOpen(true)}
-          >
-            <Icon viewBox="0 0 24 24" mr={2}>
-              <path
-                fill="currentColor"
-                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"
-              />
-            </Icon>
-            위젯 추가
-          </Button>
-        </Box>
-
-        {/* 대시보드 그리드 */}
-        <Grid
-          templateColumns="repeat(12, 1fr)"
-          gap={4}
-          bg="white"
-          borderRadius="2xl"
-          boxShadow="xl"
-          p={6}
+    <Box p={4}>
+      <Flex justify="space-between" mb={4}>
+        <Button 
+          colorScheme="green" 
+          onClick={handleConnectAllRobots}
         >
-          {widgets.map((widget) => (
-            <GridItem
-              key={widget.id}
-              colSpan={widget.position.w}
-              rowSpan={widget.position.h}
-              draggable
-              onDragStart={(e) => handleDragStart(e, widget.id)}
-              onDragEnd={handleDragEnd}
-              cursor="move"
-            >
-              <Go2LowStateWidget
-                robotId={widget.robotId}
-                store={StoreManager.getInstance().getStore(widget.robotId, GO2_LOW_STATE_TYPE) as Go2LowStateStore}
-                dataType="go2_low_state"
-              />
-            </GridItem>
-          ))}
-        </Grid>
+          모든 로봇 연결
+        </Button>
+        <Button 
+          colorScheme="blue" 
+          onClick={() => {
+            console.log('위젯 추가 버튼 클릭');
+            onOpen();
+          }}
+        >
+          위젯 추가
+        </Button>
+      </Flex>
 
-        <AddWidgetModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onAdd={handleAddWidget}
-          connectedRobots={connectedRobots}
-        />
-      </Box>
+      <Grid templateColumns="repeat(3, 1fr)" gap={4}>
+        {widgets.map((widget, index) => (
+          <GridItem 
+            key={`${widget.robotId}-${widget.type}-${index}`}
+            colSpan={1}
+            bg="white"
+            p={4}
+            borderRadius="md"
+            boxShadow="sm"
+          >
+            <Box>
+              <Box mb={2}>
+                <strong>로봇 ID:</strong> {widget.robotId}
+              </Box>
+              <Box mb={2}>
+                <strong>위젯 타입:</strong> {widget.type}
+              </Box>
+              <Button 
+                size="sm" 
+                colorScheme="red" 
+                onClick={() => handleRemoveWidget(widget.id)}
+              >
+                제거
+              </Button>
+            </Box>
+          </GridItem>
+        ))}
+      </Grid>
+
+      <AddWidgetModal
+        isOpen={open}
+        onClose={onClose}
+        onAdd={handleAddWidget}
+        connectedRobots={robotIdList}
+      />
     </Box>
   );
 } 
