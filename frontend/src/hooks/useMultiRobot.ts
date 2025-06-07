@@ -1,234 +1,229 @@
-import React, { useEffect, useState, useCallback } from "react"
-import { useWebSocket } from "@/contexts/WebSocketContext"
-import { WebRTCConnection, WebRTCConnectionConfig } from "@/rtc/WebRTCConnection"
-import useCustomToast from "@/hooks/useCustomToast"
+// import React, { useEffect, useState, useCallback } from "react"
+// import { useWebSocket } from "@/contexts/WebSocketContext"
+// import { WebRTCConnection, WebRTCConnectionConfig } from "@/rtc/WebRTCConnection"
+// import useCustomToast from "@/hooks/useCustomToast"
 
-export interface RobotConnection {
-  robotId: string
-  isConnected: boolean
-  fps: number
-  connection: WebRTCConnection | null
-}
+// export interface RobotConnection {
+//   robotId: string
+//   isConnected: boolean
+//   fps: number
+//   connection: WebRTCConnection | null
+// }
 
-export interface UseMultiRobotConfig {
-  userId: string
-  videoRefs: { [key: string]: React.RefObject<HTMLVideoElement> }
-  canvasRefs: { [key: string]: React.RefObject<HTMLCanvasElement> }
-  positionElementRefs: { [key: string]: React.RefObject<HTMLElement> }
-}
+// export interface UseMultiRobotConfig {
+//   userId: string
+//   videoRefs: { [key: string]: React.RefObject<HTMLVideoElement> }
+//   canvasRefs: { [key: string]: React.RefObject<HTMLCanvasElement> }
+//   positionElementRefs: { [key: string]: React.RefObject<HTMLElement> }
+// }
 
-export function useMultiRobot(config: UseMultiRobotConfig) {
-  const { sendMessage, onMessage } = useWebSocket()
-  const [connections, setConnections] = useState<{ [key: string]: RobotConnection }>({})
-  const { showErrorToast } = useCustomToast()
-  const connectionRefs = React.useRef<{ [key: string]: WebRTCConnection }>({})
+// export function useMultiRobot(config: UseMultiRobotConfig) {
+//   const { sendMessage, onMessage } = useWebSocket()
+//   const [connections, setConnections] = useState<{ [key: string]: RobotConnection }>({})
+//   const { showErrorToast } = useCustomToast()
+//   const connectionRefs = React.useRef<{ [key: string]: WebRTCConnection }>({})
 
-  const handleConnectionStateChange = (robotId: string, isConnected: boolean) => {
-    setConnections(prev => ({
-      ...prev,
-      [robotId]: {
-        ...prev[robotId],
-        isConnected
-      }
-    }))
-  }
+//   const handleConnectionStateChange = (robotId: string, isConnected: boolean) => {
+//     setConnections(prev => ({
+//       ...prev,
+//       [robotId]: {
+//         ...prev[robotId],
+//         isConnected
+//       }
+//     }))
+//   }
 
-  const handleFpsChange = (robotId: string, fps: number) => {
-    setConnections(prev => ({
-      ...prev,
-      [robotId]: {
-        ...prev[robotId],
-        fps
-      }
-    }))
-  }
+//   const handleFpsChange = (robotId: string, fps: number) => {
+//     setConnections(prev => ({
+//       ...prev,
+//       [robotId]: {
+//         ...prev[robotId],
+//         fps
+//       }
+//     }))
+//   }
 
-  const handleError = (robotId: string, error: Error) => {
-    // showErrorToast(`로봇 ${robotId} 연결 오류: ${error.message}`)
-    setConnections(prev => ({
-      ...prev,
-      [robotId]: {
-        robotId,
-        isConnected: false,
-        fps: 0,
-        connection: null
-      }
-    }))
-  }
+//   const handleError = (robotId: string, error: Error) => {
+//     // showErrorToast(`로봇 ${robotId} 연결 오류: ${error.message}`)
+//     setConnections(prev => ({
+//       ...prev,
+//       [robotId]: {
+//         robotId,
+//         isConnected: false,
+//         fps: 0,
+//         connection: null
+//       }
+//     }))
+//   }
 
-  const connectToRobot = useCallback(async (robotId: string) => {
-    if (connections[robotId]?.isConnected) {
-      console.log('이미 연결된 로봇입니다:', robotId)
-      return
-    }
+//   const connectToRobot = useCallback(async (robotId: string) => {
+//     console.log(`로봇 ${robotId} 연결 시작`)
 
-    // 이미 연결 시도 중인 경우
-    if (connectionRefs.current[robotId]) {
-      console.log('이미 연결 시도 중인 로봇입니다:', robotId)
-      return
-    }
+//     // 이미 연결된 경우 체크
+//     if (connections[robotId]?.isConnected) {
+//       console.log('이미 연결된 로봇입니다:', robotId)
+//       return
+//     }
 
-    try {
-      console.log(`로봇 ${robotId} 연결 시작`)
-      const connection = new WebRTCConnection({
-        userId: config.userId,
-        robotId,
-        videoRef: config.videoRefs[robotId],
-        canvasRef: config.canvasRefs[robotId],
-        positionElementRef: config.positionElementRefs[robotId],
-        onConnectionStateChange: (isConnected) => {
-          console.log(`로봇 ${robotId} 연결 상태 변경:`, isConnected)
-          handleConnectionStateChange(robotId, isConnected)
-          if (isConnected) {
-            sendMessage({
-              type: "connected_robot_rtc",
-              user_id: config.userId,
-              robot_id: robotId
-            })
-          } else {
-            sendMessage({
-              type: "disconnected_robot_rtc",
-              user_id: config.userId,
-              robot_id: robotId
-            })
-          }
-        },
-        onFpsChange: (fps) => {
-          handleFpsChange(robotId, fps)
-        },
-        onError: (error) => {
-          console.error(`로봇 ${robotId} 연결 에러:`, error)
-          handleError(robotId, error)
-          // 에러 발생 시 연결 객체 정리
-          delete connectionRefs.current[robotId]
-        }
-      })
+//     // 기존 연결이 있다면 정리
+//     if (connectionRefs.current[robotId]) {
+//       console.log('기존 연결 정리:', robotId)
+//       connectionRefs.current[robotId].disconnect()
+//       delete connectionRefs.current[robotId]
+//     }
 
-      // 연결 객체를 먼저 저장
-      connectionRefs.current[robotId] = connection
+//     try {
+//       // 연결 객체 생성
+//       const connection = new WebRTCConnection({
+//         userId: config.userId,
+//         robotId,
+//         videoRef: config.videoRefs[robotId],
+//         canvasRef: config.canvasRefs[robotId],
+//         positionElementRef: config.positionElementRefs[robotId],
+//         onConnectionStateChange: (isConnected) => {
+//           console.log(`로봇 ${robotId} 연결 상태 변경:`, isConnected)
+//           handleConnectionStateChange(robotId, isConnected)
+//           if (isConnected) {
+//             sendMessage({
+//               type: "connected_robot_rtc",
+//               user_id: config.userId,
+//               robot_id: robotId
+//             })
+//           } else {
+//             sendMessage({
+//               type: "disconnected_robot_rtc",
+//               user_id: config.userId,
+//               robot_id: robotId
+//             })
+//           }
+//         },
+//         onFpsChange: (fps) => {
+//           handleFpsChange(robotId, fps)
+//         },
+//         onError: (error) => {
+//           console.error(`로봇 ${robotId} 연결 에러:`, error)
+//           handleError(robotId, error)
+//         }
+//       })
 
-      const offer = await connection.startConnection()
-      if (!offer.sdp) {
-        throw new Error("SDP offer 생성 실패")
-      }
+//       // 연결 객체 저장
+//       connectionRefs.current[robotId] = connection
 
-      console.log(`로봇 ${robotId}의 SDP offer 생성 완료`)
+//       // 연결 시작
+//       console.log(`로봇 ${robotId}의 SDP offer 생성 시작`)
+//       const offer = await connection.startConnection()
+//       if (!offer.sdp) {
+//         throw new Error("SDP offer 생성 실패")
+//       }
 
-      setConnections(prev => ({
-        ...prev,
-        [robotId]: {
-          robotId,
-          isConnected: false,
-          fps: 0,
-          connection
-        }
-      }))
+//       console.log(`로봇 ${robotId}의 SDP offer 생성 완료:`, offer.sdp)
 
-      // SDP offer를 서버로 전송
-      sendMessage({
-        type: "send_sdp_offer",
-        user_id: config.userId,
-        robot_id: robotId,
-        sdp_offer: offer.sdp
-      })
-    } catch (error) {
-      console.error(`로봇 ${robotId} 연결 실패:`, error)
-      showErrorToast(`로봇 ${robotId} 연결 실패: ${error instanceof Error ? error.message : String(error)}`)
-      handleError(robotId, error instanceof Error ? error : new Error(String(error)))
-      // 에러 발생 시 연결 객체 정리
-      delete connectionRefs.current[robotId]
-    }
-  }, [config.userId, config.videoRefs, config.canvasRefs, config.positionElementRefs, connections, sendMessage])
+//       // SDP offer를 서버로 전송
+//       const message = {
+//         type: "send_sdp_offer" as const,
+//         user_id: config.userId,
+//         robot_id: robotId,
+//         sdp_offer: offer.sdp
+//       }
+//       console.log('WebSocket으로 SDP offer 전송:', message)
+//       sendMessage(message)
 
-  const disconnectFromRobot = useCallback((robotId: string) => {
-    const connection = connectionRefs.current[robotId]
-    if (connection) {
-      connection.disconnect()
-      delete connectionRefs.current[robotId]
-      setConnections(prev => ({
-        ...prev,
-        [robotId]: {
-          robotId,
-          isConnected: false,
-          fps: 0,
-          connection: null
-        }
-      }))
-    }
-  }, [])
+//       // 연결 상태 업데이트
+//       setConnections(prev => ({
+//         ...prev,
+//         [robotId]: {
+//           robotId,
+//           isConnected: false,
+//           fps: 0,
+//           connection
+//         }
+//       }))
+//     } catch (error) {
+//       console.error(`로봇 ${robotId} 연결 실패:`, error)
+//       showErrorToast(`로봇 ${robotId} 연결 실패: ${error instanceof Error ? error.message : String(error)}`)
+//       handleError(robotId, error instanceof Error ? error : new Error(String(error)))
+//     }
+//   }, [config.userId, config.videoRefs, config.canvasRefs, config.positionElementRefs, connections, sendMessage])
 
-  const sendControlData = (robotId: string, direction: 'up' | 'down' | 'left' | 'right') => {
-    const connection = connections[robotId]?.connection
-    if (connection && connections[robotId]?.isConnected) {
-      connection.sendControlData(direction)
-    } else {
-      console.warn(`로봇 ${robotId}가 연결되어 있지 않습니다.`)
-    }
-  }
+//   const disconnectFromRobot = useCallback((robotId: string) => {
+//     const connection = connectionRefs.current[robotId]
+//     if (connection) {
+//       console.log(`로봇 ${robotId} 연결 해제`)
+//       connection.disconnect()
+//       delete connectionRefs.current[robotId]
+//       setConnections(prev => {
+//         const newConnections = { ...prev }
+//         delete newConnections[robotId]
+//         return newConnections
+//       })
+//     }
+//   }, [])
 
-  useEffect(() => {
-    const handleWebSocketMessage = async (message: any) => {
-      const { type, user_id, robot_id, sdp_answer, ice_candidate } = message
+//   const sendControlData = (robotId: string, direction: 'up' | 'down' | 'left' | 'right') => {
+//     const connection = connections[robotId]?.connection
+//     if (connection && connections[robotId]?.isConnected) {
+//       connection.sendControlData(direction)
+//     } else {
+//       console.warn(`로봇 ${robotId}가 연결되어 있지 않습니다.`)
+//     }
+//   }
 
-      if (user_id !== config.userId) return
+//   const handleWebSocketMessage = useCallback(async (message: any) => {
+//     try {
+//       if (message.type === "receive_sdp_answer") {
+//         const { robot_id, sdp_answer } = message
+//         console.log(`로봇 ${robot_id}의 SDP answer 수신:`, sdp_answer)
+        
+//         const connection = connectionRefs.current[robot_id]
+//         if (!connection) {
+//           console.error(`로봇 ${robot_id}의 연결 객체를 찾을 수 없습니다.`)
+//           return
+//         }
 
-      const connection = connectionRefs.current[robot_id]
-      if (!connection) {
-        console.warn(`로봇 ${robot_id}에 대한 연결이 없습니다.`)
-        return
-      }
+//         await connection.setRemoteDescription(new RTCSessionDescription({
+//           type: 'answer',
+//           sdp: sdp_answer
+//         }))
+//         console.log(`로봇 ${robot_id}의 Remote description 설정 완료`)
+//       } else if (message.type === "receive_ice_candidate") {
+//         const { robot_id, ice_candidate } = message
+//         console.log(`로봇 ${robot_id}의 ICE candidate 수신:`, ice_candidate)
+        
+//         const connection = connectionRefs.current[robot_id]
+//         if (!connection) {
+//           console.error(`로봇 ${robot_id}의 연결 객체를 찾을 수 없습니다.`)
+//           return
+//         }
 
-      try {
-        switch (type) {
-          case "receive_sdp_answer":
-            if (sdp_answer) {
-              console.log(`로봇 ${robot_id}의 SDP answer 수신`)
-              const peerConnection = connection.getPeerConnection()
-              if (peerConnection?.signalingState === 'have-local-offer') {
-                await connection.setRemoteDescription(new RTCSessionDescription({
-                  type: 'answer',
-                  sdp: sdp_answer
-                }))
-              } else {
-                console.warn(`로봇 ${robot_id}의 signaling state가 올바르지 않습니다:`, peerConnection?.signalingState)
-              }
-            }
-            break
+//         await connection.addIceCandidate(new RTCIceCandidate(ice_candidate))
+//         console.log(`로봇 ${robot_id}의 ICE candidate 적용 완료`)
+//       }
+//     } catch (error) {
+//       console.error(`로봇 ${message.robot_id} 메시지 처리 중 에러:`, error)
+//     }
+//   }, [])
 
-          case "receive_ice_candidate":
-            if (ice_candidate) {
-              console.log(`로봇 ${robot_id}의 ICE candidate 수신`)
-              const peerConnection = connection.getPeerConnection()
-              if (peerConnection) {
-                await connection.addIceCandidate(new RTCIceCandidate(ice_candidate))
-              } else {
-                console.warn(`로봇 ${robot_id}의 peer connection이 없습니다.`)
-              }
-            }
-            break
-        }
-      } catch (error) {
-        console.error(`로봇 ${robot_id} 메시지 처리 중 에러:`, error)
-        handleError(robot_id, error instanceof Error ? error : new Error(String(error)))
-      }
-    }
+//   useEffect(() => {
+//     onMessage("receive_sdp_answer", handleWebSocketMessage)
+//     onMessage("receive_ice_candidate", handleWebSocketMessage)
 
-    onMessage("receive_sdp_answer", handleWebSocketMessage)
-    onMessage("receive_ice_candidate", handleWebSocketMessage)
+//     return () => {
+//       // 연결 정리
+//       Object.keys(connectionRefs.current).forEach(robotId => {
+//         const connection = connectionRefs.current[robotId]
+//         if (connection) {
+//           connection.disconnect()
+//           delete connectionRefs.current[robotId]
+//         }
+//       })
+//     }
+//   }, [config.userId, connectToRobot, onMessage])
 
-    return () => {
-      // cleanup
-      Object.keys(connectionRefs.current).forEach(robotId => {
-        disconnectFromRobot(robotId)
-      })
-    }
-  }, [config.userId, onMessage, disconnectFromRobot])
-
-  return {
-    connections,
-    connectToRobot,
-    disconnectFromRobot,
-    sendControlData,
-    connectionRefs: connectionRefs.current
-  }
-} 
+//   return {
+//     connections,
+//     connectToRobot,
+//     disconnectFromRobot,
+//     sendControlData,
+//     connectionRefs: connectionRefs.current
+//   }
+// } 

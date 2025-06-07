@@ -3,8 +3,9 @@ import { Box, Grid, GridItem, Button, useDisclosure, Flex } from "@chakra-ui/rea
 import { WidgetConfig, WidgetType } from "./types"
 import { v4 as uuidv4 } from 'uuid'
 import { AddWidgetModal } from "./AddWidgetModal"
-import { useMultiRobot } from "@/hooks/useMultiRobot"
 import { useNavigate } from '@tanstack/react-router'
+import { WebRTCConnection } from "@/rtc/webrtc-connection"
+import { useWebSocket } from "@/contexts/WebSocketContext"
 
 interface DashboardGridProps {
   robotIdList: string[];
@@ -13,12 +14,12 @@ interface DashboardGridProps {
 
 export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
   const { open, onOpen, onClose } = useDisclosure();
-  // const navigate = useNavigate();
-  // const [isDragging, setIsDragging] = useState(false);
-  // const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  // const [currentWidget, setCurrentWidget] = useState<string | null>(null);
-  const [isConnecting, setIsConnecting] = useState<{ [key: string]: boolean }>({});
   const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
+  const [connections, setConnections] = useState<{ [key: string]: boolean }>({});
+  const ws = useWebSocket();
+  
+  // WebRTC 연결 객체들을 관리하는 ref
+  const rtcConnections = useRef<{ [key: string]: WebRTCConnection }>({});
 
   // 각 로봇별 ref 생성
   const videoRefs = useRef<{ [key: string]: React.RefObject<HTMLVideoElement> }>({});
@@ -38,39 +39,59 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
     }
   });
 
-  const { connections, connectToRobot, disconnectFromRobot, connectionRefs } = useMultiRobot({
-    userId,
-    videoRefs: videoRefs.current,
-    canvasRefs: canvasRefs.current,
-    positionElementRefs: positionElementRefs.current
-  });
+  // 연결 상태 변경 핸들러
+  const handleConnectionStateChange = (robotId: string, isConnected: boolean) => {
+    setConnections(prev => ({
+      ...prev,
+      [robotId]: isConnected
+    }));
+  };
 
-  // 연결 상태 모니터링 및 재연결
-  useEffect(() => {
-    console.log('현재 연결 상태:', connections);
-    
-    // 연결이 끊어진 로봇 확인
-    robotIdList.forEach(robotId => {
-      const isConnected = connections[robotId]?.isConnected;
-      const hasConnectionRef = connectionRefs.current && robotId in connectionRefs.current;
-      
-      // 연결이 끊어졌고, connectionRef가 있는 경우에만 재연결 시도
-      if (!isConnected && hasConnectionRef) {
-        console.log(`로봇 ${robotId} 연결 끊김, 재연결 시도`);
-        connectToRobot(robotId).catch(error => {
-          console.error(`로봇 ${robotId} 재연결 실패:`, error);
-        });
+  // 로봇 연결 함수
+  const connectToRobot = async (robotId: string) => {
+    try {
+      // 이미 연결된 경우 체크
+      if (rtcConnections.current[robotId]) {
+        console.log(`로봇 ${robotId}는 이미 연결되어 있습니다.`);
+        return;
       }
-    });
-  }, [connections, robotIdList, connectToRobot, connectionRefs]);
 
+      // 새로운 WebRTC 연결 생성
+      const connection = new WebRTCConnection({
+        robotId,
+        ws,
+        onConnectionStateChange: (isConnected) => handleConnectionStateChange(robotId, isConnected)
+      });
+
+      // 연결 시작
+      await connection.startConnection();
+      
+      // 연결 객체 저장
+      rtcConnections.current[robotId] = connection;
+      
+      console.log(`로봇 ${robotId} 연결 완료`);
+    } catch (error) {
+      console.error(`로봇 ${robotId} 연결 실패:`, error);
+      throw error;
+    }
+  };
+
+  // 로봇 연결 해제 함수
+  const disconnectFromRobot = (robotId: string) => {
+    const connection = rtcConnections.current[robotId];
+    if (connection) {
+      connection.disconnect();
+      delete rtcConnections.current[robotId];
+      handleConnectionStateChange(robotId, false);
+    }
+  };
+
+  // 모든 로봇 연결 함수
   const handleConnectAllRobots = async () => {
     console.log('모든 로봇 연결 시도');
     for (const robotId of robotIdList) {
       try {
-        console.log(`로봇 ${robotId} 연결 시도`);
         await connectToRobot(robotId);
-        console.log(`로봇 ${robotId} 연결 완료`);
       } catch (error) {
         console.error(`로봇 ${robotId} 연결 실패:`, error);
       }
@@ -92,13 +113,14 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
     setWidgets(prev => prev.filter(w => w.id !== widgetId));
   };
 
-  // 연결된 로봇 ID 목록을 useMemo로 메모이제이션
-  const connectedRobotIds = React.useMemo(() => 
-    Object.keys(connections).filter(robotId => 
-      connections[robotId]?.isConnected
-    ),
-    [connections]
-  );
+  // 컴포넌트 언마운트 시 모든 연결 해제
+  useEffect(() => {
+    return () => {
+      Object.keys(rtcConnections.current).forEach(robotId => {
+        disconnectFromRobot(robotId);
+      });
+    };
+  }, []);
 
   return (
     <Box p={4}>
@@ -111,10 +133,7 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
         </Button>
         <Button 
           colorScheme="blue" 
-          onClick={() => {
-            console.log('위젯 추가 버튼 클릭');
-            onOpen();
-          }}
+          onClick={onOpen}
         >
           위젯 추가
         </Button>

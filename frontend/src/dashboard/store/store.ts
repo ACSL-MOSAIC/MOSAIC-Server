@@ -13,12 +13,12 @@ export class DataStore<T> {
 
     add(data: string) {
         const parsedData = this.parser(data)
-        console.log(parsedData)
+        console.log("store add and type", parsedData, typeof parsedData) 
         this.data.push(parsedData)
         if (this.data.length > this.maxSize) {
             this.data.shift()
         }
-        
+
         this.subscribers.forEach(subscriber => subscriber(parsedData))
     }
 

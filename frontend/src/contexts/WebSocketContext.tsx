@@ -2,57 +2,57 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode } fro
 import useAuth from "@/hooks/useAuth"
 
 // 로봇 정보 타입
-interface RobotInfo {
+export interface RobotInfo {
   robot_id: string
   state: string
 }
 
 // 기본 메시지 타입
-interface WebSocketBaseMessage {
+export interface WebSocketBaseMessage {
   type: string
   user_id?: string
   robot_id?: string
 }
 
 // 에러 메시지 타입
-interface WebSocketErrorMessage extends WebSocketBaseMessage {
+export interface WebSocketErrorMessage extends WebSocketBaseMessage {
   type: "error"
   error: string
   detail?: string
 }
 
 // 로봇 리스트 요청/응답 타입
-interface GetRobotListMessage extends WebSocketBaseMessage {
+export interface GetRobotListMessage extends WebSocketBaseMessage {
   type: "get_robot_list"
 }
 
-interface RobotListMessage extends WebSocketBaseMessage {
+export interface RobotListMessage extends WebSocketBaseMessage {
   type: "robot_list"
   robots: RobotInfo[]
 }
 
 // SDP Offer/Answer 타입
-interface SendSdpOfferMessage extends WebSocketBaseMessage {
+export interface SendSdpOfferMessage extends WebSocketBaseMessage {
   type: "send_sdp_offer"
   robot_id: string
   sdp_offer: string
 }
 
-interface ReceiveSdpOfferMessage extends WebSocketBaseMessage {
+export interface ReceiveSdpOfferMessage extends WebSocketBaseMessage {
   type: "receive_sdp_offer"
   user_id: string
   robot_id: string
   sdp_offer: string
 }
 
-interface SendSdpAnswerMessage extends WebSocketBaseMessage {
+export interface SendSdpAnswerMessage extends WebSocketBaseMessage {
   type: "send_sdp_answer"
   user_id: string
   robot_id: string
   sdp_answer: string
 }
 
-interface ReceiveSdpAnswerMessage extends WebSocketBaseMessage {
+export interface ReceiveSdpAnswerMessage extends WebSocketBaseMessage {
   type: "receive_sdp_answer"
   user_id: string
   robot_id: string
@@ -60,7 +60,7 @@ interface ReceiveSdpAnswerMessage extends WebSocketBaseMessage {
 }
 
 // ICE Candidate 타입
-interface SendIceCandidateMessage extends WebSocketBaseMessage {
+export interface SendIceCandidateMessage extends WebSocketBaseMessage {
   type: "send_ice_candidate"
   robot_id: string
   ice_candidate: {
@@ -70,7 +70,7 @@ interface SendIceCandidateMessage extends WebSocketBaseMessage {
   }
 }
 
-interface ReceiveIceCandidateMessage extends WebSocketBaseMessage {
+export interface ReceiveIceCandidateMessage extends WebSocketBaseMessage {
   type: "receive_ice_candidate"
   user_id: string
   robot_id: string
@@ -82,23 +82,23 @@ interface ReceiveIceCandidateMessage extends WebSocketBaseMessage {
 }
 
 // WebRTC 연결 상태 메시지 타입
-interface ConnectedRobotRtcMessage extends WebSocketBaseMessage {
+export interface ConnectedRobotRtcMessage extends WebSocketBaseMessage {
   type: "connected_robot_rtc"
   robot_id: string
 }
 
-interface DisconnectedRobotRtcMessage extends WebSocketBaseMessage {
+export interface DisconnectedRobotRtcMessage extends WebSocketBaseMessage {
   type: "disconnected_robot_rtc"
   robot_id: string
 }
 
-interface ForceLogoutMessage extends WebSocketBaseMessage {
+export interface ForceLogoutMessage extends WebSocketBaseMessage {
   type: "force_logout"
   message: string
 }
 
 // 모든 메시지 타입을 유니온 타입으로 정의
-type WebSocketMessage =
+export type WebSocketMessage =
   | GetRobotListMessage
   | RobotListMessage
   | SendSdpOfferMessage
@@ -112,7 +112,7 @@ type WebSocketMessage =
   | DisconnectedRobotRtcMessage
   | ForceLogoutMessage
 
-interface WebSocketContextType {
+export interface WebSocketContextType {
   robots: RobotInfo[]
   ws: WebSocket | null
   sendMessage: (message: WebSocketMessage) => void

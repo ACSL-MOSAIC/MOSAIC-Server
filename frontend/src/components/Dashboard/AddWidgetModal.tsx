@@ -27,8 +27,6 @@ interface AddWidgetModalProps {
 
 export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddWidgetModalProps) {
   console.log('AddWidgetModal 렌더링, 로봇 :', connectedRobots)
-  console.log('connectedRobots 타입:', typeof connectedRobots)
-  console.log('connectedRobots 길이:', connectedRobots?.length)
   const [selectedRobotId, setSelectedRobotId] = useState<string>("");
   const [selectedType, setSelectedType] = useState<string>("go2_low_state");
 
