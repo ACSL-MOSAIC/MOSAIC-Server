@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { Box, Text, Flex, Grid, GridItem, TabsRoot, TabsList, TabsContent, TabsTrigger } from "@chakra-ui/react"
 import { WidgetProps } from './types'
-import { ParsedGo2LowState } from '../../../dashboard/parser/go2-low-state'
+import { ParsedGo2LowState, Go2ImuStateData } from '../../../dashboard/parser/go2-low-state'
 import { Go2LowStateStore } from '../../../dashboard/store/go2-low-state.store'
 import { Line } from 'react-chartjs-2'
 import {
@@ -14,6 +14,9 @@ import {
   Tooltip,
   Legend
 } from 'chart.js'
+import { Canvas } from '@react-three/fiber'
+import { OrbitControls, Box as ThreeBox, Grid as ThreeGrid, GizmoHelper, GizmoViewport, Cone } from '@react-three/drei'
+import * as THREE from 'three'
 
 ChartJS.register(
   CategoryScale,
@@ -30,6 +33,93 @@ export interface Go2LowStateWidgetProps extends WidgetProps {
 }
 
 const MAX_DATA_POINTS = 100
+
+// IMU 시각화 컴포넌트
+function IMUVisualizer({ imuState }: { imuState: Go2ImuStateData }) {
+  const threeQuaternion = new THREE.Quaternion(
+    imuState.quaternion[1], // x
+    imuState.quaternion[2], // y
+    imuState.quaternion[3], // z
+    imuState.quaternion[0]  // w
+  );
+
+  // 데이터가 변경될 때마다 쿼터니언 업데이트
+  useEffect(() => {
+    threeQuaternion.set(
+      imuState.quaternion[1], // x
+      imuState.quaternion[2], // y
+      imuState.quaternion[3], // z
+      imuState.quaternion[0]  // w
+    );
+  }, [imuState.quaternion]);
+
+  return (
+    <Canvas camera={{ position: [3, 3, 3], fov: 50 }}>
+      <color attach="background" args={['#f0f0f0']} />
+      <ambientLight intensity={0.5} />
+      <pointLight position={[10, 10, 10]} intensity={1} />
+      <pointLight position={[-10, -10, -10]} intensity={0.5} />
+      
+      {/* 좌표계 그리드 */}
+      <ThreeGrid
+        args={[10, 10]}
+        cellSize={1}
+        cellThickness={0.5}
+        cellColor="#6f6f6f"
+        sectionSize={3}
+        sectionThickness={1}
+        sectionColor="#9d4b4b"
+        fadeDistance={30}
+        fadeStrength={1}
+        followCamera={false}
+        infiniteGrid={true}
+      />
+
+      {/* 로봇 본체 (큐브) */}
+      <ThreeBox args={[0.8, 2, 0.4]} quaternion={threeQuaternion} position={[0, 1, 0]}>
+        <meshStandardMaterial 
+          color="#ffffff"
+          metalness={0.3}
+          roughness={0.4}
+          wireframe={false}
+        />
+      </ThreeBox>
+      {/* 엣지 강조를 위한 wireframe */}
+      <ThreeBox args={[0.8, 2, 0.4]} quaternion={threeQuaternion} position={[0, 1, 0]}>
+        <meshBasicMaterial 
+          color="#000000"
+          wireframe={true}
+          transparent={true}
+          opacity={0.3}
+        />
+      </ThreeBox>
+
+      {/* 방향 표시 화살표 */}
+      <group quaternion={threeQuaternion} position={[0, 1, 0.6]}>
+        {/* 화살표 몸통 */}
+        <Cone args={[0.08, 0.25, 8]} rotation={[Math.PI, 0, 0]} position={[0, 0, 0.15]}>
+          <meshStandardMaterial 
+            color="#ff4d4d"
+            metalness={0.3}
+            roughness={0.4}
+          />
+        </Cone>
+      </group>
+
+      {/* 좌표축 표시 */}
+      <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
+        <GizmoViewport labelColor="black" axisColors={['#ff0000', '#00ff00', '#0000ff']} />
+      </GizmoHelper>
+
+      <OrbitControls 
+        enableDamping 
+        dampingFactor={0.05}
+        minDistance={3}
+        maxDistance={10}
+      />
+    </Canvas>
+  );
+}
 
 export function Go2LowStateWidget({ robotId, store }: Go2LowStateWidgetProps) {
   const [data, setData] = useState<ParsedGo2LowState | null>(null)
@@ -238,10 +328,31 @@ export function Go2LowStateWidget({ robotId, store }: Go2LowStateWidgetProps) {
           </Box>
         </TabsContent>
 
-        {/* 탭 4: IMU State (비워둠) */}
+        {/* 탭 4: IMU State */}
         <TabsContent value="imu">
-          <Box width="1200px" height="400px" display="flex" alignItems="center" justifyContent="center">
-            <Text color="gray.400">IMU State 차트 준비 중...</Text>
+          <Box width="100%" height="600px" position="relative">
+            {data && <IMUVisualizer imuState={data.imu_state} />}
+            <Box position="absolute" bottom={4} left={4} bg="white" p={2} borderRadius="md" boxShadow="sm">
+              <Text fontSize="sm" fontWeight="bold">IMU State</Text>
+              <Grid templateColumns="repeat(2, 1fr)" gap={2}>
+                <GridItem>
+                  <Text fontSize="xs" fontWeight="semibold">Quaternion (w, x, y, z):</Text>
+                  <Text fontSize="xs">{data?.imu_state.quaternion.map(v => v.toFixed(3)).join(', ')}</Text>
+                </GridItem>
+                <GridItem>
+                  <Text fontSize="xs" fontWeight="semibold">RPY (rad):</Text>
+                  <Text fontSize="xs">{data?.imu_state.rpy.map(v => v.toFixed(3)).join(', ')}</Text>
+                </GridItem>
+                <GridItem>
+                  <Text fontSize="xs" fontWeight="semibold">Gyroscope (rad/s):</Text>
+                  <Text fontSize="xs">{data?.imu_state.gyroscope.map(v => v.toFixed(3)).join(', ')}</Text>
+                </GridItem>
+                <GridItem>
+                  <Text fontSize="xs" fontWeight="semibold">Accelerometer (m/s²):</Text>
+                  <Text fontSize="xs">{data?.imu_state.accelerometer.map(v => v.toFixed(3)).join(', ')}</Text>
+                </GridItem>
+              </Grid>
+            </Box>
           </Box>
         </TabsContent>
 
