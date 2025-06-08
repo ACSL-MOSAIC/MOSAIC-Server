@@ -86,11 +86,12 @@ export class WebRTCConnection {
 
     // DataChannel 생성
     console.log('DataChannel 생성 시작')
-    const dataChannel = peerConnection.createDataChannel('low_state_data_channel', {
+    const dataChannel = peerConnection.createDataChannel('data_channel', {
       ordered: true
     })
+
+
     console.log('DataChannel 생성됨:', dataChannel.label, dataChannel.readyState)
-    this.setupDataChannel(dataChannel)
 
     return peerConnection
   }

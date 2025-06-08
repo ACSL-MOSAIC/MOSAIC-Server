@@ -1,8 +1,10 @@
 import { GO2_LOW_STATE_TYPE } from "@/dashboard/parser/go2-low-state";
+import { GO2_OUSTER_POINTCLOUD2_TYPE } from "@/dashboard/parser/go2-ouster-pointcloud";
 import { StoreManager } from "@/dashboard/store/store-manager";
 
 const channelToType = {
-    go2_low_state_data_channel: GO2_LOW_STATE_TYPE,
+  go2_low_state_data_channel: GO2_LOW_STATE_TYPE,
+  go2_ouster_points_data_channel: GO2_OUSTER_POINTCLOUD2_TYPE,
 }
 
 const mapChannelToType = (channel: string) => {
@@ -28,8 +30,12 @@ export function setupDataChannel(
     try {
       const data = event.data
       
-      const channelType = mapChannelToType(dataChannel.label)
+      if(dataChannel.label === "go2_ouster_points_data_channel") {
+        console.log('Raw data:', data)
+        console.log('Data properties:', Object.keys(data))
+      }
       
+      const channelType = mapChannelToType(dataChannel.label)
       const store = storeManager.getStore(robotId, channelType);
       
       if (store) {

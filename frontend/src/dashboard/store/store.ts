@@ -1,19 +1,25 @@
-export class DataStore<T> {
+export class DataStore<T, I = string> {
     robotId: string
     data: T[] = []
     maxSize: number = 1000
-    parser: (data: string) => T
+    parser: (data: I) => T | null
     private subscribers: ((data: T) => void)[] = []
 
-    constructor(robotId: string, maxSize: number = 1000, parser: (data: string) => T) {
+    constructor(robotId: string, maxSize: number = 1000, parser: (data: I) => T | null) {
         this.maxSize = maxSize
         this.robotId = robotId
         this.parser = parser
     }
 
-    add(data: string) {
+    add(data: I) {
         const parsedData = this.parser(data)
-        console.log("store add and type", parsedData, typeof parsedData) 
+
+        if (parsedData === null) {
+            return
+        }
+
+        console.log("store add and type", parsedData) 
+
         this.data.push(parsedData)
         if (this.data.length > this.maxSize) {
             this.data.shift()

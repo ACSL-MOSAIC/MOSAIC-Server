@@ -1,11 +1,13 @@
 import { GO2_LOW_STATE_TYPE } from "../parser/go2-low-state";
+import { GO2_OUSTER_POINTCLOUD2_TYPE } from "../parser/go2-ouster-pointcloud";
 import { Go2LowStateStore } from "./go2-low-state.store";
+import { Go2OusterPointCloudStore } from "./go2-ouster-pointcloud.store";
 import { DataStore } from "./store";
 
 export class StoreManager {
   private static instance: StoreManager;
   // robotId -> storeType -> store
-  private stores: Map<string, Map<symbol, DataStore<any>>> = new Map(); 
+  private stores: Map<string, Map<symbol, DataStore<any, any>>> = new Map(); 
 
   private constructor() {}
 
@@ -17,9 +19,10 @@ export class StoreManager {
   }
 
   public initializeRobotStores(robotId: string) {
-    const robotStores = new Map<symbol, DataStore<any>>();
+    const robotStores = new Map<symbol, DataStore<any, any>>();
     
     robotStores.set(GO2_LOW_STATE_TYPE, new Go2LowStateStore(robotId));
+    robotStores.set(GO2_OUSTER_POINTCLOUD2_TYPE, new Go2OusterPointCloudStore(robotId));
 
     this.stores.set(robotId, robotStores);
   }

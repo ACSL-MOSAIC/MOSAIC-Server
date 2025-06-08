@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package chunking;
+
+message DataChunk {
+    string message_id = 1;
+    uint32 chunk_index = 2;
+    uint32 total_chunks = 3;
+    bytes payload = 4;
+}
