@@ -26,14 +26,8 @@ export function setupDataChannel(
 
   // 새로운 onmessage 핸들러 설정
   dataChannel.onmessage = (event) => {
-    console.log(`DataChannel ${dataChannel.label} 메시지 수신 시작, 데이터 타입:`, typeof event.data)
     try {
       const data = event.data
-      
-      if(dataChannel.label === "go2_ouster_points_data_channel") {
-        console.log('Raw data:', data)
-        console.log('Data properties:', Object.keys(data))
-      }
       
       const channelType = mapChannelToType(dataChannel.label)
       const store = storeManager.getStore(robotId, channelType);

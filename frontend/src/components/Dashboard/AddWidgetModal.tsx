@@ -39,7 +39,8 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
 
   const widgetTypeCollection = createListCollection({
     items: [
-      { label: "Go2 Low State", value: "go2_low_state" }
+      { label: "Go2 Low State", value: "go2_low_state" },
+      { label: "Go2 Ouster PointCloud", value: "go2_ouster_pointcloud" }
     ]
   });
 

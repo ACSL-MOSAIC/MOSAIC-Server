@@ -49,7 +49,6 @@ export const parsePointCloud2 = (buffer: ArrayBuffer): ParsedPointCloud2 | null 
     try {
 
         const dataChunk = chunking.DataChunk.decode(new Uint8Array(buffer));
-        console.log("dataChunk", dataChunk)
         return parsePointCloud2FromDataChunk(dataChunk);
     } catch (error) {
         console.error('Error decoding data chunk:', error);
@@ -70,7 +69,6 @@ export const parsePointCloud2FromDataChunk = (dataChunk: chunking.DataChunk): Pa
         }
 
         const chunkData = chunkMap.get(dataChunk.messageId)!;
-        console.log("chunkData", chunkData)
         
         // chunk 저장
         chunkData.chunks.set(dataChunk.chunkIndex, dataChunk.payload);
@@ -80,7 +78,6 @@ export const parsePointCloud2FromDataChunk = (dataChunk: chunking.DataChunk): Pa
         if (chunkData.chunks.size === chunkData.totalChunks) {
             // chunk들을 순서대로 조합
             const combinedData = combineChunks(chunkData);
-            console.log("combinedData", combinedData)
             
 
             // PointCloud2 객체 생성
@@ -94,8 +91,6 @@ export const parsePointCloud2FromDataChunk = (dataChunk: chunking.DataChunk): Pa
                 ...pointCloud.toJSON(),
                 timestamp: Date.now()
             };
-            
-            console.log("parsedPointCloud", parsedPointCloud)
             return parsedPointCloud;
         }
 

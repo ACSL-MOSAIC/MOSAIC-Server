@@ -31,8 +31,8 @@ export class StoreManager {
     this.stores.delete(robotId);
   }
 
-  public getStore<T>(robotId: string, storeType: symbol): DataStore<T> | undefined {
-    return this.stores.get(robotId)?.get(storeType) as DataStore<T>;
+  public getStore<T, I = string>(robotId: string, storeType: symbol): DataStore<T, I> | undefined {
+    return this.stores.get(robotId)?.get(storeType) as DataStore<T, I>;
   }
 
   

@@ -4,3 +4,5 @@ export interface WidgetProps {
   robotId: string;
   dataType: string;
 }
+
+export type WidgetType = 'go2_low_state' | 'go2_ouster_pointcloud';
