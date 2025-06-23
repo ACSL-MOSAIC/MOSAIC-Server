@@ -4,6 +4,8 @@ import { setupDataChannel, cleanupAllDataChannels } from "./webrtc-utils"
 import { StoreManager } from "@/dashboard/store/store-manager"
 import { TurtlesimRemoteControlStore } from "@/dashboard/store/turtlesim-remote-control.store"
 import { TURTLESIM_REMOTE_CONTROL_TYPE } from "@/dashboard/parser/turtlesim-remote-control"
+import { VideoStoreManager } from "@/dashboard/store/video-store-manager"
+import { VideoStore } from "@/dashboard/store/video.store"
 
 export interface DataChannelConfig {
   label: string
@@ -11,11 +13,18 @@ export interface DataChannelConfig {
   options?: RTCDataChannelInit
 }
 
+export interface VideoChannelConfig {
+  label: string
+  dataType: string // 'turtlesim_video', 'go2_camera' 등
+  expectedTrackLabel?: string // 예상되는 비디오 트랙 라벨
+}
+
 export interface WebRTCConnectionConfig {
   robotId: string
   ws: WebSocketContextType
   onConnectionStateChange?: (isConnected: boolean) => void
   dataChannels?: DataChannelConfig[] // 채널별 설정
+  videoChannels?: VideoChannelConfig[] // 비디오 채널 설정
 }
 
 export class WebRTCConnection {
@@ -25,6 +34,8 @@ export class WebRTCConnection {
   private pendingCandidates: RTCIceCandidate[] = []
   private dataChannels: Map<string, RTCDataChannel> = new Map()
   private channelDataTypes: Map<string, string> = new Map() // 채널 라벨 -> 데이터 타입 매핑
+  private videoChannels: Map<string, VideoChannelConfig> = new Map() // 비디오 채널 설정
+  private videoChannelDataTypes: Map<string, string> = new Map() // 비디오 채널 라벨 -> 데이터 타입 매핑
 
   constructor(config: WebRTCConnectionConfig) {
     this.config = config
@@ -153,7 +164,32 @@ export class WebRTCConnection {
       this.setupDataChannel(dataChannel, channelConfig.dataType)
     })
 
+    // 비디오 채널 설정 (데이터 채널 설정 이후)
+    this.setupVideoChannels()
+
     return peerConnection
+  }
+
+  private setupVideoChannels() {
+    // 설정된 비디오 채널들 저장
+    const channelsToSetup = this.config.videoChannels || []
+    
+    // 기본 비디오 채널 추가 (설정에 없는 경우)
+    const defaultVideoChannels: VideoChannelConfig[] = [
+      { label: 'turtlesim_video_track', dataType: 'turtlesim_video', expectedTrackLabel: 'turtlesim_video' }
+    ]
+    
+    const allVideoChannels = [...channelsToSetup, ...defaultVideoChannels.filter(ch => 
+      !channelsToSetup.some(configured => configured.label === ch.label)
+    )]
+
+    console.log('설정할 비디오 채널들:', allVideoChannels)
+
+    allVideoChannels.forEach(channelConfig => {
+      this.videoChannels.set(channelConfig.label, channelConfig)
+      this.videoChannelDataTypes.set(channelConfig.label, channelConfig.dataType)
+      console.log('비디오 채널 설정됨:', channelConfig.label, '데이터타입:', channelConfig.dataType, '예상 트랙 라벨:', channelConfig.expectedTrackLabel)
+    })
   }
 
   private setupDataChannel(dataChannel: RTCDataChannel, dataType: string) {
@@ -188,6 +224,10 @@ export class WebRTCConnection {
         this.disconnect()
       }
 
+      // VideoStoreManager 초기화
+      const videoStoreManager = VideoStoreManager.getInstance()
+      videoStoreManager.initializeRobotVideoStores(this.config.robotId)
+
       this.peerConnection = this.createPeerConnection()
       console.log('PeerConnection 생성됨:', this.peerConnection)
 
@@ -214,9 +254,39 @@ export class WebRTCConnection {
       }
 
       this.peerConnection.ontrack = (event) => {
-        console.log('Track 수신됨:', event.track.kind)
-        if (event.streams && event.streams[0]) {
-          console.log('Stream 수신됨:', event.streams[0].id)
+        console.log('Track 수신됨:', event.track.kind, event.track.label, event.track.id)
+        
+        if (event.track.kind === 'video' && event.streams && event.streams[0]) {
+          const stream = event.streams[0]
+          const trackLabel = event.track.label || 'unknown_video'
+          
+          console.log('로봇 비디오 스트림 수신됨:', {
+            streamId: stream.id,
+            trackLabel: trackLabel,
+            trackId: event.track.id,
+            trackEnabled: event.track.enabled,
+            trackReadyState: event.track.readyState
+          })
+          
+          // 모든 비디오 트랙을 터틀비디오로 처리
+          const matchedChannelLabel = 'turtlesim_video_track'
+          const matchedDataType = 'turtlesim_video'
+          
+          console.log('비디오 채널 매칭 결과:', {
+            channelLabel: matchedChannelLabel,
+            dataType: matchedDataType,
+            originalTrackLabel: trackLabel
+          })
+          
+          // VideoStoreManager를 통해 비디오 스토어 생성 및 MediaStream 설정
+          const videoStore = VideoStoreManager.getInstance().createVideoStoreIfNotExists(
+            this.config.robotId,
+            matchedChannelLabel,
+            matchedDataType
+          )
+          
+          videoStore.setMediaStream(stream)
+          console.log(`비디오 스토어 설정 완료: ${matchedChannelLabel}(${matchedDataType}) for robot ${this.config.robotId}`)
         }
       }
 
@@ -285,6 +355,10 @@ export class WebRTCConnection {
     this.dataChannels.clear()
     this.channelDataTypes.clear()
 
+    // VideoStore 정리
+    const videoStoreManager = VideoStoreManager.getInstance()
+    videoStoreManager.cleanupRobotVideoStores(this.config.robotId)
+
     if (this.peerConnection) {
       this.peerConnection.close()
       this.peerConnection = null
@@ -315,6 +389,50 @@ export class WebRTCConnection {
   public getChannelsByDataType(dataType: string): string[] {
     const channels: string[] = []
     this.channelDataTypes.forEach((type, label) => {
+      if (type === dataType) {
+        channels.push(label)
+      }
+    })
+    return channels
+  }
+
+  // 비디오 스토어 가져오기
+  public getVideoStore(channelLabel: string): VideoStore | undefined {
+    const videoStoreManager = VideoStoreManager.getInstance()
+    return videoStoreManager.getVideoStore(this.config.robotId, channelLabel)
+  }
+
+  // 모든 비디오 스토어 가져오기
+  public getVideoStores(): Map<string, VideoStore> {
+    const videoStoreManager = VideoStoreManager.getInstance()
+    return videoStoreManager.getRobotVideoStores(this.config.robotId)
+  }
+
+  // 비디오 채널 목록 반환
+  public getVideoChannels(): string[] {
+    const videoStoreManager = VideoStoreManager.getInstance()
+    return videoStoreManager.getRobotVideoChannels(this.config.robotId)
+  }
+
+  // 비디오 채널 설정 가져오기
+  public getVideoChannelConfig(channelLabel: string): VideoChannelConfig | undefined {
+    return this.videoChannels.get(channelLabel)
+  }
+
+  // 모든 비디오 채널 설정 반환
+  public getVideoChannelConfigs(): Map<string, VideoChannelConfig> {
+    return this.videoChannels
+  }
+
+  // 비디오 채널의 데이터 타입 반환
+  public getVideoChannelDataType(channelLabel: string): string | undefined {
+    return this.videoChannelDataTypes.get(channelLabel)
+  }
+
+  // 특정 데이터 타입을 처리하는 비디오 채널들 반환
+  public getVideoChannelsByDataType(dataType: string): string[] {
+    const channels: string[] = []
+    this.videoChannelDataTypes.forEach((type, label) => {
       if (type === dataType) {
         channels.push(label)
       }

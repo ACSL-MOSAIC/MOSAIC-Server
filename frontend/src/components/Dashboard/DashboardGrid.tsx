@@ -114,6 +114,9 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
       case 'turtlesim_remote_control':
         dataType = 'turtlesim_remote_control';
         break;
+      case 'turtlesim_video':
+        dataType = 'turtlesim_video';
+        break;
       default:
         dataType = 'go2_low_state';
     }

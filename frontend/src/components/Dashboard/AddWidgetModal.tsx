@@ -42,7 +42,8 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
       { label: "Go2 Low State", value: "go2_low_state" },
       { label: "Go2 Ouster PointCloud", value: "go2_ouster_pointcloud" },
       { label: "Turtlesim Position", value: "turtlesim_position" },
-      { label: "Turtlesim Remote Control", value: "turtlesim_remote_control" }
+      { label: "Turtlesim Remote Control", value: "turtlesim_remote_control" },
+      { label: "Turtlesim Video", value: "turtlesim_video" }
     ]
   });
 

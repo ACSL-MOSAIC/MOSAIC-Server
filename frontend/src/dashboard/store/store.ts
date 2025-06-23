@@ -15,10 +15,11 @@ export class DataStore<T, I = string> {
         const parsedData = this.parser(data)
 
         if (parsedData === null) {
+            console.log(`DataStore[${this.robotId}] 파싱 실패:`, data)
             return
         }
 
-        // console.log("store add and type", parsedData) 
+        // console.log(`DataStore[${this.robotId}] 데이터 추가:`, parsedData)
 
         this.data.push(parsedData)
         if (this.data.length > this.maxSize) {

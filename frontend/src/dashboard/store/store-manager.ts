@@ -1,11 +1,3 @@
-import { GO2_LOW_STATE_TYPE } from "../parser/go2-low-state";
-import { GO2_OUSTER_POINTCLOUD2_TYPE } from "../parser/go2-ouster-pointcloud";
-import { TURTLESIM_POSITION_TYPE } from "../parser/turtlesim-position";
-import { TURTLESIM_REMOTE_CONTROL_TYPE } from "../parser/turtlesim-remote-control";
-import { Go2LowStateStore } from "./go2-low-state.store";
-import { Go2OusterPointCloudStore } from "./go2-ouster-pointcloud.store";
-import { TurtlesimPositionStore } from "./turtlesim-position.store";
-import { TurtlesimRemoteControlStore } from "./turtlesim-remote-control.store";
 import { DataStore } from "./store";
 
 export class StoreManager {
