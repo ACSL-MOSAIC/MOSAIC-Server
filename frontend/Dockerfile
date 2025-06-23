@@ -5,6 +5,9 @@ WORKDIR /app
 
 COPY package*.json /app/
 
+# npm install 후 node_modules 정리 및 재설치로 rollup 문제 해결
+RUN npm install
+RUN rm -rf node_modules package-lock.json
 RUN npm install
 
 COPY ./ /app/
