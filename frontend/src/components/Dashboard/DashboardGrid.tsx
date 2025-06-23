@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react"
 import { Box, Grid, GridItem, Button, useDisclosure, Flex } from "@chakra-ui/react"
-import { WidgetConfig, WidgetType } from "./types"
+import { WidgetConfig, WidgetType, DashboardConfig } from "./types"
 import { v4 as uuidv4 } from 'uuid'
 import { AddWidgetModal } from "./AddWidgetModal"
+import { TabManager } from "./TabManager"
 import { useNavigate } from '@tanstack/react-router'
 import { WebRTCConnection } from "@/rtc/webrtc-connection"
 import { useWebSocket } from "@/contexts/WebSocketContext"
@@ -10,6 +11,16 @@ import { WidgetFactory } from "./widgets/WidgetFactory"
 import { Responsive, WidthProvider } from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
+import { 
+  loadDashboardConfig, 
+  saveDashboardConfig, 
+  addTab, 
+  removeTab, 
+  renameTab, 
+  addWidget, 
+  removeWidget, 
+  updateWidgetPosition 
+} from "./dashboardStorage"
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -20,7 +31,7 @@ interface DashboardGridProps {
 
 export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
   const { open, onOpen, onClose } = useDisclosure();
-  const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
+  const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig | null>(null);
   const [connections, setConnections] = useState<{ [key: string]: boolean }>({});
   const ws = useWebSocket();
   
@@ -44,6 +55,19 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
       positionElementRefs.current[id] = React.createRef<HTMLDivElement>();
     }
   });
+
+  // 초기 로드
+  useEffect(() => {
+    const config = loadDashboardConfig(robotIdList);
+    setDashboardConfig(config);
+  }, [robotIdList]);
+
+  // 설정 변경 시 저장
+  useEffect(() => {
+    if (dashboardConfig) {
+      saveDashboardConfig(dashboardConfig);
+    }
+  }, [dashboardConfig]);
 
   // 연결 상태 변경 핸들러
   const handleConnectionStateChange = (robotId: string, isConnected: boolean) => {
@@ -98,7 +122,40 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
     }
   };
 
+  // 탭 관리 함수들
+  const handleAddTab = (tabName: string) => {
+    if (dashboardConfig) {
+      const newConfig = addTab(dashboardConfig, tabName);
+      setDashboardConfig(newConfig);
+    }
+  };
+
+  const handleRemoveTab = (tabId: string) => {
+    if (dashboardConfig) {
+      const newConfig = removeTab(dashboardConfig, tabId);
+      setDashboardConfig(newConfig);
+    }
+  };
+
+  const handleRenameTab = (tabId: string, newName: string) => {
+    if (dashboardConfig) {
+      const newConfig = renameTab(dashboardConfig, tabId, newName);
+      setDashboardConfig(newConfig);
+    }
+  };
+
+  const handleTabChange = (tabId: string) => {
+    if (dashboardConfig) {
+      setDashboardConfig({
+        ...dashboardConfig,
+        activeTabId: tabId
+      });
+    }
+  };
+
   const handleAddWidget = (selectedRobotId: string, type: WidgetType) => {
+    if (!dashboardConfig) return;
+
     // 위젯 타입에 따라 적절한 데이터 타입 설정
     let dataType: string;
     switch (type) {
@@ -128,30 +185,49 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
       robotId: selectedRobotId,
       dataType
     };
-    setWidgets(prev => [...prev, newWidget]);
+
+    const newConfig = addWidget(dashboardConfig, dashboardConfig.activeTabId, newWidget);
+    setDashboardConfig(newConfig);
   };
 
   const handleRemoveWidget = (widgetId: string) => {
-    setWidgets(prev => prev.filter(w => w.id !== widgetId));
+    if (dashboardConfig) {
+      const newConfig = removeWidget(dashboardConfig, dashboardConfig.activeTabId, widgetId);
+      setDashboardConfig(newConfig);
+    }
   };
 
   // 레이아웃 변경 핸들러
   const handleLayoutChange = (layout: any) => {
-    setWidgets(prev => prev.map(widget => {
-      const newLayout = layout.find((l: any) => l.i === widget.id);
-      if (newLayout) {
-        return {
-          ...widget,
-          position: {
-            x: newLayout.x,
-            y: newLayout.y,
-            w: newLayout.w,
-            h: newLayout.h
-          }
-        };
-      }
-      return widget;
-    }));
+    if (!dashboardConfig) return;
+
+    const newConfig = {
+      ...dashboardConfig,
+      tabs: dashboardConfig.tabs.map(tab => {
+        if (tab.id === dashboardConfig.activeTabId) {
+          return {
+            ...tab,
+            widgets: tab.widgets.map(widget => {
+              const newLayout = layout.find((l: any) => l.i === widget.id);
+              if (newLayout) {
+                return {
+                  ...widget,
+                  position: {
+                    x: newLayout.x,
+                    y: newLayout.y,
+                    w: newLayout.w,
+                    h: newLayout.h
+                  }
+                };
+              }
+              return widget;
+            })
+          };
+        }
+        return tab;
+      })
+    };
+    setDashboardConfig(newConfig);
   };
 
   // 컴포넌트 언마운트 시 모든 연결 해제
@@ -162,6 +238,15 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
       });
     };
   }, []);
+
+  if (!dashboardConfig) {
+    return <Box p={4}>로딩 중...</Box>;
+  }
+
+  const activeTab = dashboardConfig.tabs.find(tab => tab.id === dashboardConfig.activeTabId);
+  if (!activeTab) {
+    return <Box p={4}>탭을 찾을 수 없습니다.</Box>;
+  }
 
   return (
     <Box p={4} marginTop="64px">
@@ -180,9 +265,19 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
         </Button>
       </Flex>
 
+      {/* 탭 관리자 */}
+      <TabManager
+        tabs={dashboardConfig.tabs.map(tab => ({ id: tab.id, name: tab.name }))}
+        activeTabId={dashboardConfig.activeTabId}
+        onTabChange={handleTabChange}
+        onAddTab={handleAddTab}
+        onRemoveTab={handleRemoveTab}
+        onRenameTab={handleRenameTab}
+      />
+
       <ResponsiveGridLayout
         className="layout"
-        layouts={{ lg: widgets.map(w => ({
+        layouts={{ lg: activeTab.widgets.map(w => ({
           i: w.id,
           x: w.position.x,
           y: w.position.y,
@@ -203,7 +298,7 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
         margin={[16, 16]}
         draggableHandle=".widget-header"
       >
-        {widgets.map((widget) => (
+        {activeTab.widgets.map((widget) => (
           <Box
             key={widget.id}
             bg="white"

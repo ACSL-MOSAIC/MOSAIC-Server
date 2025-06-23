@@ -15,7 +15,17 @@ export interface WidgetConfig {
   dataType: string;
 }
 
+export interface DashboardTab {
+  id: string;
+  name: string;
+  widgets: WidgetConfig[];
+}
+
 export interface DashboardConfig {
   robotId: string;
-  widgets: WidgetConfig[];
-} 
+  tabs: DashboardTab[];
+  activeTabId: string;
+}
+
+// 로컬스토리지 키 상수
+export const DASHBOARD_STORAGE_KEY = 'dashboard_config'; 

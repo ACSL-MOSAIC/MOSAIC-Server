@@ -44,21 +44,36 @@ export function TurtlesimPositionWidget({ robotId, store, dataType }: TurtlesimP
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // 고해상도 캔버스 설정
-    const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
-    
-    canvas.width = rect.width * dpr
-    canvas.height = rect.height * dpr
-    ctx.scale(dpr, dpr)
-    
-    canvas.style.width = rect.width + 'px'
-    canvas.style.height = rect.height + 'px'
+    // 캔버스 크기 설정 함수
+    const setCanvasSize = () => {
+      const rect = canvas.getBoundingClientRect()
+      const dpr = window.devicePixelRatio || 1
+      
+      // 실제 캔버스 크기 (픽셀)
+      canvas.width = rect.width * dpr
+      canvas.height = rect.height * dpr
+      
+      // CSS 크기
+      canvas.style.width = rect.width + 'px'
+      canvas.style.height = rect.height + 'px'
+      
+      // 컨텍스트 스케일 조정
+      ctx.scale(dpr, dpr)
+      
+      return { width: rect.width, height: rect.height }
+    }
 
-    const canvasWidth = rect.width
-    const canvasHeight = rect.height
+    // 초기 크기 설정
+    const { width: canvasWidth, height: canvasHeight } = setCanvasSize()
     const centerX = canvasWidth / 2
     const centerY = canvasHeight / 2
+
+    // 리사이즈 이벤트 리스너
+    const handleResize = () => {
+      setCanvasSize()
+    }
+
+    window.addEventListener('resize', handleResize)
 
     // 애니메이션 함수
     const animate = () => {
@@ -72,10 +87,10 @@ export function TurtlesimPositionWidget({ robotId, store, dataType }: TurtlesimP
       ctx.fillStyle = gradient
       ctx.fillRect(0, 0, canvasWidth, canvasHeight)
 
-      // 격자 그리기 (더 세련되게)
+      // 격자 그리기 (고정된 크기)
       ctx.strokeStyle = '#e2e8f0'
       ctx.lineWidth = 0.5
-      const gridSize = 20
+      const gridSize = Math.max(20, Math.min(canvasWidth, canvasHeight) / 30) // 최소 20px, 최대 캔버스 크기의 1/30
       
       for (let x = 0; x <= canvasWidth; x += gridSize) {
         ctx.beginPath()
@@ -193,6 +208,7 @@ export function TurtlesimPositionWidget({ robotId, store, dataType }: TurtlesimP
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current)
       }
+      window.removeEventListener('resize', handleResize)
     }
   }, [position, robotId, store])
 
@@ -253,6 +269,29 @@ export function TurtlesimPositionWidget({ robotId, store, dataType }: TurtlesimP
 
           <Text fontSize="xs" color="gray.500" textAlign="center">
             Last update: {new Date(position.timestamp).toLocaleTimeString()}
+          </Text>
+        </VStack>
+      )}
+      
+      {!position && (
+        <VStack gap={2} align="stretch" minH="80px" justify="center">
+          <HStack justify="space-between" fontSize="xs">
+            <Text color="gray.600" fontWeight="medium">Position</Text>
+            <Text color="gray.400" fontFamily="mono">--</Text>
+          </HStack>
+          
+          <HStack justify="space-between" fontSize="xs">
+            <Text color="gray.600" fontWeight="medium">Orientation</Text>
+            <Text color="gray.400" fontFamily="mono">--</Text>
+          </HStack>
+
+          <HStack justify="space-between" fontSize="xs">
+            <Text color="gray.600" fontWeight="medium">Velocity</Text>
+            <Text color="gray.400" fontFamily="mono">--</Text>
+          </HStack>
+
+          <Text fontSize="xs" color="gray.400" textAlign="center">
+            Waiting for connection...
           </Text>
         </VStack>
       )}
