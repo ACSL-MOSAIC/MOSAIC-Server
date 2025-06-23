@@ -1,21 +1,40 @@
 import { Container, Heading } from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
-import ConnectRobot from "@/components/Connect/ConnectRobot"
+import { DashboardGrid } from "@/components/Dashboard/DashboardGrid"
+import { useState } from "react"
+import { WidgetConfig } from "@/components/Dashboard/types"
+import useAuth from "@/hooks/useAuth"
+import { StoreManager } from "@/dashboard/store/store-manager"
+import { cleanupAllDataChannels } from "@/rtc/webrtc-utils"
 
 export const Route = createFileRoute("/_layout/connect/$robotId")({
-  component: ConnectRobotPage,
+  beforeLoad: async ({ params }) => {
+    const robotIdList = params.robotId.split(',');
+    console.log('대시보드 라우트 진입, 스토어 정리 시작');
+    
+    // 기존 스토어만 cleanup (동적 생성으로 변경)
+    robotIdList.forEach(robotId => {
+      console.log(`로봇 ${robotId} 스토어 cleanup`);
+      cleanupAllDataChannels(robotId);
+      StoreManager.getInstance().cleanupRobotStores(robotId);
+    });
+
+    console.log('대시보드 라우트 진입, 스토어 정리 완료 (동적 생성 모드)');
+  },
+  component: DashboardPage,
 })
 
-function ConnectRobotPage() {
+function DashboardPage() {
   const { robotId } = Route.useParams()
-  console.log("ConnectRobotPage rendered with robotId:", robotId)
+  const { user } = useAuth()
+  const robotIdList = robotId.split(',')
 
   return (
     <Container maxW="full">
-      <Heading size="lg" textAlign={{ base: "center", md: "left" }} py={12}>
-        로봇 연결
-      </Heading>
-      <ConnectRobot robotId={robotId} />
+      <DashboardGrid
+        robotIdList={robotIdList}
+        userId={user?.id || ""}
+      />
     </Container>
   )
 } 

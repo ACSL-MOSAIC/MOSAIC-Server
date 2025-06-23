@@ -17,7 +17,10 @@ function Navbar() {
       bg="bg.muted"
       w="100%"
       top={0}
+      left={0}
       p={4}
+      zIndex={1000}
+      boxSizing="border-box"
     >
       <Link to="/">
         <Image src={Logo} alt="Logo" maxW="3xs" p={2} />
