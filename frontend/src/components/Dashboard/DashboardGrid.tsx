@@ -99,12 +99,31 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
   };
 
   const handleAddWidget = (selectedRobotId: string, type: WidgetType) => {
+    // 위젯 타입에 따라 적절한 데이터 타입 설정
+    let dataType: string;
+    switch (type) {
+      case 'go2_low_state':
+        dataType = 'go2_low_state';
+        break;
+      case 'go2_ouster_pointcloud':
+        dataType = 'go2_ouster_pointcloud';
+        break;
+      case 'turtlesim_position':
+        dataType = 'turtlesim_position';
+        break;
+      case 'turtlesim_remote_control':
+        dataType = 'turtlesim_remote_control';
+        break;
+      default:
+        dataType = 'go2_low_state';
+    }
+
     const newWidget: WidgetConfig = {
       id: uuidv4(),
       type,
       position: { x: 0, y: 0, w: 4, h: 4 },
       robotId: selectedRobotId,
-      dataType: 'go2_low_state'
+      dataType
     };
     setWidgets(prev => [...prev, newWidget]);
   };

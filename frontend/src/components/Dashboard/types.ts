@@ -1,4 +1,4 @@
-export type WidgetType = 'go2_low_state';
+export type WidgetType = 'go2_low_state' | 'go2_ouster_pointcloud' | 'turtlesim_position' | 'turtlesim_remote_control';
 
 export interface WidgetPosition {
   x: number;

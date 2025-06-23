@@ -1,16 +1,19 @@
 import { GO2_LOW_STATE_TYPE } from "@/dashboard/parser/go2-low-state";
 import { GO2_OUSTER_POINTCLOUD2_TYPE } from "@/dashboard/parser/go2-ouster-pointcloud";
 import { TURTLESIM_POSITION_TYPE } from "@/dashboard/parser/turtlesim-position";
+import { TURTLESIM_REMOTE_CONTROL_TYPE } from "@/dashboard/parser/turtlesim-remote-control";
 import { StoreManager } from "@/dashboard/store/store-manager";
 import { TurtlesimPositionStore } from "@/dashboard/store/turtlesim-position.store";
 import { Go2LowStateStore } from "@/dashboard/store/go2-low-state.store";
 import { Go2OusterPointCloudStore } from "@/dashboard/store/go2-ouster-pointcloud.store";
+import { TurtlesimRemoteControlStore } from "@/dashboard/store/turtlesim-remote-control.store";
 import { DataStore } from "@/dashboard/store/store";
 
 const dataTypeToSymbol = {
   'turtlesim_position': TURTLESIM_POSITION_TYPE,
   'go2_low_state': GO2_LOW_STATE_TYPE,
   'go2_ouster_pointcloud': GO2_OUSTER_POINTCLOUD2_TYPE,
+  'turtlesim_remote_control': TURTLESIM_REMOTE_CONTROL_TYPE,
 }
 
 const getDataTypeSymbol = (dataType: string) => {
@@ -70,6 +73,17 @@ export function setupDataChannel(
             channelType, 
             (robotId) => new Go2OusterPointCloudStore(robotId)
           );
+          break;
+        case 'turtlesim_remote_control':
+          store = storeManager.createStoreIfNotExists(
+            robotId, 
+            channelType, 
+            (robotId) => new TurtlesimRemoteControlStore(robotId)
+          );
+          // 원격 제어 스토어에 데이터 채널 설정
+          if (store instanceof TurtlesimRemoteControlStore) {
+            store.setDataChannel(dataChannel);
+          }
           break;
         default:
           console.warn(`지원하지 않는 데이터 타입: ${dataType}`);

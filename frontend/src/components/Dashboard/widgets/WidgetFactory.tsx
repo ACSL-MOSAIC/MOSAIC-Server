@@ -10,6 +10,9 @@ import { GO2_OUSTER_POINTCLOUD2_TYPE, ParsedPointCloud2 } from '../../../dashboa
 import { TurtlesimPositionWidget } from './TurtlesimPositionWidget'
 import { TurtlesimPositionStore } from '../../../dashboard/store/turtlesim-position.store'
 import { TURTLESIM_POSITION_TYPE } from '../../../dashboard/parser/turtlesim-position'
+import { TurtlesimRemoteControlWidget } from './TurtlesimRemoteControlWidget'
+import { TurtlesimRemoteControlStore } from '../../../dashboard/store/turtlesim-remote-control.store'
+import { TURTLESIM_REMOTE_CONTROL_TYPE } from '../../../dashboard/parser/turtlesim-remote-control'
 
 export interface WidgetFactoryProps extends WidgetProps {
   type: string;
@@ -47,6 +50,15 @@ export function WidgetFactory({ type, robotId, dataType }: WidgetFactoryProps) {
         (robotId) => new TurtlesimPositionStore(robotId)
       );
       return <TurtlesimPositionWidget robotId={robotId} store={positionStore as TurtlesimPositionStore} dataType={dataType} />;
+    
+    case 'turtlesim_remote_control':
+      // 동적 스토어 생성
+      const remoteControlStore = storeManager.createStoreIfNotExists(
+        robotId,
+        TURTLESIM_REMOTE_CONTROL_TYPE,
+        (robotId) => new TurtlesimRemoteControlStore(robotId)
+      );
+      return <TurtlesimRemoteControlWidget robotId={robotId} store={remoteControlStore as TurtlesimRemoteControlStore} dataType={dataType} />;
     
     default:
       console.log('Unknown widget type:', type)
