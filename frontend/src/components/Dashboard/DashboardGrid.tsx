@@ -11,6 +11,7 @@ import { WidgetFactory } from "./widgets/WidgetFactory"
 import { Responsive, WidthProvider } from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
+import { toaster } from "@/components/ui/toaster"
 import { 
   loadDashboardConfig, 
   saveDashboardConfig, 
@@ -33,6 +34,7 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
   const { open, onOpen, onClose } = useDisclosure();
   const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig | null>(null);
   const [connections, setConnections] = useState<{ [key: string]: boolean }>({});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const ws = useWebSocket();
   
   // WebRTC 연결 객체들을 관리하는 ref
@@ -62,12 +64,23 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
     setDashboardConfig(config);
   }, [robotIdList]);
 
-  // 설정 변경 시 저장
-  useEffect(() => {
+  // 설정 변경 시 unsaved 상태로 표시
+  const updateConfig = (newConfig: DashboardConfig) => {
+    setDashboardConfig(newConfig);
+    setHasUnsavedChanges(true);
+  };
+
+  // 저장하기 함수
+  const handleSave = () => {
     if (dashboardConfig) {
       saveDashboardConfig(dashboardConfig);
+      setHasUnsavedChanges(false);
+      toaster.create({
+        title: "설정 저장됨",
+        description: "대시보드 설정이 성공적으로 저장되었습니다.",
+      });
     }
-  }, [dashboardConfig]);
+  };
 
   // 연결 상태 변경 핸들러
   const handleConnectionStateChange = (robotId: string, isConnected: boolean) => {
@@ -126,27 +139,27 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
   const handleAddTab = (tabName: string) => {
     if (dashboardConfig) {
       const newConfig = addTab(dashboardConfig, tabName);
-      setDashboardConfig(newConfig);
+      updateConfig(newConfig);
     }
   };
 
   const handleRemoveTab = (tabId: string) => {
     if (dashboardConfig) {
       const newConfig = removeTab(dashboardConfig, tabId);
-      setDashboardConfig(newConfig);
+      updateConfig(newConfig);
     }
   };
 
   const handleRenameTab = (tabId: string, newName: string) => {
     if (dashboardConfig) {
       const newConfig = renameTab(dashboardConfig, tabId, newName);
-      setDashboardConfig(newConfig);
+      updateConfig(newConfig);
     }
   };
 
   const handleTabChange = (tabId: string) => {
     if (dashboardConfig) {
-      setDashboardConfig({
+      updateConfig({
         ...dashboardConfig,
         activeTabId: tabId
       });
@@ -187,13 +200,13 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
     };
 
     const newConfig = addWidget(dashboardConfig, dashboardConfig.activeTabId, newWidget);
-    setDashboardConfig(newConfig);
+    updateConfig(newConfig);
   };
 
   const handleRemoveWidget = (widgetId: string) => {
     if (dashboardConfig) {
       const newConfig = removeWidget(dashboardConfig, dashboardConfig.activeTabId, widgetId);
-      setDashboardConfig(newConfig);
+      updateConfig(newConfig);
     }
   };
 
@@ -227,7 +240,7 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
         return tab;
       })
     };
-    setDashboardConfig(newConfig);
+    updateConfig(newConfig);
   };
 
   // 컴포넌트 언마운트 시 모든 연결 해제
@@ -251,17 +264,27 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
   return (
     <Box p={4} marginTop="64px">
       <Flex justify="space-between" mb={4}>
-        <Button 
-          colorScheme="green" 
-          onClick={handleConnectAllRobots}
+        <Flex gap={2}>
+          <Button 
+            colorScheme="green" 
+            onClick={handleConnectAllRobots}
+          >
+            모든 로봇 연결
+          </Button>
+          <Button 
+            colorScheme="blue" 
+            onClick={onOpen}
+          >
+            위젯 추가
+          </Button>
+        </Flex>
+        
+        <Button
+          colorScheme="teal"
+          onClick={handleSave}
+          disabled={!hasUnsavedChanges}
         >
-          모든 로봇 연결
-        </Button>
-        <Button 
-          colorScheme="blue" 
-          onClick={onOpen}
-        >
-          위젯 추가
+          💾 {hasUnsavedChanges ? "저장하기" : "저장됨"}
         </Button>
       </Flex>
 
