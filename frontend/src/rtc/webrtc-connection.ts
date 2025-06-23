@@ -2,10 +2,17 @@ import { WebSocketContextType } from "@/contexts/WebSocketContext"
 import { setupWebSocketHandlers, sendWebSocketMessage } from "./ws-adaptor"
 import { setupDataChannel, cleanupAllDataChannels } from "./webrtc-utils"
 
+export interface DataChannelConfig {
+  label: string
+  dataType: string // 'turtlesim_position', 'go2_low_state', 'go2_ouster_pointcloud' 등
+  options?: RTCDataChannelInit
+}
+
 export interface WebRTCConnectionConfig {
   robotId: string
   ws: WebSocketContextType
   onConnectionStateChange?: (isConnected: boolean) => void
+  dataChannels?: DataChannelConfig[] // 채널별 설정
 }
 
 export class WebRTCConnection {
@@ -14,6 +21,7 @@ export class WebRTCConnection {
   private unsubscribeFunctions: (() => void)[] = []
   private pendingCandidates: RTCIceCandidate[] = []
   private dataChannels: Map<string, RTCDataChannel> = new Map()
+  private channelDataTypes: Map<string, string> = new Map() // 채널 라벨 -> 데이터 타입 매핑
 
   constructor(config: WebRTCConnectionConfig) {
     this.config = config
@@ -81,43 +89,74 @@ export class WebRTCConnection {
     peerConnection.ondatachannel = (event) => {
       const dataChannel = event.channel
       console.log('DataChannel 수신됨:', dataChannel.label, dataChannel.readyState)
-      this.setupDataChannel(dataChannel)
+      
+      // 수신된 채널의 데이터 타입을 매핑에서 가져옴
+      const dataType = this.channelDataTypes.get(dataChannel.label)
+      if (!dataType) {
+        console.error(`등록되지 않은 채널 수신됨: ${dataChannel.label}`)
+        return
+      }
+      
+      this.setupDataChannel(dataChannel, dataType)
     }
 
-    // DataChannel 생성
-    console.log('DataChannel 생성 시작')
-    const dataChannel = peerConnection.createDataChannel('data_channel', {
-      ordered: true
+    // 설정된 데이터 채널들 생성
+    const channelsToCreate = this.config.dataChannels || []
+    
+    // 기본 채널들 추가 (설정에 없는 경우)
+    const defaultChannels: DataChannelConfig[] = [
+      { label: 'position_data_channel', dataType: 'turtlesim_position' },
+      { label: 'data_channel', dataType: 'go2_low_state' }
+    ]
+    
+    const allChannels = [...channelsToCreate, ...defaultChannels.filter(ch => 
+      !channelsToCreate.some(configured => configured.label === ch.label)
+    )]
+
+    console.log('DataChannel 생성 시작:', allChannels.map(ch => `${ch.label}(${ch.dataType})`))
+    
+    // 여러 데이터 채널 생성
+    allChannels.forEach(channelConfig => {
+      const dataChannel = peerConnection.createDataChannel(channelConfig.label, {
+        ordered: true,
+        ...channelConfig.options
+      })
+      
+      console.log('DataChannel 생성됨:', dataChannel.label, dataChannel.readyState, '데이터타입:', channelConfig.dataType)
+      
+      // 채널과 데이터 타입 매핑 저장
+      this.channelDataTypes.set(channelConfig.label, channelConfig.dataType)
+      
+      // 생성된 채널도 설정
+      this.setupDataChannel(dataChannel, channelConfig.dataType)
     })
-
-
-    console.log('DataChannel 생성됨:', dataChannel.label, dataChannel.readyState)
 
     return peerConnection
   }
 
-  private setupDataChannel(dataChannel: RTCDataChannel) {
-    console.log('DataChannel 설정 시작:', dataChannel.label)
+  private setupDataChannel(dataChannel: RTCDataChannel, dataType: string) {
+    console.log('DataChannel 설정 시작:', dataChannel.label, '데이터타입:', dataType)
     
     // DataChannel 상태 변경 이벤트 핸들러
     dataChannel.onopen = () => {
-      console.log(`DataChannel ${dataChannel.label} 열림, 상태:`, dataChannel.readyState)
+      console.log(`DataChannel ${dataChannel.label} 열림, 상태:`, dataChannel.readyState, '데이터타입:', dataType)
     }
 
     dataChannel.onclose = () => {
       console.log(`DataChannel ${dataChannel.label} 닫힘, 상태:`, dataChannel.readyState)
       this.dataChannels.delete(dataChannel.label)
+      this.channelDataTypes.delete(dataChannel.label)
     }
 
     dataChannel.onerror = (error) => {
       console.error(`DataChannel ${dataChannel.label} 에러:`, error)
     }
 
-    setupDataChannel(dataChannel, this.config.robotId)
+    setupDataChannel(dataChannel, this.config.robotId, dataType)
 
     // DataChannel 저장
     this.dataChannels.set(dataChannel.label, dataChannel)
-    console.log('DataChannel 설정 완료:', dataChannel.label)
+    console.log('DataChannel 설정 완료:', dataChannel.label, '데이터타입:', dataType)
   }
 
   public async startConnection(): Promise<void> {
@@ -222,6 +261,7 @@ export class WebRTCConnection {
     // DataChannel 정리
     cleanupAllDataChannels(this.config.robotId)
     this.dataChannels.clear()
+    this.channelDataTypes.clear()
 
     if (this.peerConnection) {
       this.peerConnection.close()
@@ -237,5 +277,26 @@ export class WebRTCConnection {
 
   public getDataChannel(label: string): RTCDataChannel | undefined {
     return this.dataChannels.get(label)
+  }
+
+  // 모든 데이터 채널 목록 반환
+  public getDataChannels(): Map<string, RTCDataChannel> {
+    return this.dataChannels
+  }
+
+  // 채널별 데이터 타입 반환
+  public getChannelDataType(channelLabel: string): string | undefined {
+    return this.channelDataTypes.get(channelLabel)
+  }
+
+  // 특정 데이터 타입을 처리하는 채널들 반환
+  public getChannelsByDataType(dataType: string): string[] {
+    const channels: string[] = []
+    this.channelDataTypes.forEach((type, label) => {
+      if (type === dataType) {
+        channels.push(label)
+      }
+    })
+    return channels
   }
 }

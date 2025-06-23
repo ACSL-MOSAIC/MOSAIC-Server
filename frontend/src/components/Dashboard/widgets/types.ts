@@ -5,4 +5,4 @@ export interface WidgetProps {
   dataType: string;
 }
 
-export type WidgetType = 'go2_low_state' | 'go2_ouster_pointcloud';
+export type WidgetType = 'go2_low_state' | 'go2_ouster_pointcloud' | 'turtlesim_position';

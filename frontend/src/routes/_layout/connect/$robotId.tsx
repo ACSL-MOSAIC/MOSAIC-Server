@@ -12,20 +12,14 @@ export const Route = createFileRoute("/_layout/connect/$robotId")({
     const robotIdList = params.robotId.split(',');
     console.log('대시보드 라우트 진입, 스토어 정리 시작');
     
-    // 1. 기존 스토어 cleanup
+    // 기존 스토어만 cleanup (동적 생성으로 변경)
     robotIdList.forEach(robotId => {
       console.log(`로봇 ${robotId} 스토어 cleanup`);
       cleanupAllDataChannels(robotId);
       StoreManager.getInstance().cleanupRobotStores(robotId);
     });
 
-    // 2. 새로운 스토어 초기화
-    robotIdList.forEach(robotId => {
-      console.log(`로봇 ${robotId} 스토어 초기화`);
-      StoreManager.getInstance().initializeRobotStores(robotId);
-    });
-
-    console.log('대시보드 라우트 진입, 스토어 정리 완료');
+    console.log('대시보드 라우트 진입, 스토어 정리 완료 (동적 생성 모드)');
   },
   component: DashboardPage,
 })
