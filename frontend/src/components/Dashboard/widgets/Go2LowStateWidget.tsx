@@ -261,7 +261,7 @@ export function Go2LowStateWidget({ robotId, store }: Go2LowStateWidgetProps) {
     datasets: [
       {
         label: 'Voltage',
-        data: powerHistory.values[0] || [],
+        data: powerHistory.values[0] || [], 
         borderColor: 'rgb(153, 102, 255)',
         backgroundColor: 'rgba(153, 102, 255, 0.2)',
       },

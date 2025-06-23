@@ -12,8 +12,28 @@ export function Go2OusterPointCloudWidget({ robotId, store }: Go2OusterPointClou
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    console.log('Go2OusterPointCloudWidget 마운트:', { robotId, store });
+    
+    if (!store) {
+      console.error('PointCloud2 스토어가 없습니다:', { robotId });
+      return;
+    }
+
     const unsubscribe = store.subscribe((data: ParsedPointCloud2) => {
-      if (!canvasRef.current || !data) return;
+      console.log('PointCloud2 데이터 수신:', { 
+        robotId, 
+        hasData: !!data,
+        dataStructure: data ? Object.keys(data) : null,
+        width: data?.width,
+        height: data?.height,
+        pointStep: data?.pointStep,
+        dataType: typeof data?.data
+      });
+      
+      if (!canvasRef.current || !data) {
+        console.warn('캔버스 또는 데이터가 없음:', { hasCanvas: !!canvasRef.current, hasData: !!data });
+        return;
+      }
 
       console.log('PointCloud2 data structure:', data);
       
@@ -24,6 +44,11 @@ export function Go2OusterPointCloudWidget({ robotId, store }: Go2OusterPointClou
         pointData[i] = binaryData.charCodeAt(i);
       }
       
+      console.log('포인트 데이터 변환 완료:', {
+        binaryDataLength: binaryData.length,
+        pointDataLength: pointData.length
+      });
+      
       const pointStep = data.pointStep;
       
       if (!data.width || !data.height || !pointStep) {
@@ -31,16 +56,23 @@ export function Go2OusterPointCloudWidget({ robotId, store }: Go2OusterPointClou
         return;
       }
       
+      console.log('포인트 클라우드 차원 확인:', { width: data.width, height: data.height, pointStep });
+      
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (!ctx) {
+        console.error('캔버스 컨텍스트를 가져올 수 없습니다.');
+        return;
+      }
 
       // 캔버스 크기 설정 (가로 2배, 세로 4배로 확대)
       const scaleX = 2;
       const scaleY = 4;
       const channelGap = 16; // 채널 간 여백
-      canvas.width = data.width * scaleX;
-      canvas.height = (data.height * scaleY) + ((data.height - 1) * channelGap);
+      canvas.width = (data.width || 0) * scaleX;
+      canvas.height = ((data.height || 0) * scaleY) + (((data.height || 0) - 1) * channelGap);
+
+      console.log('캔버스 크기 설정:', { canvasWidth: canvas.width, canvasHeight: canvas.height });
 
       // 배경을 검은색으로 설정
       ctx.fillStyle = 'black';
@@ -50,13 +82,18 @@ export function Go2OusterPointCloudWidget({ robotId, store }: Go2OusterPointClou
       const imageData = ctx.createImageData(canvas.width, canvas.height);
       
       // 각 채널별로 독립적인 깊이 맵과 intensity 맵 초기화
-      const channelMaps = Array.from({ length: data.height }, () => ({
-        depthMap: new Array(data.width).fill(Infinity),
-        intensityMap: new Array(data.width).fill(0)
+      const channelMaps = Array.from({ length: data.height || 0 }, () => ({
+        depthMap: new Array(data.width || 0).fill(Infinity),
+        intensityMap: new Array(data.width || 0).fill(0)
       }));
       
+      console.log('채널 맵 초기화 완료:', { channels: data.height, width: data.width });
+      
+      let processedPoints = 0;
+      let errorPoints = 0;
+      
       // 각 포인트의 데이터 처리
-      for (let i = 0; i < data.width * data.height; i++) {
+      for (let i = 0; i < (data.width || 0) * (data.height || 0); i++) {
         const offset = i * pointStep;
         
         try {
@@ -73,35 +110,47 @@ export function Go2OusterPointCloudWidget({ robotId, store }: Go2OusterPointClou
           const azimuth = Math.atan2(y, x); // -pi ~ pi
           
           // 이미지 좌표로 매핑 (채널별로 독립적으로 처리)
-          const channel = Math.floor(i / data.width); // 현재 채널
-          const u = Math.floor(((azimuth + Math.PI) / (2 * Math.PI)) * data.width);
+          const channel = Math.floor(i / (data.width || 0)); // 현재 채널
+          const u = Math.floor(((azimuth + Math.PI) / (2 * Math.PI)) * (data.width || 0));
           
           // 범위 체크
-          if (u >= 0 && u < data.width && channelMaps[channel]) {
+          if (u >= 0 && u < (data.width || 0) && channelMaps[channel]) {
             // 같은 픽셀에 여러 포인트가 매핑될 경우 가장 가까운 거리 사용
             if (distance < channelMaps[channel].depthMap[u]) {
               channelMaps[channel].depthMap[u] = distance;
               channelMaps[channel].intensityMap[u] = intensity;
             }
           }
+          
+          processedPoints++;
         } catch (error) {
-          console.error(`Error processing point at index ${i}:`, error);
+          console.error(`포인트 ${i} 처리 중 오류:`, error);
+          errorPoints++;
         }
       }
+      
+      console.log('포인트 처리 완료:', { 
+        processedPoints, 
+        errorPoints, 
+        totalPoints: (data.width || 0) * (data.height || 0),
+        successRate: ((processedPoints - errorPoints) / ((data.width || 0) * (data.height || 0)) * 100).toFixed(2) + '%'
+      });
       
       // 각 채널별 최대 거리 찾기
       const maxDistances = channelMaps.map(channelMap => 
         Math.max(...channelMap.depthMap.filter(d => d !== Infinity)) || 1
       );
       
+      console.log('최대 거리 계산 완료:', { maxDistances });
+      
       // 깊이 맵과 intensity 맵을 이미지로 변환
-      for (let channel = 0; channel < data.height; channel++) {
+      for (let channel = 0; channel < (data.height || 0); channel++) {
         const maxDistance = maxDistances[channel];
         const channelMap = channelMaps[channel];
         
         if (!channelMap) continue;
         
-        for (let u = 0; u < data.width; u++) {
+        for (let u = 0; u < (data.width || 0); u++) {
           // 깊이와 intensity 정규화
           const normalizedDepth = channelMap.depthMap[u] === Infinity ? 0 
             : channelMap.depthMap[u] / maxDistance;
@@ -155,9 +204,11 @@ export function Go2OusterPointCloudWidget({ robotId, store }: Go2OusterPointClou
 
       // 이미지 데이터를 캔버스에 그리기
       ctx.putImageData(imageData, 0, 0);
+      console.log('PointCloud2 렌더링 완료');
     });
 
     return () => {
+      console.log('Go2OusterPointCloudWidget 언마운트');
       unsubscribe();
     };
   }, [store]);

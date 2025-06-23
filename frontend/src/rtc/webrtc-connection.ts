@@ -104,12 +104,23 @@ export class WebRTCConnection {
       const dataChannel = event.channel
       console.log('DataChannel 수신됨:', dataChannel.label, dataChannel.readyState)
       
+      // 채널 이름 매핑 (서버와 클라이언트 간 이름 차이 해결)
+      const channelNameMapping: { [key: string]: string } = {
+        'go2_ouster_points_data_channel': 'go2_ouster_pointcloud_data_channel'
+      }
+      
+      const mappedLabel = channelNameMapping[dataChannel.label] || dataChannel.label
+      console.log('채널 이름 매핑:', { original: dataChannel.label, mapped: mappedLabel })
+      
       // 수신된 채널의 데이터 타입을 매핑에서 가져옴
-      const dataType = this.channelDataTypes.get(dataChannel.label)
+      const dataType = this.channelDataTypes.get(mappedLabel)
       if (!dataType) {
-        console.error(`등록되지 않은 채널 수신됨: ${dataChannel.label}`)
+        console.error(`등록되지 않은 채널 수신됨: ${dataChannel.label} (매핑 후: ${mappedLabel})`)
         return
       }
+      
+      // 매핑된 라벨로 채널 데이터 타입 저장
+      this.channelDataTypes.set(dataChannel.label, dataType)
       
       this.setupDataChannel(dataChannel, dataType)
     }
