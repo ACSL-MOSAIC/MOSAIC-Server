@@ -1,17 +1,36 @@
 import { DashboardConfig, DashboardTab, WidgetConfig, DASHBOARD_STORAGE_KEY } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
+// 로봇 ID 배열을 정렬된 문자열로 변환 (순서 무관하게 비교)
+const normalizeRobotIds = (robotIds: string[]): string => {
+  return robotIds.sort().join(',');
+};
+
+// 로봇 ID 집합이 동일한지 확인
+const areRobotSetsEqual = (robotIds1: string[], robotIds2: string[]): boolean => {
+  if (robotIds1.length !== robotIds2.length) return false;
+  
+  const sorted1 = robotIds1.sort();
+  const sorted2 = robotIds2.sort();
+  
+  return sorted1.every((id, index) => id === sorted2[index]);
+};
+
+// 로봇 조합별 고유 키 생성
+const getStorageKey = (robotIds: string[]): string => {
+  const normalizedIds = normalizeRobotIds(robotIds);
+  return `${DASHBOARD_STORAGE_KEY}_${normalizedIds}`;
+};
+
 // 로컬스토리지에서 대시보드 설정 로드
 export const loadDashboardConfig = (robotIdList: string[]): DashboardConfig => {
   try {
-    const stored = localStorage.getItem(DASHBOARD_STORAGE_KEY);
+    const storageKey = getStorageKey(robotIdList);
+    const stored = localStorage.getItem(storageKey);
+    
     if (stored) {
       const config: DashboardConfig = JSON.parse(stored);
-      
-      // 저장된 설정이 현재 로봇 리스트와 일치하는지 확인
-      if (config.robotId === robotIdList.join(',')) {
-        return config;
-      }
+      return config;
     }
   } catch (error) {
     console.error('대시보드 설정 로드 실패:', error);
@@ -30,7 +49,7 @@ export const createDefaultDashboardConfig = (robotIdList: string[]): DashboardCo
   };
 
   return {
-    robotId: robotIdList.join(','),
+    robotId: normalizeRobotIds(robotIdList),
     tabs: [defaultTab],
     activeTabId: defaultTab.id
   };
@@ -39,7 +58,15 @@ export const createDefaultDashboardConfig = (robotIdList: string[]): DashboardCo
 // 로컬스토리지에 대시보드 설정 저장
 export const saveDashboardConfig = (config: DashboardConfig): void => {
   try {
-    localStorage.setItem(DASHBOARD_STORAGE_KEY, JSON.stringify(config));
+    const robotIds = config.robotId.split(',').filter(id => id.trim());
+    const storageKey = getStorageKey(robotIds);
+    
+    const normalizedConfig = {
+      ...config,
+      robotId: normalizeRobotIds(robotIds)
+    };
+    
+    localStorage.setItem(storageKey, JSON.stringify(normalizedConfig));
   } catch (error) {
     console.error('대시보드 설정 저장 실패:', error);
   }
