@@ -1,6 +1,9 @@
 import { WebSocketContextType } from "@/contexts/WebSocketContext"
 import { setupWebSocketHandlers, sendWebSocketMessage } from "./ws-adaptor"
 import { setupDataChannel, cleanupAllDataChannels } from "./webrtc-utils"
+import { StoreManager } from "@/dashboard/store/store-manager"
+import { TurtlesimRemoteControlStore } from "@/dashboard/store/turtlesim-remote-control.store"
+import { TURTLESIM_REMOTE_CONTROL_TYPE } from "@/dashboard/parser/turtlesim-remote-control"
 
 export interface DataChannelConfig {
   label: string
@@ -127,6 +130,24 @@ export class WebRTCConnection {
       
       // 채널과 데이터 타입 매핑 저장
       this.channelDataTypes.set(channelConfig.label, channelConfig.dataType)
+      
+      // turtlesim_remote_control 타입의 경우 바로 스토어에 데이터 채널 설정
+      if (channelConfig.dataType === 'turtlesim_remote_control') {
+        const storeManager = StoreManager.getInstance();
+        const store = storeManager.createStoreIfNotExists(
+          this.config.robotId,
+          TURTLESIM_REMOTE_CONTROL_TYPE,
+          (robotId) => new TurtlesimRemoteControlStore(robotId)
+        );
+        if (store instanceof TurtlesimRemoteControlStore) {
+          store.setDataChannel(dataChannel);
+          console.log(`WebRTC 연결 시 TurtlesimRemoteControlStore에 데이터 채널 설정:`, {
+            robotId: this.config.robotId,
+            channelLabel: dataChannel.label,
+            channelState: dataChannel.readyState
+          });
+        }
+      }
       
       // 생성된 채널도 설정
       this.setupDataChannel(dataChannel, channelConfig.dataType)

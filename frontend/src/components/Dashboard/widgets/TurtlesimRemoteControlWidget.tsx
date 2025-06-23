@@ -19,6 +19,13 @@ export function TurtlesimRemoteControlWidget({ robotId, store, dataType }: Turtl
     const checkConnectionStatus = () => {
       // Store에서 WebRTC 연결 객체 가져오기
       const dataChannel = store.getDataChannel()
+      console.log(`TurtlesimRemoteControlWidget - 데이터 채널 상태 확인:`, {
+        robotId,
+        hasDataChannel: !!dataChannel,
+        readyState: dataChannel?.readyState,
+        label: dataChannel?.label
+      })
+      
       if (dataChannel && dataChannel.readyState === 'open') {
         setIsConnected(true)
       } else {
@@ -41,7 +48,7 @@ export function TurtlesimRemoteControlWidget({ robotId, store, dataType }: Turtl
       clearInterval(interval)
       unsubscribe()
     }
-  }, [store])
+  }, [store, robotId])
 
   const handleDirectionClick = (direction: 'up' | 'down' | 'left' | 'right') => {
     store.sendCommand(direction)

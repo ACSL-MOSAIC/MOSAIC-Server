@@ -75,14 +75,27 @@ export function setupDataChannel(
           );
           break;
         case 'turtlesim_remote_control':
+          console.log(`TurtlesimRemoteControl 스토어 생성 시작:`, { robotId, channelType });
           store = storeManager.createStoreIfNotExists(
             robotId, 
             channelType, 
             (robotId) => new TurtlesimRemoteControlStore(robotId)
           );
+          console.log(`TurtlesimRemoteControl 스토어 생성 결과:`, { 
+            robotId, 
+            storeType: store?.constructor.name,
+            isTurtlesimRemoteControlStore: store instanceof TurtlesimRemoteControlStore
+          });
           // 원격 제어 스토어에 데이터 채널 설정
           if (store instanceof TurtlesimRemoteControlStore) {
             store.setDataChannel(dataChannel);
+            console.log(`TurtlesimRemoteControlStore에 데이터 채널 설정 완료:`, {
+              robotId,
+              channelLabel: dataChannel.label,
+              channelState: dataChannel.readyState
+            });
+          } else {
+            console.error(`TurtlesimRemoteControlStore 인스턴스가 아닙니다:`, store);
           }
           break;
         default:
@@ -92,7 +105,7 @@ export function setupDataChannel(
       
       if (store) {
         store.add(data);
-        console.log(`데이터 처리 완료: ${dataChannel.label} -> ${dataType}`)
+        // console.log(`데이터 처리 완료: ${dataChannel.label} -> ${dataType}`)
       } else {
         console.warn(`스토어 생성 실패: ${robotId}, ${String(channelType)}`)
       }

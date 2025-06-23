@@ -18,7 +18,7 @@ export class DataStore<T, I = string> {
             return
         }
 
-        console.log("store add and type", parsedData) 
+        // console.log("store add and type", parsedData) 
 
         this.data.push(parsedData)
         if (this.data.length > this.maxSize) {
