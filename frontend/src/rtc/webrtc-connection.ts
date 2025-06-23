@@ -120,7 +120,8 @@ export class WebRTCConnection {
     // 기본 채널들 추가 (설정에 없는 경우)
     const defaultChannels: DataChannelConfig[] = [
       { label: 'position_data_channel', dataType: 'turtlesim_position' },
-      { label: 'data_channel', dataType: 'go2_low_state' },
+      { label: 'go2_low_state_data_channel', dataType: 'go2_low_state' },
+      { label: 'go2_ouster_pointcloud_data_channel', dataType: 'go2_ouster_pointcloud' },
       { label: 'remote_control_channel', dataType: 'turtlesim_remote_control' }
     ]
     
