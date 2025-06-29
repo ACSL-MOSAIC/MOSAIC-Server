@@ -4,6 +4,9 @@ import type { CancelablePromise } from "./core/CancelablePromise"
 import { OpenAPI } from "./core/OpenAPI"
 import { request as __request } from "./core/request"
 import type {
+  DashboardReadDashboardResponse,
+  DashboardUpsertDashboardData,
+  DashboardUpsertDashboardResponse,
   UsersLoginAccessTokenData,
   UsersLoginAccessTokenResponse,
   UsersDisconnectExistingSessionData,
@@ -49,6 +52,43 @@ import type {
   UtilsTestEmailResponse,
   UtilsHealthCheckResponse,
 } from "./types.gen"
+
+export class DashboardService {
+  /**
+   * Read Dashboard
+   * 현재 사용자의 대시보드 설정 조회
+   * @returns DashboardPublic Successful Response
+   * @throws ApiError
+   */
+  public static readDashboard(): CancelablePromise<DashboardReadDashboardResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/",
+    })
+  }
+
+  /**
+   * Upsert Dashboard
+   * 대시보드 설정 upsert (있으면 업데이트, 없으면 생성)
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns DashboardPublic Successful Response
+   * @throws ApiError
+   */
+  public static upsertDashboard(
+    data: DashboardUpsertDashboardData,
+  ): CancelablePromise<DashboardUpsertDashboardResponse> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/",
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+}
 
 export class LoginService {
   /**

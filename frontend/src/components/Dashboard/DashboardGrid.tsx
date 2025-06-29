@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react"
-import { Box, Grid, GridItem, Button, useDisclosure, Flex } from "@chakra-ui/react"
+import { Box, Button, Flex } from "@chakra-ui/react"
 import { WidgetConfig, WidgetType, DashboardConfig } from "./types"
 import { v4 as uuidv4 } from 'uuid'
 import { TabManager } from "./TabManager"
@@ -13,28 +13,23 @@ import "react-resizable/css/styles.css"
 import { toaster } from "@/components/ui/toaster"
 import RobotConnectionPanel from "./RobotConnectionPanel"
 import { 
-  loadDashboardConfig, 
-  saveDashboardConfig, 
   addTab, 
   removeTab, 
   renameTab, 
   addWidget, 
   removeWidget, 
-  removeWidgetsByRobotId,
-  updateWidgetPosition 
-} from "./dashboardStorage"
-import useAuth from "@/hooks/useAuth"
+} from "./dashboardUtils"
+import { useDashboardConfigQuery, useDashboardConfigMutation } from "@/hooks/useDashboardConfig"
+import { useQueryClient } from "@tanstack/react-query"
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
-interface DashboardGridProps {
-  userId: string;
-}
-
-export function DashboardGrid({ userId }: DashboardGridProps) {
-  const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig | null>(null);
-  const [connections, setConnections] = useState<{ [key: string]: boolean }>({});
+export function DashboardGrid() {
+  const { data: dashboardConfig, isLoading, refetch } = useDashboardConfigQuery();
+  const { mutate: saveDashboardConfig } = useDashboardConfigMutation();
+  const queryClient = useQueryClient();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [connections, setConnections] = useState<{ [key: string]: boolean }>({});
   const ws = useWebSocket();
   
   // WebRTC 연결 객체들을 관리하는 ref
@@ -58,22 +53,16 @@ export function DashboardGrid({ userId }: DashboardGridProps) {
     }
   };
 
-  // 초기 로드
-  useEffect(() => {
-    const config = loadDashboardConfig(userId);
-    setDashboardConfig(config);
-  }, [userId]);
-
   // 설정 변경 시 unsaved 상태로 표시
   const updateConfig = (newConfig: DashboardConfig) => {
-    setDashboardConfig(newConfig);
+    queryClient.setQueryData(["dashboardConfig"], newConfig);
     setHasUnsavedChanges(true);
   };
 
   // 저장하기 함수
   const handleSave = () => {
     if (dashboardConfig) {
-      saveDashboardConfig(dashboardConfig, userId);
+      saveDashboardConfig(dashboardConfig);
       setHasUnsavedChanges(false);
       toaster.create({
         title: "설정 저장됨",

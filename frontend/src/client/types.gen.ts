@@ -9,6 +9,22 @@ export type Body_users_login_access_token = {
   client_secret?: string | null
 }
 
+export type DashboardCreate = {
+  dashboard_config?: {
+    [key: string]: unknown
+  }
+}
+
+export type DashboardPublic = {
+  dashboard_config?: {
+    [key: string]: unknown
+  }
+  dashboard_id: string
+  user_id: string
+  created_at: string
+  updated_at: string
+}
+
 export type DisconnectRequest = {
   user_id: string
 }
@@ -118,6 +134,14 @@ export type ValidationError = {
   msg: string
   type: string
 }
+
+export type DashboardReadDashboardResponse = DashboardPublic
+
+export type DashboardUpsertDashboardData = {
+  requestBody: DashboardCreate
+}
+
+export type DashboardUpsertDashboardResponse = DashboardPublic
 
 export type UsersLoginAccessTokenData = {
   formData: Body_users_login_access_token
