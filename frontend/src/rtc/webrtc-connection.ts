@@ -1,9 +1,11 @@
 import { WebSocketContextType } from "@/contexts/WebSocketContext"
 import { setupWebSocketHandlers, sendWebSocketMessage } from "./ws-adaptor"
 import { createDataChannel, cleanupAllDataChannels } from "./webrtc-utils"
-import { VideoStoreManager } from "@/dashboard/store/video-store-manager"
-import { VideoStore } from "@/dashboard/store/video.store"
+import { VideoStoreManager } from "@/dashboard/store/media-channel-store/video-store-manager"
+import { VideoStore } from "@/dashboard/store/media-channel-store/video-store"
 import { ChannelType, DEFAULT_DATA_CHANNELS, DataChannelConfigUtils } from "./webrtc-datachannel-config"
+import { createOfferWithMediaChannels, handleSdpAnswer, setupVideoTrackHandler, parseMetadataFromSdp } from "./webrtc-sdp-utils"
+import { MediaChannelConfigUtils } from "./webrtc-media-channel-config"
 
 export interface DataChannelConfig {
   label: string
@@ -45,10 +47,41 @@ export class WebRTCConnection {
     const { unsubscribe } = setupWebSocketHandlers(this.config.ws, this.config.robotId, {
       onSdpAnswer: async (sdpAnswer) => {
         try {
+          console.log('📥 SDP Answer 수신 및 처리 시작')
+          
+          // SDP Answer에서 메타데이터 파싱
+          const metadata = parseMetadataFromSdp(sdpAnswer)
+          console.log('🔍 SDP에서 파싱된 메타데이터:', Object.fromEntries(metadata))
+          
+          // 기존 VideoStore의 메타데이터 업데이트
+          if (metadata.size > 0) {
+            const videoStoreManager = VideoStoreManager.getInstance()
+            const videoStores = videoStoreManager.getRobotVideoStores(this.config.robotId)
+            
+            if (videoStores.size > 0) {
+              // 첫 번째 비디오 스토어의 메타데이터 업데이트
+              const firstVideoStore = videoStores.values().next().value
+              if (firstVideoStore) {
+                const updatedMetadata = {
+                  mediaType: metadata.get('mediaType') || 'turtlesim_video',
+                  description: metadata.get('description') || 'Turtlesim Video Stream',
+                  quality: metadata.get('quality') || '640x480@30fps',
+                  source: metadata.get('source') || 'turtlesim_node',
+                  trackIndex: parseInt(metadata.get('trackIndex') || '0')
+                }
+                
+                firstVideoStore.setMetadata(updatedMetadata)
+                console.log('✅ VideoStore 메타데이터 업데이트 완료:', updatedMetadata)
+              }
+            }
+          }
+          
           await this.setRemoteDescription(new RTCSessionDescription({
             type: 'answer',
             sdp: sdpAnswer
           }))
+          
+          console.log('✅ Remote description 설정 완료')
           
           // SDP answer가 설정된 후에 pending된 ICE candidates 적용
           if (this.pendingCandidates.length > 0) {
@@ -98,10 +131,13 @@ export class WebRTCConnection {
     }
     const peerConnection = new RTCPeerConnection(configuration)
 
+    // ontrack 이벤트 핸들러를 먼저 설정 (비디오 트랙을 놓치지 않기 위해)
+    this.setupVideoTrackHandler(peerConnection)
+
     // DataChannel 이벤트 핸들러 설정
     peerConnection.ondatachannel = (event) => {
       const dataChannel = event.channel
-      console.log('DataChannel 수신됨:', dataChannel.label, dataChannel.readyState)
+      console.log('📊 DataChannel 수신됨:', dataChannel.label, dataChannel.readyState)
       
       // 채널 이름 매핑 (서버와 클라이언트 간 이름 차이 해결)
       const mappedLabel = DataChannelConfigUtils.mapServerChannelNameToClient(dataChannel.label)
@@ -223,7 +259,7 @@ export class WebRTCConnection {
       // 이벤트 핸들러 설정
       this.peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
-          console.log('ICE candidate 생성됨:', event.candidate)
+          console.log('🧊 ICE candidate 생성됨:', event.candidate)
           sendWebSocketMessage(this.config.ws, {
             type: "send_ice_candidate",
             robot_id: this.config.robotId,
@@ -233,59 +269,40 @@ export class WebRTCConnection {
       }
 
       this.peerConnection.oniceconnectionstatechange = () => {
-        console.log('ICE connection state 변경:', this.peerConnection?.iceConnectionState)
+        console.log('🔗 ICE connection state 변경:', this.peerConnection?.iceConnectionState)
         const isConnected = this.peerConnection?.iceConnectionState === 'connected'
+        console.log('🔗 연결 상태:', isConnected ? '✅ 연결됨' : '❌ 연결 안됨')
         this.config.onConnectionStateChange?.(isConnected)
       }
 
       this.peerConnection.onsignalingstatechange = () => {
-        console.log('Signaling state 변경:', this.peerConnection?.signalingState)
+        console.log('📡 Signaling state 변경:', this.peerConnection?.signalingState)
       }
 
-      this.peerConnection.ontrack = (event) => {
-        console.log('Track 수신됨:', event.track.kind, event.track.label, event.track.id)
-        
-        if (event.track.kind === 'video' && event.streams && event.streams[0]) {
-          const stream = event.streams[0]
-          const trackLabel = event.track.label || 'unknown_video'
-          
-          console.log('로봇 비디오 스트림 수신됨:', {
-            streamId: stream.id,
-            trackLabel: trackLabel,
-            trackId: event.track.id,
-            trackEnabled: event.track.enabled,
-            trackReadyState: event.track.readyState
-          })
-          
-          // 모든 비디오 트랙을 터틀비디오로 처리
-          const matchedChannelLabel = 'turtlesim_video_track'
-          const matchedDataType = 'turtlesim_video'
-          
-          console.log('비디오 채널 매칭 결과:', {
-            channelLabel: matchedChannelLabel,
-            dataType: matchedDataType,
-            originalTrackLabel: trackLabel
-          })
-          
-          // VideoStoreManager를 통해 비디오 스토어 생성 및 MediaStream 설정
-          const videoStore = VideoStoreManager.getInstance().createVideoStoreIfNotExists(
-            this.config.robotId,
-            matchedChannelLabel,
-            matchedDataType
-          )
-          
-          videoStore.setMediaStream(stream)
-          console.log(`비디오 스토어 설정 완료: ${matchedChannelLabel}(${matchedDataType}) for robot ${this.config.robotId}`)
-        }
+      this.peerConnection.onconnectionstatechange = () => {
+        console.log('🌐 Connection state 변경:', this.peerConnection?.connectionState)
       }
 
-      // Offer 생성 및 설정
+      this.peerConnection.ondatachannel = (event) => {
+        console.log('📊 DataChannel 수신됨:', event.channel.label, event.channel.readyState)
+      }
+
+      // ontrack 이벤트는 handleSdpAnswer에서 설정됨
+
+      // Offer 생성 및 설정 - 미디어 채널 설정 적용
       console.log('Offer 생성 시작')
-      const offer = await this.peerConnection.createOffer({
-        offerToReceiveVideo: true,
-        offerToReceiveAudio: false
-      })
-      console.log('Offer 생성됨:', offer)
+      
+      // 활성화된 미디어 채널 목록 가져오기
+      const activeMediaChannels = MediaChannelConfigUtils.getActiveMediaChannels()
+      console.log('활성 미디어 채널:', activeMediaChannels)
+      
+      // 미디어 채널 설정이 적용된 Offer 생성
+      const offer = await createOfferWithMediaChannels(
+        this.peerConnection,
+        activeMediaChannels
+      )
+      
+      console.log('Offer 생성됨 (미디어 채널 설정 적용):', offer)
       
       await this.peerConnection.setLocalDescription(offer)
       console.log('Local description 설정됨:', this.peerConnection.localDescription)
@@ -392,7 +409,7 @@ export class WebRTCConnection {
   }
 
   // 모든 비디오 스토어 가져오기
-  public getVideoStores(): Map<string, VideoStore> {
+  public getVideoStores(): Map<symbol, VideoStore> {
     const videoStoreManager = VideoStoreManager.getInstance()
     return videoStoreManager.getRobotVideoStores(this.config.robotId)
   }
@@ -427,5 +444,89 @@ export class WebRTCConnection {
       }
     })
     return channels
+  }
+
+  // ontrack 이벤트 핸들러를 먼저 설정하는 메서드
+  private setupVideoTrackHandler(peerConnection: RTCPeerConnection): void {
+    console.log('🔧 Video Track Handler 초기 설정 시작')
+    
+    peerConnection.ontrack = (event) => {
+      console.log('🎬 ontrack 이벤트 발생:', {
+        trackKind: event.track.kind,
+        trackId: event.track.id,
+        trackLabel: event.track.label,
+        trackReadyState: event.track.readyState,
+        streamsCount: event.streams?.length || 0,
+        hasStreams: !!event.streams,
+        firstStreamId: event.streams?.[0]?.id
+      })
+      
+      if (event.track.kind === 'video') {
+        console.log('✅ 비디오 트랙 감지됨')
+        
+        if (event.streams && event.streams[0]) {
+          console.log('✅ 스트림이 존재함')
+          const stream = event.streams[0]
+          
+          console.log('🔍 비디오 트랙 상세 정보:', {
+            trackId: event.track.id,
+            actualStreamId: stream.id,
+            trackLabel: event.track.label,
+            streamTracksCount: stream.getTracks().length,
+            streamActive: stream.active
+          })
+          
+          // 기본적으로 turtlesim_video로 처리 (SDP Answer에서 메타데이터 업데이트 예정)
+          const mediaType = 'turtlesim_video'
+          const description = 'Turtlesim Video Stream'
+          const quality = '640x480@30fps'
+          const source = 'turtlesim_node'
+          const trackIndex = 0
+          
+          console.log('🔍 기본 미디어 정보:', {
+            mediaType,
+            description,
+            quality,
+            source,
+            trackIndex
+          })
+          
+          // VideoStore 생성 및 연결
+          const videoStoreManager = VideoStoreManager.getInstance()
+          const videoStore = videoStoreManager.createVideoStoreByMediaTypeAuto(
+            this.config.robotId, 
+            mediaType
+          )
+          
+          console.log('🔍 VideoStore 생성 결과:', {
+            videoStore: videoStore ? 'created' : 'failed',
+            robotId: this.config.robotId,
+            mediaType
+          })
+          
+          if (videoStore) {
+            // 메타데이터 설정
+            videoStore.setMetadata({
+              mediaType,
+              description,
+              quality,
+              source,
+              trackIndex
+            })
+            
+            videoStore.setMediaStream(stream)
+            console.log(`✅ Video Store 연결 완료: ${mediaType} for robot ${this.config.robotId}`)
+          } else {
+            console.warn(`❌ Video Store를 찾을 수 없음: ${mediaType} for robot ${this.config.robotId}`)
+          }
+        } else {
+          console.warn('❌ 비디오 트랙에 스트림이 없음')
+        }
+      } else {
+        console.log('ℹ️ 비디오가 아닌 트랙 무시:', event.track.kind)
+      }
+    }
+    
+    console.log('🔧 Video Track Handler 초기 설정 완료')
   }
 }

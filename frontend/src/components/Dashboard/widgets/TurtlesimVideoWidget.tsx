@@ -1,68 +1,81 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { Box, Text, VStack, HStack, Badge, Flex, IconButton, Icon } from '@chakra-ui/react'
-import { VideoStore } from '../../../dashboard/store/video.store'
+import { VideoData, VideoStore } from '@/dashboard/store/media-channel-store/video-store'
 import { ParsedTurtlesimVideo } from '../../../dashboard/parser/turtlesim-video'
 
 interface TurtlesimVideoWidgetProps {
   robotId: string
   widgetId: string
   store: VideoStore
+  dataType: string
 }
 
 export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
   robotId,
   widgetId,
-  store
+  store,
+  dataType
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [videoData, setVideoData] = useState<ParsedTurtlesimVideo | null>(null)
+  const [videoData, setVideoData] = useState<VideoData | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
+  const [measureFPS, setMeasureFPS] = useState(false)
   const animationFrameRef = useRef<number | null>(null)
   const lastFrameTimeRef = useRef<number>(0)
 
-  // FPS 측정을 위한 requestAnimationFrame
-  const measureFPS = useCallback(() => {
-    if (!videoRef.current || videoRef.current.paused) {
-      animationFrameRef.current = requestAnimationFrame(measureFPS)
+  // FPS 측정을 위한 requestAnimationFrame (컴포넌트 최상위 레벨로 이동)
+  const measureFPSCallback = useCallback(() => {
+    if (!videoRef.current || videoRef.current.paused || !store) {
+      animationFrameRef.current = requestAnimationFrame(measureFPSCallback)
       return
     }
 
-    const currentTime = performance.now()
-    const deltaTime = currentTime - lastFrameTimeRef.current
-    
-    // 프레임이 실제로 업데이트되었는지 확인 (비디오 시간이 변경되었는지)
-    if (deltaTime > 0) {
-      store.incrementFrameCount()
-      lastFrameTimeRef.current = currentTime
+    const now = performance.now()
+    if (now - lastFrameTimeRef.current >= 1000) { // 1초마다 FPS 업데이트
+      lastFrameTimeRef.current = now
     }
 
-    animationFrameRef.current = requestAnimationFrame(measureFPS)
+    animationFrameRef.current = requestAnimationFrame(measureFPSCallback)
   }, [store])
 
   useEffect(() => {
-    console.log('TurtlesimVideoWidget 마운트:', { robotId, widgetId, store })
-    
-    if (!store) {
-      console.error('비디오 스토어가 없습니다:', { robotId, widgetId })
-      setError('비디오 스토어를 찾을 수 없습니다.')
-      return
+    if (!store) return
+
+    const unsubscribe = store.subscribe((data) => {
+      console.log('TurtlesimVideoWidget 구독자 콜백 호출됨:', data)
+      setVideoData(data)
+      setIsConnected(data.isActive)
+      setError(null)
+    })
+
+    // 초기 데이터 설정
+    if (store.getMediaStream()) {
+      const initialData: VideoData = {
+        streamId: store.getMediaStream()?.id || '',
+        robotId: store.getRobotId(),
+        channelLabel: store.getChannelLabel(),
+        mediaStream: store.getMediaStream()!,
+        isActive: store.isStreamActive(),
+        stats: store.getStreamStats(),
+        timestamp: Date.now()
+      }
+      setVideoData(initialData)
+      setIsConnected(store.isStreamActive())
     }
 
-    console.log('비디오 스토어 확인됨:', store)
-
     // FPS 측정 시작
-    animationFrameRef.current = requestAnimationFrame(measureFPS)
+    animationFrameRef.current = requestAnimationFrame(measureFPSCallback)
 
     // 비디오 엘리먼트 설정
     if (videoRef.current) {
-      console.log('비디오 엘리먼트 설정:', videoRef.current)
+      console.log('🎥 비디오 엘리먼트 설정:', videoRef.current)
       store.setVideoElement(videoRef.current)
       
       // 비디오 엘리먼트 상태 확인
-      console.log('비디오 엘리먼트 초기 상태:', {
+      console.log('🎥 비디오 엘리먼트 초기 상태:', {
         srcObject: videoRef.current.srcObject,
         readyState: videoRef.current.readyState,
         networkState: videoRef.current.networkState,
@@ -73,22 +86,15 @@ export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
         videoHeight: videoRef.current.videoHeight
       })
     } else {
-      console.error('비디오 엘리먼트 ref가 null입니다')
+      console.error('❌ 비디오 엘리먼트 ref가 null입니다')
     }
-
-    // 비디오 데이터 구독
-    const unsubscribe = store.subscribe((data: any) => {
-      console.log('터틀비디오 데이터 수신:', data)
-      setVideoData(data as ParsedTurtlesimVideo)
-      setIsConnected(true)
-    })
 
     // MediaStream 상태 확인
     const mediaStream = store.getMediaStream()
-    console.log('현재 MediaStream 상태:', mediaStream)
+    console.log('🌊 현재 MediaStream 상태:', mediaStream)
     
     if (mediaStream) {
-      console.log('MediaStream 정보:', {
+      console.log('🌊 MediaStream 정보:', {
         id: mediaStream.id,
         active: mediaStream.active,
         tracks: mediaStream.getTracks().map(track => ({
@@ -105,7 +111,7 @@ export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
         
         // MediaStream이 연결되면 자동 재생 시도
         if (videoRef.current.paused) {
-          console.log('비디오 자동 재생 시도...')
+          console.log('▶️ 비디오 자동 재생 시도...')
           videoRef.current.play().then(() => {
             console.log('✅ 비디오 자동 재생 성공')
           }).catch((error) => {
@@ -114,7 +120,14 @@ export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
         }
       } else {
         console.log('❌ MediaStream이 비디오 엘리먼트에 연결되지 않음')
+        console.log('🔍 연결 상태 비교:', {
+          videoSrcObject: videoRef.current?.srcObject,
+          mediaStream: mediaStream,
+          isEqual: videoRef.current?.srcObject === mediaStream
+        })
       }
+    } else {
+      console.log('⚠️ MediaStream이 아직 설정되지 않음')
     }
 
     // 비디오 이벤트 핸들러
@@ -168,7 +181,7 @@ export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
       }
       unsubscribe()
     }
-  }, [store, robotId, widgetId, measureFPS])
+  }, [store, robotId, widgetId, measureFPSCallback])
 
   const handlePlayPause = () => {
     if (videoRef.current) {
@@ -296,14 +309,17 @@ export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
           <HStack justify="space-between" fontSize="xs">
             <Text color="gray.600" fontWeight="medium">FPS</Text>
             <Text color="gray.800" fontFamily="mono">
-              {videoData.fps} fps
+              {videoData.stats.fps} fps
             </Text>
           </HStack>
           
           <HStack justify="space-between" fontSize="xs">
             <Text color="gray.600" fontWeight="medium">Resolution</Text>
             <Text color="gray.800" fontFamily="mono">
-              {videoData.resolution.width}x{videoData.resolution.height}
+              {videoData.stats.width && videoData.stats.height 
+                ? `${videoData.stats.width}x${videoData.stats.height}`
+                : 'Unknown'
+              }
             </Text>
           </HStack>
 

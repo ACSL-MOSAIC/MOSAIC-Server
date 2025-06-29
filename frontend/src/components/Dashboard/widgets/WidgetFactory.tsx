@@ -16,9 +16,10 @@ import { TurtlesimRemoteControlWidget } from './TurtlesimRemoteControlWidget'
 import { TurtlesimRemoteControlStore } from '../../../dashboard/store/data-channel-store/writeonly/turtlesim-remote-control.store'
 import { TURTLESIM_REMOTE_CONTROL_TYPE } from '../../../dashboard/parser/turtlesim-remote-control'
 import { TurtlesimVideoWidget } from './TurtlesimVideoWidget'
+import { TurtlesimVideoStore } from '../../../dashboard/store/media-channel-store/turtlesim-video.store'
+import { VideoStoreManager } from '../../../dashboard/store/media-channel-store/video-store-manager'
+import { MediaChannelConfigUtils } from "../../../rtc/webrtc-media-channel-config"
 import { TURTLESIM_VIDEO_TYPE } from '../../../dashboard/parser/turtlesim-video'
-import { TurtlesimVideoStore } from '../../../dashboard/store/turtlesim-video.store'
-import { VideoStoreManager } from '../../../dashboard/store/video-store-manager'
 import { useWebSocket } from '@/contexts/WebSocketContext'
 
 export interface WidgetFactoryProps extends WidgetProps {
@@ -68,7 +69,8 @@ export function WidgetFactory({ type, robotId, dataType, connections }: WidgetFa
   
   const readOnlyStoreManager = ReadOnlyStoreManager.getInstance();
   const writeOnlyStoreManager = WriteOnlyStoreManager.getInstance();
-  
+  const videoStoreManager = VideoStoreManager.getInstance()
+
   switch (type) {
     case 'go2_low_state':
       // 동적 스토어 생성
@@ -107,24 +109,11 @@ export function WidgetFactory({ type, robotId, dataType, connections }: WidgetFa
       return <TurtlesimRemoteControlWidget robotId={robotId} store={remoteControlStore as TurtlesimRemoteControlStore} dataType={dataType} />;
     
     case 'turtlesim_video':
-      // VideoStoreManager에서 기존 스토어 가져오기
-      const videoStoreManager = VideoStoreManager.getInstance()
-      let videoStore = videoStoreManager.getVideoStore(robotId, 'turtlesim_video_track')
-      
-      if (!videoStore) {
-        // 스토어가 없으면 생성
-        videoStore = videoStoreManager.createVideoStoreIfNotExists(
-          robotId,
-          'turtlesim_video_track',
-          'turtlesim_video'
-        )
-        console.log('터틀비디오 스토어 새로 생성됨:', videoStore)
-      } else {
-        console.log('터틀비디오 스토어 기존 것 사용:', videoStore)
-      }
-      
-      console.log('터틀비디오 위젯 렌더링:', { robotId, widgetId: robotId, store: videoStore })
-      return <TurtlesimVideoWidget robotId={robotId} widgetId={robotId} store={videoStore} />;
+      const videoStore = videoStoreManager.createVideoStoreByMediaTypeAuto(
+        robotId,
+        'turtlesim_video'
+      );
+      return <TurtlesimVideoWidget robotId={robotId} widgetId={robotId} store={videoStore as TurtlesimVideoStore} dataType={dataType} />;
     
     default:
       console.log('Unknown widget type:', type)
