@@ -1,6 +1,3 @@
-// Video Store - 실시간 스트림 전달자 역할
-// Data Store와는 달리 프레임을 저장하지 않고 즉시 구독자에게 전달
-
 export interface VideoSubscriber {
   (videoData: VideoData): void;
 }
@@ -13,6 +10,7 @@ export interface VideoData {
   isActive: boolean;
   stats: StreamStats;
   timestamp: number;
+  metadata?: { mediaType?: string; description?: string; quality?: string; source?: string; trackIndex?: number };
 }
 
 export interface StreamStats {
@@ -44,50 +42,32 @@ export class VideoStore {
   protected fpsCounter: number = 0;
   protected fpsInterval: number | null = null;
   protected streamConfig: StreamConfig = {};
+  protected metadata: { mediaType?: string; description?: string; quality?: string; source?: string; trackIndex?: number } = {};
 
   constructor(robotId: string, channelLabel: string) {
     this.robotId = robotId;
     this.channelLabel = channelLabel;
   }
 
-  // 스트림 설정
+  // stream config setter
   setStreamConfig(config: StreamConfig): void {
     this.streamConfig = { ...this.streamConfig, ...config };
   }
 
-  // 스트림 설정 가져오기
+  // stream config getter
   getStreamConfig(): StreamConfig {
     return this.streamConfig;
   }
 
-  // 메타데이터 설정 (SDP에서 파싱된 정보)
+  // metadata setter
   setMetadata(metadata: { mediaType?: string; description?: string; quality?: string; source?: string; trackIndex?: number }): void {
-    // 품질 문자열 파싱
-    const qualityConfig = this.parseQualityString(metadata.quality || '640x480@30fps');
-    
-    // 스트림 설정 업데이트
-    this.setStreamConfig({
-      // 기본 설정 유지
-    });
+    this.metadata = { ...this.metadata, ...metadata };
+    console.log(`VideoStore[${this.getChannelLabel()}] 메타데이터 설정:`, this.metadata);
   }
 
-  // 품질 문자열 파싱 (내부 메서드)
-  private parseQualityString(qualityStr: string): { width: number; height: number; framerate: number; bitrate: number } | undefined {
-    try {
-      // "640x480@30fps" 형식 파싱
-      const match = qualityStr.match(/(\d+)x(\d+)@(\d+)fps/);
-      if (match) {
-        return {
-          width: parseInt(match[1]),
-          height: parseInt(match[2]),
-          framerate: parseInt(match[3]),
-          bitrate: 1000000 // 기본 비트레이트 1Mbps
-        };
-      }
-    } catch (error) {
-      console.warn('품질 문자열 파싱 실패:', qualityStr);
-    }
-    return undefined;
+  // metadata getter
+  getMetadata(): { mediaType?: string; description?: string; quality?: string; source?: string; trackIndex?: number } {
+    return this.metadata;
   }
 
   // 구독자 관리
@@ -195,7 +175,8 @@ export class VideoStore {
       mediaStream: this.mediaStream,
       isActive: this.isActive,
       stats: this.streamStats,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      metadata: this.metadata
     };
     
     this.subscribers.forEach((callback) => {

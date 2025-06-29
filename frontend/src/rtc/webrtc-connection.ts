@@ -16,7 +16,7 @@ export interface DataChannelConfig {
 
 export interface VideoChannelConfig {
   label: string
-  dataType: string // 'turtlesim_video', 'go2_camera' 등
+  dataType: string // 'turtlesim_video' 등
   expectedTrackLabel?: string // 예상되는 비디오 트랙 라벨
 }
 
@@ -37,6 +37,7 @@ export class WebRTCConnection {
   private channelDataTypes: Map<string, { dataType: string; channelType: ChannelType }> = new Map() // 채널 라벨 -> 데이터 타입 및 채널 타입 매핑
   private videoChannels: Map<string, VideoChannelConfig> = new Map() // 비디오 채널 설정
   private videoChannelDataTypes: Map<string, string> = new Map() // 비디오 채널 라벨 -> 데이터 타입 매핑
+  private lastSdpMetadata: Map<string, any> = new Map() // SDP Answer에서 파싱된 메타데이터 저장
 
   constructor(config: WebRTCConnectionConfig) {
     this.config = config
@@ -47,30 +48,16 @@ export class WebRTCConnection {
     const { unsubscribe } = setupWebSocketHandlers(this.config.ws, this.config.robotId, {
       onSdpAnswer: async (sdpAnswer) => {
         try {
-          // SDP Answer에서 메타데이터 파싱
+          // SDP Answer에서 메타데이터와 msid 파싱
           const metadata = parseMetadataFromSdp(sdpAnswer)
           
-          // 기존 VideoStore의 메타데이터 업데이트
-          if (metadata.size > 0) {
-            const videoStoreManager = VideoStoreManager.getInstance()
-            const videoStores = videoStoreManager.getRobotVideoStores(this.config.robotId)
-            
-            if (videoStores.size > 0) {
-              // 첫 번째 비디오 스토어의 메타데이터 업데이트
-              const firstVideoStore = videoStores.values().next().value
-              if (firstVideoStore) {
-                const updatedMetadata = {
-                  mediaType: metadata.get('mediaType') || 'turtlesim_video',
-                  description: metadata.get('description') || 'Turtlesim Video Stream',
-                  quality: metadata.get('quality') || '640x480@30fps',
-                  source: metadata.get('source') || 'turtlesim_node',
-                  trackIndex: parseInt(metadata.get('trackIndex') || '0')
-                }
-                
-                firstVideoStore.setMetadata(updatedMetadata)
-              }
-            }
-          }
+          // 메타데이터 저장
+          this.lastSdpMetadata = metadata
+          
+          console.log('📥 SDP Answer 메타데이터:', Object.fromEntries(metadata))
+          
+          // ontrack 핸들러 설정 (메타데이터 기반)
+          this.setupVideoTrackHandler(metadata)
           
           await this.setRemoteDescription(new RTCSessionDescription({
             type: 'answer',
@@ -121,9 +108,6 @@ export class WebRTCConnection {
       ]
     }
     const peerConnection = new RTCPeerConnection(configuration)
-
-    // ontrack 이벤트 핸들러를 먼저 설정 (비디오 트랙을 놓치지 않기 위해)
-    this.setupVideoTrackHandler(peerConnection)
 
     // DataChannel 이벤트 핸들러 설정
     peerConnection.ondatachannel = (event) => {
@@ -233,6 +217,72 @@ export class WebRTCConnection {
     console.log('DataChannel 설정 완료:', dataChannel.label, '데이터타입:', dataType, '채널타입:', channelType)
   }
 
+  // 메타데이터 기반 Video Track 핸들러 설정
+  private setupVideoTrackHandler(metadata: Map<string, any>): void {
+    if (!this.peerConnection) {
+      console.error('PeerConnection이 초기화되지 않았습니다.')
+      return
+    }
+
+    console.log('🔧 Video Track Handler 설정 시작:', {
+      robotId: this.config.robotId,
+      metadata: Object.fromEntries(metadata)
+    })
+
+    this.peerConnection.ontrack = (event) => {
+      
+      if (event.track.kind === 'video') {
+        
+        if (event.streams && event.streams[0]) {
+          const stream = event.streams[0]
+          
+          // 메타데이터에서 미디어 타입 결정
+          const mediaType = metadata.get('mediaType') || 'turtlesim_video'
+          const description = metadata.get('description') || 'Unknown Video Stream'
+          const quality = metadata.get('quality') || '640x480@30fps'
+          const source = metadata.get('source') || 'unknown'
+          const trackIndex = metadata.get('trackIndex') || 0
+
+          // 미디어 타입이 지원되는지 확인
+          if (MediaChannelConfigUtils.isSupportedMediaType(mediaType)) {
+          
+            // VideoStore 생성 및 연결
+            const videoStoreManager = VideoStoreManager.getInstance()
+            const videoStore = videoStoreManager.createVideoStoreByMediaTypeAuto(
+              this.config.robotId, 
+              mediaType
+            )
+            
+            if (videoStore) {
+              // 메타데이터 설정
+              videoStore.setMetadata({
+                mediaType,
+                description,
+                quality,
+                source,
+                trackIndex
+              })
+              
+              videoStore.setMediaStream(stream)
+              console.log(`Video Store connected: ${mediaType} for robot ${this.config.robotId}`)
+            } else {
+              console.warn(`Video Store not found: ${mediaType} for robot ${this.config.robotId}`)
+            }
+          } else {
+            console.warn(`Unsupported media type: ${mediaType}`)
+            console.log('Supported media types:', MediaChannelConfigUtils.getSupportedMediaTypes())
+          }
+        } else {
+          console.warn('Video track has no stream')
+        }
+      } else {
+        console.log('Ignore non-video track:', event.track.kind)
+      }
+    }
+    
+    console.log('Video Track Handler setup completed')
+  }
+
   public async startConnection(): Promise<void> {
     try {
       // 기존 연결이 있다면 정리
@@ -245,12 +295,12 @@ export class WebRTCConnection {
       videoStoreManager.initializeRobotVideoStores(this.config.robotId)
 
       this.peerConnection = this.createPeerConnection()
-      console.log('PeerConnection 생성됨:', this.peerConnection)
+      console.log('PeerConnection created:', this.peerConnection)
 
       // 이벤트 핸들러 설정
       this.peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
-          console.log('🧊 ICE candidate 생성됨:', event.candidate)
+          console.log('ICE candidate created:', event.candidate)
           sendWebSocketMessage(this.config.ws, {
             type: "send_ice_candidate",
             robot_id: this.config.robotId,
@@ -260,32 +310,30 @@ export class WebRTCConnection {
       }
 
       this.peerConnection.oniceconnectionstatechange = () => {
-        console.log('🔗 ICE connection state 변경:', this.peerConnection?.iceConnectionState)
+        console.log('ICE connection state changed:', this.peerConnection?.iceConnectionState)
         const isConnected = this.peerConnection?.iceConnectionState === 'connected'
-        console.log('🔗 연결 상태:', isConnected ? '✅ 연결됨' : '❌ 연결 안됨')
+        console.log('Connection state:', isConnected ? '✅ connected' : '❌ disconnected')
         this.config.onConnectionStateChange?.(isConnected)
       }
 
       this.peerConnection.onsignalingstatechange = () => {
-        console.log('📡 Signaling state 변경:', this.peerConnection?.signalingState)
+        console.log('Signaling state changed:', this.peerConnection?.signalingState)
       }
 
       this.peerConnection.onconnectionstatechange = () => {
-        console.log('🌐 Connection state 변경:', this.peerConnection?.connectionState)
+        console.log('Connection state changed:', this.peerConnection?.connectionState)
       }
 
       this.peerConnection.ondatachannel = (event) => {
-        console.log('📊 DataChannel 수신됨:', event.channel.label, event.channel.readyState)
+        console.log('DataChannel received:', event.channel.label, event.channel.readyState)
       }
 
-      // ontrack 이벤트는 handleSdpAnswer에서 설정됨
-
       // Offer 생성 및 설정 - 미디어 채널 설정 적용
-      console.log('Offer 생성 시작')
+      console.log('Offer creation started')
       
       // 활성화된 미디어 채널 목록 가져오기
       const activeMediaChannels = MediaChannelConfigUtils.getActiveMediaChannels()
-      console.log('활성 미디어 채널:', activeMediaChannels)
+      console.log('Active media channels:', activeMediaChannels)
       
       // 미디어 채널 설정이 적용된 Offer 생성
       const offer = await createOfferWithMediaChannels(
@@ -293,10 +341,10 @@ export class WebRTCConnection {
         activeMediaChannels
       )
       
-      console.log('Offer 생성됨 (미디어 채널 설정 적용):', offer)
+      console.log('Offer created (media channel settings applied):', offer)
       
       await this.peerConnection.setLocalDescription(offer)
-      console.log('Local description 설정됨:', this.peerConnection.localDescription)
+      console.log('Local description set:', this.peerConnection.localDescription)
 
       // SDP offer를 서버로 전송
       sendWebSocketMessage(this.config.ws, {
@@ -313,31 +361,31 @@ export class WebRTCConnection {
 
   public async setRemoteDescription(description: RTCSessionDescription): Promise<void> {
     if (!this.peerConnection) {
-      console.error('PeerConnection이 초기화되지 않았습니다.')
-      throw new Error("PeerConnection이 초기화되지 않았습니다.")
+      console.error('PeerConnection not initialized')
+      throw new Error("PeerConnection not initialized")
     }
 
     try {
-      console.log('Remote description 설정 시도:', description)
+      console.log('Remote description setting started:', description)
       await this.peerConnection.setRemoteDescription(description)
-      console.log('Remote description 설정 완료')
+      console.log('Remote description set')
     } catch (error) {
-      console.error('Remote description 설정 실패:', error)
+      console.error('Remote description setting failed:', error)
       throw error
     }
   }
 
   public async addIceCandidate(candidate: RTCIceCandidate): Promise<void> {
     if (!this.peerConnection) {
-      console.error('PeerConnection이 초기화되지 않았습니다.')
-      throw new Error("PeerConnection이 초기화되지 않았습니다.")
+      console.error('PeerConnection not initialized')
+      throw new Error("PeerConnection not initialized")
     }
 
     try {
       await this.peerConnection.addIceCandidate(candidate)
-      console.log('ICE candidate 적용 완료')
+      console.log('ICE candidate applied')
     } catch (error) {
-      console.error('ICE candidate 추가 실패:', error)
+      console.error('ICE candidate addition failed:', error)
       throw error
     }
   }
@@ -361,6 +409,7 @@ export class WebRTCConnection {
       this.peerConnection = null
     }
     this.pendingCandidates = []
+    this.lastSdpMetadata.clear()
     this.config.onConnectionStateChange?.(false)
   }
 
@@ -435,43 +484,5 @@ export class WebRTCConnection {
       }
     })
     return channels
-  }
-
-  // ontrack 이벤트 핸들러를 먼저 설정하는 메서드
-  private setupVideoTrackHandler(peerConnection: RTCPeerConnection): void {
-    peerConnection.ontrack = (event) => {
-      if (event.track.kind === 'video') {
-        if (event.streams && event.streams[0]) {
-          const stream = event.streams[0]
-          
-          // 기본적으로 turtlesim_video로 처리 (SDP Answer에서 메타데이터 업데이트 예정)
-          const mediaType = 'turtlesim_video'
-          const description = 'Turtlesim Video Stream'
-          const quality = '640x480@30fps'
-          const source = 'turtlesim_node'
-          const trackIndex = 0
-          
-          // VideoStore 생성 및 연결
-          const videoStoreManager = VideoStoreManager.getInstance()
-          const videoStore = videoStoreManager.createVideoStoreByMediaTypeAuto(
-            this.config.robotId, 
-            mediaType
-          )
-          
-          if (videoStore) {
-            // 메타데이터 설정
-            videoStore.setMetadata({
-              mediaType,
-              description,
-              quality,
-              source,
-              trackIndex
-            })
-            
-            videoStore.setMediaStream(stream)
-          }
-        }
-      }
-    }
   }
 }
