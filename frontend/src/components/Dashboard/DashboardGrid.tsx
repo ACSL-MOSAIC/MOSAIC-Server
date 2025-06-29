@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react"
 import { Box, Grid, GridItem, Button, useDisclosure, Flex } from "@chakra-ui/react"
 import { WidgetConfig, WidgetType, DashboardConfig } from "./types"
 import { v4 as uuidv4 } from 'uuid'
-import { AddWidgetModal } from "./AddWidgetModal"
 import { TabManager } from "./TabManager"
 import { useNavigate } from '@tanstack/react-router'
 import { WebRTCConnection } from "@/rtc/webrtc-connection"
@@ -33,7 +32,6 @@ interface DashboardGridProps {
 }
 
 export function DashboardGrid({ userId }: DashboardGridProps) {
-  const { open, onOpen, onClose } = useDisclosure();
   const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig | null>(null);
   const [connections, setConnections] = useState<{ [key: string]: boolean }>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -293,17 +291,7 @@ export function DashboardGrid({ userId }: DashboardGridProps) {
       />
 
       {/* 대시보드 컨트롤 */}
-      <Flex justify="space-between" mb={4}>
-        <Flex gap={2}>
-          <Button 
-            colorScheme="blue" 
-            onClick={onOpen}
-            disabled={connectedRobotIds.length === 0}
-          >
-            위젯 추가
-          </Button>
-        </Flex>
-        
+      <Flex justify="flex-end" mb={4}>
         <Button
           colorScheme="teal"
           onClick={handleSave}
@@ -321,6 +309,8 @@ export function DashboardGrid({ userId }: DashboardGridProps) {
         onAddTab={handleAddTab}
         onRemoveTab={handleRemoveTab}
         onRenameTab={handleRenameTab}
+        onAddWidget={handleAddWidget}
+        connectedRobots={connectedRobotIds}
       />
 
       <ResponsiveGridLayout
@@ -380,13 +370,6 @@ export function DashboardGrid({ userId }: DashboardGridProps) {
           </Box>
         ))}
       </ResponsiveGridLayout>
-
-      <AddWidgetModal
-        isOpen={open}
-        onClose={onClose}
-        onAdd={handleAddWidget}
-        connectedRobots={connectedRobotIds}
-      />
     </Box>
   );
 } 

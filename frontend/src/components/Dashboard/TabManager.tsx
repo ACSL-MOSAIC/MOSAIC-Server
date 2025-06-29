@@ -10,7 +10,7 @@ import {
   Box,
   Tabs
 } from '@chakra-ui/react';
-import { FiPlus, FiX, FiEdit2 } from 'react-icons/fi';
+import { FiPlus, FiX, FiEdit2, FiGrid } from 'react-icons/fi';
 import {
   DialogActionTrigger,
   DialogBody,
@@ -21,6 +21,8 @@ import {
   DialogRoot,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { AddWidgetModal } from './AddWidgetModal';
+import { WidgetType } from './types';
 
 interface TabManagerProps {
   onAddTab: (tabName: string) => void;
@@ -29,6 +31,8 @@ interface TabManagerProps {
   tabs: Array<{ id: string; name: string }>;
   activeTabId: string;
   onTabChange: (tabId: string) => void;
+  onAddWidget: (robotId: string, type: WidgetType) => void;
+  connectedRobots: string[];
 }
 
 export function TabManager({ 
@@ -37,9 +41,12 @@ export function TabManager({
   onRenameTab, 
   tabs, 
   activeTabId, 
-  onTabChange 
+  onTabChange,
+  onAddWidget,
+  connectedRobots
 }: TabManagerProps) {
   const { open, onOpen, onClose } = useDisclosure();
+  const { open: widgetModalOpen, onOpen: onWidgetModalOpen, onClose: onWidgetModalClose } = useDisclosure();
   const [newTabName, setNewTabName] = useState('');
   const [editingTab, setEditingTab] = useState<{ id: string; name: string } | null>(null);
   const [editName, setEditName] = useState('');
@@ -148,11 +155,27 @@ export function TabManager({
           </HStack>
           
           <HStack gap={2} ml={4}>
+            {/* 위젯 추가 버튼 */}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onWidgetModalOpen}
+              disabled={connectedRobots.length === 0}
+              color={connectedRobots.length === 0 ? "gray.300" : "gray.500"}
+              _hover={{
+                bg: connectedRobots.length === 0 ? 'gray.50' : 'blue.50',
+                color: connectedRobots.length === 0 ? 'gray.300' : 'blue.500'
+              }}
+              title={connectedRobots.length === 0 ? "연결된 로봇이 없습니다. 먼저 로봇을 연결해주세요." : "위젯 추가"}
+            >
+              <FiGrid size={14} />
+              위젯 추가
+            </Button>
+            
             {editingTab?.id !== activeTabId && (
-              <IconButton
+              <Button
                 size="sm"
                 variant="ghost"
-                aria-label="탭 이름 변경"
                 onClick={() => {
                   const currentTab = tabs.find(tab => tab.id === activeTabId);
                   if (currentTab) {
@@ -166,7 +189,8 @@ export function TabManager({
                 }}
               >
                 <FiEdit2 size={14} />
-              </IconButton>
+                탭 이름 편집
+              </Button>
             )}
             
             {tabs.length > 1 && (
@@ -195,6 +219,7 @@ export function TabManager({
               }}
             >
               <FiPlus size={14} />
+              탭 추가
             </Button>
           </HStack>
         </Flex>
@@ -237,6 +262,14 @@ export function TabManager({
           </DialogFooter>
         </DialogContent>
       </DialogRoot>
+
+      {/* 위젯 추가 모달 */}
+      <AddWidgetModal
+        isOpen={widgetModalOpen}
+        onClose={onWidgetModalClose}
+        onAdd={onAddWidget}
+        connectedRobots={connectedRobots}
+      />
     </Box>
   );
 } 
