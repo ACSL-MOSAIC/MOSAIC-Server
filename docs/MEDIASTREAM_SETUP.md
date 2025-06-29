@@ -1,4 +1,4 @@
-# Video Store Setup and Management Guide
+# Media stream Setup and Management Guide
 
 ## 한국어 (Korean)
 
