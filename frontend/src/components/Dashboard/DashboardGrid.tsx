@@ -12,6 +12,7 @@ import { Responsive, WidthProvider } from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { toaster } from "@/components/ui/toaster"
+import RobotConnectionPanel from "./RobotConnectionPanel"
 import { 
   loadDashboardConfig, 
   saveDashboardConfig, 
@@ -20,17 +21,18 @@ import {
   renameTab, 
   addWidget, 
   removeWidget, 
+  removeWidgetsByRobotId,
   updateWidgetPosition 
 } from "./dashboardStorage"
+import useAuth from "@/hooks/useAuth"
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
 interface DashboardGridProps {
-  robotIdList: string[];
   userId: string;
 }
 
-export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
+export function DashboardGrid({ userId }: DashboardGridProps) {
   const { open, onOpen, onClose } = useDisclosure();
   const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig | null>(null);
   const [connections, setConnections] = useState<{ [key: string]: boolean }>({});
@@ -40,29 +42,29 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
   // WebRTC 연결 객체들을 관리하는 ref
   const rtcConnections = useRef<{ [key: string]: WebRTCConnection }>({});
 
-  // 각 로봇별 ref 생성
+  // 각 로봇별 ref 생성 (동적으로 관리)
   const videoRefs = useRef<{ [key: string]: React.RefObject<HTMLVideoElement> }>({});
   const canvasRefs = useRef<{ [key: string]: React.RefObject<HTMLCanvasElement> }>({});
   const positionElementRefs = useRef<{ [key: string]: React.RefObject<HTMLDivElement> }>({});
 
-  // ref 초기화
-  robotIdList.forEach(id => {
-    if (!videoRefs.current[id]) {
-      videoRefs.current[id] = React.createRef<HTMLVideoElement>();
+  // ref 초기화 함수
+  const initializeRefs = (robotId: string) => {
+    if (!videoRefs.current[robotId]) {
+      videoRefs.current[robotId] = React.createRef<HTMLVideoElement>();
     }
-    if (!canvasRefs.current[id]) {
-      canvasRefs.current[id] = React.createRef<HTMLCanvasElement>();
+    if (!canvasRefs.current[robotId]) {
+      canvasRefs.current[robotId] = React.createRef<HTMLCanvasElement>();
     }
-    if (!positionElementRefs.current[id]) {
-      positionElementRefs.current[id] = React.createRef<HTMLDivElement>();
+    if (!positionElementRefs.current[robotId]) {
+      positionElementRefs.current[robotId] = React.createRef<HTMLDivElement>();
     }
-  });
+  };
 
   // 초기 로드
   useEffect(() => {
-    const config = loadDashboardConfig(robotIdList);
+    const config = loadDashboardConfig(userId);
     setDashboardConfig(config);
-  }, [robotIdList]);
+  }, [userId]);
 
   // 설정 변경 시 unsaved 상태로 표시
   const updateConfig = (newConfig: DashboardConfig) => {
@@ -73,7 +75,7 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
   // 저장하기 함수
   const handleSave = () => {
     if (dashboardConfig) {
-      saveDashboardConfig(dashboardConfig);
+      saveDashboardConfig(dashboardConfig, userId);
       setHasUnsavedChanges(false);
       toaster.create({
         title: "설정 저장됨",
@@ -98,6 +100,9 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
         return;
       }
 
+      // ref 초기화
+      initializeRefs(robotId);
+
       const connection = new WebRTCConnection({
         robotId,
         ws,
@@ -120,19 +125,31 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
       connection.disconnect();
       delete rtcConnections.current[robotId];
       handleConnectionStateChange(robotId, false);
+      
+      // 위젯 자동 제거 기능 제거 - NO_DATA로 표시하도록 변경
     }
   };
 
   // 모든 로봇 연결 함수
   const handleConnectAllRobots = async () => {
     console.log('모든 로봇 연결 시도');
-    for (const robotId of robotIdList) {
+    const { robots } = useWebSocket();
+    const readyRobots = robots.filter((robot) => robot.state === "READY_TO_CONNECT");
+    
+    for (const robot of readyRobots) {
       try {
-        await connectToRobot(robotId);
+        await connectToRobot(robot.robot_id);
       } catch (error) {
-        console.error(`로봇 ${robotId} 연결 실패:`, error);
+        console.error(`로봇 ${robot.robot_id} 연결 실패:`, error);
       }
     }
+  };
+
+  // 모든 로봇 연결 해제 함수
+  const handleDisconnectAllRobots = () => {
+    Object.keys(rtcConnections.current).forEach(robotId => {
+      disconnectFromRobot(robotId);
+    });
   };
 
   // 탭 관리 함수들
@@ -261,19 +278,27 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
     return <Box p={4}>탭을 찾을 수 없습니다.</Box>;
   }
 
+  // 연결된 로봇 ID 목록
+  const connectedRobotIds = Object.keys(connections).filter(id => connections[id]);
+
   return (
     <Box p={4} marginTop="64px">
+      {/* 로봇 연결 관리 패널 */}
+      <RobotConnectionPanel
+        connections={connections}
+        onConnect={connectToRobot}
+        onDisconnect={disconnectFromRobot}
+        onConnectAll={handleConnectAllRobots}
+        onDisconnectAll={handleDisconnectAllRobots}
+      />
+
+      {/* 대시보드 컨트롤 */}
       <Flex justify="space-between" mb={4}>
         <Flex gap={2}>
           <Button 
-            colorScheme="green" 
-            onClick={handleConnectAllRobots}
-          >
-            모든 로봇 연결
-          </Button>
-          <Button 
             colorScheme="blue" 
             onClick={onOpen}
+            disabled={connectedRobotIds.length === 0}
           >
             위젯 추가
           </Button>
@@ -349,6 +374,7 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
                 type={widget.type}
                 robotId={widget.robotId}
                 dataType={widget.dataType}
+                connections={connections}
               />
             </Box>
           </Box>
@@ -359,7 +385,7 @@ export function DashboardGrid({ robotIdList, userId }: DashboardGridProps) {
         isOpen={open}
         onClose={onClose}
         onAdd={handleAddWidget}
-        connectedRobots={robotIdList}
+        connectedRobots={connectedRobotIds}
       />
     </Box>
   );

@@ -1,4 +1,5 @@
 import React from 'react'
+import { Box, Text, Badge, Flex } from '@chakra-ui/react'
 import { WidgetProps } from './types'
 import { Go2LowStateWidget } from './Go2LowStateWidget'
 import { Go2LowStateStore } from '../../../dashboard/store/go2-low-state.store'
@@ -17,13 +18,52 @@ import { TurtlesimVideoWidget } from './TurtlesimVideoWidget'
 import { TURTLESIM_VIDEO_TYPE } from '../../../dashboard/parser/turtlesim-video'
 import { TurtlesimVideoStore } from '../../../dashboard/store/turtlesim-video.store'
 import { VideoStoreManager } from '../../../dashboard/store/video-store-manager'
+import { useWebSocket } from '@/contexts/WebSocketContext'
 
 export interface WidgetFactoryProps extends WidgetProps {
   type: string;
+  connections?: { [key: string]: boolean };
 }
 
-export function WidgetFactory({ type, robotId, dataType }: WidgetFactoryProps) {
-  console.log('WidgetFactory 렌더링', { type, robotId, dataType })
+// NO_DATA 컴포넌트
+function NoDataWidget({ robotId, type }: { robotId: string; type: string }) {
+  return (
+    <Box 
+      display="flex" 
+      flexDirection="column" 
+      alignItems="center" 
+      justifyContent="center" 
+      height="100%" 
+      bg="gray.50" 
+      borderRadius="md"
+      p={4}
+    >
+      <Badge colorScheme="gray" mb={2}>
+        연결 없음
+      </Badge>
+      <Text fontSize="sm" color="gray.500" textAlign="center">
+        로봇 {robotId}
+      </Text>
+      <Text fontSize="xs" color="gray.400" textAlign="center">
+        {type} 위젯
+      </Text>
+      <Text fontSize="xs" color="gray.400" textAlign="center" mt={2}>
+        로봇을 연결하면 데이터가 표시됩니다
+      </Text>
+    </Box>
+  )
+}
+
+export function WidgetFactory({ type, robotId, dataType, connections }: WidgetFactoryProps) {
+  console.log('WidgetFactory 렌더링', { type, robotId, dataType, connections })
+  
+  // 연결 상태 확인
+  const isConnected = connections ? connections[robotId] : false
+  
+  // 연결되지 않은 경우 NO_DATA 표시
+  if (!isConnected) {
+    return <NoDataWidget robotId={robotId} type={type} />
+  }
   
   const storeManager = StoreManager.getInstance();
   

@@ -22,7 +22,7 @@ export interface DashboardTab {
 }
 
 export interface DashboardConfig {
-  robotId: string;
+  userId: string;
   tabs: DashboardTab[];
   activeTabId: string;
 }

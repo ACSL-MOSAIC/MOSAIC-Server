@@ -21,7 +21,6 @@ import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutRobotsImport } from './routes/_layout/robots'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
 import { Route as LayoutConnectIndexImport } from './routes/_layout/connect/index'
-import { Route as LayoutConnectRobotIdImport } from './routes/_layout/connect/$robotId'
 
 // Create/Update Routes
 
@@ -75,11 +74,6 @@ const LayoutConnectIndexRoute = LayoutConnectIndexImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutConnectRobotIdRoute = LayoutConnectRobotIdImport.update({
-  path: '/connect/$robotId',
-  getParentRoute: () => LayoutRoute,
-} as any)
-
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -120,10 +114,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/connect/$robotId': {
-      preLoaderRoute: typeof LayoutConnectRobotIdImport
-      parentRoute: typeof LayoutImport
-    }
     '/_layout/connect/': {
       preLoaderRoute: typeof LayoutConnectIndexImport
       parentRoute: typeof LayoutImport
@@ -139,7 +129,6 @@ export const routeTree = rootRoute.addChildren([
     LayoutRobotsRoute,
     LayoutSettingsRoute,
     LayoutIndexRoute,
-    LayoutConnectRobotIdRoute,
     LayoutConnectIndexRoute,
   ]),
   LoginRoute,

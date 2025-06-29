@@ -1,31 +1,15 @@
 import { DashboardConfig, DashboardTab, WidgetConfig, DASHBOARD_STORAGE_KEY } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
-// 로봇 ID 배열을 정렬된 문자열로 변환 (순서 무관하게 비교)
-const normalizeRobotIds = (robotIds: string[]): string => {
-  return robotIds.sort().join(',');
-};
-
-// 로봇 ID 집합이 동일한지 확인
-const areRobotSetsEqual = (robotIds1: string[], robotIds2: string[]): boolean => {
-  if (robotIds1.length !== robotIds2.length) return false;
-  
-  const sorted1 = robotIds1.sort();
-  const sorted2 = robotIds2.sort();
-  
-  return sorted1.every((id, index) => id === sorted2[index]);
-};
-
-// 로봇 조합별 고유 키 생성
-const getStorageKey = (robotIds: string[]): string => {
-  const normalizedIds = normalizeRobotIds(robotIds);
-  return `${DASHBOARD_STORAGE_KEY}_${normalizedIds}`;
+// 사용자별 고유 키 생성
+const getStorageKey = (userId: string): string => {
+  return `${DASHBOARD_STORAGE_KEY}_${userId}`;
 };
 
 // 로컬스토리지에서 대시보드 설정 로드
-export const loadDashboardConfig = (robotIdList: string[]): DashboardConfig => {
+export const loadDashboardConfig = (userId: string): DashboardConfig => {
   try {
-    const storageKey = getStorageKey(robotIdList);
+    const storageKey = getStorageKey(userId);
     const stored = localStorage.getItem(storageKey);
     
     if (stored) {
@@ -37,11 +21,11 @@ export const loadDashboardConfig = (robotIdList: string[]): DashboardConfig => {
   }
   
   // 기본 설정 생성
-  return createDefaultDashboardConfig(robotIdList);
+  return createDefaultDashboardConfig();
 };
 
 // 기본 대시보드 설정 생성
-export const createDefaultDashboardConfig = (robotIdList: string[]): DashboardConfig => {
+export const createDefaultDashboardConfig = (): DashboardConfig => {
   const defaultTab: DashboardTab = {
     id: uuidv4(),
     name: '메인 대시보드',
@@ -49,21 +33,20 @@ export const createDefaultDashboardConfig = (robotIdList: string[]): DashboardCo
   };
 
   return {
-    robotId: normalizeRobotIds(robotIdList),
+    userId: '',
     tabs: [defaultTab],
     activeTabId: defaultTab.id
   };
 };
 
 // 로컬스토리지에 대시보드 설정 저장
-export const saveDashboardConfig = (config: DashboardConfig): void => {
+export const saveDashboardConfig = (config: DashboardConfig, userId: string): void => {
   try {
-    const robotIds = config.robotId.split(',').filter(id => id.trim());
-    const storageKey = getStorageKey(robotIds);
+    const storageKey = getStorageKey(userId);
     
     const normalizedConfig = {
       ...config,
-      robotId: normalizeRobotIds(robotIds)
+      userId
     };
     
     localStorage.setItem(storageKey, JSON.stringify(normalizedConfig));
@@ -146,6 +129,17 @@ export const removeWidget = (config: DashboardConfig, tabId: string, widgetId: s
         ? { ...tab, widgets: tab.widgets.filter(widget => widget.id !== widgetId) }
         : tab
     )
+  };
+};
+
+// 특정 로봇의 모든 위젯 제거 (로봇 연결 해제 시 사용)
+export const removeWidgetsByRobotId = (config: DashboardConfig, robotId: string): DashboardConfig => {
+  return {
+    ...config,
+    tabs: config.tabs.map(tab => ({
+      ...tab,
+      widgets: tab.widgets.filter(widget => widget.robotId !== robotId)
+    }))
   };
 };
 
