@@ -1,7 +1,6 @@
 # DataChannel Setup and Management Guide
 
-<details>
-<summary><strong> 한국어 (Korean)</strong></summary>
+
 
 ## 목차
 1. [DataChannel 스토어 상속 구조](#1-datachannel-스토어-상속-구조)
@@ -439,10 +438,7 @@ frontend/src/
 - [ ] 메모리 누수가 없는가? (구독 해제 등)
 ---
 
-</details>
 
-<details>
-<summary><strong> English</strong></summary>
 
 ## Table of Contents
 1. [DataChannel Store Inheritance Structure](#1-datachannel-store-inheritance-structure)
@@ -880,4 +876,3 @@ frontend/src/
 - [ ] Is there no memory leak? (subscription cleanup, etc.)
 ---
 
-</details>
