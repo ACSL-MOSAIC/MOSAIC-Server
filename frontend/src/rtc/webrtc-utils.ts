@@ -39,83 +39,84 @@ export function createDataChannel(
       break
   }
 
-  // 기존 onmessage 핸들러 제거
-  dataChannel.onmessage = null;
+  // Store 생성 및 DataChannel 설정
+  const channelTypeSymbol = DataChannelConfigUtils.getStoreSymbol(dataType)
+  
+  if (!channelTypeSymbol) {
+    console.warn(`Unknown data type: ${dataType} for channel ${dataChannel.label}`)
+    return
+  }
+  
+  let store: DataStore<any, any> | undefined;
+  
+  switch (channelType) {
+    case 'readonly':
+      switch (dataType) {
+        case 'turtlesim_position':
+          store = readOnlyStoreManager.createStoreIfNotExists(
+            robotId, 
+            channelTypeSymbol, 
+            (robotId) => new TurtlesimPositionStore(robotId)
+          );
+          break;
+        case 'go2_low_state':
+          store = readOnlyStoreManager.createStoreIfNotExists(
+            robotId, 
+            channelTypeSymbol, 
+            (robotId) => new Go2LowStateStore(robotId)
+          );
+          break;
+        case 'go2_ouster_pointcloud':
+          store = readOnlyStoreManager.createStoreIfNotExists(
+            robotId, 
+            channelTypeSymbol, 
+            (robotId) => new Go2OusterPointCloudStore(robotId)
+          );
+          break;
+        default:
+          console.warn(`Unsupported data type for readonly: ${dataType}`);
+          return;
+      }
+      break;
+      
+    case 'writeonly':
+      switch (dataType) {
+        case 'turtlesim_remote_control':
+          store = writeOnlyStoreManager.createStoreIfNotExists(
+            robotId, 
+            channelTypeSymbol, 
+            (robotId) => new TurtlesimRemoteControlStore(robotId)
+          );
+          break;
+        default:
+          console.warn(`Unsupported data type for writeonly: ${dataType}`);
+          return;
+      }
+      break;
+  }
 
-  // 새로운 onmessage 핸들러 설정
+  // Store에 DataChannel 설정
+  if (store) {
+    if (store instanceof ReadOnlyStore || store instanceof WriteOnlyStore) {
+      store.setDataChannel(dataChannel);
+      console.log(`Data channel setup completed for ${store.constructor.name}:`, {
+        robotId,
+        channelLabel: dataChannel.label,
+        channelState: dataChannel.readyState
+      });
+    }
+  } else {
+    console.warn(`Store creation failed: ${robotId}, ${String(channelTypeSymbol)}`)
+    return
+  }
+
+  // 새로운 onmessage 핸들러 설정 (데이터 처리만)
   dataChannel.onmessage = (event) => {
     try {
       const data = event.data
       
-      const channelTypeSymbol = DataChannelConfigUtils.getStoreSymbol(dataType)
-      
-      if (!channelTypeSymbol) {
-        console.warn(`Unknown data type: ${dataType} for channel ${dataChannel.label}`)
-        return
-      }
-      
-      let store: DataStore<any, any> | undefined;
-      
-      switch (channelType) {
-        case 'readonly':
-          switch (dataType) {
-            case 'turtlesim_position':
-              store = readOnlyStoreManager.createStoreIfNotExists(
-                robotId, 
-                channelTypeSymbol, 
-                (robotId) => new TurtlesimPositionStore(robotId)
-              );
-              break;
-            case 'go2_low_state':
-              store = readOnlyStoreManager.createStoreIfNotExists(
-                robotId, 
-                channelTypeSymbol, 
-                (robotId) => new Go2LowStateStore(robotId)
-              );
-              break;
-            case 'go2_ouster_pointcloud':
-              store = readOnlyStoreManager.createStoreIfNotExists(
-                robotId, 
-                channelTypeSymbol, 
-                (robotId) => new Go2OusterPointCloudStore(robotId)
-              );
-              break;
-            default:
-              console.warn(`Unsupported data type for readonly: ${dataType}`);
-              return;
-          }
-          break;
-          
-        case 'writeonly':
-          switch (dataType) {
-            case 'turtlesim_remote_control':
-              store = writeOnlyStoreManager.createStoreIfNotExists(
-                robotId, 
-                channelTypeSymbol, 
-                (robotId) => new TurtlesimRemoteControlStore(robotId)
-              );
-              break;
-            default:
-              console.warn(`Unsupported data type for writeonly: ${dataType}`);
-              return;
-          }
-          break;
-      }
-      
-
       if (store) {
-        if (store instanceof ReadOnlyStore || store instanceof WriteOnlyStore) {
-          store.setDataChannel(dataChannel);
-          console.log(`Data channel setup completed for ${store.constructor.name}:`, {
-            robotId,
-            channelLabel: dataChannel.label,
-            channelState: dataChannel.readyState
-          });
-        }
-        
         store.add(data);
-      } else {
-        console.warn(`Store creation failed: ${robotId}, ${String(channelTypeSymbol)}`)
       }
     } catch (error) {
       console.error(`Error processing data for ${dataChannel.label} (${dataType}):`, error);

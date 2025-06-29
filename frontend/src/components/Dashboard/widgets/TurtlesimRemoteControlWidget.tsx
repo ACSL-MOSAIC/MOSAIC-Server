@@ -54,11 +54,15 @@ export function TurtlesimRemoteControlWidget({ robotId, store, dataType }: Turtl
     // 초기 상태 확인
     checkConnectionStatus()
 
-    // 주기적으로 연결 상태 확인 (1초마다)
-    const interval = setInterval(checkConnectionStatus, 1000)
+    // 실시간 연결 상태 변경 리스너 등록
+    const unsubscribeConnection = store.onConnectionStateChange((connected) => {
+      console.log(`TurtlesimRemoteControlWidget - 연결 상태 변경:`, { connected, robotId })
+      setIsConnected(connected)
+    })
 
     // 명령 전송 후 상태 업데이트를 위한 구독
-    const unsubscribe = store.subscribe((data: ParsedTurtlesimRemoteControl) => {
+    const unsubscribeData = store.subscribe((data: ParsedTurtlesimRemoteControl) => {
+      console.log(`TurtlesimRemoteControlWidget - 데이터 수신:`, data)
       setLastCommand(data)
       // 명령 히스토리에 추가 (최근 5개)
       setCommandHistory(prev => {
@@ -68,8 +72,9 @@ export function TurtlesimRemoteControlWidget({ robotId, store, dataType }: Turtl
     })
 
     return () => {
-      clearInterval(interval)
-      unsubscribe()
+      console.log(`TurtlesimRemoteControlWidget - cleanup for robot ${robotId}`)
+      unsubscribeConnection()
+      unsubscribeData()
     }
   }, [store, robotId])
 
