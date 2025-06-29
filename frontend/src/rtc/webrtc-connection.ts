@@ -1,15 +1,14 @@
 import { WebSocketContextType } from "@/contexts/WebSocketContext"
 import { setupWebSocketHandlers, sendWebSocketMessage } from "./ws-adaptor"
-import { setupDataChannel, cleanupAllDataChannels } from "./webrtc-utils"
-import { StoreManager } from "@/dashboard/store/store-manager"
-import { TurtlesimRemoteControlStore } from "@/dashboard/store/turtlesim-remote-control.store"
-import { TURTLESIM_REMOTE_CONTROL_TYPE } from "@/dashboard/parser/turtlesim-remote-control"
+import { createDataChannel, cleanupAllDataChannels } from "./webrtc-utils"
 import { VideoStoreManager } from "@/dashboard/store/video-store-manager"
 import { VideoStore } from "@/dashboard/store/video.store"
+import { ChannelType, DEFAULT_DATA_CHANNELS, DataChannelConfigUtils } from "./webrtc-datachannel-config"
 
 export interface DataChannelConfig {
   label: string
   dataType: string // 'turtlesim_position', 'go2_low_state', 'go2_ouster_pointcloud' 등
+  channelType: ChannelType // 채널 타입 명시
   options?: RTCDataChannelInit
 }
 
@@ -33,7 +32,7 @@ export class WebRTCConnection {
   private unsubscribeFunctions: (() => void)[] = []
   private pendingCandidates: RTCIceCandidate[] = []
   private dataChannels: Map<string, RTCDataChannel> = new Map()
-  private channelDataTypes: Map<string, string> = new Map() // 채널 라벨 -> 데이터 타입 매핑
+  private channelDataTypes: Map<string, { dataType: string; channelType: ChannelType }> = new Map() // 채널 라벨 -> 데이터 타입 및 채널 타입 매핑
   private videoChannels: Map<string, VideoChannelConfig> = new Map() // 비디오 채널 설정
   private videoChannelDataTypes: Map<string, string> = new Map() // 비디오 채널 라벨 -> 데이터 타입 매핑
 
@@ -105,38 +104,31 @@ export class WebRTCConnection {
       console.log('DataChannel 수신됨:', dataChannel.label, dataChannel.readyState)
       
       // 채널 이름 매핑 (서버와 클라이언트 간 이름 차이 해결)
-      const channelNameMapping: { [key: string]: string } = {
-        'go2_ouster_points_data_channel': 'go2_ouster_pointcloud_data_channel'
-      }
-      
-      const mappedLabel = channelNameMapping[dataChannel.label] || dataChannel.label
+      const mappedLabel = DataChannelConfigUtils.mapServerChannelNameToClient(dataChannel.label)
       console.log('채널 이름 매핑:', { original: dataChannel.label, mapped: mappedLabel })
       
       // 수신된 채널의 데이터 타입을 매핑에서 가져옴
-      const dataType = this.channelDataTypes.get(mappedLabel)
+      const dataType = this.channelDataTypes.get(mappedLabel)?.dataType
       if (!dataType) {
         console.error(`등록되지 않은 채널 수신됨: ${dataChannel.label} (매핑 후: ${mappedLabel})`)
         return
       }
       
       // 매핑된 라벨로 채널 데이터 타입 저장
-      this.channelDataTypes.set(dataChannel.label, dataType)
+      const existingChannelInfo = this.channelDataTypes.get(dataChannel.label)
+      this.channelDataTypes.set(dataChannel.label, {
+        dataType: dataType,
+        channelType: existingChannelInfo?.channelType || 'readonly' // 기본값으로 readonly 설정
+      })
       
-      this.setupDataChannel(dataChannel, dataType)
+      this.setupDataChannel(dataChannel, dataType, existingChannelInfo?.channelType || 'readonly')
     }
 
     // 설정된 데이터 채널들 생성
     const channelsToCreate = this.config.dataChannels || []
     
     // 기본 채널들 추가 (설정에 없는 경우)
-    const defaultChannels: DataChannelConfig[] = [
-      { label: 'position_data_channel', dataType: 'turtlesim_position' },
-      { label: 'go2_low_state_data_channel', dataType: 'go2_low_state' },
-      { label: 'go2_ouster_pointcloud_data_channel', dataType: 'go2_ouster_pointcloud' },
-      { label: 'remote_control_channel', dataType: 'turtlesim_remote_control' }
-    ]
-    
-    const allChannels = [...channelsToCreate, ...defaultChannels.filter(ch => 
+    const allChannels = [...channelsToCreate, ...DEFAULT_DATA_CHANNELS.filter(ch => 
       !channelsToCreate.some(configured => configured.label === ch.label)
     )]
 
@@ -149,31 +141,16 @@ export class WebRTCConnection {
         ...channelConfig.options
       })
       
-      console.log('DataChannel 생성됨:', dataChannel.label, dataChannel.readyState, '데이터타입:', channelConfig.dataType)
+      console.log('DataChannel 생성됨:', dataChannel.label, dataChannel.readyState, '데이터타입:', channelConfig.dataType, '채널타입:', channelConfig.channelType)
       
-      // 채널과 데이터 타입 매핑 저장
-      this.channelDataTypes.set(channelConfig.label, channelConfig.dataType)
+      // 채널과 데이터 타입, 채널 타입 매핑 저장
+      this.channelDataTypes.set(channelConfig.label, {
+        dataType: channelConfig.dataType,
+        channelType: channelConfig.channelType
+      })
       
-      // turtlesim_remote_control 타입의 경우 바로 스토어에 데이터 채널 설정
-      if (channelConfig.dataType === 'turtlesim_remote_control') {
-        const storeManager = StoreManager.getInstance();
-        const store = storeManager.createStoreIfNotExists(
-          this.config.robotId,
-          TURTLESIM_REMOTE_CONTROL_TYPE,
-          (robotId) => new TurtlesimRemoteControlStore(robotId)
-        );
-        if (store instanceof TurtlesimRemoteControlStore) {
-          store.setDataChannel(dataChannel);
-          console.log(`WebRTC 연결 시 TurtlesimRemoteControlStore에 데이터 채널 설정:`, {
-            robotId: this.config.robotId,
-            channelLabel: dataChannel.label,
-            channelState: dataChannel.readyState
-          });
-        }
-      }
-      
-      // 생성된 채널도 설정
-      this.setupDataChannel(dataChannel, channelConfig.dataType)
+      // 생성된 채널 설정
+      this.setupDataChannel(dataChannel, channelConfig.dataType, channelConfig.channelType)
     })
 
     // 비디오 채널 설정 (데이터 채널 설정 이후)
@@ -204,12 +181,12 @@ export class WebRTCConnection {
     })
   }
 
-  private setupDataChannel(dataChannel: RTCDataChannel, dataType: string) {
-    console.log('DataChannel 설정 시작:', dataChannel.label, '데이터타입:', dataType)
+  private setupDataChannel(dataChannel: RTCDataChannel, dataType: string, channelType: 'readonly' | 'writeonly') {
+    console.log('DataChannel 설정 시작:', dataChannel.label, '데이터타입:', dataType, '채널타입:', channelType)
     
     // DataChannel 상태 변경 이벤트 핸들러
     dataChannel.onopen = () => {
-      console.log(`DataChannel ${dataChannel.label} 열림, 상태:`, dataChannel.readyState, '데이터타입:', dataType)
+      console.log(`DataChannel ${dataChannel.label} 열림, 상태:`, dataChannel.readyState, '데이터타입:', dataType, '채널타입:', channelType)
     }
 
     dataChannel.onclose = () => {
@@ -222,11 +199,11 @@ export class WebRTCConnection {
       console.error(`DataChannel ${dataChannel.label} 에러:`, error)
     }
 
-    setupDataChannel(dataChannel, this.config.robotId, dataType)
+    createDataChannel(dataChannel, this.config.robotId, dataType, channelType)
 
     // DataChannel 저장
     this.dataChannels.set(dataChannel.label, dataChannel)
-    console.log('DataChannel 설정 완료:', dataChannel.label, '데이터타입:', dataType)
+    console.log('DataChannel 설정 완료:', dataChannel.label, '데이터타입:', dataType, '채널타입:', channelType)
   }
 
   public async startConnection(): Promise<void> {
@@ -394,14 +371,14 @@ export class WebRTCConnection {
 
   // 채널별 데이터 타입 반환
   public getChannelDataType(channelLabel: string): string | undefined {
-    return this.channelDataTypes.get(channelLabel)
+    return this.channelDataTypes.get(channelLabel)?.dataType
   }
 
   // 특정 데이터 타입을 처리하는 채널들 반환
   public getChannelsByDataType(dataType: string): string[] {
     const channels: string[] = []
     this.channelDataTypes.forEach((type, label) => {
-      if (type === dataType) {
+      if (type.dataType === dataType) {
         channels.push(label)
       }
     })

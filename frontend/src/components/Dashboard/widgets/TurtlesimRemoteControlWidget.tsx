@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Box, Button, Grid, Text, VStack, HStack, Badge, Flex, Icon } from '@chakra-ui/react'
-import { TurtlesimRemoteControlStore } from '@/dashboard/store/turtlesim-remote-control.store'
+import { TurtlesimRemoteControlStore } from '@/dashboard/store/data-channel-store/writeonly/turtlesim-remote-control.store'
 import { ParsedTurtlesimRemoteControl } from '@/dashboard/parser/turtlesim-remote-control'
 
 interface TurtlesimRemoteControlWidgetProps {
@@ -36,7 +36,6 @@ export function TurtlesimRemoteControlWidget({ robotId, store, dataType }: Turtl
   useEffect(() => {
     // WebRTC 연결 상태 확인
     const checkConnectionStatus = () => {
-      // Store에서 WebRTC 연결 객체 가져오기
       const dataChannel = store.getDataChannel()
       console.log(`TurtlesimRemoteControlWidget - 데이터 채널 상태 확인:`, {
         robotId,
@@ -75,7 +74,11 @@ export function TurtlesimRemoteControlWidget({ robotId, store, dataType }: Turtl
   }, [store, robotId])
 
   const handleDirectionClick = (direction: 'up' | 'down' | 'left' | 'right') => {
-    store.sendCommand(direction)
+    const sent = store.sendCommand(direction)
+    
+    if (!sent) {
+      console.warn(`명령 전송 실패: ${direction}`)
+    }
   }
 
   const getButtonColor = (direction: string) => {
@@ -232,53 +235,53 @@ export function TurtlesimRemoteControlWidget({ robotId, store, dataType }: Turtl
             </Grid>
           </Box>
         </VStack>
+        
+        {/* 명령 정보 */}
+        <VStack gap={2} align="stretch">
+          {lastCommand && (
+            <>
+              <HStack justify="space-between" fontSize="xs">
+                <Text color="gray.600" fontWeight="medium">Last Command</Text>
+                <Text color="gray.800" fontFamily="mono" textTransform="uppercase">
+                  {lastCommand.direction}
+                </Text>
+              </HStack>
+              
+              <HStack justify="space-between" fontSize="xs">
+                <Text color="gray.600" fontWeight="medium">Sent Time</Text>
+                <Text color="gray.800" fontFamily="mono">
+                  {new Date(lastCommand.timestamp).toLocaleTimeString()}
+                </Text>
+              </HStack>
+            </>
+          )}
+
+          {/* 명령 히스토리 */}
+          {commandHistory.length > 0 && (
+            <HStack justify="space-between" fontSize="xs">
+              <Text color="gray.600" fontWeight="medium">History</Text>
+              <HStack gap={1}>
+                {commandHistory.map((cmd, index) => (
+                  <Badge 
+                    key={index} 
+                    colorScheme="blue" 
+                    variant="subtle" 
+                    fontSize="xs"
+                    px={1}
+                  >
+                    {cmd.toUpperCase()}
+                  </Badge>
+                ))}
+              </HStack>
+            </HStack>
+          )}
+
+          {/* 연결 상태 정보 */}
+          <Text fontSize="xs" color="gray.500" textAlign="center">
+            {isConnected ? 'Ready to send commands' : 'Waiting for connection...'}
+          </Text>
+        </VStack>
       </Box>
-      
-      {/* 명령 정보 */}
-      <VStack gap={2} align="stretch">
-        {lastCommand && (
-          <>
-            <HStack justify="space-between" fontSize="xs">
-              <Text color="gray.600" fontWeight="medium">Last Command</Text>
-              <Text color="gray.800" fontFamily="mono" textTransform="uppercase">
-                {lastCommand.direction}
-              </Text>
-            </HStack>
-            
-            <HStack justify="space-between" fontSize="xs">
-              <Text color="gray.600" fontWeight="medium">Sent Time</Text>
-              <Text color="gray.800" fontFamily="mono">
-                {new Date(lastCommand.timestamp).toLocaleTimeString()}
-              </Text>
-            </HStack>
-          </>
-        )}
-
-        {/* 명령 히스토리 */}
-        {commandHistory.length > 0 && (
-          <HStack justify="space-between" fontSize="xs">
-            <Text color="gray.600" fontWeight="medium">History</Text>
-            <HStack gap={1}>
-              {commandHistory.map((cmd, index) => (
-                <Badge 
-                  key={index} 
-                  colorScheme="blue" 
-                  variant="subtle" 
-                  fontSize="xs"
-                  px={1}
-                >
-                  {cmd.toUpperCase()}
-                </Badge>
-              ))}
-            </HStack>
-          </HStack>
-        )}
-
-        {/* 연결 상태 정보 */}
-        <Text fontSize="xs" color="gray.500" textAlign="center">
-          {isConnected ? 'Ready to send commands' : 'Waiting for connection...'}
-        </Text>
-      </VStack>
     </VStack>
   )
 } 

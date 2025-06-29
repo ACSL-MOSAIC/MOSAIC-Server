@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import { Box, Text, Flex, Grid, GridItem, TabsRoot, TabsList, TabsContent, TabsTrigger, VStack, HStack, Badge } from "@chakra-ui/react"
 import { WidgetProps } from './types'
 import { ParsedGo2LowState, Go2ImuStateData } from '../../../dashboard/parser/go2-low-state'
-import { Go2LowStateStore } from '../../../dashboard/store/go2-low-state.store'
+import { Go2LowStateStore } from '../../../dashboard/store/data-channel-store/readonly/go2-low-state.store'
 import { Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,

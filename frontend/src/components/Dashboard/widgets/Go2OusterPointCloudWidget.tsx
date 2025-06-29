@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, Text, VStack, HStack, Badge, Flex } from '@chakra-ui/react';
 import { WidgetProps } from './types';
-import { Go2OusterPointCloudStore } from '../../../dashboard/store/go2-ouster-pointcloud.store';
+import { Go2OusterPointCloudStore } from '../../../dashboard/store/data-channel-store/readonly/go2-ouster-pointcloud.store';
 import { ParsedPointCloud2 } from '../../../dashboard/parser/go2-ouster-pointcloud';
 
 export interface Go2OusterPointCloudWidgetProps extends WidgetProps {

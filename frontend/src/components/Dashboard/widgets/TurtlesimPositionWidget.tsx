@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Box, Text, VStack, HStack, Badge, Flex } from '@chakra-ui/react'
-import { TurtlesimPositionStore } from '@/dashboard/store/turtlesim-position.store'
+import { TurtlesimPositionStore } from '@/dashboard/store/data-channel-store/readonly/turtlesim-position.store'
 import { ParsedTurtlesimPosition } from '@/dashboard/parser/turtlesim-position'
 
 interface TurtlesimPositionWidgetProps {
