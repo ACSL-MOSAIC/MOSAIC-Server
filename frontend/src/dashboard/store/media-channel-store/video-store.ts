@@ -48,13 +48,11 @@ export class VideoStore {
   constructor(robotId: string, channelLabel: string) {
     this.robotId = robotId;
     this.channelLabel = channelLabel;
-    console.log(`VideoStore 생성됨: ${channelLabel} for robot ${robotId}`);
   }
 
   // 스트림 설정
   setStreamConfig(config: StreamConfig): void {
     this.streamConfig = { ...this.streamConfig, ...config };
-    console.log(`VideoStore[${this.channelLabel}] 스트림 설정 업데이트:`, this.streamConfig);
   }
 
   // 스트림 설정 가져오기
@@ -71,8 +69,6 @@ export class VideoStore {
     this.setStreamConfig({
       // 기본 설정 유지
     });
-    
-    console.log(`VideoStore[${this.channelLabel}] 메타데이터 설정:`, metadata);
   }
 
   // 품질 문자열 파싱 (내부 메서드)
@@ -97,50 +93,20 @@ export class VideoStore {
   // 구독자 관리
   subscribe(callback: VideoSubscriber): () => void {
     this.subscribers.add(callback);
-    console.log(`VideoStore[${this.channelLabel}] 구독자 추가됨, 총 ${this.subscribers.size}명`);
     return () => {
       this.subscribers.delete(callback);
-      console.log(`VideoStore[${this.channelLabel}] 구독자 제거됨, 총 ${this.subscribers.size}명`);
     };
   }
 
   // MediaStream 설정
   setMediaStream(stream: MediaStream): void {
-    console.log(`🎬 VideoStore[${this.channelLabel}] setMediaStream 호출됨:`, {
-      streamId: stream.id,
-      streamActive: stream.active,
-      tracksCount: stream.getTracks().length,
-      tracks: stream.getTracks().map(track => ({
-        kind: track.kind,
-        id: track.id,
-        label: track.label,
-        enabled: track.enabled,
-        readyState: track.readyState
-      }))
-    });
-    
     this.mediaStream = stream;
     this.isActive = stream.active;
     
-    console.log(`VideoStore[${this.channelLabel}]에 MediaStream 설정됨:`, {
-      streamId: stream.id,
-      active: stream.active,
-      tracks: stream.getTracks().map(track => ({
-        kind: track.kind,
-        label: track.label,
-        id: track.id,
-        enabled: track.enabled,
-        readyState: track.readyState
-      }))
-    });
-    
     // 비디오 엘리먼트에 스트림 연결
     if (this.videoElement) {
-      console.log(`VideoStore[${this.channelLabel}] 비디오 엘리먼트에 스트림 연결:`, this.videoElement);
       this.videoElement.srcObject = stream;
       this.startFpsMonitoring();
-    } else {
-      console.log(`VideoStore[${this.channelLabel}] 비디오 엘리먼트가 아직 설정되지 않음, 나중에 연결됨`);
     }
     
     // 구독자들에게 즉시 알림
@@ -149,21 +115,11 @@ export class VideoStore {
 
   // 비디오 엘리먼트 설정
   setVideoElement(videoElement: HTMLVideoElement): void {
-    console.log(`🎬 VideoStore[${this.channelLabel}] setVideoElement 호출됨:`, {
-      videoElement: videoElement,
-      hasMediaStream: !!this.mediaStream,
-      mediaStreamId: this.mediaStream?.id
-    });
-    
     this.videoElement = videoElement;
-    console.log(`VideoStore[${this.channelLabel}] 비디오 엘리먼트 설정:`, videoElement);
     
     if (this.mediaStream) {
-      console.log(`VideoStore[${this.channelLabel}] 기존 MediaStream 연결:`, this.mediaStream);
       this.videoElement.srcObject = this.mediaStream;
       this.startFpsMonitoring();
-    } else {
-      console.log(`VideoStore[${this.channelLabel}] MediaStream이 아직 없음, 나중에 연결됨`);
     }
   }
 
@@ -193,7 +149,6 @@ export class VideoStore {
       clearInterval(this.fpsInterval);
     }
 
-    console.log(`VideoStore[${this.channelLabel}] FPS 모니터링 시작`);
     this.fpsCounter = 0;
     this.fpsInterval = window.setInterval(() => {
       this.updateFps();
@@ -205,7 +160,6 @@ export class VideoStore {
     if (this.fpsInterval) {
       clearInterval(this.fpsInterval);
       this.fpsInterval = null;
-      console.log(`VideoStore[${this.channelLabel}] FPS 모니터링 중지`);
     }
   }
 
@@ -224,8 +178,6 @@ export class VideoStore {
       height: this.videoElement.videoHeight || 480
     };
     
-    console.log(`VideoStore[${this.channelLabel}] FPS 업데이트:`, this.streamStats);
-    
     // 구독자들에게 알림
     this.notifySubscribers();
   }
@@ -233,7 +185,6 @@ export class VideoStore {
   // 구독자들에게 알림
   protected notifySubscribers(): void {
     if (!this.mediaStream) {
-      console.log(`🎬 VideoStore[${this.channelLabel}] notifySubscribers: MediaStream 없음`);
       return;
     }
 
@@ -247,17 +198,6 @@ export class VideoStore {
       timestamp: Date.now()
     };
     
-    console.log(`🎬 VideoStore[${this.channelLabel}] 구독자들에게 알림:`, {
-      subscribersCount: this.subscribers.size,
-      videoData: {
-        streamId: videoData.streamId,
-        robotId: videoData.robotId,
-        channelLabel: videoData.channelLabel,
-        isActive: videoData.isActive,
-        stats: videoData.stats
-      }
-    });
-    
     this.subscribers.forEach((callback) => {
       try {
         callback(videoData);
@@ -269,7 +209,6 @@ export class VideoStore {
 
   // 정리
   destroy(): void {
-    console.log(`VideoStore[${this.channelLabel}] 정리 시작`);
     this.stopFpsMonitoring();
     
     if (this.mediaStream) {
@@ -283,7 +222,6 @@ export class VideoStore {
     }
     
     this.isActive = false;
-    console.log(`VideoStore[${this.channelLabel}] 정리 완료`);
   }
 
   // TurtlesimVideoStore에서 접근할 수 있도록 protected 멤버들을 public으로 노출
@@ -317,5 +255,10 @@ export class VideoStore {
 
   public setStreamStats(stats: StreamStats): void {
     this.streamStats = stats;
+  }
+
+  // FPS 카운터 증가 (비디오 프레임이 렌더링될 때 호출)
+  public incrementFpsCounter(): void {
+    this.fpsCounter++;
   }
 } 

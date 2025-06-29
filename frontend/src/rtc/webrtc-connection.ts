@@ -4,7 +4,7 @@ import { createDataChannel, cleanupAllDataChannels } from "./webrtc-utils"
 import { VideoStoreManager } from "@/dashboard/store/media-channel-store/video-store-manager"
 import { VideoStore } from "@/dashboard/store/media-channel-store/video-store"
 import { ChannelType, DEFAULT_DATA_CHANNELS, DataChannelConfigUtils } from "./webrtc-datachannel-config"
-import { createOfferWithMediaChannels, handleSdpAnswer, setupVideoTrackHandler, parseMetadataFromSdp } from "./webrtc-sdp-utils"
+import { createOfferWithMediaChannels, parseMetadataFromSdp } from "./webrtc-sdp-utils"
 import { MediaChannelConfigUtils } from "./webrtc-media-channel-config"
 
 export interface DataChannelConfig {
@@ -47,11 +47,8 @@ export class WebRTCConnection {
     const { unsubscribe } = setupWebSocketHandlers(this.config.ws, this.config.robotId, {
       onSdpAnswer: async (sdpAnswer) => {
         try {
-          console.log('📥 SDP Answer 수신 및 처리 시작')
-          
           // SDP Answer에서 메타데이터 파싱
           const metadata = parseMetadataFromSdp(sdpAnswer)
-          console.log('🔍 SDP에서 파싱된 메타데이터:', Object.fromEntries(metadata))
           
           // 기존 VideoStore의 메타데이터 업데이트
           if (metadata.size > 0) {
@@ -71,7 +68,6 @@ export class WebRTCConnection {
                 }
                 
                 firstVideoStore.setMetadata(updatedMetadata)
-                console.log('✅ VideoStore 메타데이터 업데이트 완료:', updatedMetadata)
               }
             }
           }
@@ -81,15 +77,11 @@ export class WebRTCConnection {
             sdp: sdpAnswer
           }))
           
-          console.log('✅ Remote description 설정 완료')
-          
           // SDP answer가 설정된 후에 pending된 ICE candidates 적용
           if (this.pendingCandidates.length > 0) {
-            console.log('Pending ICE candidates 적용:', this.pendingCandidates.length)
             for (const candidate of this.pendingCandidates) {
               try {
                 await this.addIceCandidate(candidate)
-                console.log('Pending ICE candidate 적용 성공')
               } catch (error) {
                 console.error('Pending ICE candidate 적용 실패:', error)
               }
@@ -104,7 +96,6 @@ export class WebRTCConnection {
         try {
           // Remote description이 설정되어 있지 않으면 pending
           if (!this.peerConnection?.remoteDescription) {
-            console.log('Remote description이 없어서 ICE candidate를 pending')
             this.pendingCandidates.push(candidate)
             return
           }
@@ -448,33 +439,10 @@ export class WebRTCConnection {
 
   // ontrack 이벤트 핸들러를 먼저 설정하는 메서드
   private setupVideoTrackHandler(peerConnection: RTCPeerConnection): void {
-    console.log('🔧 Video Track Handler 초기 설정 시작')
-    
     peerConnection.ontrack = (event) => {
-      console.log('🎬 ontrack 이벤트 발생:', {
-        trackKind: event.track.kind,
-        trackId: event.track.id,
-        trackLabel: event.track.label,
-        trackReadyState: event.track.readyState,
-        streamsCount: event.streams?.length || 0,
-        hasStreams: !!event.streams,
-        firstStreamId: event.streams?.[0]?.id
-      })
-      
       if (event.track.kind === 'video') {
-        console.log('✅ 비디오 트랙 감지됨')
-        
         if (event.streams && event.streams[0]) {
-          console.log('✅ 스트림이 존재함')
           const stream = event.streams[0]
-          
-          console.log('🔍 비디오 트랙 상세 정보:', {
-            trackId: event.track.id,
-            actualStreamId: stream.id,
-            trackLabel: event.track.label,
-            streamTracksCount: stream.getTracks().length,
-            streamActive: stream.active
-          })
           
           // 기본적으로 turtlesim_video로 처리 (SDP Answer에서 메타데이터 업데이트 예정)
           const mediaType = 'turtlesim_video'
@@ -483,26 +451,12 @@ export class WebRTCConnection {
           const source = 'turtlesim_node'
           const trackIndex = 0
           
-          console.log('🔍 기본 미디어 정보:', {
-            mediaType,
-            description,
-            quality,
-            source,
-            trackIndex
-          })
-          
           // VideoStore 생성 및 연결
           const videoStoreManager = VideoStoreManager.getInstance()
           const videoStore = videoStoreManager.createVideoStoreByMediaTypeAuto(
             this.config.robotId, 
             mediaType
           )
-          
-          console.log('🔍 VideoStore 생성 결과:', {
-            videoStore: videoStore ? 'created' : 'failed',
-            robotId: this.config.robotId,
-            mediaType
-          })
           
           if (videoStore) {
             // 메타데이터 설정
@@ -515,18 +469,9 @@ export class WebRTCConnection {
             })
             
             videoStore.setMediaStream(stream)
-            console.log(`✅ Video Store 연결 완료: ${mediaType} for robot ${this.config.robotId}`)
-          } else {
-            console.warn(`❌ Video Store를 찾을 수 없음: ${mediaType} for robot ${this.config.robotId}`)
           }
-        } else {
-          console.warn('❌ 비디오 트랙에 스트림이 없음')
         }
-      } else {
-        console.log('ℹ️ 비디오가 아닌 트랙 무시:', event.track.kind)
       }
     }
-    
-    console.log('🔧 Video Track Handler 초기 설정 완료')
   }
 }

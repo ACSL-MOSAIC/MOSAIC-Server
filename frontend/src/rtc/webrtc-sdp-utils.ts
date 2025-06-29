@@ -1,39 +1,29 @@
 import { MediaChannelConfigUtils } from './webrtc-media-channel-config';
 import { VideoStoreManager } from '../dashboard/store/media-channel-store/video-store-manager';
-import { VideoStore } from '../dashboard/store/media-channel-store/video-store';
 
-// SDP에서 메타데이터 파싱
 export function parseMetadataFromSdp(sdp: string): Map<string, any> {
   const metadata = new Map<string, any>();
   const lines = sdp.split('\n');
-  
-  console.log('🔍 SDP 메타데이터 파싱 시작');
   
   for (const line of lines) {
     if (line.startsWith('a=media-type:')) {
       const mediaType = line.substring(13);
       metadata.set('mediaType', mediaType);
-      console.log(`✅ 미디어 타입 발견: ${mediaType}`);
     } else if (line.startsWith('a=track-description:')) {
       const description = line.substring(20);
       metadata.set('description', description);
-      console.log(`✅ 트랙 설명 발견: ${description}`);
     } else if (line.startsWith('a=track-quality:')) {
       const quality = line.substring(16);
       metadata.set('quality', quality);
-      console.log(`✅ 트랙 품질 발견: ${quality}`);
     } else if (line.startsWith('a=track-source:')) {
       const source = line.substring(15);
       metadata.set('source', source);
-      console.log(`✅ 트랙 소스 발견: ${source}`);
     } else if (line.startsWith('a=track-index:')) {
       const index = parseInt(line.substring(14));
       metadata.set('trackIndex', index);
-      console.log(`✅ 트랙 인덱스 발견: ${index}`);
     }
   }
   
-  console.log('🔍 파싱된 메타데이터:', Object.fromEntries(metadata));
   return metadata;
 }
 

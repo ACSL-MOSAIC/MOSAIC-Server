@@ -33,19 +33,29 @@ export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
       return
     }
 
-    const now = performance.now()
-    if (now - lastFrameTimeRef.current >= 1000) { // 1초마다 FPS 업데이트
-      lastFrameTimeRef.current = now
-    }
+    // 비디오 프레임이 렌더링될 때 FPS 카운터 증가
+    store.incrementFpsCounter()
 
     animationFrameRef.current = requestAnimationFrame(measureFPSCallback)
+  }, [store])
+
+  // 비디오 프레임 콜백 (더 정확한 FPS 측정)
+  const videoFrameCallback = useCallback(() => {
+    if (!videoRef.current || !store) return
+
+    // 비디오 프레임이 실제로 렌더링될 때 FPS 카운터 증가
+    store.incrementFpsCounter()
+
+    // 다음 비디오 프레임 요청
+    if (videoRef.current.requestVideoFrameCallback) {
+      videoRef.current.requestVideoFrameCallback(videoFrameCallback)
+    }
   }, [store])
 
   useEffect(() => {
     if (!store) return
 
     const unsubscribe = store.subscribe((data) => {
-      console.log('TurtlesimVideoWidget 구독자 콜백 호출됨:', data)
       setVideoData(data)
       setIsConnected(data.isActive)
       setError(null)
@@ -69,84 +79,41 @@ export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
     // FPS 측정 시작
     animationFrameRef.current = requestAnimationFrame(measureFPSCallback)
 
+    // 비디오 프레임 콜백 시작 (더 정확한 FPS 측정)
+    if (videoRef.current && videoRef.current.requestVideoFrameCallback) {
+      videoRef.current.requestVideoFrameCallback(videoFrameCallback)
+    }
+
     // 비디오 엘리먼트 설정
     if (videoRef.current) {
-      console.log('🎥 비디오 엘리먼트 설정:', videoRef.current)
       store.setVideoElement(videoRef.current)
-      
-      // 비디오 엘리먼트 상태 확인
-      console.log('🎥 비디오 엘리먼트 초기 상태:', {
-        srcObject: videoRef.current.srcObject,
-        readyState: videoRef.current.readyState,
-        networkState: videoRef.current.networkState,
-        paused: videoRef.current.paused,
-        currentTime: videoRef.current.currentTime,
-        duration: videoRef.current.duration,
-        videoWidth: videoRef.current.videoWidth,
-        videoHeight: videoRef.current.videoHeight
-      })
-    } else {
-      console.error('❌ 비디오 엘리먼트 ref가 null입니다')
     }
 
     // MediaStream 상태 확인
     const mediaStream = store.getMediaStream()
-    console.log('🌊 현재 MediaStream 상태:', mediaStream)
     
     if (mediaStream) {
-      console.log('🌊 MediaStream 정보:', {
-        id: mediaStream.id,
-        active: mediaStream.active,
-        tracks: mediaStream.getTracks().map(track => ({
-          kind: track.kind,
-          label: track.label,
-          enabled: track.enabled,
-          readyState: track.readyState
-        }))
-      })
-      
       // MediaStream이 비디오 엘리먼트에 연결되었는지 확인
       if (videoRef.current && videoRef.current.srcObject === mediaStream) {
-        console.log('✅ MediaStream이 비디오 엘리먼트에 연결됨')
-        
         // MediaStream이 연결되면 자동 재생 시도
         if (videoRef.current.paused) {
-          console.log('▶️ 비디오 자동 재생 시도...')
-          videoRef.current.play().then(() => {
-            console.log('✅ 비디오 자동 재생 성공')
-          }).catch((error) => {
+          videoRef.current.play().catch((error) => {
             console.error('❌ 비디오 자동 재생 실패:', error)
           })
         }
-      } else {
-        console.log('❌ MediaStream이 비디오 엘리먼트에 연결되지 않음')
-        console.log('🔍 연결 상태 비교:', {
-          videoSrcObject: videoRef.current?.srcObject,
-          mediaStream: mediaStream,
-          isEqual: videoRef.current?.srcObject === mediaStream
-        })
       }
-    } else {
-      console.log('⚠️ MediaStream이 아직 설정되지 않음')
     }
 
     // 비디오 이벤트 핸들러
     const videoElement = videoRef.current
     if (videoElement) {
       const handlePlay = () => {
-        console.log('비디오 재생 시작')
         setIsPlaying(true)
       }
       const handlePause = () => {
-        console.log('비디오 일시정지')
         setIsPlaying(false)
       }
       const handleLoadedMetadata = () => {
-        console.log('비디오 메타데이터 로드됨:', {
-          videoWidth: videoElement.videoWidth,
-          videoHeight: videoElement.videoHeight,
-          duration: videoElement.duration
-        })
         setError(null)
       }
       const handleError = (e: any) => {
@@ -181,7 +148,7 @@ export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
       }
       unsubscribe()
     }
-  }, [store, robotId, widgetId, measureFPSCallback])
+  }, [store, robotId, widgetId, measureFPSCallback, videoFrameCallback])
 
   const handlePlayPause = () => {
     if (videoRef.current) {
