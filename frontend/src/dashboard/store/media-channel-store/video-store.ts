@@ -17,14 +17,6 @@ export interface StreamStats {
   fps: number;
   width: number;
   height: number;
-  resolution?: string;
-  streamId?: string;
-}
-
-export interface StreamConfig {
-  maxFrames?: number;
-  captureInterval?: number; // ms
-  quality?: number; // 0.1 ~ 1.0
 }
 
 export class VideoStore {
@@ -41,7 +33,6 @@ export class VideoStore {
   };
   protected fpsCounter: number = 0;
   protected fpsInterval: number | null = null;
-  protected streamConfig: StreamConfig = {};
   protected metadata: { mediaType?: string; description?: string; quality?: string; source?: string; trackIndex?: number } = {};
 
   constructor(robotId: string, channelLabel: string) {
@@ -49,20 +40,10 @@ export class VideoStore {
     this.channelLabel = channelLabel;
   }
 
-  // stream config setter
-  setStreamConfig(config: StreamConfig): void {
-    this.streamConfig = { ...this.streamConfig, ...config };
-  }
-
-  // stream config getter
-  getStreamConfig(): StreamConfig {
-    return this.streamConfig;
-  }
-
   // metadata setter
   setMetadata(metadata: { mediaType?: string; description?: string; quality?: string; source?: string; trackIndex?: number }): void {
     this.metadata = { ...this.metadata, ...metadata };
-    console.log(`VideoStore[${this.getChannelLabel()}] 메타데이터 설정:`, this.metadata);
+    console.log(`VideoStore[${this.getChannelLabel()}] Metadata set:`, this.metadata);
   }
 
   // metadata getter
@@ -183,7 +164,7 @@ export class VideoStore {
       try {
         callback(videoData);
       } catch (error) {
-        console.error(`VideoStore[${this.channelLabel}] 구독자 콜백 실행 중 오류:`, error);
+        console.error(`VideoStore[${this.channelLabel}] Subscriber callback error:`, error);
       }
     });
   }
@@ -203,9 +184,10 @@ export class VideoStore {
     }
     
     this.isActive = false;
+    this.subscribers.clear();
   }
 
-  // TurtlesimVideoStore에서 접근할 수 있도록 protected 멤버들을 public으로 노출
+  // 내부 접근용 메서드들 (자식 클래스에서 사용)
   public getRobotId(): string {
     return this.robotId;
   }
@@ -238,7 +220,6 @@ export class VideoStore {
     this.streamStats = stats;
   }
 
-  // FPS 카운터 증가 (비디오 프레임이 렌더링될 때 호출)
   public incrementFpsCounter(): void {
     this.fpsCounter++;
   }

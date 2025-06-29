@@ -442,47 +442,8 @@ export class WebRTCConnection {
     return channels
   }
 
-  // 비디오 스토어 가져오기
-  public getVideoStore(channelLabel: string): VideoStore | undefined {
-    const videoStoreManager = VideoStoreManager.getInstance()
-    return videoStoreManager.getVideoStore(this.config.robotId, channelLabel)
-  }
-
-  // 모든 비디오 스토어 가져오기
-  public getVideoStores(): Map<symbol, VideoStore> {
-    const videoStoreManager = VideoStoreManager.getInstance()
-    return videoStoreManager.getRobotVideoStores(this.config.robotId)
-  }
-
-  // 비디오 채널 목록 반환
-  public getVideoChannels(): string[] {
-    const videoStoreManager = VideoStoreManager.getInstance()
-    return videoStoreManager.getRobotVideoChannels(this.config.robotId)
-  }
-
-  // 비디오 채널 설정 가져오기
-  public getVideoChannelConfig(channelLabel: string): VideoChannelConfig | undefined {
-    return this.videoChannels.get(channelLabel)
-  }
-
-  // 모든 비디오 채널 설정 반환
-  public getVideoChannelConfigs(): Map<string, VideoChannelConfig> {
-    return this.videoChannels
-  }
-
-  // 비디오 채널의 데이터 타입 반환
-  public getVideoChannelDataType(channelLabel: string): string | undefined {
-    return this.videoChannelDataTypes.get(channelLabel)
-  }
-
-  // 특정 데이터 타입을 처리하는 비디오 채널들 반환
-  public getVideoChannelsByDataType(dataType: string): string[] {
-    const channels: string[] = []
-    this.videoChannelDataTypes.forEach((type, label) => {
-      if (type === dataType) {
-        channels.push(label)
-      }
-    })
-    return channels
+  // 비디오 스토어 매니저 가져오기
+  public getVideoStoreManager(): VideoStoreManager {
+    return VideoStoreManager.getInstance()
   }
 }

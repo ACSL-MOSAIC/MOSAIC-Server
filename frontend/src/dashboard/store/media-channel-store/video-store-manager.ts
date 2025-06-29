@@ -20,55 +20,51 @@ export class VideoStoreManager {
     return VideoStoreManager.instance
   }
 
-  // 로봇의 비디오 스토어 컨테이너 초기화
+  // 로봇별 비디오 스토어 초기화
   public initializeRobotVideoStores(robotId: string): void {
-    const robotStores = new Map<symbol, VideoStore>()
-    this.stores.set(robotId, robotStores)
-    
-    // 데이터 타입별 채널 추적 초기화
-    this.dataTypeChannels.set(robotId, new Map())
-    
-    // 미디어 타입별 스토어 타입 매핑 초기화
-    this.mediaTypeStoreTypes.set(robotId, new Map())
-    
-    console.log(`VideoStoreManager: 로봇 ${robotId} 비디오 스토어 컨테이너 초기화`)
-  }
-
-  // 로봇의 모든 비디오 스토어 정리
-  public cleanupRobotVideoStores(robotId: string): void {
-    const robotStores = this.stores.get(robotId)
-    if (robotStores) {
-      // 모든 비디오 스토어 정리
-      robotStores.forEach(store => store.destroy())
-      this.stores.delete(robotId)
-      this.dataTypeChannels.delete(robotId)
-      this.mediaTypeStoreTypes.delete(robotId)
-      console.log(`VideoStoreManager: 로봇 ${robotId} 비디오 스토어 컨테이너 정리 완료`)
+    if (!this.stores.has(robotId)) {
+      this.stores.set(robotId, new Map())
+      this.dataTypeChannels.set(robotId, new Map())
+      this.mediaTypeStoreTypes.set(robotId, new Map())
+      console.log(`VideoStoreManager: Robot ${robotId} video stores initialized`)
     }
   }
 
-  // 데이터 채널과 동일한 패턴: createStoreIfNotExists
+  // 로봇별 비디오 스토어 정리
+  public cleanupRobotVideoStores(robotId: string): void {
+    const robotStores = this.stores.get(robotId)
+    if (robotStores) {
+      // 모든 스토어 정리
+      robotStores.forEach(store => store.destroy())
+      robotStores.clear()
+    }
+    
+    this.stores.delete(robotId)
+    this.dataTypeChannels.delete(robotId)
+    this.mediaTypeStoreTypes.delete(robotId)
+    
+    console.log(`VideoStoreManager: Robot ${robotId} video stores cleaned up`)
+  }
+
+  // 스토어 생성 (없으면 생성, 있으면 기존 반환)
   public createStoreIfNotExists(
     robotId: string,
     storeType: symbol,
     storeFactory: (robotId: string) => VideoStore
   ): VideoStore {
     let robotStores = this.stores.get(robotId)
-    
     if (!robotStores) {
-      robotStores = new Map<symbol, VideoStore>()
+      robotStores = new Map()
       this.stores.set(robotId, robotStores)
-      console.log(`VideoStoreManager: 로봇 ${robotId} 비디오 스토어 컨테이너 동적 생성`)
     }
-    
+
     let store = robotStores.get(storeType)
-    
     if (!store) {
       store = storeFactory(robotId)
       robotStores.set(storeType, store)
-      console.log(`VideoStoreManager: VideoStore 생성됨: ${String(storeType)} for robot ${robotId}`)
+      console.log(`VideoStoreManager: New VideoStore created: ${String(storeType)} for robot ${robotId}`)
     }
-    
+
     return store
   }
 
@@ -98,7 +94,7 @@ export class VideoStoreManager {
     // 채널 등록
     this.registerChannelForDataType(robotId, mediaType, channelLabel)
     
-    console.log(`VideoStoreManager: 미디어 타입 ${mediaType}으로 VideoStore 생성 완료`)
+    console.log(`VideoStoreManager: VideoStore created for media type ${mediaType}`)
     return store
   }
 
@@ -118,21 +114,21 @@ export class VideoStoreManager {
   ): VideoStore | null {
     // 미디어 타입이 지원되는지 확인
     if (!MediaChannelConfigUtils.isSupportedMediaType(mediaType)) {
-      console.warn(`VideoStoreManager: 지원되지 않는 미디어 타입: ${mediaType}`)
+      console.warn(`VideoStoreManager: Unsupported media type: ${mediaType}`)
       return null
     }
     
     // 스토어 타입 심볼 가져오기
     const storeType = MediaChannelConfigUtils.getMediaTypeSymbol(mediaType)
     if (!storeType) {
-      console.warn(`VideoStoreManager: 미디어 타입 ${mediaType}에 대한 심볼을 찾을 수 없음`)
+      console.warn(`VideoStoreManager: Symbol not found for media type ${mediaType}`)
       return null
     }
     
     // 기존 스토어가 있는지 확인
     const existingStore = this.getVideoStoreByMediaType(robotId, mediaType)
     if (existingStore) {
-      console.log(`VideoStoreManager: 기존 VideoStore 재사용: ${mediaType} for robot ${robotId}`)
+      console.log(`VideoStoreManager: Reusing existing VideoStore: ${mediaType} for robot ${robotId}`)
       return existingStore
     }
     
@@ -146,34 +142,12 @@ export class VideoStoreManager {
     
     const storeFactory = storeFactories[mediaType]
     if (!storeFactory) {
-      console.warn(`VideoStoreManager: 미디어 타입 ${mediaType}에 대한 스토어 팩토리가 없음`)
+      console.warn(`VideoStoreManager: No store factory for media type ${mediaType}`)
       return null
     }
     
-    console.log(`VideoStoreManager: 새로운 VideoStore 생성: ${mediaType} for robot ${robotId}`)
+    console.log(`VideoStoreManager: Creating new VideoStore: ${mediaType} for robot ${robotId}`)
     return this.createVideoStoreByMediaType(robotId, mediaType, storeType, storeFactory)
-  }
-
-  // 특정 채널의 비디오 스토어 가져오기 (기존 호환성)
-  public getVideoStore(robotId: string, channelLabel: string): VideoStore | undefined {
-    // 채널 라벨로 데이터 타입 찾기
-    const dataType = this.getDataTypeForChannel(robotId, channelLabel)
-    if (!dataType) {
-      console.warn(`채널 라벨 ${channelLabel}에 대한 데이터 타입을 찾을 수 없음`)
-      return undefined
-    }
-
-    // 모든 스토어에서 해당 데이터 타입의 스토어 찾기
-    const robotStores = this.stores.get(robotId)
-    if (!robotStores) return undefined
-
-    for (const [storeType, store] of robotStores.entries()) {
-      if (String(storeType).includes(dataType)) {
-        return store
-      }
-    }
-
-    return undefined
   }
 
   // 미디어 타입으로 VideoStore 가져오기
@@ -207,7 +181,7 @@ export class VideoStoreManager {
     
     if (!channels.includes(channelLabel)) {
       channels.push(channelLabel)
-      console.log(`VideoStoreManager: 비디오 채널 등록: ${channelLabel} -> ${dataType} for robot ${robotId}`)
+      console.log(`VideoStoreManager: Video channel registered: ${channelLabel} -> ${dataType} for robot ${robotId}`)
     }
   }
 
@@ -232,50 +206,5 @@ export class VideoStoreManager {
   // 로봇의 모든 비디오 스토어 가져오기
   public getRobotVideoStores(robotId: string): Map<symbol, VideoStore> {
     return this.stores.get(robotId) || new Map()
-  }
-
-  // 로봇의 모든 비디오 채널 라벨 가져오기
-  public getRobotVideoChannels(robotId: string): string[] {
-    const robotDataTypeChannels = this.dataTypeChannels.get(robotId)
-    if (!robotDataTypeChannels) return []
-    
-    const allChannels: string[] = []
-    robotDataTypeChannels.forEach(channels => {
-      allChannels.push(...channels)
-    })
-    return allChannels
-  }
-
-  // 특정 채널의 비디오 스토어 제거
-  public removeVideoStore(robotId: string, channelLabel: string): void {
-    const dataType = this.getDataTypeForChannel(robotId, channelLabel)
-    if (!dataType) {
-      console.warn(`채널 라벨 ${channelLabel}에 대한 데이터 타입을 찾을 수 없음`)
-      return
-    }
-
-    const robotStores = this.stores.get(robotId)
-    if (!robotStores) return
-
-    // 해당 데이터 타입의 스토어 찾아서 제거
-    for (const [storeType, store] of robotStores.entries()) {
-      if (String(storeType).includes(dataType)) {
-        store.destroy()
-        robotStores.delete(storeType)
-        console.log(`VideoStoreManager: 비디오 스토어 제거됨: ${String(storeType)} for robot ${robotId}`)
-        break
-      }
-    }
-  }
-
-  // 모든 비디오 스토어 상태 로그
-  public logAllVideoStores(): void {
-    console.log('VideoStoreManager: 현재 모든 비디오 스토어 상태:')
-    for (const [robotId, robotStores] of this.stores.entries()) {
-      console.log(`  로봇 ${robotId}:`)
-      for (const [storeType, store] of robotStores.entries()) {
-        console.log(`    - ${String(storeType)}: ${store.isStreamActive() ? '활성' : '비활성'}`)
-      }
-    }
   }
 } 
