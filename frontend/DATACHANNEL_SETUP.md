@@ -1,4 +1,7 @@
-# DataChannel 설정 및 관리 가이드
+# DataChannel Setup and Management Guide
+
+<details>
+<summary><strong> 한국어 (Korean)</strong></summary>
 
 ## 목차
 1. [DataChannel 스토어 상속 구조](#1-datachannel-스토어-상속-구조)
@@ -434,11 +437,12 @@ frontend/src/
 - [ ] WebRTC 연결 시 DataChannel이 올바르게 설정되는가?
 - [ ] 에러 처리가 적절히 구현되어 있는가?
 - [ ] 메모리 누수가 없는가? (구독 해제 등)
-
-
 ---
 
-# DataChannel Setup and Management Guide
+</details>
+
+<details>
+<summary><strong> English</strong></summary>
 
 ## Table of Contents
 1. [DataChannel Store Inheritance Structure](#1-datachannel-store-inheritance-structure)
@@ -874,5 +878,6 @@ frontend/src/
 - [ ] Is the DataChannel properly set up when WebRTC connects?
 - [ ] Is error handling appropriately implemented?
 - [ ] Is there no memory leak? (subscription cleanup, etc.)
-
 ---
+
+</details>
