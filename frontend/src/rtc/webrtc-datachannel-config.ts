@@ -20,7 +20,7 @@ export const DATA_CHANNEL_CONFIG = {
   'go2_ouster_pointcloud': {
     type: 'go2_ouster_pointcloud',
     channelType: 'readonly' as const,
-    defaultLabel: 'go2_ouster_pointcloud_data_channel',
+    defaultLabel: 'go2_ouster_points_data_channel',
     description: 'Go2 Ouster Point Cloud Data Channel'
   },
   'turtlesim_remote_control': {
@@ -69,7 +69,7 @@ export const DATA_TYPE_SYMBOLS = {
 
 // Channel name mapping for robot and browser
 export const CHANNEL_NAME_MAPPING = {
-  'go2_ouster_points_data_channel': 'go2_ouster_pointcloud_data_channel'
+  // 매핑이 더 이상 필요하지 않음 (채널 이름이 일치함)
 } as const
 
 // Utility functions
@@ -102,13 +102,6 @@ export const DataChannelConfigUtils = {
    */
   getStoreSymbol(dataType: string): symbol | null {
     return DATA_TYPE_SYMBOLS[dataType as keyof typeof DATA_TYPE_SYMBOLS] || null
-  },
-
-  /**
-   * Map the server channel name to the client channel name
-   */
-  mapServerChannelNameToClient(serverLabel: string): string {
-    return CHANNEL_NAME_MAPPING[serverLabel as keyof typeof CHANNEL_NAME_MAPPING] || serverLabel
   },
 
   /**

@@ -47,7 +47,7 @@ export type ParsedPointCloud2 = ParsedData<pointcloud.IPointCloud2>;
 
 export const parsePointCloud2 = (buffer: ArrayBuffer): ParsedPointCloud2 | null => {
     try {
-
+        console.log('parsePointCloud2', buffer);
         const dataChunk = chunking.DataChunk.decode(new Uint8Array(buffer));
         return parsePointCloud2FromDataChunk(dataChunk);
     } catch (error) {

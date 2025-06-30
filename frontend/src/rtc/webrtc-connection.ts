@@ -114,25 +114,32 @@ export class WebRTCConnection {
       const dataChannel = event.channel
       console.log('📊 DataChannel 수신됨:', dataChannel.label, dataChannel.readyState)
       
-      // 채널 이름 매핑 (서버와 클라이언트 간 이름 차이 해결)
-      const mappedLabel = DataChannelConfigUtils.mapServerChannelNameToClient(dataChannel.label)
-      console.log('채널 이름 매핑:', { original: dataChannel.label, mapped: mappedLabel })
+      // 수신된 채널의 데이터 타입을 찾기
+      const channelInfo = this.channelDataTypes.get(dataChannel.label)
+      const dataType = channelInfo?.dataType
+      const channelType = channelInfo?.channelType
       
-      // 수신된 채널의 데이터 타입을 매핑에서 가져옴
-      const dataType = this.channelDataTypes.get(mappedLabel)?.dataType
+      console.log('🔍 채널 정보 검색:', {
+        label: dataChannel.label,
+        found: !!dataType,
+        dataType: dataType,
+        channelType: channelType
+      })
+      
       if (!dataType) {
-        console.error(`등록되지 않은 채널 수신됨: ${dataChannel.label} (매핑 후: ${mappedLabel})`)
+        console.error(`등록되지 않은 채널 수신됨: ${dataChannel.label}`)
+        console.log('등록된 채널들:', Array.from(this.channelDataTypes.keys()))
+        console.log('등록된 채널 상세 정보:', Array.from(this.channelDataTypes.entries()))
         return
       }
       
-      // 매핑된 라벨로 채널 데이터 타입 저장
-      const existingChannelInfo = this.channelDataTypes.get(dataChannel.label)
-      this.channelDataTypes.set(dataChannel.label, {
+      console.log('✅ DataChannel 설정 완료:', {
+        label: dataChannel.label,
         dataType: dataType,
-        channelType: existingChannelInfo?.channelType || 'readonly' // 기본값으로 readonly 설정
+        channelType: channelType || 'readonly'
       })
       
-      this.setupDataChannel(dataChannel, dataType, existingChannelInfo?.channelType || 'readonly')
+      this.setupDataChannel(dataChannel, dataType, channelType || 'readonly')
     }
 
     // 설정된 데이터 채널들 생성
