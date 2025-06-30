@@ -1,5 +1,6 @@
 import { Box, Grid, Text, Button, Flex, Badge, Icon } from "@chakra-ui/react"
 import { useWebSocket } from "@/contexts/WebSocketContext"
+import { useRobotMapping } from "@/hooks/useRobotMapping"
 import { IoVideocam, IoVideocamOff, IoPower, IoPowerOutline } from "react-icons/io5"
 
 interface RobotConnectionPanelProps {
@@ -18,6 +19,7 @@ function RobotConnectionPanel({
   onDisconnectAll 
 }: RobotConnectionPanelProps) {
   const { robots } = useWebSocket()
+  const { getRobotName } = useRobotMapping()
 
   const readyRobots = robots.filter((robot) => robot.state === "READY_TO_CONNECT")
   const connectedRobots = robots.filter((robot) => connections[robot.robot_id])
@@ -108,7 +110,7 @@ function RobotConnectionPanel({
             >
               <Flex justify="space-between" align="center" mb={2}>
                 <Text fontWeight="bold" fontSize="lg">
-                  {robot.robot_id}
+                  {getRobotName(robot.robot_id)}
                 </Text>
                 <Badge colorScheme={getStatusColor(robot.robot_id)}>
                   {getStatusText(robot.robot_id)}

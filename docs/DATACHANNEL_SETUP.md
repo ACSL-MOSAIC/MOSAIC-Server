@@ -244,8 +244,11 @@ export interface ParsedNewDataType {
   timestamp: number;
   value1: number;
   value2: string;
-  // ... 기타 필드
+  // ... other fields
 }
+
+// Data type symbol definition
+export const NEW_DATA_TYPE_SYMBOL = Symbol('new-data-type');
 
 export function parseNewDataType(data: string): ParsedNewDataType {
   const parsed = JSON.parse(data);
@@ -253,7 +256,7 @@ export function parseNewDataType(data: string): ParsedNewDataType {
     timestamp: Date.now(),
     value1: parsed.value1,
     value2: parsed.value2,
-    // ... 파싱 로직
+    // ... parsing logic
   };
 }
 ```
@@ -378,15 +381,41 @@ export function NewDataTypeWidget({ robotId, store, dataType }: NewDataTypeWidge
 export const DATA_CHANNEL_CONFIG = {
   // ... 기존 설정들
   'new-data-type': {
-    label: 'new-data-type',
-    type: 'readonly' as const,
-    priority: 'normal' as const,
+    type: 'new-data-type',
+    channelType: 'readonly' as const,
+    defaultLabel: 'new-data-type_data_channel',
+    description: 'New Data Type Channel'
   },
   'new-command': {
-    label: 'new-command',
-    type: 'writeonly' as const,
-    priority: 'high' as const,
+    type: 'new-command',
+    channelType: 'writeonly' as const,
+    defaultLabel: 'new-command_data_channel',
+    description: 'New Command Channel'
   },
+} as const;
+
+// 기본 데이터 채널 설정에 추가
+export const DEFAULT_DATA_CHANNELS = [
+  // ... 기존 채널들
+  {
+    label: DATA_CHANNEL_CONFIG['new-data-type'].defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG['new-data-type'].type,
+    channelType: DATA_CHANNEL_CONFIG['new-data-type'].channelType,
+    options: undefined
+  },
+  {
+    label: DATA_CHANNEL_CONFIG['new-command'].defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG['new-command'].type,
+    channelType: DATA_CHANNEL_CONFIG['new-command'].channelType,
+    options: undefined
+  }
+] as const;
+
+// 데이터 타입별 심볼 매핑에 추가
+export const DATA_TYPE_SYMBOLS = {
+  // ... 기존 심볼들
+  'new-data-type': NEW_DATA_TYPE_SYMBOL,
+  'new-command': NEW_COMMAND_SYMBOL
 } as const;
 ```
 
@@ -685,6 +714,9 @@ export interface ParsedNewDataType {
   // ... other fields
 }
 
+// Data type symbol definition
+export const NEW_DATA_TYPE_SYMBOL = Symbol('new-data-type');
+
 export function parseNewDataType(data: string): ParsedNewDataType {
   const parsed = JSON.parse(data);
   return {
@@ -816,15 +848,41 @@ export function NewDataTypeWidget({ robotId, store, dataType }: NewDataTypeWidge
 export const DATA_CHANNEL_CONFIG = {
   // ... existing configurations
   'new-data-type': {
-    label: 'new-data-type',
-    type: 'readonly' as const,
-    priority: 'normal' as const,
+    type: 'new-data-type',
+    channelType: 'readonly' as const,
+    defaultLabel: 'new-data-type_data_channel',
+    description: 'New Data Type Channel'
   },
   'new-command': {
-    label: 'new-command',
-    type: 'writeonly' as const,
-    priority: 'high' as const,
+    type: 'new-command',
+    channelType: 'writeonly' as const,
+    defaultLabel: 'new-command_data_channel',
+    description: 'New Command Channel'
   },
+} as const;
+
+// 기본 데이터 채널 설정에 추가
+export const DEFAULT_DATA_CHANNELS = [
+  // ... 기존 채널들
+  {
+    label: DATA_CHANNEL_CONFIG['new-data-type'].defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG['new-data-type'].type,
+    channelType: DATA_CHANNEL_CONFIG['new-data-type'].channelType,
+    options: undefined
+  },
+  {
+    label: DATA_CHANNEL_CONFIG['new-command'].defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG['new-command'].type,
+    channelType: DATA_CHANNEL_CONFIG['new-command'].channelType,
+    options: undefined
+  }
+] as const;
+
+// 데이터 타입별 심볼 매핑에 추가
+export const DATA_TYPE_SYMBOLS = {
+  // ... 기존 심볼들
+  'new-data-type': NEW_DATA_TYPE_SYMBOL,
+  'new-command': NEW_COMMAND_SYMBOL
 } as const;
 ```
 

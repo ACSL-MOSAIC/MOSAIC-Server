@@ -21,6 +21,7 @@ import {
 } from "./dashboardUtils"
 import { useDashboardConfigQuery, useDashboardConfigMutation } from "@/hooks/useDashboardConfig"
 import { useQueryClient } from "@tanstack/react-query"
+import { useRobotMapping } from "@/hooks/useRobotMapping"
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -31,6 +32,7 @@ export function DashboardGrid() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [connections, setConnections] = useState<{ [key: string]: boolean }>({});
   const ws = useWebSocket();
+  const { getRobotName } = useRobotMapping();
   
   // WebRTC 연결 객체들을 관리하는 ref
   const rtcConnections = useRef<{ [key: string]: WebRTCConnection }>({});
@@ -338,7 +340,7 @@ export function DashboardGrid() {
           >
             <Flex justify="space-between" mb={2} className="widget-header" cursor="move">
               <Box>
-                <strong>로봇 ID:</strong> {widget.robotId}
+                <strong>로봇:</strong> {getRobotName(widget.robotId)}
               </Box>
               <Button 
                 size="sm" 

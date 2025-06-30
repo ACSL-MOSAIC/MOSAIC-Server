@@ -17,6 +17,7 @@ import {
   DialogRoot,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useRobotMapping } from "@/hooks/useRobotMapping"
 
 interface AddWidgetModalProps {
   isOpen: boolean;
@@ -29,10 +30,11 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
   console.log('AddWidgetModal 렌더링, 로봇 :', connectedRobots)
   const [selectedRobotId, setSelectedRobotId] = useState<string>("");
   const [selectedType, setSelectedType] = useState<string>("go2_low_state");
+  const { getRobotName } = useRobotMapping();
 
   const robotCollection = createListCollection({
     items: connectedRobots.map(robotId => ({
-      label: `로봇 ${robotId.slice(0, 8)}...`,
+      label: getRobotName(robotId),
       value: robotId,
     }))
   });

@@ -21,6 +21,7 @@ import { VideoStoreManager } from '../../../dashboard/store/media-channel-store/
 import { MediaChannelConfigUtils } from "../../../rtc/webrtc-media-channel-config"
 import { TURTLESIM_VIDEO_TYPE } from '../../../dashboard/parser/turtlesim-video'
 import { useWebSocket } from '@/contexts/WebSocketContext'
+import { useRobotMapping } from '@/hooks/useRobotMapping'
 
 export interface WidgetFactoryProps extends WidgetProps {
   type: string;
@@ -29,6 +30,8 @@ export interface WidgetFactoryProps extends WidgetProps {
 
 // NO_DATA 컴포넌트
 function NoDataWidget({ robotId, type }: { robotId: string; type: string }) {
+  const { getRobotName } = useRobotMapping();
+
   return (
     <Box 
       display="flex" 
@@ -44,7 +47,7 @@ function NoDataWidget({ robotId, type }: { robotId: string; type: string }) {
         연결 없음
       </Badge>
       <Text fontSize="sm" color="gray.500" textAlign="center">
-        로봇 {robotId}
+        {getRobotName(robotId)}
       </Text>
       <Text fontSize="xs" color="gray.400" textAlign="center">
         {type} 위젯

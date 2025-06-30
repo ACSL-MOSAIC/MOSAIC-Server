@@ -120,6 +120,11 @@ const UserInformation = () => {
               </Text>
             )}
           </Field>
+          <Field mt={4} label="User ID">
+            <Text fontSize="md" py={2} color="gray.600" fontFamily="mono">
+              {currentUser?.id}
+            </Text>
+          </Field>
           <Flex mt={4} gap={3}>
             <Button
               variant="solid"
