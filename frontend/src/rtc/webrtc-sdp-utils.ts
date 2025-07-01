@@ -3,36 +3,17 @@ export function parseMetadataFromSdp(sdp: string): Map<string, any> {
   const lines = sdp.split('\n');
   
   for (const line of lines) {
-    // regex based parsing
-    const mediaTypeMatch = line.match(/^a=media-type:(.+)$/);
-    if (mediaTypeMatch) {
-      metadata.set('mediaType', mediaTypeMatch[1].trim());
+    // MSID semantic 파싱 - 미디어 타입 추출
+    const msidSemanticMatch = line.match(/^a=msid-semantic:\s+WMS\s+(.+)_track$/);
+    if (msidSemanticMatch) {
+      const mediaType = msidSemanticMatch[1].trim();
+      metadata.set('mediaType', mediaType);
+      console.log('📡 MSID에서 미디어 타입 추출:', mediaType);
       continue;
     }
     
-    const descriptionMatch = line.match(/^a=track-description:(.+)$/);
-    if (descriptionMatch) {
-      metadata.set('description', descriptionMatch[1].trim());
-      continue;
-    }
-    
-    const qualityMatch = line.match(/^a=track-quality:(.+)$/);
-    if (qualityMatch) {
-      metadata.set('quality', qualityMatch[1].trim());
-      continue;
-    }
-    
-    const sourceMatch = line.match(/^a=track-source:(.+)$/);
-    if (sourceMatch) {
-      metadata.set('source', sourceMatch[1].trim());
-      continue;
-    }
-    
-    const indexMatch = line.match(/^a=track-index:(\d+)$/);
-    if (indexMatch) {
-      metadata.set('trackIndex', parseInt(indexMatch[1]));
-      continue;
-    }
+    // 기존 커스텀 속성들은 제거 (MSID 기반으로 대체)
+    // a=media-type:, a=track-description:, a=track-quality:, a=track-source:, a=track-index: 삭제
   }
   
   return metadata;

@@ -243,12 +243,8 @@ export class WebRTCConnection {
         if (event.streams && event.streams[0]) {
           const stream = event.streams[0]
           
-          // 메타데이터에서 미디어 타입 결정
+          // MSID에서 추출한 미디어 타입 사용
           const mediaType = metadata.get('mediaType') || 'turtlesim_video'
-          const description = metadata.get('description') || 'Unknown Video Stream'
-          const quality = metadata.get('quality') || '640x480@30fps'
-          const source = metadata.get('source') || 'unknown'
-          const trackIndex = metadata.get('trackIndex') || 0
 
           // 미디어 타입이 지원되는지 확인
           if (MediaChannelConfigUtils.isSupportedMediaType(mediaType)) {
@@ -261,13 +257,10 @@ export class WebRTCConnection {
             )
             
             if (videoStore) {
-              // 메타데이터 설정
+              // 간소화된 메타데이터 설정 (MSID 기반)
               videoStore.setMetadata({
                 mediaType,
-                description,
-                quality,
-                source,
-                trackIndex
+                source: 'robot_stream'
               })
               
               videoStore.setMediaStream(stream)

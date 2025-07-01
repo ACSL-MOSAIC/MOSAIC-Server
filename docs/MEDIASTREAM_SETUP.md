@@ -102,8 +102,7 @@ export const MEDIA_CHANNEL_CONFIG = {
   'turtlesim_video': {
     type: 'turtlesim_video',
     channelType: 'readonly' as const,
-    defaultLabel: 'turtlesim_video_track',
-    description: 'Turtlesim Video Stream'
+    defaultLabel: 'turtlesim_video_track'
   }
 } as const
 
@@ -119,41 +118,53 @@ activeMediaChannels.forEach((mediaType, index) => {
 
 #### 2.3 로봇 쪽 SDP Answer 형식
 
-로봇/서버에서 SDP Answer를 생성할 때는 **반드시 아래 형식**으로 메타데이터를 삽입해야 합니다:
+로봇/서버에서 SDP Answer를 생성할 때는 **MSID 기반 형식**으로 미디어 타입을 식별해야 합니다:
 
-##### SDP Answer 예시
+##### SDP Answer 예시 (MSID 기반)
 ```sdp
 v=0
-o=- 1234567890 2 IN IP4 127.0.0.1
+o=- 2896792356752219239 2 IN IP4 127.0.0.1
 s=-
 t=0 0
 a=group:BUNDLE 0
+a=extmap-allow-mixed
+a=msid-semantic: WMS turtlesim_video_track
+
 m=video 9 UDP/TLS/RTP/SAVPF 96
 c=IN IP4 0.0.0.0
+a=rtcp:9 IN IP4 0.0.0.0
+a=ice-ufrag:aEor
+a=ice-pwd:pL7Na/OtSFuy0SLp8nR47Vae
+a=ice-options:trickle
+a=fingerprint:sha-256 C0:5E:03:28:88:72:AA:AD:29:51:21:04:C3:1C:33:9D:41:0F:94:E6:6B:89:15:89:5F:D4:A9:6B:03:A7:8C:3B
+a=setup:active
 a=mid:0
-a=sendonly
-a=media-type:turtlesim_video
-a=track-description:Turtlesim Video Stream
-a=track-quality:640x480@30fps
-a=track-source:turtlesim_node
-a=track-index:0
 a=rtpmap:96 H264/90000
 a=fmtp:96 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f
 ```
 
-##### 필수 메타데이터 필드
+##### 핵심 변경사항
 
-| 필드 | 형식 | 예시 | 설명 |
-|------|------|------|------|
-| `a=media-type:` | `a=media-type:{미디어타입}` | `a=media-type:turtlesim_video` | 지원되는 미디어 타입 |
-| `a=track-description:` | `a=track-description:{설명}` | `a=track-description:Turtlesim Video Stream` | 트랙에 대한 설명 |
-| `a=track-quality:` | `a=track-quality:{해상도}@{프레임레이트}fps` | `a=track-quality:640x480@30fps` | 비디오 품질 정보 |
-| `a=track-source:` | `a=track-source:{소스}` | `a=track-source:turtlesim_node` | 비디오 소스 정보 |
-| `a=track-index:` | `a=track-index:{숫자}` | `a=track-index:0` | 트랙 인덱스 (0부터 시작) |
+| 변경사항 | 이전 | 현재 |
+|----------|------|------|
+| **미디어 타입 식별** | `a=media-type:turtlesim_video` | `a=msid-semantic: WMS turtlesim_video_track` |
+| **품질 정보** | `a=track-quality:640x480@30fps` | 제거됨 |
+| **설명 정보** | `a=track-description:Turtlesim Video Stream` | 제거됨 |
+| **소스 정보** | `a=track-source:turtlesim_node` | 제거됨 |
+| **인덱스 정보** | `a=track-index:0` | 제거됨 |
+
+##### MSID 형식 규칙
+
+- **형식**: `a=msid-semantic: WMS {media_type}_track`
+- **미디어 타입 예시**:
+  - `turtlesim_video_track`
+  - `go2_camera_track`
+  - `ouster_lidar_track`
+  - `robot_arm_camera_track`
 
 #### 2.4 프론트엔드 내부 처리 과정
 
-##### 1) SDP Answer 파싱
+##### 1) SDP Answer 파싱 (MSID 기반)
 ```typescript
 // webrtc-sdp-utils.ts
 export function parseMetadataFromSdp(sdp: string): Map<string, any> {
@@ -161,68 +172,51 @@ export function parseMetadataFromSdp(sdp: string): Map<string, any> {
   const lines = sdp.split('\n');
   
   for (const line of lines) {
-    const mediaTypeMatch = line.match(/^a=media-type:(.+)$/);
-    if (mediaTypeMatch) {
-      metadata.set('mediaType', mediaTypeMatch[1].trim());
+    // MSID semantic 파싱 - 미디어 타입 추출
+    const msidSemanticMatch = line.match(/^a=msid-semantic:\s+WMS\s+(.+)_track$/);
+    if (msidSemanticMatch) {
+      const mediaType = msidSemanticMatch[1].trim();
+      metadata.set('mediaType', mediaType);
+      console.log('📡 MSID에서 미디어 타입 추출:', mediaType);
     }
-    // ... 다른 필드들도 정규식으로 파싱
   }
   
   return metadata;
 }
 ```
 
-##### 2) Video Track 핸들러 설정
+##### 2) Video Track 핸들러 설정 (간소화)
 ```typescript
 // webrtc-connection.ts
-private setupVideoTrackHandler(metadata: Map<string, any>): void {
-  this.peerConnection.ontrack = (event) => {
-    if (event.track.kind === 'video' && event.streams && event.streams[0]) {
-      const stream = event.streams[0];
+this.peerConnection.ontrack = (event) => {
+  if (event.track.kind === 'video') {
+    if (event.streams && event.streams[0]) {
+      const stream = event.streams[0]
       
-      // 메타데이터에서 미디어 타입 결정
-      const mediaType = metadata.get('mediaType') || 'turtlesim_video';
+      // MSID에서 추출한 미디어 타입 사용
+      const mediaType = metadata.get('mediaType') || 'turtlesim_video'
       
       // 미디어 타입이 지원되는지 확인
       if (MediaChannelConfigUtils.isSupportedMediaType(mediaType)) {
-        // VideoStore 생성 및 연결
+        const videoStoreManager = VideoStoreManager.getInstance()
         const videoStore = videoStoreManager.createVideoStoreByMediaTypeAuto(
           this.config.robotId, 
           mediaType
-        );
+        )
         
         if (videoStore) {
-          videoStore.setMetadata(metadata);
-          videoStore.setMediaStream(stream);
+          // 간소화된 메타데이터 설정
+          videoStore.setMetadata({
+            mediaType,
+            source: 'robot_stream'
+          })
+          
+          videoStore.setMediaStream(stream)
+          console.log(`Video Store connected: ${mediaType} for robot ${this.config.robotId}`)
         }
       }
     }
-  };
-}
-```
-
-##### 3) VideoStore 생성
-```typescript
-// video-store-manager.ts
-public createVideoStoreByMediaTypeAuto(robotId: string, mediaType: string): VideoStore | null {
-  // 미디어 타입이 지원되는지 확인
-  if (!MediaChannelConfigUtils.isSupportedMediaType(mediaType)) {
-    console.warn(`지원되지 않는 미디어 타입: ${mediaType}`);
-    return null;
   }
-  
-  // 미디어 타입별 스토어 팩토리 매핑
-  const storeFactories: Record<string, (robotId: string, channelLabel: string) => VideoStore> = {
-    'turtlesim_video': (robotId: string, channelLabel: string) => new TurtlesimVideoStore(robotId, channelLabel),
-  };
-  
-  const storeFactory = storeFactories[mediaType];
-  if (!storeFactory) {
-    console.warn(`미디어 타입 ${mediaType}에 대한 스토어 팩토리가 없음`);
-    return null;
-  }
-  
-  return this.createVideoStoreByMediaType(robotId, mediaType, storeType, storeFactory);
 }
 ```
 
@@ -242,8 +236,7 @@ export const MEDIA_CHANNEL_CONFIG = {
   'turtlesim_video': {
     type: 'turtlesim_video',
     channelType: 'readonly' as const,
-    defaultLabel: 'turtlesim_video_track',
-    description: 'Turtlesim Video Stream'
+    defaultLabel: 'turtlesim_video_track'
   },
   // 새로운 미디어 타입 추가
   'new_video': {
@@ -545,8 +538,7 @@ export const MEDIA_CHANNEL_CONFIG = {
   'turtlesim_video': {
     type: 'turtlesim_video',
     channelType: 'readonly' as const,
-    defaultLabel: 'turtlesim_video_track',
-    description: 'Turtlesim Video Stream'
+    defaultLabel: 'turtlesim_video_track'
   }
 } as const
 
@@ -562,41 +554,53 @@ activeMediaChannels.forEach((mediaType, index) => {
 
 #### 2.3 Robot SDP Answer Format
 
-When creating SDP Answer on the robot/server side, **metadata must be inserted in the following format**:
+When creating SDP Answer on the robot/server side, **MSID 기반 형식**으로 미디어 타입을 식별해야 합니다:
 
-##### SDP Answer Example
+##### SDP Answer 예시 (MSID 기반)
 ```sdp
 v=0
-o=- 1234567890 2 IN IP4 127.0.0.1
+o=- 2896792356752219239 2 IN IP4 127.0.0.1
 s=-
 t=0 0
 a=group:BUNDLE 0
+a=extmap-allow-mixed
+a=msid-semantic: WMS turtlesim_video_track
+
 m=video 9 UDP/TLS/RTP/SAVPF 96
 c=IN IP4 0.0.0.0
+a=rtcp:9 IN IP4 0.0.0.0
+a=ice-ufrag:aEor
+a=ice-pwd:pL7Na/OtSFuy0SLp8nR47Vae
+a=ice-options:trickle
+a=fingerprint:sha-256 C0:5E:03:28:88:72:AA:AD:29:51:21:04:C3:1C:33:9D:41:0F:94:E6:6B:89:15:89:5F:D4:A9:6B:03:A7:8C:3B
+a=setup:active
 a=mid:0
-a=sendonly
-a=media-type:turtlesim_video
-a=track-description:Turtlesim Video Stream
-a=track-quality:640x480@30fps
-a=track-source:turtlesim_node
-a=track-index:0
 a=rtpmap:96 H264/90000
 a=fmtp:96 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f
 ```
 
-##### Required Metadata Fields
+##### 핵심 변경사항
 
-| Field | Format | Example | Description |
-|-------|--------|---------|-------------|
-| `a=media-type:` | `a=media-type:{mediatype}` | `a=media-type:turtlesim_video` | Supported media type |
-| `a=track-description:` | `a=track-description:{description}` | `a=track-description:Turtlesim Video Stream` | Track description |
-| `a=track-quality:` | `a=track-quality:{resolution}@{framerate}fps` | `a=track-quality:640x480@30fps` | Video quality information |
-| `a=track-source:` | `a=track-source:{source}` | `a=track-source:turtlesim_node` | Video source information |
-| `a=track-index:` | `a=track-index:{number}` | `a=track-index:0` | Track index (starting from 0) |
+| 변경사항 | 이전 | 현재 |
+|----------|------|------|
+| **미디어 타입 식별** | `a=media-type:turtlesim_video` | `a=msid-semantic: WMS turtlesim_video_track` |
+| **품질 정보** | `a=track-quality:640x480@30fps` | 제거됨 |
+| **설명 정보** | `a=track-description:Turtlesim Video Stream` | 제거됨 |
+| **소스 정보** | `a=track-source:turtlesim_node` | 제거됨 |
+| **인덱스 정보** | `a=track-index:0` | 제거됨 |
+
+##### MSID 형식 규칙
+
+- **형식**: `a=msid-semantic: WMS {media_type}_track`
+- **미디어 타입 예시**:
+  - `turtlesim_video_track`
+  - `go2_camera_track`
+  - `ouster_lidar_track`
+  - `robot_arm_camera_track`
 
 #### 2.4 Frontend Internal Processing
 
-##### 1) SDP Answer Parsing
+##### 1) SDP Answer Parsing (MSID 기반)
 ```typescript
 // webrtc-sdp-utils.ts
 export function parseMetadataFromSdp(sdp: string): Map<string, any> {
@@ -604,43 +608,51 @@ export function parseMetadataFromSdp(sdp: string): Map<string, any> {
   const lines = sdp.split('\n');
   
   for (const line of lines) {
-    const mediaTypeMatch = line.match(/^a=media-type:(.+)$/);
-    if (mediaTypeMatch) {
-      metadata.set('mediaType', mediaTypeMatch[1].trim());
+    // MSID semantic 파싱 - 미디어 타입 추출
+    const msidSemanticMatch = line.match(/^a=msid-semantic:\s+WMS\s+(.+)_track$/);
+    if (msidSemanticMatch) {
+      const mediaType = msidSemanticMatch[1].trim();
+      metadata.set('mediaType', mediaType);
+      console.log('📡 MSID에서 미디어 타입 추출:', mediaType);
     }
-    // ... parse other fields with regex
   }
   
   return metadata;
 }
 ```
 
-##### 2) Video Track Handler Setup
+##### 2) Video Track Handler Setup (간소화)
 ```typescript
 // webrtc-connection.ts
-private setupVideoTrackHandler(metadata: Map<string, any>): void {
-  this.peerConnection.ontrack = (event) => {
-    if (event.track.kind === 'video' && event.streams && event.streams[0]) {
-      const stream = event.streams[0];
+this.peerConnection.ontrack = (event) => {
+  if (event.track.kind === 'video') {
+    if (event.streams && event.streams[0]) {
+      const stream = event.streams[0]
       
-      // Determine media type from metadata
-      const mediaType = metadata.get('mediaType') || 'turtlesim_video';
+      // MSID에서 추출한 미디어 타입 사용
+      const mediaType = metadata.get('mediaType') || 'turtlesim_video'
       
-      // Check if media type is supported
+      // 미디어 타입이 지원되는지 확인
       if (MediaChannelConfigUtils.isSupportedMediaType(mediaType)) {
-        // Create and connect VideoStore
+        const videoStoreManager = VideoStoreManager.getInstance()
         const videoStore = videoStoreManager.createVideoStoreByMediaTypeAuto(
           this.config.robotId, 
           mediaType
-        );
+        )
         
         if (videoStore) {
-          videoStore.setMetadata(metadata);
-          videoStore.setMediaStream(stream);
+          // 간소화된 메타데이터 설정
+          videoStore.setMetadata({
+            mediaType,
+            source: 'robot_stream'
+          })
+          
+          videoStore.setMediaStream(stream)
+          console.log(`Video Store connected: ${mediaType} for robot ${this.config.robotId}`)
         }
       }
     }
-  };
+  }
 }
 ```
 
@@ -685,15 +697,13 @@ export const MEDIA_CHANNEL_CONFIG = {
   'turtlesim_video': {
     type: 'turtlesim_video',
     channelType: 'readonly' as const,
-    defaultLabel: 'turtlesim_video_track',
-    description: 'Turtlesim Video Stream'
+    defaultLabel: 'turtlesim_video_track'
   },
   // Add new media type
   'new_video': {
     type: 'new_video',
     channelType: 'readonly' as const,
-    defaultLabel: 'new_video_track',
-    description: 'New Video Stream'
+    defaultLabel: 'new_video_track'
   }
 } as const;
 
@@ -869,11 +879,7 @@ export const NewVideoWidget: React.FC<NewVideoWidgetProps> = ({
 Generate SDP Answer with new media type on robot side:
 
 ```sdp
-a=media-type:new_video
-a=track-description:New Video Stream
-a=track-quality:640x480@30fps
-a=track-source:new_source
-a=track-index:0
+a=msid-semantic: WMS new_video_track
 ```
 
 #### 3.6 Completion
@@ -886,3 +892,4 @@ The new `new_video` video track is now fully configured.
 3. When robot sends SDP Answer with corresponding metadata, NewVideoStore is automatically created and displayed in NewVideoWidget
 
 --- 
+

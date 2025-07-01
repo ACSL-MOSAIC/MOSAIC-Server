@@ -3,8 +3,7 @@ export const MEDIA_CHANNEL_CONFIG = {
   'turtlesim_video': {
     type: 'turtlesim_video',
     channelType: 'readonly' as const,
-    defaultLabel: 'turtlesim_video_track',
-    description: 'Turtlesim Video Stream'
+    defaultLabel: 'turtlesim_video_track'
   }
 } as const
 

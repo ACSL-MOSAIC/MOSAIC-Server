@@ -10,7 +10,7 @@ export interface VideoData {
   isActive: boolean;
   stats: StreamStats;
   timestamp: number;
-  metadata?: { mediaType?: string; description?: string; quality?: string; source?: string; trackIndex?: number };
+  metadata?: { mediaType?: string; source?: string };
 }
 
 export interface StreamStats {
@@ -33,21 +33,21 @@ export class VideoStore {
   };
   protected fpsCounter: number = 0;
   protected fpsInterval: number | null = null;
-  protected metadata: { mediaType?: string; description?: string; quality?: string; source?: string; trackIndex?: number } = {};
+  protected metadata: { mediaType?: string; source?: string } = {};
 
   constructor(robotId: string, channelLabel: string) {
     this.robotId = robotId;
     this.channelLabel = channelLabel;
   }
 
-  // metadata setter
-  setMetadata(metadata: { mediaType?: string; description?: string; quality?: string; source?: string; trackIndex?: number }): void {
+  // metadata setter (간소화된 메타데이터)
+  setMetadata(metadata: { mediaType?: string; source?: string }): void {
     this.metadata = { ...this.metadata, ...metadata };
     console.log(`VideoStore[${this.getChannelLabel()}] Metadata set:`, this.metadata);
   }
 
-  // metadata getter
-  getMetadata(): { mediaType?: string; description?: string; quality?: string; source?: string; trackIndex?: number } {
+  // metadata getter (간소화된 메타데이터)
+  getMetadata(): { mediaType?: string; source?: string } {
     return this.metadata;
   }
 
