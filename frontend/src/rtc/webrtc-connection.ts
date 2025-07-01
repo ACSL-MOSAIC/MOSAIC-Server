@@ -6,6 +6,7 @@ import { VideoStore } from "@/dashboard/store/media-channel-store/video-store"
 import { ChannelType, DEFAULT_DATA_CHANNELS, DataChannelConfigUtils } from "./webrtc-datachannel-config"
 import { createOfferWithMediaChannels, parseMetadataFromSdp } from "./webrtc-sdp-utils"
 import { MediaChannelConfigUtils } from "./webrtc-media-channel-config"
+import { MEDIA_CHANNEL_CONFIG } from './webrtc-media-channel-config'
 
 export interface DataChannelConfig {
   label: string
@@ -26,6 +27,12 @@ export interface WebRTCConnectionConfig {
   onConnectionStateChange?: (isConnected: boolean) => void
   dataChannels?: DataChannelConfig[] // 채널별 설정
   videoChannels?: VideoChannelConfig[] // 비디오 채널 설정
+}
+
+export interface MediaChannelConfig {
+  label: string
+  dataType: string
+  expectedTrackLabel: string
 }
 
 export class WebRTCConnection {
@@ -54,8 +61,6 @@ export class WebRTCConnection {
           // 메타데이터 저장
           this.lastSdpMetadata = metadata
           
-          console.log('📥 SDP Answer 메타데이터:', Object.fromEntries(metadata))
-          
           // ontrack 핸들러 설정 (메타데이터 기반)
           this.setupVideoTrackHandler(metadata)
           
@@ -70,13 +75,13 @@ export class WebRTCConnection {
               try {
                 await this.addIceCandidate(candidate)
               } catch (error) {
-                console.error('Pending ICE candidate 적용 실패:', error)
+                console.error('Pending ICE candidate application failed:', error)
               }
             }
             this.pendingCandidates = []
           }
         } catch (error) {
-          console.error('SDP Answer 처리 중 에러:', error)
+          console.error('SDP Answer processing error:', error)
         }
       },
       onIceCandidate: async (candidate) => {
@@ -89,7 +94,7 @@ export class WebRTCConnection {
 
           await this.addIceCandidate(candidate)
         } catch (error) {
-          console.error('ICE Candidate 처리 중 에러:', error)
+          console.error('ICE Candidate processing error:', error)
         }
       }
     })
@@ -112,32 +117,16 @@ export class WebRTCConnection {
     // DataChannel 이벤트 핸들러 설정
     peerConnection.ondatachannel = (event) => {
       const dataChannel = event.channel
-      console.log('📊 DataChannel 수신됨:', dataChannel.label, dataChannel.readyState)
       
       // 수신된 채널의 데이터 타입을 찾기
       const channelInfo = this.channelDataTypes.get(dataChannel.label)
       const dataType = channelInfo?.dataType
       const channelType = channelInfo?.channelType
       
-      console.log('🔍 채널 정보 검색:', {
-        label: dataChannel.label,
-        found: !!dataType,
-        dataType: dataType,
-        channelType: channelType
-      })
-      
       if (!dataType) {
-        console.error(`등록되지 않은 채널 수신됨: ${dataChannel.label}`)
-        console.log('등록된 채널들:', Array.from(this.channelDataTypes.keys()))
-        console.log('등록된 채널 상세 정보:', Array.from(this.channelDataTypes.entries()))
+        console.error(`Unregistered channel received: ${dataChannel.label}`)
         return
       }
-      
-      console.log('✅ DataChannel 설정 완료:', {
-        label: dataChannel.label,
-        dataType: dataType,
-        channelType: channelType || 'readonly'
-      })
       
       this.setupDataChannel(dataChannel, dataType, channelType || 'readonly')
     }
@@ -149,8 +138,6 @@ export class WebRTCConnection {
     const allChannels = [...channelsToCreate, ...DEFAULT_DATA_CHANNELS.filter(ch => 
       !channelsToCreate.some(configured => configured.label === ch.label)
     )]
-
-    console.log('DataChannel 생성 시작:', allChannels.map(ch => `${ch.label}(${ch.dataType})`))
     
     // 여러 데이터 채널 생성
     allChannels.forEach(channelConfig => {
@@ -158,8 +145,6 @@ export class WebRTCConnection {
         ordered: true,
         ...channelConfig.options
       })
-      
-      console.log('DataChannel 생성됨:', dataChannel.label, dataChannel.readyState, '데이터타입:', channelConfig.dataType, '채널타입:', channelConfig.channelType)
       
       // 채널과 데이터 타입, 채널 타입 매핑 저장
       this.channelDataTypes.set(channelConfig.label, {
@@ -178,63 +163,57 @@ export class WebRTCConnection {
   }
 
   private setupVideoChannels() {
+    // MediaChannelConfig에서 비디오 채널 설정 가져오기
+    const mediaChannels = this.createMediaChannels()
+    
     // 설정된 비디오 채널들 저장
     const channelsToSetup = this.config.videoChannels || []
     
-    // 기본 비디오 채널 추가 (설정에 없는 경우)
-    const defaultVideoChannels: VideoChannelConfig[] = [
-      { label: 'turtlesim_video_track', dataType: 'turtlesim_video', expectedTrackLabel: 'turtlesim_video' }
-    ]
+    // MediaChannelConfig에서 기본 비디오 채널 추가 (설정에 없는 경우)
+    const defaultVideoChannels: VideoChannelConfig[] = mediaChannels.map(channel => ({
+      label: channel.label,
+      dataType: channel.dataType,
+      expectedTrackLabel: channel.expectedTrackLabel
+    }))
     
     const allVideoChannels = [...channelsToSetup, ...defaultVideoChannels.filter(ch => 
       !channelsToSetup.some(configured => configured.label === ch.label)
     )]
 
-    console.log('설정할 비디오 채널들:', allVideoChannels)
-
     allVideoChannels.forEach(channelConfig => {
       this.videoChannels.set(channelConfig.label, channelConfig)
       this.videoChannelDataTypes.set(channelConfig.label, channelConfig.dataType)
-      console.log('비디오 채널 설정됨:', channelConfig.label, '데이터타입:', channelConfig.dataType, '예상 트랙 라벨:', channelConfig.expectedTrackLabel)
     })
   }
 
   private setupDataChannel(dataChannel: RTCDataChannel, dataType: string, channelType: 'readonly' | 'writeonly') {
-    console.log('DataChannel 설정 시작:', dataChannel.label, '데이터타입:', dataType, '채널타입:', channelType)
-    
     // DataChannel 상태 변경 이벤트 핸들러
     dataChannel.onopen = () => {
-      console.log(`DataChannel ${dataChannel.label} 열림, 상태:`, dataChannel.readyState, '데이터타입:', dataType, '채널타입:', channelType)
+      console.log(`DataChannel ${dataChannel.label} opened, state:`, dataChannel.readyState)
     }
 
     dataChannel.onclose = () => {
-      console.log(`DataChannel ${dataChannel.label} 닫힘, 상태:`, dataChannel.readyState)
+      console.log(`DataChannel ${dataChannel.label} closed, state:`, dataChannel.readyState)
       this.dataChannels.delete(dataChannel.label)
       this.channelDataTypes.delete(dataChannel.label)
     }
 
     dataChannel.onerror = (error) => {
-      console.error(`DataChannel ${dataChannel.label} 에러:`, error)
+      console.error(`DataChannel ${dataChannel.label} error:`, error)
     }
 
     createDataChannel(dataChannel, this.config.robotId, dataType, channelType)
 
     // DataChannel 저장
     this.dataChannels.set(dataChannel.label, dataChannel)
-    console.log('DataChannel 설정 완료:', dataChannel.label, '데이터타입:', dataType, '채널타입:', channelType)
   }
 
   // 메타데이터 기반 Video Track 핸들러 설정
   private setupVideoTrackHandler(metadata: Map<string, any>): void {
     if (!this.peerConnection) {
-      console.error('PeerConnection이 초기화되지 않았습니다.')
+      console.error('PeerConnection not initialized')
       return
     }
-
-    console.log('🔧 Video Track Handler 설정 시작:', {
-      robotId: this.config.robotId,
-      metadata: Object.fromEntries(metadata)
-    })
 
     this.peerConnection.ontrack = (event) => {
       
@@ -244,7 +223,12 @@ export class WebRTCConnection {
           const stream = event.streams[0]
           
           // MSID에서 추출한 미디어 타입 사용
-          const mediaType = metadata.get('mediaType') || 'turtlesim_video'
+          const mediaType = metadata.get('mediaType')
+
+          if (!mediaType) {
+            console.warn('Media type not found in metadata')
+            return
+          }
 
           // 미디어 타입이 지원되는지 확인
           if (MediaChannelConfigUtils.isSupportedMediaType(mediaType)) {
@@ -270,17 +254,12 @@ export class WebRTCConnection {
             }
           } else {
             console.warn(`Unsupported media type: ${mediaType}`)
-            console.log('Supported media types:', MediaChannelConfigUtils.getSupportedMediaTypes())
           }
         } else {
           console.warn('Video track has no stream')
         }
-      } else {
-        console.log('Ignore non-video track:', event.track.kind)
       }
     }
-    
-    console.log('Video Track Handler setup completed')
   }
 
   public async startConnection(): Promise<void> {
@@ -295,12 +274,10 @@ export class WebRTCConnection {
       videoStoreManager.initializeRobotVideoStores(this.config.robotId)
 
       this.peerConnection = this.createPeerConnection()
-      console.log('PeerConnection created:', this.peerConnection)
 
       // 이벤트 핸들러 설정
       this.peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
-          console.log('ICE candidate created:', event.candidate)
           sendWebSocketMessage(this.config.ws, {
             type: "send_ice_candidate",
             robot_id: this.config.robotId,
@@ -310,9 +287,8 @@ export class WebRTCConnection {
       }
 
       this.peerConnection.oniceconnectionstatechange = () => {
-        console.log('ICE connection state changed:', this.peerConnection?.iceConnectionState)
         const isConnected = this.peerConnection?.iceConnectionState === 'connected'
-        console.log('Connection state:', isConnected ? '✅ connected' : '❌ disconnected')
+        console.log('Connection state:', isConnected ? 'connected' : 'disconnected')
         this.config.onConnectionStateChange?.(isConnected)
       }
 
@@ -328,12 +304,8 @@ export class WebRTCConnection {
         console.log('DataChannel received:', event.channel.label, event.channel.readyState)
       }
 
-      // Offer 생성 및 설정 - 미디어 채널 설정 적용
-      console.log('Offer creation started')
-      
       // 활성화된 미디어 채널 목록 가져오기
       const activeMediaChannels = MediaChannelConfigUtils.getActiveMediaChannels()
-      console.log('Active media channels:', activeMediaChannels)
       
       // 미디어 채널 설정이 적용된 Offer 생성
       const offer = await createOfferWithMediaChannels(
@@ -341,10 +313,7 @@ export class WebRTCConnection {
         activeMediaChannels
       )
       
-      console.log('Offer created (media channel settings applied):', offer)
-      
       await this.peerConnection.setLocalDescription(offer)
-      console.log('Local description set:', this.peerConnection.localDescription)
 
       // SDP offer를 서버로 전송
       sendWebSocketMessage(this.config.ws, {
@@ -366,9 +335,7 @@ export class WebRTCConnection {
     }
 
     try {
-      console.log('Remote description setting started:', description)
       await this.peerConnection.setRemoteDescription(description)
-      console.log('Remote description set')
     } catch (error) {
       console.error('Remote description setting failed:', error)
       throw error
@@ -383,7 +350,6 @@ export class WebRTCConnection {
 
     try {
       await this.peerConnection.addIceCandidate(candidate)
-      console.log('ICE candidate applied')
     } catch (error) {
       console.error('ICE candidate addition failed:', error)
       throw error
@@ -445,5 +411,14 @@ export class WebRTCConnection {
   // 비디오 스토어 매니저 가져오기
   public getVideoStoreManager(): VideoStoreManager {
     return VideoStoreManager.getInstance()
+  }
+
+  private createMediaChannels(): MediaChannelConfig[] {
+    // MEDIA_CHANNEL_CONFIG에서 동적으로 생성
+    return Object.entries(MEDIA_CHANNEL_CONFIG).map(([mediaType, config]) => ({
+      label: config.defaultLabel,
+      dataType: mediaType,
+      expectedTrackLabel: config.defaultLabel
+    }))
   }
 }

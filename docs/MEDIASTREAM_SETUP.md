@@ -128,7 +128,7 @@ s=-
 t=0 0
 a=group:BUNDLE 0
 a=extmap-allow-mixed
-a=msid-semantic: WMS turtlesim_video_track
+a=msid-semantic: WMS camera_track
 
 m=video 9 UDP/TLS/RTP/SAVPF 96
 c=IN IP4 0.0.0.0
@@ -139,15 +139,15 @@ a=ice-options:trickle
 a=fingerprint:sha-256 C0:5E:03:28:88:72:AA:AD:29:51:21:04:C3:1C:33:9D:41:0F:94:E6:6B:89:15:89:5F:D4:A9:6B:03:A7:8C:3B
 a=setup:active
 a=mid:0
-a=rtpmap:96 H264/90000
-a=fmtp:96 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f
+a=msid:camera_track 79bb469e-6283-41c1-b21c-749bfc8a4f52
+a=rtpmap:96 VP8/90000
 ```
 
 ##### 핵심 변경사항
 
 | 변경사항 | 이전 | 현재 |
 |----------|------|------|
-| **미디어 타입 식별** | `a=media-type:turtlesim_video` | `a=msid-semantic: WMS turtlesim_video_track` |
+| **미디어 타입 식별** | `a=media-type:turtlesim_video` | `a=msid-semantic: WMS camera_track` |
 | **품질 정보** | `a=track-quality:640x480@30fps` | 제거됨 |
 | **설명 정보** | `a=track-description:Turtlesim Video Stream` | 제거됨 |
 | **소스 정보** | `a=track-source:turtlesim_node` | 제거됨 |
@@ -172,12 +172,12 @@ export function parseMetadataFromSdp(sdp: string): Map<string, any> {
   const lines = sdp.split('\n');
   
   for (const line of lines) {
-    // MSID semantic 파싱 - 미디어 타입 추출
-    const msidSemanticMatch = line.match(/^a=msid-semantic:\s+WMS\s+(.+)_track$/);
+    // MSID semantic 파싱 - 전체 트랙 이름을 미디어 타입으로 사용
+    const msidSemanticMatch = line.match(/^a=msid-semantic:\s+WMS\s+(.+)$/);
     if (msidSemanticMatch) {
-      const mediaType = msidSemanticMatch[1].trim();
+      const mediaType = msidSemanticMatch[1].trim(); // 전체 트랙 이름을 미디어 타입으로 사용
       metadata.set('mediaType', mediaType);
-      console.log('📡 MSID에서 미디어 타입 추출:', mediaType);
+      metadata.set('trackName', mediaType);
     }
   }
   
@@ -564,7 +564,7 @@ s=-
 t=0 0
 a=group:BUNDLE 0
 a=extmap-allow-mixed
-a=msid-semantic: WMS turtlesim_video_track
+a=msid-semantic: WMS camera_track
 
 m=video 9 UDP/TLS/RTP/SAVPF 96
 c=IN IP4 0.0.0.0
@@ -575,15 +575,15 @@ a=ice-options:trickle
 a=fingerprint:sha-256 C0:5E:03:28:88:72:AA:AD:29:51:21:04:C3:1C:33:9D:41:0F:94:E6:6B:89:15:89:5F:D4:A9:6B:03:A7:8C:3B
 a=setup:active
 a=mid:0
-a=rtpmap:96 H264/90000
-a=fmtp:96 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f
+a=msid:camera_track 79bb469e-6283-41c1-b21c-749bfc8a4f52
+a=rtpmap:96 VP8/90000
 ```
 
 ##### 핵심 변경사항
 
 | 변경사항 | 이전 | 현재 |
 |----------|------|------|
-| **미디어 타입 식별** | `a=media-type:turtlesim_video` | `a=msid-semantic: WMS turtlesim_video_track` |
+| **미디어 타입 식별** | `a=media-type:turtlesim_video` | `a=msid-semantic: WMS camera_track` |
 | **품질 정보** | `a=track-quality:640x480@30fps` | 제거됨 |
 | **설명 정보** | `a=track-description:Turtlesim Video Stream` | 제거됨 |
 | **소스 정보** | `a=track-source:turtlesim_node` | 제거됨 |
@@ -608,12 +608,12 @@ export function parseMetadataFromSdp(sdp: string): Map<string, any> {
   const lines = sdp.split('\n');
   
   for (const line of lines) {
-    // MSID semantic 파싱 - 미디어 타입 추출
-    const msidSemanticMatch = line.match(/^a=msid-semantic:\s+WMS\s+(.+)_track$/);
+    // MSID semantic 파싱 - 전체 트랙 이름을 미디어 타입으로 사용
+    const msidSemanticMatch = line.match(/^a=msid-semantic:\s+WMS\s+(.+)$/);
     if (msidSemanticMatch) {
-      const mediaType = msidSemanticMatch[1].trim();
+      const mediaType = msidSemanticMatch[1].trim(); // 전체 트랙 이름을 미디어 타입으로 사용
       metadata.set('mediaType', mediaType);
-      console.log('📡 MSID에서 미디어 타입 추출:', mediaType);
+      metadata.set('trackName', mediaType);
     }
   }
   
@@ -703,7 +703,8 @@ export const MEDIA_CHANNEL_CONFIG = {
   'new_video': {
     type: 'new_video',
     channelType: 'readonly' as const,
-    defaultLabel: 'new_video_track'
+    defaultLabel: 'new_video_track',
+    description: 'New Video Stream'
   }
 } as const;
 
@@ -879,17 +880,18 @@ export const NewVideoWidget: React.FC<NewVideoWidgetProps> = ({
 Generate SDP Answer with new media type on robot side:
 
 ```sdp
-a=msid-semantic: WMS new_video_track
+a=media-type:new_video
+a=track-description:New Video Stream
+a=track-quality:640x480@30fps
+a=track-source:new_source
+a=track-index:0
 ```
 
 #### 3.6 Completion
 
-The new `new_video` video track is now fully configured.
+The new `new_video` 비디오 트랙이 완전히 구성되었습니다.
 
-**Important**: Adding `new_video` to `MEDIA_CHANNEL_CONFIG` automatically:
-1. **2 video transceivers** are created (`turtlesim_video` + `new_video`)
-2. **2 video tracks** are requested in SDP Offer
-3. When robot sends SDP Answer with corresponding metadata, NewVideoStore is automatically created and displayed in NewVideoWidget
-
---- 
-
+**중요**: `MEDIA_CHANNEL_CONFIG`에 `new_video`를 추가하면 자동으로:
+1. **2개의 비디오 트랜시버**가 생성됩니다 (`turtlesim_video` + `new_video`)
+2. SDP Offer에서 **2개의 비디오 트랙**이 요청됩니다
+3. 로봇이 해당 메타데이터와 함께 SDP Answer를 보내면, NewVideoStore가 자동으로 생성되어 NewVideoWidget에 표시됩니다

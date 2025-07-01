@@ -3,13 +3,13 @@ export const MEDIA_CHANNEL_CONFIG = {
   'turtlesim_video': {
     type: 'turtlesim_video',
     channelType: 'readonly' as const,
-    defaultLabel: 'turtlesim_video_track'
-  }
+    defaultLabel: 'turtlesim_video'
+  },
 } as const
 
 // Media type symbol mapping (dynamically generated)
 export const MEDIA_TYPE_SYMBOLS = {
-  'turtlesim_video': Symbol('turtlesim_video')
+  'turtlesim_video': Symbol('turtlesim_video'),
 } as const
 
 // Utility functions (same pattern as data channels)

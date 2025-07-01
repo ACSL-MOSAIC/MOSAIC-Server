@@ -43,7 +43,6 @@ export class VideoStore {
   // metadata setter (간소화된 메타데이터)
   setMetadata(metadata: { mediaType?: string; source?: string }): void {
     this.metadata = { ...this.metadata, ...metadata };
-    console.log(`VideoStore[${this.getChannelLabel()}] Metadata set:`, this.metadata);
   }
 
   // metadata getter (간소화된 메타데이터)

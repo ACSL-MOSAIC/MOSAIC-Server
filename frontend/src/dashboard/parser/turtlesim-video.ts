@@ -27,7 +27,7 @@ export function parseTurtlesimVideo(data: any): ParsedTurtlesimVideo | null {
     const baseVideoData = {
       streamId: parsedData.streamId || 'unknown',
       robotId: parsedData.robotId || 'unknown',
-      channelLabel: parsedData.channelLabel || 'turtlesim_video',
+      channelLabel: parsedData.channelLabel,
       fps: parsedData.fps || 0,
       resolution: {
         width: parsedData.width || 640,
