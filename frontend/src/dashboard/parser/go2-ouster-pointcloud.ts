@@ -7,12 +7,20 @@ interface ChunkData {
     chunks: Map<number, Uint8Array>;
     totalChunks: number;
     timestamp: number;
+    startTime: number; // 첫 번째 청크 도착 시간
+    receivedChunks: Set<number>; // 실제로 받은 청크 인덱스 추적
 }
 
 // 전역 chunkMap과 cleanup 타이머
 const chunkMap: Map<string, ChunkData> = new Map();
 const CHUNK_TIMEOUT = 5000; // 5초
 const MAX_CONCURRENT_MESSAGES = 3; // 최대 2개의 메시지 동시 처리
+
+// FPS 측정을 위한 전역 변수들
+const frameTimestamps: number[] = [];
+const MAX_FRAME_HISTORY = 10; // 최근 10개 프레임으로 FPS 계산
+let lastFpsLogTime = 0;
+const FPS_LOG_INTERVAL = 1000; // 1초마다 FPS 로그 출력
 
 // 주기적으로 오래된 chunk 데이터 정리
 setInterval(() => {
@@ -24,6 +32,27 @@ setInterval(() => {
     }
 }, CHUNK_TIMEOUT);
 
+// FPS 계산 함수
+const calculateFPS = (): number => {
+    if (frameTimestamps.length < 2) return 0;
+    
+    const recentFrames = frameTimestamps.slice(-MAX_FRAME_HISTORY);
+    const totalTime = recentFrames[recentFrames.length - 1] - recentFrames[0];
+    const frameCount = recentFrames.length - 1;
+    
+    return totalTime > 0 ? (frameCount / totalTime) * 1000 : 0;
+};
+
+// FPS 로그 출력 함수
+const logFPS = (): void => {
+    const now = Date.now();
+    if (now - lastFpsLogTime >= FPS_LOG_INTERVAL) {
+        const fps = calculateFPS();
+        console.log(`📊 PointCloud FPS: ${fps.toFixed(1)} (based on last ${Math.min(frameTimestamps.length, MAX_FRAME_HISTORY)} frames)`);
+        lastFpsLogTime = now;
+    }
+};
+
 const combineChunks = (chunkData: ChunkData): Uint8Array => {
     const totalSize = Array.from(chunkData.chunks.values())
         .reduce((sum, chunk) => sum + chunk.length, 0);
@@ -31,16 +60,26 @@ const combineChunks = (chunkData: ChunkData): Uint8Array => {
     const combinedData = new Uint8Array(totalSize);
     let offset = 0;
 
-    // chunk들을 순서대로 조합
-    for (let i = 0; i < chunkData.totalChunks; i++) {
-        const chunk = chunkData.chunks.get(i);
+    // chunk들을 chunkIndex 순서대로 조합 (순서 보장)
+    const sortedChunkIndices = Array.from(chunkData.receivedChunks).sort((a, b) => a - b);
+    
+    // console.log(`🔧 Combining ${sortedChunkIndices.length} chunks in order:`, sortedChunkIndices.slice(0, 10), '...');
+    // console.log(`🔧 Total size: ${totalSize}, expected: ${chunkData.totalChunks * 15360 + 6309}`);
+    
+    for (const chunkIndex of sortedChunkIndices) {
+        const chunk = chunkData.chunks.get(chunkIndex);
         if (!chunk) {
-            throw new Error(`Missing chunk ${i} for message ${chunkData.messageId}`);
+            throw new Error(`Missing chunk ${chunkIndex} for message ${chunkData.messageId}`);
         }
+        
+        console.log(`🔧 Chunk ${chunkIndex}: size=${chunk.length}, offset=${offset}`);
         combinedData.set(chunk, offset);
         offset += chunk.length;
     }
 
+    // console.log(`🔧 Final combined size: ${combinedData.length}`);
+    // console.log(`🔧 First 32 bytes:`, Array.from(combinedData.slice(0, 32)).map(b => b.toString(16).padStart(2, '0')).join(' '));
+    // console.log(combinedData);
     return combinedData;
 };
 
@@ -48,11 +87,17 @@ export type ParsedPointCloud2 = ParsedData<pointcloud.IPointCloud2>;
 
 export const parsePointCloud2 = (buffer: ArrayBuffer): ParsedPointCloud2 | null => {
     try {
-        console.log('parsePointCloud2', buffer);
+        // console.log('🔍 parsePointCloud2 called with buffer size:', buffer.byteLength);
         const dataChunk = chunking.DataChunk.decode(new Uint8Array(buffer));
+        // console.log('📋 DataChunk decoded:', {
+        //     messageId: dataChunk.messageId,
+        //     chunkIndex: dataChunk.chunkIndex,
+        //     totalChunks: dataChunk.totalChunks,
+        //     payloadSize: dataChunk.payload.length
+        // });
         return parsePointCloud2FromDataChunk(dataChunk);
     } catch (error) {
-        console.error('Error decoding data chunk:', error);
+        console.error('❌ Error decoding data chunk:', error);
         return null;
     }
 };
@@ -69,11 +114,14 @@ export const parsePointCloud2FromDataChunk = (dataChunk: chunking.DataChunk): Pa
                 console.log(`Removed oldest message: ${oldestMessageId} to make room for: ${dataChunk.messageId}`);
             }
             
+            const startTime = Date.now();
             chunkMap.set(dataChunk.messageId, {
                 messageId: dataChunk.messageId,
                 chunks: new Map(),
                 totalChunks: dataChunk.totalChunks,
-                timestamp: Date.now()
+                timestamp: startTime,
+                startTime: startTime,
+                receivedChunks: new Set()
             });
         }
 
@@ -81,26 +129,70 @@ export const parsePointCloud2FromDataChunk = (dataChunk: chunking.DataChunk): Pa
         
         // chunk 저장
         chunkData.chunks.set(dataChunk.chunkIndex, dataChunk.payload);
+        chunkData.receivedChunks.add(dataChunk.chunkIndex);
         chunkData.timestamp = Date.now();
 
-        // 모든 chunk가 도착했는지 확인
-        if (chunkData.chunks.size === chunkData.totalChunks) {
+        // 청크 진행 상황 로그
+        const progress = ((chunkData.receivedChunks.size / chunkData.totalChunks) * 100).toFixed(1);
+        console.log(`📦 Chunk progress: ${dataChunk.messageId} [${chunkData.receivedChunks.size}/${chunkData.totalChunks}] (${progress}%)`);
+
+        // 모든 chunk가 도착했는지 확인 (중복 제거된 실제 받은 청크 수로 확인)
+        if (chunkData.receivedChunks.size === chunkData.totalChunks) {
+            const completionTime = Date.now();
+            const reassemblyTime = completionTime - chunkData.startTime;
+            
             // chunk들을 순서대로 조합
             const combinedData = combineChunks(chunkData);
+            
+            console.log(`🔧 Combined data size: ${combinedData.length}`);
             
             // PointCloud2 객체 생성
             const pointCloud = pointcloud.PointCloud2.decode(combinedData);
             
+            console.log(`🔧 PointCloud2 decoded:`, {
+                width: pointCloud.width,
+                height: pointCloud.height,
+                pointStep: pointCloud.pointStep,
+                dataLength: pointCloud.data?.length || 0
+            });
+            
             // 처리된 chunk 데이터 삭제
             chunkMap.delete(dataChunk.messageId);
+            
+            // FPS 측정을 위한 타임스탬프 추가
+            frameTimestamps.push(completionTime);
+            if (frameTimestamps.length > MAX_FRAME_HISTORY) {
+                frameTimestamps.shift();
+            }
             
             // PointCloud2 객체를 ParsedPointCloud2로 변환
             const parsedPointCloud: ParsedPointCloud2 = {
                 ...pointCloud.toJSON(),
-                timestamp: Date.now()
-            };
+                timestamp: completionTime
+            } as any;
             
-            console.log(`Completed frame: ${dataChunk.messageId}, remaining messages: ${chunkMap.size}`);
+            // 메시지 ID 추가 (타입 안전성을 위해 any 사용)
+            (parsedPointCloud as any).messageId = dataChunk.messageId;
+            
+            // 재조합 속도 로그 출력
+            console.log(`⚡ Frame reassembly: ${dataChunk.messageId} completed in ${reassemblyTime}ms (${chunkData.totalChunks} chunks)`);
+            
+            // FPS 로그 출력 (1초마다)
+            logFPS();
+            
+            console.log(`🎯 Returning parsed pointcloud data:`, {
+                width: parsedPointCloud.width,
+                height: parsedPointCloud.height,
+                pointStep: parsedPointCloud.pointStep,
+                dataLength: parsedPointCloud.data?.length || 0
+            });
+            
+            // 파서에서 반환하는 데이터의 첫 32바이트 확인
+            if (parsedPointCloud.data) {
+                console.log(`🎯 Parser returning data first 32 bytes:`, Array.from(parsedPointCloud.data.slice(0, 32)).map(b => b.toString(16).padStart(2, '0')).join(' '));
+                console.log(`🎯 Parser returning data:`, parsedPointCloud.data);
+            }
+            
             return parsedPointCloud;
         }
 

@@ -12,14 +12,25 @@ export class DataStore<T, I = string> {
     }
 
     add(data: I) {
+        // 데이터 수신 로그 추가
+        console.log(`📦 DataStore[${this.robotId}] received data:`, {
+            dataType: typeof data,
+            dataSize: data instanceof ArrayBuffer ? data.byteLength : 'unknown',
+            timestamp: new Date().toISOString()
+        });
+
         const parsedData = this.parser(data)
 
         if (parsedData === null) {
-            console.log(`DataStore[${this.robotId}] parsing failed:`, data)
+            // null 반환은 파싱 실패가 아니라 아직 완성되지 않은 데이터일 수 있음
+            console.log(`⏳ DataStore[${this.robotId}] data not yet complete (waiting for more chunks)`)
             return
         }
 
-        // console.log(`DataStore[${this.robotId}] data added:`, parsedData)
+        console.log(`✅ DataStore[${this.robotId}] data parsed successfully:`, {
+            parsedDataType: typeof parsedData,
+            timestamp: new Date().toISOString()
+        });
 
         this.data.push(parsedData)
         if (this.data.length > this.maxSize) {

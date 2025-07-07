@@ -17,11 +17,35 @@ export const DATA_CHANNEL_CONFIG = {
     defaultLabel: 'go2_low_state_data_channel',
     description: 'Go2 Robot State Data Channel'
   },
-  'go2_ouster_pointcloud': {
+  'go2_ouster_pointcloud_1': {
     type: 'go2_ouster_pointcloud',
     channelType: 'readonly' as const,
-    defaultLabel: 'go2_ouster_points_data_channel',
-    description: 'Go2 Ouster Point Cloud Data Channel'
+    defaultLabel: 'go2_ouster_pointcloud_1',
+    description: 'Go2 Ouster Point Cloud Data Channel 1'
+  },
+  'go2_ouster_pointcloud_2': {
+    type: 'go2_ouster_pointcloud',
+    channelType: 'readonly' as const,
+    defaultLabel: 'go2_ouster_pointcloud_2',
+    description: 'Go2 Ouster Point Cloud Data Channel 2'
+  },
+  'go2_ouster_pointcloud_3': {
+    type: 'go2_ouster_pointcloud',
+    channelType: 'readonly' as const,
+    defaultLabel: 'go2_ouster_pointcloud_3',
+    description: 'Go2 Ouster Point Cloud Data Channel 3'
+  },
+  'go2_ouster_pointcloud_4': {
+    type: 'go2_ouster_pointcloud',
+    channelType: 'readonly' as const,
+    defaultLabel: 'go2_ouster_pointcloud_4',
+    description: 'Go2 Ouster Point Cloud Data Channel 4'
+  },
+  'go2_ouster_pointcloud_5': {
+    type: 'go2_ouster_pointcloud',
+    channelType: 'readonly' as const,
+    defaultLabel: 'go2_ouster_pointcloud_5',
+    description: 'Go2 Ouster Point Cloud Data Channel 5'
   },
   'turtlesim_remote_control': {
     type: 'turtlesim_remote_control',
@@ -46,9 +70,33 @@ export const DEFAULT_DATA_CHANNELS = [
     options: undefined
   },
   {
-    label: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud.defaultLabel,
-    dataType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud.type,
-    channelType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud.channelType,
+    label: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_1.defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_1.type,
+    channelType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_1.channelType,
+    options: undefined
+  },
+  {
+    label: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_2.defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_2.type,
+    channelType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_2.channelType,
+    options: undefined
+  },
+  {
+    label: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_3.defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_3.type,
+    channelType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_3.channelType,
+    options: undefined
+  },
+  {
+    label: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_4.defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_4.type,
+    channelType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_4.channelType,
+    options: undefined
+  },
+  {
+    label: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_5.defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_5.type,
+    channelType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_5.channelType,
     options: undefined
   },
   {

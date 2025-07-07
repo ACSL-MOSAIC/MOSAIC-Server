@@ -24,8 +24,8 @@ export function createDataChannel(
   
   console.log(`DataChannel ${dataChannel.label} setup started, current state:`, dataChannel.readyState, 'dataType:', dataType, 'channelType:', channelType)
 
-  // Check if data type is supported
-  if (!DataChannelConfigUtils.isSupportedDataType(dataType)) {
+  // Check if data type is supported (including base types for pointcloud)
+  if (!DataChannelConfigUtils.isSupportedDataType(dataType) && !dataType.startsWith('go2_ouster_pointcloud')) {
     console.warn(`Unsupported data type: ${dataType}`)
     return
   }
@@ -124,6 +124,12 @@ export function createDataChannel(
   dataChannel.onmessage = (event) => {
     try {
       const data = event.data
+      
+      // 데이터 수신 로그 추가
+      console.log(`📥 Data received on ${dataChannel.label} (${dataType}):`, {
+        dataSize: data instanceof ArrayBuffer ? data.byteLength : typeof data,
+        timestamp: new Date().toISOString()
+      });
       
       if (store) {
         store.add(data);
