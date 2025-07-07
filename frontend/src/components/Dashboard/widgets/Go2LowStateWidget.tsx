@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { Box, Text, Flex, Grid, GridItem, TabsRoot, TabsList, TabsContent, TabsTrigger, VStack, HStack, Badge } from "@chakra-ui/react"
+import { Box, Text, Flex, Grid, GridItem, TabsRoot, TabsList, TabsContent, TabsTrigger } from "@chakra-ui/react"
 import { WidgetProps } from './types'
 import { ParsedGo2LowState, Go2ImuStateData } from '../../../dashboard/parser/go2-low-state'
 import { Go2LowStateStore } from '../../../dashboard/store/data-channel-store/readonly/go2-low-state.store'
@@ -17,6 +17,7 @@ import {
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Box as ThreeBox, Grid as ThreeGrid, GizmoHelper, GizmoViewport, Cone } from '@react-three/drei'
 import * as THREE from 'three'
+import { WidgetFrame } from './WidgetFrame'
 
 ChartJS.register(
   CategoryScale,
@@ -172,326 +173,282 @@ export function Go2LowStateWidget({ robotId, store, dataType }: Go2LowStateWidge
 
   if (!data) {
     return (
-      <VStack gap={3} align="stretch" h="100%">
-        <Flex justify="space-between" align="center">
-          <Text fontSize="sm" fontWeight="bold" color="gray.500">
-            Go2 Low State
-          </Text>
-          <Badge colorScheme="gray" variant="subtle">
-            Disconnected
-          </Badge>
-        </Flex>
-        
-        <Box 
-          border="1px solid" 
-          borderColor="gray.200" 
-          borderRadius="lg" 
-          p={4}
-          bg="white"
-          boxShadow="sm"
-          flex="1"
-          minH="250px"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
+      <WidgetFrame
+        title="Go2 Low State"
+        isConnected={false}
+        footerMessage="Loading..."
+      >
+        <Flex 
+          direction="column" 
+          align="center" 
+          justify="center" 
+          h="100%" 
+          color="gray.500"
         >
-          <Text color="gray.500">Loading...</Text>
-        </Box>
-      </VStack>
+          <Text>Loading...</Text>
+        </Flex>
+      </WidgetFrame>
     )
   }
 
-  // 모터 차트 여러 개 (2열 6행 그리드, Q/DQ/Torque/DDQ 4개 라인)
-  const motorCharts = data.motor_state.map((motor, i) => {
+  // 모터 차트 데이터 생성
+  const motorCharts = motorHistory.values.map((motorData, motorIndex) => {
     const chartData = {
       labels: motorHistory.labels,
       datasets: [
         {
-          label: `Q`,
-          data: motorHistory.values[i]?.[0] || [],
-          borderColor: 'rgb(255, 99, 132)',
-          backgroundColor: 'rgba(255, 99, 132, 0.2)',
+          label: 'Q',
+          data: motorData[0],
+          borderColor: '#3182ce',
+          backgroundColor: 'rgba(49, 130, 206, 0.1)',
+          tension: 0.4
         },
         {
-          label: `DQ`,
-          data: motorHistory.values[i]?.[1] || [],
-          borderColor: 'rgb(53, 162, 235)',
-          backgroundColor: 'rgba(53, 162, 235, 0.2)',
+          label: 'DQ',
+          data: motorData[1],
+          borderColor: '#38a169',
+          backgroundColor: 'rgba(56, 161, 105, 0.1)',
+          tension: 0.4
         },
         {
-          label: `Torque`,
-          data: motorHistory.values[i]?.[2] || [],
-          borderColor: 'rgb(75, 192, 192)',
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          label: 'Torque',
+          data: motorData[2],
+          borderColor: '#e53e3e',
+          backgroundColor: 'rgba(229, 62, 62, 0.1)',
+          tension: 0.4
         },
         {
-          label: `DDQ`,
-          data: motorHistory.values[i]?.[3] || [],
-          borderColor: 'rgb(255, 205, 86)',
-          backgroundColor: 'rgba(255, 205, 86, 0.2)',
-        },
-      ],
+          label: 'DDQ',
+          data: motorData[3],
+          borderColor: '#d69e2e',
+          backgroundColor: 'rgba(214, 158, 46, 0.1)',
+          tension: 0.4
+        }
+      ]
     }
+
     return (
-      <Box key={i} width="600px" height="300px" mb={4}>
-        <Line
-          data={chartData}
-          options={{
-            responsive: false,
-            maintainAspectRatio: false,
-            animation: { duration: 0 },
-            scales: { y: { beginAtZero: true } }
-          }}
-          width={600}
-          height={300}
-        />
-      </Box>
+      <GridItem key={motorIndex}>
+        <Box p={2} border="1px solid" borderColor="gray.200" borderRadius="md">
+          <Text fontSize="sm" fontWeight="bold" mb={2}>Motor {motorIndex}</Text>
+          <Line
+            data={chartData}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              animation: { duration: 0 },
+              scales: { y: { beginAtZero: true } },
+              plugins: { legend: { display: false } }
+            }}
+            height={150}
+          />
+        </Box>
+      </GridItem>
     )
   })
 
-  // FootForce 차트 (4개 라인)
+  // FootForce 차트 데이터
   const footForceChartData = {
     labels: footForceHistory.labels,
-    datasets: [
-      {
-        label: 'LF',
-        data: footForceHistory.values[0] || [],
-        borderColor: 'rgb(255, 99, 132)',
-        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-      },
-      {
-        label: 'RF',
-        data: footForceHistory.values[1] || [],
-        borderColor: 'rgb(53, 162, 235)',
-        backgroundColor: 'rgba(53, 162, 235, 0.2)',
-      },
-      {
-        label: 'LB',
-        data: footForceHistory.values[2] || [],
-        borderColor: 'rgb(75, 192, 192)',
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-      },
-      {
-        label: 'RB',
-        data: footForceHistory.values[3] || [],
-        borderColor: 'rgb(255, 205, 86)',
-        backgroundColor: 'rgba(255, 205, 86, 0.2)',
-      },
-    ],
+    datasets: footForceHistory.values.map((data, index) => ({
+      label: `Foot ${index}`,
+      data: data,
+      borderColor: `hsl(${index * 90}, 70%, 50%)`,
+      backgroundColor: `hsla(${index * 90}, 70%, 50%, 0.1)`,
+      tension: 0.4
+    }))
   }
 
-  // Power 차트 (2개 라인)
+  // Power 차트 데이터
   const powerChartData = {
     labels: powerHistory.labels,
     datasets: [
       {
-        label: 'Voltage',
-        data: powerHistory.values[0] || [], 
-        borderColor: 'rgb(153, 102, 255)',
-        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+        label: 'Voltage (V)',
+        data: powerHistory.values[0],
+        borderColor: '#3182ce',
+        backgroundColor: 'rgba(49, 130, 206, 0.1)',
+        tension: 0.4
       },
       {
-        label: 'Current',
-        data: powerHistory.values[1] || [],
-        borderColor: 'rgb(255, 159, 64)',
-        backgroundColor: 'rgba(255, 159, 64, 0.2)',
-      },
-    ],
+        label: 'Current (A)',
+        data: powerHistory.values[1],
+        borderColor: '#e53e3e',
+        backgroundColor: 'rgba(229, 62, 62, 0.1)',
+        tension: 0.4
+      }
+    ]
   }
 
-  return (
-    <VStack gap={3} align="stretch" h="100%">
-      <Flex justify="space-between" align="center">
-        <Text fontSize="sm" fontWeight="bold" color={isConnected ? 'green.500' : 'gray.500'}>
-          Go2 Low State
-        </Text>
-        <Badge colorScheme={isConnected ? 'green' : 'gray'} variant="subtle">
-          {isConnected ? 'Connected' : 'Disconnected'}
-        </Badge>
-      </Flex>
-      
-      <Box 
-        border="1px solid" 
-        borderColor="gray.200" 
-        borderRadius="lg" 
-        p={4}
-        bg="white"
-        boxShadow="sm"
-        flex="1"
-        minH="250px"
-        display="flex"
-        flexDirection="column"
-      >
-        <TabsRoot defaultValue="motor" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <TabsList style={{ flexShrink: 0 }}>
-            <TabsTrigger value="motor">모터 차트</TabsTrigger>
-            <TabsTrigger value="footforce">FootForce 차트</TabsTrigger>
-            <TabsTrigger value="power">Power 차트</TabsTrigger>
-            <TabsTrigger value="imu">IMU State</TabsTrigger>
-            <TabsTrigger value="details">상세 정보</TabsTrigger>
-          </TabsList>
+  // Footer info
+  const footerInfo = [
+    {
+      label: 'Data Type',
+      value: (dataType || 'unknown').toUpperCase()
+    },
+    {
+      label: 'Last Update',
+      value: new Date(data.timestamp).toLocaleTimeString()
+    }
+  ]
 
-          {/* 탭 1: 모터 차트 (2열 6행 그리드) */}
-          <TabsContent value="motor" style={{ flex: 1, overflow: 'auto' }}>
-            <Box width="100%" height="100%">
-              <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                {motorCharts}
+  return (
+    <WidgetFrame
+      title="Go2 Low State"
+      isConnected={isConnected}
+      footerInfo={footerInfo}
+      footerMessage={isConnected ? 'Go2 Low State data active' : 'Waiting for data...'}
+      padding="4"
+    >
+      <TabsRoot defaultValue="motor" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <TabsList style={{ flexShrink: 0 }}>
+          <TabsTrigger value="motor">Motor Charts</TabsTrigger>
+          <TabsTrigger value="footforce">FootForce Charts</TabsTrigger>
+          <TabsTrigger value="power">Power Charts</TabsTrigger>
+          <TabsTrigger value="imu">IMU State</TabsTrigger>
+          <TabsTrigger value="details">Details</TabsTrigger>
+        </TabsList>
+
+        {/* 탭 1: 모터 차트 (2열 6행 그리드) */}
+        <TabsContent value="motor" style={{ flex: 1, overflow: 'auto' }}>
+          <Box width="100%" height="100%">
+            <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+              {motorCharts}
+            </Grid>
+          </Box>
+        </TabsContent>
+
+        {/* 탭 2: FootForce 차트 */}
+        <TabsContent value="footforce" style={{ flex: 1, overflow: 'auto' }}>
+          <Box width="100%" height="100%">
+            <Line
+              data={footForceChartData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 0 },
+                scales: { y: { beginAtZero: true } }
+              }}
+            />
+          </Box>
+        </TabsContent>
+
+        {/* 탭 3: Power 차트 */}
+        <TabsContent value="power" style={{ flex: 1, overflow: 'auto' }}>
+          <Box width="100%" height="100%">
+            <Line
+              data={powerChartData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 0 },
+                scales: { y: { beginAtZero: true } }
+              }}
+            />
+          </Box>
+        </TabsContent>
+
+        {/* 탭 4: IMU State */}
+        <TabsContent value="imu" style={{ flex: 1, overflow: 'auto' }}>
+          <Box width="100%" height="100%" position="relative">
+            {data && <IMUVisualizer imuState={data.imu_state} />}
+            <Box position="absolute" bottom={4} left={4} bg="white" p={2} borderRadius="md" boxShadow="sm">
+              <Text fontSize="sm" fontWeight="bold">IMU State</Text>
+              <Grid templateColumns="repeat(2, 1fr)" gap={2}>
+                <GridItem>
+                  <Text fontSize="xs" fontWeight="semibold">Quaternion (w, x, y, z):</Text>
+                  <Text fontSize="xs">{data?.imu_state.quaternion.map(v => v.toFixed(3)).join(', ')}</Text>
+                </GridItem>
+                <GridItem>
+                  <Text fontSize="xs" fontWeight="semibold">RPY (rad):</Text>
+                  <Text fontSize="xs">{data?.imu_state.rpy.map(v => v.toFixed(3)).join(', ')}</Text>
+                </GridItem>
+                <GridItem>
+                  <Text fontSize="xs" fontWeight="semibold">Gyroscope (rad/s):</Text>
+                  <Text fontSize="xs">{data?.imu_state.gyroscope.map(v => v.toFixed(3)).join(', ')}</Text>
+                </GridItem>
+                <GridItem>
+                  <Text fontSize="xs" fontWeight="semibold">Accelerometer (m/s²):</Text>
+                  <Text fontSize="xs">{data?.imu_state.accelerometer.map(v => v.toFixed(3)).join(', ')}</Text>
+                </GridItem>
               </Grid>
             </Box>
-          </TabsContent>
+          </Box>
+        </TabsContent>
 
-          {/* 탭 2: FootForce 차트 */}
-          <TabsContent value="footforce" style={{ flex: 1, overflow: 'auto' }}>
-            <Box width="100%" height="100%">
-              <Line
-                data={footForceChartData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  animation: { duration: 0 },
-                  scales: { y: { beginAtZero: true } }
-                }}
-              />
-            </Box>
-          </TabsContent>
-
-          {/* 탭 3: Power 차트 */}
-          <TabsContent value="power" style={{ flex: 1, overflow: 'auto' }}>
-            <Box width="100%" height="100%">
-              <Line
-                data={powerChartData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  animation: { duration: 0 },
-                  scales: { y: { beginAtZero: true } }
-                }}
-              />
-            </Box>
-          </TabsContent>
-
-          {/* 탭 4: IMU State */}
-          <TabsContent value="imu" style={{ flex: 1, overflow: 'auto' }}>
-            <Box width="100%" height="100%" position="relative">
-              {data && <IMUVisualizer imuState={data.imu_state} />}
-              <Box position="absolute" bottom={4} left={4} bg="white" p={2} borderRadius="md" boxShadow="sm">
-                <Text fontSize="sm" fontWeight="bold">IMU State</Text>
-                <Grid templateColumns="repeat(2, 1fr)" gap={2}>
+        {/* 탭 5: 상세 정보 */}
+        <TabsContent value="details" style={{ flex: 1, overflow: 'auto' }}>
+          <Box height="100%">
+            <Flex direction="column" gap={4}>
+              <Text fontSize="lg" fontWeight="bold">Go2 Low State</Text>
+              {/* IMU State */}
+              <Box>
+                <Text fontSize="md" fontWeight="semibold" mb={2}>IMU State</Text>
+                <Grid templateColumns="repeat(2, 1fr)" gap={4}>
                   <GridItem>
-                    <Text fontSize="xs" fontWeight="semibold">Quaternion (w, x, y, z):</Text>
-                    <Text fontSize="xs">{data?.imu_state.quaternion.map(v => v.toFixed(3)).join(', ')}</Text>
+                    <Text fontSize="sm" color="gray.600">Quaternion</Text>
+                    <Text fontSize="sm">
+                      {data.imu_state.quaternion.map((q, i) => q.toFixed(3)).join(', ')}
+                    </Text>
                   </GridItem>
                   <GridItem>
-                    <Text fontSize="xs" fontWeight="semibold">RPY (rad):</Text>
-                    <Text fontSize="xs">{data?.imu_state.rpy.map(v => v.toFixed(3)).join(', ')}</Text>
-                  </GridItem>
-                  <GridItem>
-                    <Text fontSize="xs" fontWeight="semibold">Gyroscope (rad/s):</Text>
-                    <Text fontSize="xs">{data?.imu_state.gyroscope.map(v => v.toFixed(3)).join(', ')}</Text>
-                  </GridItem>
-                  <GridItem>
-                    <Text fontSize="xs" fontWeight="semibold">Accelerometer (m/s²):</Text>
-                    <Text fontSize="xs">{data?.imu_state.accelerometer.map(v => v.toFixed(3)).join(', ')}</Text>
+                    <Text fontSize="sm" color="gray.600">Gyroscope</Text>
+                    <Text fontSize="sm">
+                      {data.imu_state.gyroscope.map((g, i) => g.toFixed(3)).join(', ')}
+                    </Text>
                   </GridItem>
                 </Grid>
               </Box>
-            </Box>
-          </TabsContent>
-
-          {/* 탭 5: 상세 정보 */}
-          <TabsContent value="details" style={{ flex: 1, overflow: 'auto' }}>
-            <Box height="100%">
-              <Flex direction="column" gap={4}>
-                <Text fontSize="lg" fontWeight="bold">Go2 Low State</Text>
-                {/* IMU State */}
-                <Box>
-                  <Text fontSize="md" fontWeight="semibold" mb={2}>IMU State</Text>
-                  <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                    <GridItem>
-                      <Text fontSize="sm" color="gray.600">Quaternion</Text>
-                      <Text fontSize="sm">
-                        {data.imu_state.quaternion.map((q, i) => q.toFixed(3)).join(', ')}
-                      </Text>
+              {/* Motor State */}
+              <Box>
+                <Text fontSize="md" fontWeight="semibold" mb={2}>Motor State</Text>
+                <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                  {data.motor_state.map((motor, index) => (
+                    <GridItem key={index}>
+                      <Text fontSize="sm" color="gray.600">Motor {index}</Text>
+                      <Text fontSize="sm">Q: {motor.q.toFixed(3)}</Text>
+                      <Text fontSize="sm">DQ: {motor.dq.toFixed(3)}</Text>
+                      <Text fontSize="sm">Torque: {motor.tau_est.toFixed(3)}</Text>
                     </GridItem>
-                    <GridItem>
-                      <Text fontSize="sm" color="gray.600">Gyroscope</Text>
-                      <Text fontSize="sm">
-                        {data.imu_state.gyroscope.map((g, i) => g.toFixed(3)).join(', ')}
-                      </Text>
-                    </GridItem>
-                  </Grid>
-                </Box>
-                {/* Motor State */}
-                <Box>
-                  <Text fontSize="md" fontWeight="semibold" mb={2}>Motor State</Text>
-                  <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                    {data.motor_state.map((motor, index) => (
-                      <GridItem key={index}>
-                        <Text fontSize="sm" color="gray.600">Motor {index}</Text>
-                        <Text fontSize="sm">Q: {motor.q.toFixed(3)}</Text>
-                        <Text fontSize="sm">DQ: {motor.dq.toFixed(3)}</Text>
-                        <Text fontSize="sm">Torque: {motor.tau_est.toFixed(3)}</Text>
-                      </GridItem>
-                    ))}
-                  </Grid>
-                </Box>
-                {/* Foot Force */}
-                <Box>
-                  <Text fontSize="md" fontWeight="semibold" mb={2}>Foot Force</Text>
-                  <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                    <GridItem>
-                      <Text fontSize="sm" color="gray.600">Measured</Text>
-                      <Text fontSize="sm">
-                        {data.foot_force.map((f, i) => f.toFixed(3)).join(', ')}
-                      </Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text fontSize="sm" color="gray.600">Estimated</Text>
-                      <Text fontSize="sm">
-                        {data.foot_force_est.map((f, i) => f.toFixed(3)).join(', ')}
-                      </Text>
-                    </GridItem>
-                  </Grid>
-                </Box>
-                {/* Power */}
-                <Box>
-                  <Text fontSize="md" fontWeight="semibold" mb={2}>Power</Text>
-                  <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                    <GridItem>
-                      <Text fontSize="sm" color="gray.600">Voltage</Text>
-                      <Text fontSize="sm">{data.power_v.toFixed(2)}V</Text>
-                    </GridItem>
-                    <GridItem>
-                      <Text fontSize="sm" color="gray.600">Current</Text>
-                      <Text fontSize="sm">{data.power_a.toFixed(2)}A</Text>
-                    </GridItem>
-                  </Grid>
-                </Box>
-              </Flex>
-            </Box>
-          </TabsContent>
-        </TabsRoot>
-      </Box>
-      
-      <VStack gap={2} align="stretch">
-        <HStack justify="space-between" fontSize="xs">
-          <Text color="gray.600" fontWeight="medium">Data Type</Text>
-          <Text color="gray.800" fontFamily="mono" textTransform="uppercase">
-            {dataType || 'unknown'}
-          </Text>
-        </HStack>
-        
-        <HStack justify="space-between" fontSize="xs">
-          <Text color="gray.600" fontWeight="medium">Last Update</Text>
-          <Text color="gray.800" fontFamily="mono">
-            {new Date(data.timestamp).toLocaleTimeString()}
-          </Text>
-        </HStack>
-
-        <Text fontSize="xs" color="gray.500" textAlign="center">
-          {isConnected ? 'Go2 Low State data active' : 'Waiting for data...'}
-        </Text>
-      </VStack>
-    </VStack>
+                  ))}
+                </Grid>
+              </Box>
+              {/* Foot Force */}
+              <Box>
+                <Text fontSize="md" fontWeight="semibold" mb={2}>Foot Force</Text>
+                <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                  <GridItem>
+                    <Text fontSize="sm" color="gray.600">Measured</Text>
+                    <Text fontSize="sm">
+                      {data.foot_force.map((f, i) => f.toFixed(3)).join(', ')}
+                    </Text>
+                  </GridItem>
+                  <GridItem>
+                    <Text fontSize="sm" color="gray.600">Estimated</Text>
+                    <Text fontSize="sm">
+                      {data.foot_force_est.map((f, i) => f.toFixed(3)).join(', ')}
+                    </Text>
+                  </GridItem>
+                </Grid>
+              </Box>
+              {/* Power */}
+              <Box>
+                <Text fontSize="md" fontWeight="semibold" mb={2}>Power</Text>
+                <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                  <GridItem>
+                    <Text fontSize="sm" color="gray.600">Voltage</Text>
+                    <Text fontSize="sm">{data.power_v.toFixed(2)}V</Text>
+                  </GridItem>
+                  <GridItem>
+                    <Text fontSize="sm" color="gray.600">Current</Text>
+                    <Text fontSize="sm">{data.power_a.toFixed(2)}A</Text>
+                  </GridItem>
+                </Grid>
+              </Box>
+            </Flex>
+          </Box>
+        </TabsContent>
+      </TabsRoot>
+    </WidgetFrame>
   )
 } 

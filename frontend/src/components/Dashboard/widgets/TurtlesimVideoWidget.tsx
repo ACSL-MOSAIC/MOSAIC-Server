@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
-import { Box, Text, VStack, HStack, Badge, Flex, IconButton, Icon } from '@chakra-ui/react'
+import { Box, Flex, IconButton } from '@chakra-ui/react'
 import { VideoData, VideoStore } from '@/dashboard/store/media-channel-store/video-store'
 import { ParsedTurtlesimVideo } from '../../../dashboard/parser/turtlesim-video'
+import { WidgetFrame } from './WidgetFrame'
 
 interface TurtlesimVideoWidgetProps {
   robotId: string
@@ -185,134 +186,96 @@ export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
     }
   }, [])
 
+  // Footer info
+  const footerInfo = videoData ? [
+    {
+      label: 'FPS',
+      value: `${videoData.stats.fps} fps`
+    },
+    {
+      label: 'Resolution',
+      value: videoData.stats.width && videoData.stats.height 
+        ? `${videoData.stats.width}x${videoData.stats.height}`
+        : 'Unknown'
+    },
+    {
+      label: 'Status',
+      value: videoData.isActive ? 'Active' : 'Inactive'
+    },
+    {
+      label: 'Stream ID',
+      value: `${videoData.streamId.slice(0, 8)}...`
+    }
+  ] : []
+
   return (
-    <VStack gap={3} align="stretch" h="100%">
-      <Flex justify="space-between" align="center">
-        <Text fontSize="sm" fontWeight="bold" color={isConnected ? 'green.500' : 'gray.500'}>
-          Turtlesim Video
-        </Text>
-        <Badge colorScheme={isConnected ? 'green' : 'gray'} variant="subtle">
-          {isConnected ? 'Connected' : 'Disconnected'}
-        </Badge>
-      </Flex>
-      
-      <Box 
-        border="1px solid" 
-        borderColor="gray.200" 
-        borderRadius="lg" 
-        p={3}
-        bg="white"
-        boxShadow="sm"
-        flex="1"
-        minH="250px"
-        position="relative"
-        overflow="hidden"
-      >
-        {error ? (
-          <Flex 
-            direction="column" 
-            align="center" 
-            justify="center" 
-            h="100%" 
-            color="red.500"
-            textAlign="center"
-          >
-            <Text fontSize="2xl" mb={2}>⚠️</Text>
-            <Text fontSize="sm">{error}</Text>
-          </Flex>
-        ) : (
-          <>
-            <video
-              ref={videoRef}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                borderRadius: '8px'
-              }}
-              playsInline
-              muted
-              autoPlay
-            />
-            
-            {/* 비디오 컨트롤 오버레이 */}
-            <Box
-              position="absolute"
-              bottom={0}
-              left={0}
-              right={0}
-              bg="linear-gradient(to top, rgba(0,0,0,0.7), transparent)"
-              p={3}
-              opacity={0}
-              _hover={{ opacity: 1 }}
-              transition="opacity 0.2s"
-            >
-              <Flex justify="center" align="center" gap={2}>
-                <IconButton
-                  size="sm"
-                  colorScheme="whiteAlpha"
-                  onClick={handlePlayPause}
-                  aria-label={isPlaying ? 'Pause' : 'Play'}
-                >
-                  {isPlaying ? '⏸️' : '▶️'}
-                </IconButton>
-                
-                <IconButton
-                  size="sm"
-                  colorScheme="whiteAlpha"
-                  onClick={handleFullscreen}
-                  aria-label="Fullscreen"
-                >
-                  ⛶
-                </IconButton>
-              </Flex>
-            </Box>
-          </>
-        )}
-      </Box>
-      
-      {videoData && (
-        <VStack gap={2} align="stretch">
-          <HStack justify="space-between" fontSize="xs">
-            <Text color="gray.600" fontWeight="medium">FPS</Text>
-            <Text color="gray.800" fontFamily="mono">
-              {videoData.stats.fps} fps
-            </Text>
-          </HStack>
+    <WidgetFrame
+      title="Turtlesim Video"
+      isConnected={isConnected}
+      footerInfo={footerInfo}
+      footerMessage={isConnected ? 'Video stream active' : 'Waiting for stream...'}
+    >
+      {error ? (
+        <Flex 
+          direction="column" 
+          align="center" 
+          justify="center" 
+          h="100%" 
+          color="red.500"
+          textAlign="center"
+        >
+          <Box fontSize="2xl" mb={2}>⚠️</Box>
+          <Box fontSize="sm">{error}</Box>
+        </Flex>
+      ) : (
+        <>
+          <video
+            ref={videoRef}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              borderRadius: '8px'
+            }}
+            playsInline
+            muted
+            autoPlay
+          />
           
-          <HStack justify="space-between" fontSize="xs">
-            <Text color="gray.600" fontWeight="medium">Resolution</Text>
-            <Text color="gray.800" fontFamily="mono">
-              {videoData.stats.width && videoData.stats.height 
-                ? `${videoData.stats.width}x${videoData.stats.height}`
-                : 'Unknown'
-              }
-            </Text>
-          </HStack>
-
-          <HStack justify="space-between" fontSize="xs">
-            <Text color="gray.600" fontWeight="medium">Status</Text>
-            <Badge 
-              colorScheme={videoData.isActive ? 'green' : 'red'} 
-              variant="subtle" 
-              fontSize="xs"
-            >
-              {videoData.isActive ? 'Active' : 'Inactive'}
-            </Badge>
-          </HStack>
-
-          <HStack justify="space-between" fontSize="xs">
-            <Text color="gray.600" fontWeight="medium">Stream ID</Text>
-            <Text color="gray.800" fontFamily="mono" fontSize="xs">
-              {videoData.streamId.slice(0, 8)}...
-            </Text>
-          </HStack>
-
-          <Text fontSize="xs" color="gray.500" textAlign="center">
-            {isConnected ? 'Video stream active' : 'Waiting for stream...'}
-          </Text>
-        </VStack>
+          {/* 비디오 컨트롤 오버레이 */}
+          <Box
+            position="absolute"
+            bottom={0}
+            left={0}
+            right={0}
+            bg="linear-gradient(to top, rgba(0,0,0,0.7), transparent)"
+            p={3}
+            opacity={0}
+            _hover={{ opacity: 1 }}
+            transition="opacity 0.2s"
+          >
+            <Flex justify="center" align="center" gap={2}>
+              <IconButton
+                size="sm"
+                colorScheme="whiteAlpha"
+                onClick={handlePlayPause}
+                aria-label={isPlaying ? 'Pause' : 'Play'}
+              >
+                {isPlaying ? '⏸️' : '▶️'}
+              </IconButton>
+              
+              <IconButton
+                size="sm"
+                colorScheme="whiteAlpha"
+                onClick={handleFullscreen}
+                aria-label="Fullscreen"
+              >
+                ⛶
+              </IconButton>
+            </Flex>
+          </Box>
+        </>
       )}
-    </VStack>
+    </WidgetFrame>
   )
 } 

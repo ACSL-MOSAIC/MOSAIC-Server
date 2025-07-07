@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { Box, Text, VStack, HStack, Badge, Flex } from '@chakra-ui/react'
+import { Box } from '@chakra-ui/react'
 import { TurtlesimPositionStore } from '@/dashboard/store/data-channel-store/readonly/turtlesim-position.store'
 import { ParsedTurtlesimPosition } from '@/dashboard/parser/turtlesim-position'
+import { WidgetFrame } from './WidgetFrame'
 
 interface TurtlesimPositionWidgetProps {
   robotId: string
@@ -212,89 +213,55 @@ export function TurtlesimPositionWidget({ robotId, store, dataType }: TurtlesimP
     }
   }, [position, robotId, store])
 
+  // Footer info for connected state
+  const footerInfo = position ? [
+    {
+      label: 'Position',
+      value: `X: ${position.x.toFixed(2)} | Y: ${position.y.toFixed(2)}`
+    },
+    {
+      label: 'Orientation',
+      value: `θ: ${(position.theta * 180 / Math.PI).toFixed(1)}°`
+    },
+    {
+      label: 'Velocity',
+      value: `Linear: ${velocity.linear.toFixed(2)} m/s | Angular: ${velocity.angular.toFixed(2)} rad/s`
+    },
+    {
+      label: 'Last Update',
+      value: new Date(position.timestamp).toLocaleTimeString()
+    }
+  ] : [
+    {
+      label: 'Position',
+      value: '--'
+    },
+    {
+      label: 'Orientation',
+      value: '--'
+    },
+    {
+      label: 'Velocity',
+      value: '--'
+    }
+  ]
+
   return (
-    <VStack gap={3} align="stretch" h="100%">
-      <Flex justify="space-between" align="center">
-        <Text fontSize="sm" fontWeight="bold" color={isConnected ? 'green.500' : 'gray.500'}>
-          Turtlesim Position
-        </Text>
-        <Badge colorScheme={isConnected ? 'green' : 'gray'} variant="subtle">
-          {isConnected ? 'Connected' : 'Disconnected'}
-        </Badge>
-      </Flex>
-      
-      <Box 
-        border="1px solid" 
-        borderColor="gray.200" 
-        borderRadius="lg" 
-        p={3}
-        bg="white"
-        boxShadow="sm"
-        flex="1"
-        minH="250px"
-      >
-        <canvas
-          ref={canvasRef}
-          style={{
-            width: '100%',
-            height: '100%',
-            borderRadius: '8px',
-            cursor: 'crosshair'
-          }}
-        />
-      </Box>
-      
-      {position && (
-        <VStack gap={2} align="stretch">
-          <HStack justify="space-between" fontSize="xs">
-            <Text color="gray.600" fontWeight="medium">Position</Text>
-            <Text color="gray.800" fontFamily="mono">
-              X: {position.x.toFixed(2)} | Y: {position.y.toFixed(2)}
-            </Text>
-          </HStack>
-          
-          <HStack justify="space-between" fontSize="xs">
-            <Text color="gray.600" fontWeight="medium">Orientation</Text>
-            <Text color="gray.800" fontFamily="mono">
-              θ: {(position.theta * 180 / Math.PI).toFixed(1)}°
-            </Text>
-          </HStack>
-
-          <HStack justify="space-between" fontSize="xs">
-            <Text color="gray.600" fontWeight="medium">Velocity</Text>
-            <Text color="gray.800" fontFamily="mono">
-              Linear: {velocity.linear.toFixed(2)} m/s | Angular: {velocity.angular.toFixed(2)} rad/s
-            </Text>
-          </HStack>
-
-          <Text fontSize="xs" color="gray.500" textAlign="center">
-            Last update: {new Date(position.timestamp).toLocaleTimeString()}
-          </Text>
-        </VStack>
-      )}
-      
-      {!position && (
-        <VStack gap={2} align="stretch" minH="80px" justify="center">
-          <HStack justify="space-between" fontSize="xs">
-            <Text color="gray.600" fontWeight="medium">Position</Text>
-            <Text color="gray.400" fontFamily="mono">--</Text>
-          </HStack>
-          
-          <HStack justify="space-between" fontSize="xs">
-            <Text color="gray.600" fontWeight="medium">Orientation</Text>
-            <Text color="gray.400" fontFamily="mono">--</Text>
-          </HStack>
-
-          <HStack justify="space-between" fontSize="xs">
-            <Text color="gray.600" fontWeight="medium">Velocity</Text>
-            <Text color="gray.400" fontFamily="mono">--</Text>
-          </HStack>
-
-          <Text fontSize="xs" color="gray.400" textAlign="center">
-            Waiting for connection...
-          </Text>
-        </VStack>
-      )}
-    </VStack>
+    <WidgetFrame
+      title="Turtlesim Position"
+      isConnected={isConnected}
+      footerInfo={footerInfo}
+      footerMessage={position ? undefined : 'Waiting for connection...'}
+    >
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: '100%',
+          height: '100%',
+          borderRadius: '8px',
+          cursor: 'crosshair'
+        }}
+      />
+    </WidgetFrame>
   )
 } 
