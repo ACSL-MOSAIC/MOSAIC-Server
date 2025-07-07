@@ -5,7 +5,8 @@
 ### 목차
 1. [Video Store 구조](#1-video-store-구조)
 2. [Video Store 내부 처리 및 로봇 메타데이터](#2-video-store-내부-처리-및-로봇-메타데이터)
-3. [새로운 비디오 트랙 추가 방법](#3-새로운-비디오-트랙-추가-방법)
+3. [위젯 모듈화 구조](#3-위젯-모듈화-구조)
+4. [새로운 비디오 트랙 추가 방법](#4-새로운-비디오-트랙-추가-방법)
 
 ---
 
@@ -153,9 +154,104 @@ this.peerConnection.ontrack = (event) => {
 
 ---
 
-### 3. 새로운 비디오 트랙 추가 방법
+### 3. 위젯 모듈화 구조
 
-#### 3.1 Media Channel 설정 추가
+#### 3.1 WidgetFrame 컴포넌트
+모든 위젯은 `WidgetFrame` 컴포넌트를 사용하여 일관된 UI/UX를 제공합니다.
+
+```mermaid
+classDiagram
+    class WidgetFrame {
+        +title: string
+        +isConnected: boolean
+        +children: ReactNode
+        +footerInfo: Array<FooterInfo>
+        +footerMessage: string
+        +minHeight: string
+        +padding: string
+        +render()
+    }
+    class WidgetLoadingState {
+        +title: string
+        +render()
+    }
+    class WidgetErrorState {
+        +title: string
+        +error: string
+        +render()
+    }
+    class WidgetNoDataState {
+        +title: string
+        +message: string
+        +render()
+    }
+    WidgetFrame <|-- WidgetLoadingState
+    WidgetFrame <|-- WidgetErrorState
+    WidgetFrame <|-- WidgetNoDataState
+```
+
+#### 3.2 위젯 구조 예시
+```typescript
+// 새로운 위젯 생성 예시
+export function NewVideoWidget({ robotId, store, dataType }: NewVideoWidgetProps) {
+  const [isConnected, setIsConnected] = useState(false);
+  const [videoData, setVideoData] = useState(null);
+
+  // Footer info 구성
+  const footerInfo = [
+    {
+      label: 'FPS',
+      value: `${videoData?.stats.fps || 0} fps`
+    },
+    {
+      label: 'Resolution',
+      value: videoData?.stats.width && videoData?.stats.height 
+        ? `${videoData.stats.width}x${videoData.stats.height}`
+        : 'Unknown'
+    }
+  ];
+
+  return (
+    <WidgetFrame
+      title="New Video Widget"
+      isConnected={isConnected}
+      footerInfo={footerInfo}
+      footerMessage={isConnected ? 'Video stream active' : 'Waiting for stream...'}
+    >
+      {/* 위젯의 고유한 내용 */}
+      <video
+        ref={videoRef}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain'
+        }}
+        playsInline
+        muted
+        autoPlay
+      />
+    </WidgetFrame>
+  );
+}
+```
+
+#### 3.3 위젯 파일 구조
+```
+frontend/src/components/Dashboard/widgets/
+├── WidgetFrame.tsx              # 공통 위젯 틀
+├── types.ts                     # 위젯 타입 정의
+├── WidgetFactory.tsx            # 위젯 팩토리
+├── TurtlesimVideoWidget.tsx     # 비디오 위젯 (WidgetFrame 사용)
+├── TurtlesimPositionWidget.tsx  # 위치 위젯 (WidgetFrame 사용)
+├── Go2LowStateWidget.tsx        # 상태 위젯 (WidgetFrame 사용)
+└── ...
+```
+
+---
+
+### 4. 새로운 비디오 트랙 추가 방법
+
+#### 4.1 Media Channel 설정 추가
 - `frontend/src/rtc/webrtc-media-channel-config.ts`에 새로운 미디어 타입 추가
 ```typescript
 export const MEDIA_CHANNEL_CONFIG = {
@@ -168,18 +264,57 @@ export const MEDIA_CHANNEL_CONFIG = {
 } as const;
 ```
 
-#### 3.2 VideoStore 클래스 생성
+#### 4.2 VideoStore 클래스 생성
 - `frontend/src/dashboard/store/media-channel-store/new-video.store.ts` 파일 생성
 - VideoStore 상속, 필요한 메서드 오버라이드
 
-#### 3.3 VideoStoreManager에 팩토리 추가
+#### 4.3 VideoStoreManager에 팩토리 추가
 - `video-store-manager.ts`의 storeFactories에 등록
 
-#### 3.4 위젯 생성 및 등록
-- `NewVideoWidget.tsx` 생성
-- `WidgetFactory.tsx`, `types.ts`, `AddWidgetModal.tsx` 등에서 타입 및 팩토리 등록
+#### 4.4 위젯 생성 및 등록
+1. **위젯 컴포넌트 생성**: `NewVideoWidget.tsx`
+   ```typescript
+   import { WidgetFrame } from './WidgetFrame';
+   
+   export function NewVideoWidget({ robotId, store, dataType }: NewVideoWidgetProps) {
+     // WidgetFrame을 사용하여 일관된 UI 제공
+     return (
+       <WidgetFrame
+         title="New Video"
+         isConnected={isConnected}
+         footerInfo={footerInfo}
+         footerMessage={footerMessage}
+       >
+         {/* 위젯 고유 내용 */}
+       </WidgetFrame>
+     );
+   }
+   ```
 
-#### 3.5 로봇 SDP Answer에 미디어 타입 추가
+2. **타입 등록**: `types.ts`
+   ```typescript
+   export type WidgetType = 'go2_low_state' | 'go2_ouster_pointcloud' | 'turtlesim_position' | 'turtlesim_remote_control' | 'new_video';
+   ```
+
+3. **팩토리 등록**: `WidgetFactory.tsx`
+   ```typescript
+   case 'new_video':
+     const newVideoStore = videoStoreManager.createVideoStoreByMediaTypeAuto(
+       robotId,
+       'new_video'
+     );
+     return <NewVideoWidget robotId={robotId} store={newVideoStore} dataType={dataType} />;
+   ```
+
+4. **모달 등록**: `AddWidgetModal.tsx`
+   ```typescript
+   const widgetOptions = [
+     { value: 'turtlesim_video', label: 'Turtlesim Video' },
+     { value: 'new_video', label: 'New Video' }
+   ];
+   ```
+
+#### 4.5 로봇 SDP Answer에 미디어 타입 추가
 - 예시:
   ```
   a=msid-semantic: WMS turtlesim_video new_video
@@ -194,7 +329,8 @@ export const MEDIA_CHANNEL_CONFIG = {
 ### Table of Contents
 1. [Video Store Structure](#1-video-store-structure)
 2. [Video Store Internal Processing and Robot Metadata](#2-video-store-internal-processing-and-robot-metadata)
-3. [Adding New Video Tracks](#3-adding-new-video-tracks)
+3. [Widget Modularization Structure](#3-widget-modularization-structure)
+4. [Adding New Video Tracks](#4-adding-new-video-tracks)
 
 ---
 
@@ -342,9 +478,104 @@ this.peerConnection.ontrack = (event) => {
 
 ---
 
-### 3. Adding New Video Tracks
+### 3. Widget Modularization Structure
 
-#### 3.1 Add Media Channel Configuration
+#### 3.1 WidgetFrame Component
+All widgets use the `WidgetFrame` component to provide consistent UI/UX.
+
+```mermaid
+classDiagram
+    class WidgetFrame {
+        +title: string
+        +isConnected: boolean
+        +children: ReactNode
+        +footerInfo: Array<FooterInfo>
+        +footerMessage: string
+        +minHeight: string
+        +padding: string
+        +render()
+    }
+    class WidgetLoadingState {
+        +title: string
+        +render()
+    }
+    class WidgetErrorState {
+        +title: string
+        +error: string
+        +render()
+    }
+    class WidgetNoDataState {
+        +title: string
+        +message: string
+        +render()
+    }
+    WidgetFrame <|-- WidgetLoadingState
+    WidgetFrame <|-- WidgetErrorState
+    WidgetFrame <|-- WidgetNoDataState
+```
+
+#### 3.2 Widget Structure Example
+```typescript
+// New widget creation example
+export function NewVideoWidget({ robotId, store, dataType }: NewVideoWidgetProps) {
+  const [isConnected, setIsConnected] = useState(false);
+  const [videoData, setVideoData] = useState(null);
+
+  // Configure footer info
+  const footerInfo = [
+    {
+      label: 'FPS',
+      value: `${videoData?.stats.fps || 0} fps`
+    },
+    {
+      label: 'Resolution',
+      value: videoData?.stats.width && videoData?.stats.height 
+        ? `${videoData.stats.width}x${videoData.stats.height}`
+        : 'Unknown'
+    }
+  ];
+
+  return (
+    <WidgetFrame
+      title="New Video Widget"
+      isConnected={isConnected}
+      footerInfo={footerInfo}
+      footerMessage={isConnected ? 'Video stream active' : 'Waiting for stream...'}
+    >
+      {/* Widget-specific content */}
+      <video
+        ref={videoRef}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain'
+        }}
+        playsInline
+        muted
+        autoPlay
+      />
+    </WidgetFrame>
+  );
+}
+```
+
+#### 3.3 Widget File Structure
+```
+frontend/src/components/Dashboard/widgets/
+├── WidgetFrame.tsx              # Common widget frame
+├── types.ts                     # Widget type definitions
+├── WidgetFactory.tsx            # Widget factory
+├── TurtlesimVideoWidget.tsx     # Video widget (uses WidgetFrame)
+├── TurtlesimPositionWidget.tsx  # Position widget (uses WidgetFrame)
+├── Go2LowStateWidget.tsx        # State widget (uses WidgetFrame)
+└── ...
+```
+
+---
+
+### 4. Adding New Video Tracks
+
+#### 4.1 Add Media Channel Configuration
 - Add a new media type to `frontend/src/rtc/webrtc-media-channel-config.ts`
 ```typescript
 export const MEDIA_CHANNEL_CONFIG = {
@@ -357,18 +588,57 @@ export const MEDIA_CHANNEL_CONFIG = {
 } as const;
 ```
 
-#### 3.2 Create VideoStore Class
+#### 4.2 Create VideoStore Class
 - Create `frontend/src/dashboard/store/media-channel-store/new-video.store.ts`
 - Inherit from VideoStore and override necessary methods
 
-#### 3.3 Register Factory in VideoStoreManager
+#### 4.3 Register Factory in VideoStoreManager
 - Register in `storeFactories` in `video-store-manager.ts`
 
-#### 3.4 Create and Register Widget
-- Create `NewVideoWidget.tsx`
-- Register type and factory in `WidgetFactory.tsx`, `types.ts`, `AddWidgetModal.tsx`, etc.
+#### 4.4 Create and Register Widget
+1. **Create Widget Component**: `NewVideoWidget.tsx`
+   ```typescript
+   import { WidgetFrame } from './WidgetFrame';
+   
+   export function NewVideoWidget({ robotId, store, dataType }: NewVideoWidgetProps) {
+     // Use WidgetFrame to provide consistent UI
+     return (
+       <WidgetFrame
+         title="New Video"
+         isConnected={isConnected}
+         footerInfo={footerInfo}
+         footerMessage={footerMessage}
+       >
+         {/* Widget-specific content */}
+       </WidgetFrame>
+     );
+   }
+   ```
 
-#### 3.5 Add Media Type to Robot SDP Answer
+2. **Register Type**: `types.ts`
+   ```typescript
+   export type WidgetType = 'go2_low_state' | 'go2_ouster_pointcloud' | 'turtlesim_position' | 'turtlesim_remote_control' | 'new_video';
+   ```
+
+3. **Register Factory**: `WidgetFactory.tsx`
+   ```typescript
+   case 'new_video':
+     const newVideoStore = videoStoreManager.createVideoStoreByMediaTypeAuto(
+       robotId,
+       'new_video'
+     );
+     return <NewVideoWidget robotId={robotId} store={newVideoStore} dataType={dataType} />;
+   ```
+
+4. **Register in Modal**: `AddWidgetModal.tsx`
+   ```typescript
+   const widgetOptions = [
+     { value: 'turtlesim_video', label: 'Turtlesim Video' },
+     { value: 'new_video', label: 'New Video' }
+   ];
+   ```
+
+#### 4.5 Add Media Type to Robot SDP Answer
 - Example:
   ```
   a=msid-semantic: WMS turtlesim_video new_video

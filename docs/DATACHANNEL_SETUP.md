@@ -317,8 +317,9 @@ export class ReadOnlyStoreManager {
 ```typescript
 // frontend/src/components/Dashboard/widgets/NewDataTypeWidget.tsx
 import React, { useEffect, useState } from 'react';
-import { Box, Text, VStack, HStack, Badge, Flex } from '@chakra-ui/react';
+import { Text, VStack } from '@chakra-ui/react';
 import { WidgetProps } from './types';
+import { WidgetFrame } from './WidgetFrame';
 import { NewDataTypeStore } from '../../../dashboard/store/data-channel-store/readonly/new-data-type.store';
 import { ParsedNewDataType } from '../../../dashboard/parser/new-data-type';
 
@@ -336,40 +337,22 @@ export function NewDataTypeWidget({ robotId, store, dataType }: NewDataTypeWidge
     return () => unsubscribe();
   }, [store]);
 
-  if (!data) {
-    return (
-      <VStack gap={3} align="stretch" h="100%">
-        <Flex justify="space-between" align="center">
-          <Text fontSize="sm" fontWeight="bold" color="gray.500">
-            New Data Type
-          </Text>
-          <Badge colorScheme="gray" variant="subtle">
-            Disconnected
-          </Badge>
-        </Flex>
-        <Box border="1px solid" borderColor="gray.200" borderRadius="lg" p={4}>
-          <Text color="gray.500">Loading...</Text>
-        </Box>
-      </VStack>
-    );
-  }
-
   return (
-    <VStack gap={3} align="stretch" h="100%">
-      <Flex justify="space-between" align="center">
-        <Text fontSize="sm" fontWeight="bold" color="green.500">
-          New Data Type
-        </Text>
-        <Badge colorScheme="green" variant="subtle">
-          Connected
-        </Badge>
-      </Flex>
-      <Box border="1px solid" borderColor="gray.200" borderRadius="lg" p={4}>
-        {/* 실제 데이터 표시 로직 */}
-        <Text>Value1: {data.value1}</Text>
-        <Text>Value2: {data.value2}</Text>
-      </Box>
-    </VStack>
+    <WidgetFrame
+      title="New Data Type"
+      robotId={robotId}
+      dataType={dataType}
+      isConnected={!!data}
+    >
+      {!data ? (
+        <Text color="gray.500">Loading...</Text>
+      ) : (
+        <VStack gap={2}>
+          <Text>Value1: {data.value1}</Text>
+          <Text>Value2: {data.value2}</Text>
+        </VStack>
+      )}
+    </WidgetFrame>
   );
 }
 ```
@@ -784,8 +767,9 @@ export class ReadOnlyStoreManager {
 ```typescript
 // frontend/src/components/Dashboard/widgets/NewDataTypeWidget.tsx
 import React, { useEffect, useState } from 'react';
-import { Box, Text, VStack, HStack, Badge, Flex } from '@chakra-ui/react';
+import { Text, VStack } from '@chakra-ui/react';
 import { WidgetProps } from './types';
+import { WidgetFrame } from './WidgetFrame';
 import { NewDataTypeStore } from '../../../dashboard/store/data-channel-store/readonly/new-data-type.store';
 import { ParsedNewDataType } from '../../../dashboard/parser/new-data-type';
 
@@ -803,40 +787,22 @@ export function NewDataTypeWidget({ robotId, store, dataType }: NewDataTypeWidge
     return () => unsubscribe();
   }, [store]);
 
-  if (!data) {
-    return (
-      <VStack gap={3} align="stretch" h="100%">
-        <Flex justify="space-between" align="center">
-          <Text fontSize="sm" fontWeight="bold" color="gray.500">
-            New Data Type
-          </Text>
-          <Badge colorScheme="gray" variant="subtle">
-            Disconnected
-          </Badge>
-        </Flex>
-        <Box border="1px solid" borderColor="gray.200" borderRadius="lg" p={4}>
-          <Text color="gray.500">Loading...</Text>
-        </Box>
-      </VStack>
-    );
-  }
-
   return (
-    <VStack gap={3} align="stretch" h="100%">
-      <Flex justify="space-between" align="center">
-        <Text fontSize="sm" fontWeight="bold" color="green.500">
-          New Data Type
-        </Text>
-        <Badge colorScheme="green" variant="subtle">
-          Connected
-        </Badge>
-      </Flex>
-      <Box border="1px solid" borderColor="gray.200" borderRadius="lg" p={4}>
-        {/* Actual data display logic */}
-        <Text>Value1: {data.value1}</Text>
-        <Text>Value2: {data.value2}</Text>
-      </Box>
-    </VStack>
+    <WidgetFrame
+      title="New Data Type"
+      robotId={robotId}
+      dataType={dataType}
+      isConnected={!!data}
+    >
+      {!data ? (
+        <Text color="gray.500">Loading...</Text>
+      ) : (
+        <VStack gap={2}>
+          <Text>Value1: {data.value1}</Text>
+          <Text>Value2: {data.value2}</Text>
+        </VStack>
+      )}
+    </WidgetFrame>
   );
 }
 ```
