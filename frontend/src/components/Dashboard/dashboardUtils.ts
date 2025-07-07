@@ -1,7 +1,7 @@
 import { DashboardConfig, DashboardTab, WidgetConfig } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
-// 새 탭 추가
+// Add new tab
 export const addTab = (config: DashboardConfig, tabName: string): DashboardConfig => {
   const newTab: DashboardTab = {
     id: uuidv4(),
@@ -16,15 +16,15 @@ export const addTab = (config: DashboardConfig, tabName: string): DashboardConfi
   };
 };
 
-// 탭 삭제
+// Remove tab
 export const removeTab = (config: DashboardConfig, tabId: string): DashboardConfig => {
   const filteredTabs = config.tabs.filter(tab => tab.id !== tabId);
   
   if (filteredTabs.length === 0) {
-    // 모든 탭이 삭제된 경우 기본 탭 생성
+    // Create default tab if all tabs are removed
     const defaultTab: DashboardTab = {
       id: uuidv4(),
-      name: '메인 대시보드',
+      name: 'Main Dashboard',
       widgets: []
     };
     return {
@@ -34,7 +34,7 @@ export const removeTab = (config: DashboardConfig, tabId: string): DashboardConf
     };
   }
 
-  // 활성 탭이 삭제된 경우 첫 번째 탭을 활성으로 설정
+  // Set first tab as active if active tab is removed
   const newActiveTabId = config.activeTabId === tabId ? filteredTabs[0].id : config.activeTabId;
 
   return {
@@ -44,7 +44,7 @@ export const removeTab = (config: DashboardConfig, tabId: string): DashboardConf
   };
 };
 
-// 탭 이름 변경
+// Rename tab
 export const renameTab = (config: DashboardConfig, tabId: string, newName: string): DashboardConfig => {
   return {
     ...config,
@@ -54,7 +54,7 @@ export const renameTab = (config: DashboardConfig, tabId: string, newName: strin
   };
 };
 
-// 위젯 추가
+// Add widget
 export const addWidget = (config: DashboardConfig, tabId: string, widget: WidgetConfig): DashboardConfig => {
   return {
     ...config,
@@ -66,7 +66,7 @@ export const addWidget = (config: DashboardConfig, tabId: string, widget: Widget
   };
 };
 
-// 위젯 제거
+// Remove widget
 export const removeWidget = (config: DashboardConfig, tabId: string, widgetId: string): DashboardConfig => {
   return {
     ...config,
@@ -78,7 +78,7 @@ export const removeWidget = (config: DashboardConfig, tabId: string, widgetId: s
   };
 };
 
-// 특정 로봇의 모든 위젯 제거 (로봇 연결 해제 시 사용)
+// Remove all widgets for specific robot (used when robot disconnects)
 export const removeWidgetsByRobotId = (config: DashboardConfig, robotId: string): DashboardConfig => {
   return {
     ...config,
@@ -89,7 +89,7 @@ export const removeWidgetsByRobotId = (config: DashboardConfig, robotId: string)
   };
 };
 
-// 위젯 위치 업데이트
+// Update widget position
 export const updateWidgetPosition = (
   config: DashboardConfig, 
   tabId: string, 

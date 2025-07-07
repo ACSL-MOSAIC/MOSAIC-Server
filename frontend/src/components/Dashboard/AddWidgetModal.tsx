@@ -27,7 +27,7 @@ interface AddWidgetModalProps {
 }
 
 export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddWidgetModalProps) {
-  console.log('AddWidgetModal 렌더링, 로봇 :', connectedRobots)
+  console.log('AddWidgetModal rendering, robots:', connectedRobots)
   const [selectedRobotId, setSelectedRobotId] = useState<string>("");
   const [selectedType, setSelectedType] = useState<string>("go2_low_state");
   const { getRobotName } = useRobotMapping();
@@ -72,7 +72,7 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
       >
         <DialogCloseTrigger />
         <DialogHeader>
-          <DialogTitle>위젯 추가</DialogTitle>
+          <DialogTitle>Add Widget</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <Stack gap={4}>
@@ -83,10 +83,10 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
               size="md"
             >
               <Select.HiddenSelect />
-              <Select.Label>로봇 선택</Select.Label>
+              <Select.Label>Select Robot</Select.Label>
               <Select.Control>
                 <Select.Trigger>
-                  <Select.ValueText placeholder="로봇을 선택하세요" />
+                  <Select.ValueText placeholder="Select a robot" />
                 </Select.Trigger>
                 <Select.IndicatorGroup>
                   <Select.Indicator />
@@ -117,10 +117,10 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
               size="md"
             >
               <Select.HiddenSelect />
-              <Select.Label>위젯 타입</Select.Label>
+              <Select.Label>Widget Type</Select.Label>
               <Select.Control>
                 <Select.Trigger>
-                  <Select.ValueText placeholder="위젯 타입을 선택하세요" />
+                  <Select.ValueText placeholder="Select widget type" />
                 </Select.Trigger>
                 <Select.IndicatorGroup>
                   <Select.Indicator />
@@ -151,7 +151,7 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
               variant="subtle"
               colorPalette="gray"
             >
-              취소
+              Cancel
             </Button>
           </DialogActionTrigger>
           <Button
@@ -160,7 +160,7 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
             onClick={handleAdd}
             disabled={!selectedRobotId}
           >
-            추가
+            Add
           </Button>
         </DialogFooter>
       </DialogContent>

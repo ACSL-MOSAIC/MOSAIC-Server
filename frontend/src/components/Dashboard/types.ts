@@ -27,5 +27,5 @@ export interface DashboardConfig {
   activeTabId: string;
 }
 
-// 로컬스토리지 키 상수
+// Local storage key constant
 export const DASHBOARD_STORAGE_KEY = 'dashboard_config'; 

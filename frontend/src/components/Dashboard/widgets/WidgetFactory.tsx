@@ -28,7 +28,7 @@ export interface WidgetFactoryProps extends WidgetProps {
   connections?: { [key: string]: boolean };
 }
 
-// NO_DATA 컴포넌트
+// NO_DATA component
 function NoDataWidget({ robotId, type }: { robotId: string; type: string }) {
   const { getRobotName } = useRobotMapping();
 
@@ -44,28 +44,28 @@ function NoDataWidget({ robotId, type }: { robotId: string; type: string }) {
       p={4}
     >
       <Badge colorScheme="gray" mb={2}>
-        연결 없음
+        Not Connected
       </Badge>
       <Text fontSize="sm" color="gray.500" textAlign="center">
         {getRobotName(robotId)}
       </Text>
       <Text fontSize="xs" color="gray.400" textAlign="center">
-        {type} 위젯
+        {type} Widget
       </Text>
       <Text fontSize="xs" color="gray.400" textAlign="center" mt={2}>
-        로봇을 연결하면 데이터가 표시됩니다
+        Data will be displayed when robot is connected
       </Text>
     </Box>
   )
 }
 
 export function WidgetFactory({ type, robotId, dataType, connections }: WidgetFactoryProps) {
-  console.log('WidgetFactory 렌더링', { type, robotId, dataType, connections })
+  console.log('WidgetFactory rendering', { type, robotId, dataType, connections })
   
-  // 연결 상태 확인
+  // Check connection status
   const isConnected = connections ? connections[robotId] : false
   
-  // 연결되지 않은 경우 NO_DATA 표시
+  // Show NO_DATA if not connected
   if (!isConnected) {
     return <NoDataWidget robotId={robotId} type={type} />
   }
@@ -76,7 +76,7 @@ export function WidgetFactory({ type, robotId, dataType, connections }: WidgetFa
 
   switch (type) {
     case 'go2_low_state':
-      // 동적 스토어 생성
+      // Dynamic store creation
       const lowStateStore = readOnlyStoreManager.createStoreIfNotExists(
         robotId,
         GO2_LOW_STATE_TYPE,
@@ -85,7 +85,7 @@ export function WidgetFactory({ type, robotId, dataType, connections }: WidgetFa
       return <Go2LowStateWidget robotId={robotId} store={lowStateStore as Go2LowStateStore} dataType={dataType} />;
     
     case 'go2_ouster_pointcloud':
-      // 동적 스토어 생성
+      // Dynamic store creation
       const pointCloudStore = readOnlyStoreManager.createStoreIfNotExists<ParsedPointCloud2, ArrayBuffer>(
         robotId,
         GO2_OUSTER_POINTCLOUD2_TYPE,
@@ -94,7 +94,7 @@ export function WidgetFactory({ type, robotId, dataType, connections }: WidgetFa
       return <Go2OusterPointCloudWidget robotId={robotId} store={pointCloudStore as Go2OusterPointCloudStore} dataType={dataType} />;
     
     case 'turtlesim_position':
-      // 동적 스토어 생성
+      // Dynamic store creation
       const positionStore = readOnlyStoreManager.createStoreIfNotExists(
         robotId,
         TURTLESIM_POSITION_TYPE,
@@ -103,7 +103,7 @@ export function WidgetFactory({ type, robotId, dataType, connections }: WidgetFa
       return <TurtlesimPositionWidget robotId={robotId} store={positionStore as TurtlesimPositionStore} dataType={dataType} />;
     
     case 'turtlesim_remote_control':
-      // 동적 스토어 생성
+      // Dynamic store creation
       const remoteControlStore = writeOnlyStoreManager.createStoreIfNotExists(
         robotId,
         TURTLESIM_REMOTE_CONTROL_TYPE,

@@ -137,7 +137,7 @@ export function TabManager({
                   </Text>
                 )}
                 
-                {/* 활성 탭 하단 라인 */}
+                {/* Active tab bottom line */}
                 {activeTabId === tab.id && (
                   <Box
                     position="absolute"
@@ -155,7 +155,7 @@ export function TabManager({
           </HStack>
           
           <HStack gap={2} ml={4}>
-            {/* 위젯 추가 버튼 */}
+            {/* Add widget button */}
             <Button
               size="sm"
               variant="ghost"
@@ -166,10 +166,10 @@ export function TabManager({
                 bg: connectedRobots.length === 0 ? 'gray.50' : 'blue.50',
                 color: connectedRobots.length === 0 ? 'gray.300' : 'blue.500'
               }}
-              title={connectedRobots.length === 0 ? "연결된 로봇이 없습니다. 먼저 로봇을 연결해주세요." : "위젯 추가"}
+              title={connectedRobots.length === 0 ? "No robots connected. Please connect a robot first." : "Add Widget"}
             >
               <FiGrid size={14} />
-              위젯 추가
+              Add Widget
             </Button>
             
             {editingTab?.id !== activeTabId && (
@@ -189,7 +189,7 @@ export function TabManager({
                 }}
               >
                 <FiEdit2 size={14} />
-                탭 이름 편집
+                Edit Tab Name
               </Button>
             )}
             
@@ -197,7 +197,7 @@ export function TabManager({
               <IconButton
                 size="sm"
                 variant="ghost"
-                aria-label="탭 삭제"
+                aria-label="Delete tab"
                 onClick={() => onRemoveTab(activeTabId)}
                 color="gray.500"
                 _hover={{
@@ -219,21 +219,21 @@ export function TabManager({
               }}
             >
               <FiPlus size={14} />
-              탭 추가
+              Add Tab
             </Button>
           </HStack>
         </Flex>
       </Box>
 
-      {/* 탭 추가 다이얼로그 */}
+      {/* Add tab dialog */}
       <DialogRoot open={open} onOpenChange={({ open }) => !open && onClose()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>새 탭 추가</DialogTitle>
+            <DialogTitle>Add New Tab</DialogTitle>
           </DialogHeader>
           <DialogBody>
             <Input
-              placeholder="탭 이름을 입력하세요"
+              placeholder="Enter tab name"
               value={newTabName}
               onChange={(e) => setNewTabName(e.target.value)}
               onKeyPress={(e) => {
@@ -247,7 +247,7 @@ export function TabManager({
           <DialogFooter>
             <DialogCloseTrigger asChild>
               <Button variant="outline">
-                취소
+                Cancel
               </Button>
             </DialogCloseTrigger>
             <DialogActionTrigger asChild>
@@ -256,14 +256,14 @@ export function TabManager({
                 disabled={!newTabName.trim()}
                 colorScheme="blue"
               >
-                추가
+                Add
               </Button>
             </DialogActionTrigger>
           </DialogFooter>
         </DialogContent>
       </DialogRoot>
 
-      {/* 위젯 추가 모달 */}
+      {/* Add widget modal */}
       <AddWidgetModal
         isOpen={widgetModalOpen}
         onClose={onWidgetModalClose}

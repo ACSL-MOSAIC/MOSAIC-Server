@@ -38,20 +38,20 @@ function RobotConnectionPanel({
 
   const getStatusText = (robotId: string) => {
     if (connections[robotId]) {
-      return "연결됨"
+      return "Connected"
     }
     const robot = robots.find(r => r.robot_id === robotId)
     if (robot?.state === "READY_TO_CONNECT") {
-      return "연결 가능"
+      return "Ready"
     }
-    return "연결 불가"
+    return "Unavailable"
   }
 
   if (robots.length === 0) {
     return (
       <Box textAlign="center" py={4} bg="gray.50" borderRadius="lg">
         <Text fontSize="lg" color="gray.500">
-          연결 가능한 로봇이 없습니다.
+          No robots available for connection.
         </Text>
       </Box>
     )
@@ -59,14 +59,14 @@ function RobotConnectionPanel({
 
   return (
     <Box bg="white" p={6} borderRadius="lg" boxShadow="md" mb={6}>
-      {/* 헤더 */}
+      {/* Header */}
       <Flex justify="space-between" align="center" mb={4}>
         <Box>
           <Text fontSize="xl" fontWeight="bold" color="gray.700">
-            로봇 연결 관리
+            Robot Connection Management
           </Text>
           <Text fontSize="sm" color="gray.500">
-            총 {robots.length}개 로봇 중 {connectedRobots.length}개 연결됨
+            {connectedRobots.length} of {robots.length} robots connected
           </Text>
         </Box>
         <Flex gap={2}>
@@ -77,7 +77,7 @@ function RobotConnectionPanel({
             disabled={readyRobots.length === 0}
           >
             <Icon as={IoPower} mr={2} />
-            전체 연결
+            Connect All
           </Button>
           <Button
             colorScheme="red"
@@ -86,12 +86,12 @@ function RobotConnectionPanel({
             disabled={connectedRobots.length === 0}
           >
             <Icon as={IoPowerOutline} mr={2} />
-            전체 해제
+            Disconnect All
           </Button>
         </Flex>
       </Flex>
 
-      {/* 로봇 목록 */}
+      {/* Robot list */}
       <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={4}>
         {robots.map((robot) => {
           const isConnected = connections[robot.robot_id]
@@ -118,7 +118,7 @@ function RobotConnectionPanel({
               </Flex>
               
               <Text fontSize="sm" color="gray.600" mb={3}>
-                상태: {robot.state}
+                Status: {robot.state}
               </Text>
 
               <Flex gap={2}>
@@ -130,7 +130,7 @@ function RobotConnectionPanel({
                     flex="1"
                   >
                     <Icon as={IoVideocamOff} mr={2} />
-                    연결 해제
+                    Disconnect
                   </Button>
                 ) : (
                   <Button
@@ -141,7 +141,7 @@ function RobotConnectionPanel({
                     flex="1"
                   >
                     <Icon as={IoVideocam} mr={2} />
-                    연결
+                    Connect
                   </Button>
                 )}
               </Flex>
