@@ -125,12 +125,6 @@ export function createDataChannel(
     try {
       const data = event.data
       
-      // 데이터 수신 로그 추가
-      console.log(`📥 Data received on ${dataChannel.label} (${dataType}):`, {
-        dataSize: data instanceof ArrayBuffer ? data.byteLength : typeof data,
-        timestamp: new Date().toISOString()
-      });
-      
       if (store) {
         store.add(data);
       }

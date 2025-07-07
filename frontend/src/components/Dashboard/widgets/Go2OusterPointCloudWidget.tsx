@@ -25,28 +25,14 @@ export function Go2OusterPointCloudWidget({ robotId, store, dataType }: Go2Ouste
       return;
     }
 
-    const unsubscribe = store.subscribe((data: ParsedPointCloud2) => {
-              console.log('PointCloud2 데이터 수신:', { 
-          robotId, 
-          dataType,
-          hasData: !!data,
-          dataStructure: data ? Object.keys(data) : null,
-          width: data?.width,
-          height: data?.height,
-          pointStep: data?.pointStep,
-          dataTypeOfData: typeof data?.data
-        });
-      
+        const unsubscribe = store.subscribe((data: ParsedPointCloud2) => {
       if (!canvasRef.current || !data) {
-        console.warn('캔버스 또는 데이터가 없음:', { hasCanvas: !!canvasRef.current, hasData: !!data });
         return;
       }
 
       try {
         setIsConnected(true);
         setError(null);
-        
-        console.log('PointCloud2 data structure:', data);
         
         // base64 문자열을 바이너리로 변환
         const binaryData = atob(data.data as unknown as string);
@@ -55,26 +41,18 @@ export function Go2OusterPointCloudWidget({ robotId, store, dataType }: Go2Ouste
           pointData[i] = binaryData.charCodeAt(i);
         }
         
-        console.log('포인트 데이터 변환 완료:', {
-          binaryDataLength: binaryData.length,
-          pointDataLength: pointData.length
-        });
-        
         const pointStep = data.pointStep;
         
         if (!data.width || !data.height || !pointStep) {
-          console.error('Invalid point cloud dimensions or step:', { width: data.width, height: data.height, pointStep });
           setError('잘못된 포인트 클라우드 차원입니다.');
           return;
         }
         
         setDimensions({ width: data.width, height: data.height });
-        console.log('포인트 클라우드 차원 확인:', { width: data.width, height: data.height, pointStep });
         
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          console.error('캔버스 컨텍스트를 가져올 수 없습니다.');
           setError('캔버스 컨텍스트를 가져올 수 없습니다.');
           return;
         }
@@ -85,8 +63,6 @@ export function Go2OusterPointCloudWidget({ robotId, store, dataType }: Go2Ouste
         const channelGap = 16; // 채널 간 여백
         canvas.width = data.width * scaleX;
         canvas.height = (data.height * scaleY) + ((data.height - 1) * channelGap);
-
-        console.log('캔버스 크기 설정:', { canvasWidth: canvas.width, canvasHeight: canvas.height });
 
         // 배경을 검은색으로 설정
         ctx.fillStyle = 'black';
@@ -100,8 +76,6 @@ export function Go2OusterPointCloudWidget({ robotId, store, dataType }: Go2Ouste
           depthMap: new Array(data.width || 0).fill(Infinity),
           intensityMap: new Array(data.width || 0).fill(0)
         }));
-        
-        console.log('채널 맵 초기화 완료:', { channels: data.height || 0, width: data.width || 0 });
         
         let processedPoints = 0;
         let errorPoints = 0;
@@ -138,25 +112,16 @@ export function Go2OusterPointCloudWidget({ robotId, store, dataType }: Go2Ouste
             
             processedPoints++;
           } catch (error) {
-            console.error(`포인트 ${i} 처리 중 오류:`, error);
             errorPoints++;
           }
         }
         
         setPointCount(processedPoints);
-        console.log('포인트 처리 완료:', { 
-          processedPoints, 
-          errorPoints, 
-          totalPoints: (data.width || 0) * (data.height || 0),
-          successRate: ((processedPoints - errorPoints) / ((data.width || 0) * (data.height || 0)) * 100).toFixed(2) + '%'
-        });
         
         // 각 채널별 최대 거리 찾기
         const maxDistances = channelMaps.map(channelMap => 
           Math.max(...channelMap.depthMap.filter(d => d !== Infinity)) || 1
         );
-        
-        console.log('최대 거리 계산 완료:', { maxDistances });
         
         // 깊이 맵과 intensity 맵을 이미지로 변환
         for (let channel = 0; channel < data.height; channel++) {
@@ -220,7 +185,6 @@ export function Go2OusterPointCloudWidget({ robotId, store, dataType }: Go2Ouste
         // 이미지 데이터를 캔버스에 그리기
         ctx.putImageData(imageData, 0, 0);
         setLastUpdate(new Date());
-        console.log('PointCloud2 렌더링 완료');
       } catch (error) {
         console.error('PointCloud2 처리 중 오류:', error);
         setError(`PointCloud2 처리 중 오류: ${error instanceof Error ? error.message : String(error)}`);

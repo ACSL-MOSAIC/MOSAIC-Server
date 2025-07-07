@@ -63,23 +63,16 @@ const combineChunks = (chunkData: ChunkData): Uint8Array => {
     // chunk들을 chunkIndex 순서대로 조합 (순서 보장)
     const sortedChunkIndices = Array.from(chunkData.receivedChunks).sort((a, b) => a - b);
     
-    // console.log(`🔧 Combining ${sortedChunkIndices.length} chunks in order:`, sortedChunkIndices.slice(0, 10), '...');
-    // console.log(`🔧 Total size: ${totalSize}, expected: ${chunkData.totalChunks * 15360 + 6309}`);
-    
     for (const chunkIndex of sortedChunkIndices) {
         const chunk = chunkData.chunks.get(chunkIndex);
         if (!chunk) {
             throw new Error(`Missing chunk ${chunkIndex} for message ${chunkData.messageId}`);
         }
         
-        console.log(`🔧 Chunk ${chunkIndex}: size=${chunk.length}, offset=${offset}`);
         combinedData.set(chunk, offset);
         offset += chunk.length;
     }
 
-    // console.log(`🔧 Final combined size: ${combinedData.length}`);
-    // console.log(`🔧 First 32 bytes:`, Array.from(combinedData.slice(0, 32)).map(b => b.toString(16).padStart(2, '0')).join(' '));
-    // console.log(combinedData);
     return combinedData;
 };
 
@@ -87,14 +80,7 @@ export type ParsedPointCloud2 = ParsedData<pointcloud.IPointCloud2>;
 
 export const parsePointCloud2 = (buffer: ArrayBuffer): ParsedPointCloud2 | null => {
     try {
-        // console.log('🔍 parsePointCloud2 called with buffer size:', buffer.byteLength);
         const dataChunk = chunking.DataChunk.decode(new Uint8Array(buffer));
-        // console.log('📋 DataChunk decoded:', {
-        //     messageId: dataChunk.messageId,
-        //     chunkIndex: dataChunk.chunkIndex,
-        //     totalChunks: dataChunk.totalChunks,
-        //     payloadSize: dataChunk.payload.length
-        // });
         return parsePointCloud2FromDataChunk(dataChunk);
     } catch (error) {
         console.error('❌ Error decoding data chunk:', error);
@@ -134,8 +120,6 @@ export const parsePointCloud2FromDataChunk = (dataChunk: chunking.DataChunk): Pa
 
         // 청크 진행 상황 로그
         const progress = ((chunkData.receivedChunks.size / chunkData.totalChunks) * 100).toFixed(1);
-        console.log(`📦 Chunk progress: ${dataChunk.messageId} [${chunkData.receivedChunks.size}/${chunkData.totalChunks}] (${progress}%)`);
-
         // 모든 chunk가 도착했는지 확인 (중복 제거된 실제 받은 청크 수로 확인)
         if (chunkData.receivedChunks.size === chunkData.totalChunks) {
             const completionTime = Date.now();
@@ -144,17 +128,8 @@ export const parsePointCloud2FromDataChunk = (dataChunk: chunking.DataChunk): Pa
             // chunk들을 순서대로 조합
             const combinedData = combineChunks(chunkData);
             
-            console.log(`🔧 Combined data size: ${combinedData.length}`);
-            
             // PointCloud2 객체 생성
             const pointCloud = pointcloud.PointCloud2.decode(combinedData);
-            
-            console.log(`🔧 PointCloud2 decoded:`, {
-                width: pointCloud.width,
-                height: pointCloud.height,
-                pointStep: pointCloud.pointStep,
-                dataLength: pointCloud.data?.length || 0
-            });
             
             // 처리된 chunk 데이터 삭제
             chunkMap.delete(dataChunk.messageId);
@@ -174,24 +149,8 @@ export const parsePointCloud2FromDataChunk = (dataChunk: chunking.DataChunk): Pa
             // 메시지 ID 추가 (타입 안전성을 위해 any 사용)
             (parsedPointCloud as any).messageId = dataChunk.messageId;
             
-            // 재조합 속도 로그 출력
-            console.log(`⚡ Frame reassembly: ${dataChunk.messageId} completed in ${reassemblyTime}ms (${chunkData.totalChunks} chunks)`);
-            
             // FPS 로그 출력 (1초마다)
             logFPS();
-            
-            console.log(`🎯 Returning parsed pointcloud data:`, {
-                width: parsedPointCloud.width,
-                height: parsedPointCloud.height,
-                pointStep: parsedPointCloud.pointStep,
-                dataLength: parsedPointCloud.data?.length || 0
-            });
-            
-            // 파서에서 반환하는 데이터의 첫 32바이트 확인
-            if (parsedPointCloud.data) {
-                console.log(`🎯 Parser returning data first 32 bytes:`, Array.from(parsedPointCloud.data.slice(0, 32)).map(b => b.toString(16).padStart(2, '0')).join(' '));
-                console.log(`🎯 Parser returning data:`, parsedPointCloud.data);
-            }
             
             return parsedPointCloud;
         }
