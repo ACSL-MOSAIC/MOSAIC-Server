@@ -7,31 +7,31 @@ export abstract class ReadOnlyStore<T, I = string> extends DataStore<T, I> {
         super(robotId, maxSize, parser)
     }
 
-    // 데이터 채널 설정
+    // Set data channel
     public setDataChannel(channel: RTCDataChannel): void {
         this.dataChannel = channel
-        console.log(`ReadOnlyStore[${this.robotId}]에 데이터 채널 설정됨:`, channel.label)
+        console.log(`ReadOnlyStore[${this.robotId}] data channel set:`, channel.label)
     }
 
-    // 데이터 채널 가져오기
+    // Get data channel
     public getDataChannel(): RTCDataChannel | null {
         return this.dataChannel
     }
 
-    // 데이터 채널 연결 상태 확인
+    // Check data channel connection status
     public isChannelConnected(): boolean {
         return this.dataChannel?.readyState === 'open'
     }
 
-    // 데이터 채널 정리
+    // Clean up data channel
     public cleanupDataChannel(): void {
         if (this.dataChannel) {
             this.dataChannel = null
-            console.log(`ReadOnlyStore[${this.robotId}] 데이터 채널 정리됨`)
+            console.log(`ReadOnlyStore[${this.robotId}] data channel cleaned up`)
         }
     }
 
-    // 데이터 채널 상태 정보 반환
+    // Get data channel state information
     public getChannelInfo(): { connected: boolean; label?: string; state?: string } {
         return {
             connected: this.isChannelConnected(),

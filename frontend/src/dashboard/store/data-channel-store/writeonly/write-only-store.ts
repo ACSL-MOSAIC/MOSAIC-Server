@@ -2,85 +2,85 @@ import { DataStore } from "../../store"
 
 export abstract class WriteOnlyStore<T, I = string> extends DataStore<T, I> {
     protected dataChannel: RTCDataChannel | null = null
-    private channelRequired: boolean = true // 쓰기 전용은 항상 채널이 필요
-    private connectionStateListeners: ((connected: boolean) => void)[] = []
+    private channelRequired: boolean = true // Write-only always needs a channel
+    private connectionStateListeners: ((connected: boolean, state: string) => void)[] = []
 
     constructor(robotId: string, maxSize: number = 1000, parser: (data: I) => T | null) {
         super(robotId, maxSize, parser)
     }
 
-    // 데이터 채널 설정
+    // Set data channel
     public setDataChannel(channel: RTCDataChannel): void {
         this.dataChannel = channel
         console.log(`WriteOnlyStore[${this.robotId}] data channel set:`, channel.label, 'state:', channel.readyState)
         
-        // DataChannel 상태 변경 이벤트 리스너 설정
+        // Setup DataChannel state change event listeners
         this.setupDataChannelEventListeners(channel)
     }
 
-    // DataChannel 이벤트 리스너 설정
+    // Setup DataChannel event listeners
     private setupDataChannelEventListeners(channel: RTCDataChannel): void {
         channel.onopen = () => {
             console.log(`WriteOnlyStore[${this.robotId}] data channel opened:`, channel.label, 'state:', channel.readyState)
-            this.notifyConnectionStateChange(true)
+            this.notifyConnectionStateChange(true, channel.readyState)
         }
 
         channel.onclose = () => {
             console.log(`WriteOnlyStore[${this.robotId}] data channel closed:`, channel.label, 'state:', channel.readyState)
-            this.notifyConnectionStateChange(false)
+            this.notifyConnectionStateChange(false, channel.readyState)
         }
 
         channel.onerror = (error) => {
             console.error(`WriteOnlyStore[${this.robotId}] data channel error:`, channel.label, error)
-            this.notifyConnectionStateChange(false)
+            this.notifyConnectionStateChange(false, channel.readyState)
         }
 
-        // 초기 상태가 이미 open이면 즉시 알림
+        // Notify immediately if initial state is already open
         if (channel.readyState === 'open') {
-            this.notifyConnectionStateChange(true)
+            this.notifyConnectionStateChange(true, channel.readyState)
         }
     }
 
-    // 연결 상태 변경 알림
-    private notifyConnectionStateChange(connected: boolean): void {
+    // Notify connection state change
+    private notifyConnectionStateChange(connected: boolean, state: string): void {
         this.connectionStateListeners.forEach(listener => {
             try {
-                listener(connected)
+                listener(connected, state)
             } catch (error) {
-                console.error('connection state listener error:', error)
+                console.error('Connection state listener error:', error)
             }
         })
     }
 
-    // 연결 상태 변경 리스너 등록
-    public onConnectionStateChange(listener: (connected: boolean) => void): () => void {
+    // Register connection state change listener
+    public onConnectionStateChange(listener: (connected: boolean, state: string) => void): () => void {
         this.connectionStateListeners.push(listener)
         
-        // 현재 상태 즉시 알림
+        // Notify current state immediately
         if (this.dataChannel) {
-            listener(this.isChannelConnected())
+            listener(this.isChannelConnected(), this.dataChannel.readyState)
         }
         
-        // 리스너 제거 함수 반환
+        // Return listener removal function
         return () => {
             this.connectionStateListeners = this.connectionStateListeners.filter(l => l !== listener)
         }
     }
 
-    // 데이터 채널 가져오기
+    // Get data channel
     public getDataChannel(): RTCDataChannel | null {
         return this.dataChannel
     }
 
-    // 데이터 채널 연결 상태 확인
+    // Check data channel connection status
     public isChannelConnected(): boolean {
         return this.dataChannel?.readyState === 'open'
     }
 
-    // 데이터 채널 정리
+    // Clean up data channel
     public cleanupDataChannel(): void {
         if (this.dataChannel) {
-            // 이벤트 리스너 제거
+            // Remove event listeners
             this.dataChannel.onopen = null
             this.dataChannel.onclose = null
             this.dataChannel.onerror = null
@@ -91,7 +91,7 @@ export abstract class WriteOnlyStore<T, I = string> extends DataStore<T, I> {
         }
     }
 
-    // 데이터 채널 상태 정보 반환
+    // Get data channel state information
     public getChannelInfo(): { connected: boolean; label?: string; state?: string } {
         return {
             connected: this.isChannelConnected(),
@@ -100,15 +100,32 @@ export abstract class WriteOnlyStore<T, I = string> extends DataStore<T, I> {
         }
     }
 
-    // 쓰기 전용 Store는 항상 채널이 필요한지 확인
+    // Get detailed channel state information
+    public getChannelState(): {
+      connected: boolean
+      state: string
+      label?: string
+      bufferedAmount: number
+      protocol?: string
+    } {
+      return {
+        connected: this.isChannelConnected(),
+        state: this.dataChannel?.readyState || 'closed',
+        label: this.dataChannel?.label,
+        bufferedAmount: this.dataChannel?.bufferedAmount || 0,
+        protocol: this.dataChannel?.protocol
+      }
+    }
+
+    // Check if write-only store always needs a channel
     public isChannelRequired(): boolean {
         return this.channelRequired
     }
 
-    // 추상 메서드: 데이터 전송
+    // Abstract method: send data
     protected abstract sendData(data: any): void
 
-    // 데이터 전송 (연결 상태 확인 후)
+    // Send data (check connection status first)
     protected sendDataIfConnected(data: any): boolean {
         if (this.isChannelConnected()) {
             this.sendData(data)
@@ -119,7 +136,7 @@ export abstract class WriteOnlyStore<T, I = string> extends DataStore<T, I> {
         }
     }
 
-    // 강제 데이터 전송 (연결 상태 무시)
+    // Force data send (ignore connection status)
     protected sendDataForce(data: any): void {
         if (this.dataChannel) {
             try {

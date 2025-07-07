@@ -4,11 +4,11 @@ import { MediaChannelConfigUtils } from "../../../rtc/webrtc-media-channel-confi
 
 export class VideoStoreManager {
   private static instance: VideoStoreManager
-  // robotId -> storeType -> store (데이터 채널과 동일한 패턴)
+  // robotId -> storeType -> store (same pattern as data channels)
   private stores: Map<string, Map<symbol, VideoStore>> = new Map()
-  // robotId -> dataType -> channelLabels[] (N:1 관계 추적)
+  // robotId -> dataType -> channelLabels[] (N:1 relationship tracking)
   private dataTypeChannels: Map<string, Map<string, string[]>> = new Map()
-  // robotId -> mediaType -> storeType (미디어 타입별 스토어 타입 매핑)
+  // robotId -> mediaType -> storeType (media type to store type mapping)
   private mediaTypeStoreTypes: Map<string, Map<string, symbol>> = new Map()
 
   private constructor() {}
@@ -20,7 +20,7 @@ export class VideoStoreManager {
     return VideoStoreManager.instance
   }
 
-  // 로봇별 비디오 스토어 초기화
+  // Initialize video stores for a specific robot
   public initializeRobotVideoStores(robotId: string): void {
     if (!this.stores.has(robotId)) {
       this.stores.set(robotId, new Map())
@@ -30,11 +30,11 @@ export class VideoStoreManager {
     }
   }
 
-  // 로봇별 비디오 스토어 정리
+  // Clean up video stores for a specific robot
   public cleanupRobotVideoStores(robotId: string): void {
     const robotStores = this.stores.get(robotId)
     if (robotStores) {
-      // 모든 스토어 정리
+      // Clean up all stores
       robotStores.forEach(store => store.destroy())
       robotStores.clear()
     }
@@ -46,7 +46,7 @@ export class VideoStoreManager {
     console.log(`VideoStoreManager: Robot ${robotId} video stores cleaned up`)
   }
 
-  // 스토어 생성 (없으면 생성, 있으면 기존 반환)
+  // Create store if it doesn't exist, otherwise return existing store
   public createStoreIfNotExists(
     robotId: string,
     storeType: symbol,
@@ -68,14 +68,14 @@ export class VideoStoreManager {
     return store
   }
 
-  // 미디어 타입으로 VideoStore 생성 (메타데이터 기반)
+  // Create VideoStore by media type (metadata-based)
   public createVideoStoreByMediaType(
     robotId: string,
     mediaType: string,
     storeType: symbol,
     storeFactory: (robotId: string, channelLabel: string) => VideoStore
   ): VideoStore | null {
-    // 미디어 타입별 스토어 타입 매핑 저장
+    // Store media type to store type mapping
     let robotMediaTypeStoreTypes = this.mediaTypeStoreTypes.get(robotId)
     if (!robotMediaTypeStoreTypes) {
       robotMediaTypeStoreTypes = new Map<string, symbol>()
@@ -83,59 +83,59 @@ export class VideoStoreManager {
     }
     robotMediaTypeStoreTypes.set(mediaType, storeType)
     
-    // 채널 라벨 생성 (미디어 타입 기반)
+    // Generate channel label (media type based)
     const channelLabel = this.generateChannelLabel(mediaType, robotId)
     
-    // 스토어 팩토리 함수 수정 (channelLabel 포함)
+    // Modify store factory function (include channelLabel)
     const modifiedStoreFactory = (robotId: string) => storeFactory(robotId, channelLabel)
     
     const store = this.createStoreIfNotExists(robotId, storeType, modifiedStoreFactory)
     
-    // 채널 등록
+    // Register channel
     this.registerChannelForDataType(robotId, mediaType, channelLabel)
     
     console.log(`VideoStoreManager: VideoStore created for media type ${mediaType}`)
     return store
   }
 
-  // 미디어 타입 기반 채널 라벨 생성
+  // Generate channel label based on media type
   private generateChannelLabel(mediaType: string, robotId: string): string {
-    // 기존 채널 수 확인
+    // Check existing channel count
     const existingChannels = this.getChannelsForDataType(robotId, mediaType)
     const channelIndex = existingChannels.length
     
     return `${mediaType}_track_${channelIndex}`
   }
 
-  // 미디어 타입으로 VideoStore 자동 생성 (위젯에서 사용)
+  // Auto-create VideoStore by media type (used by widgets)
   public createVideoStoreByMediaTypeAuto(
     robotId: string,
     mediaType: string
   ): VideoStore | null {
-    // 미디어 타입이 지원되는지 확인
+    // Check if media type is supported
     if (!MediaChannelConfigUtils.isSupportedMediaType(mediaType)) {
       console.warn(`VideoStoreManager: Unsupported media type: ${mediaType}`)
       return null
     }
     
-    // 스토어 타입 심볼 가져오기
+    // Get store type symbol
     const storeType = MediaChannelConfigUtils.getMediaTypeSymbol(mediaType)
     if (!storeType) {
       console.warn(`VideoStoreManager: Symbol not found for media type ${mediaType}`)
       return null
     }
     
-    // 기존 스토어가 있는지 확인
+    // Check if existing store exists
     const existingStore = this.getVideoStoreByMediaType(robotId, mediaType)
     if (existingStore) {
       console.log(`VideoStoreManager: Reusing existing VideoStore: ${mediaType} for robot ${robotId}`)
       return existingStore
     }
     
-    // 미디어 타입별 스토어 팩토리 매핑
+    // Media type to store factory mapping
     const storeFactories: Record<string, (robotId: string, channelLabel: string) => VideoStore> = {
       'turtlesim_video': (robotId: string, channelLabel: string) => new TurtlesimVideoStore(robotId, channelLabel),
-      // 다른 미디어 타입들 추가 가능
+      // Other media types can be added here
       // 'go2_camera': (robotId: string, channelLabel: string) => new Go2CameraStore(robotId, channelLabel),
       // 'thermal_camera': (robotId: string, channelLabel: string) => new ThermalCameraStore(robotId, channelLabel),
     }
@@ -150,7 +150,7 @@ export class VideoStoreManager {
     return this.createVideoStoreByMediaType(robotId, mediaType, storeType, storeFactory)
   }
 
-  // 미디어 타입으로 VideoStore 가져오기
+  // Get VideoStore by media type
   public getVideoStoreByMediaType(robotId: string, mediaType: string): VideoStore | undefined {
     const robotMediaTypeStoreTypes = this.mediaTypeStoreTypes.get(robotId)
     if (!robotMediaTypeStoreTypes) return undefined
@@ -164,7 +164,7 @@ export class VideoStoreManager {
     return robotStores.get(storeType)
   }
 
-  // 데이터 채널과 동일한 패턴: 채널 등록
+  // Same pattern as data channels: register channel
   public registerChannelForDataType(robotId: string, dataType: string, channelLabel: string) {
     let robotDataTypeChannels = this.dataTypeChannels.get(robotId)
     
@@ -185,12 +185,12 @@ export class VideoStoreManager {
     }
   }
 
-  // 데이터 타입으로 채널들 가져오기
+  // Get channels by data type
   public getChannelsForDataType(robotId: string, dataType: string): string[] {
     return this.dataTypeChannels.get(robotId)?.get(dataType) || []
   }
 
-  // 채널 라벨로 데이터 타입 찾기
+  // Find data type by channel label
   public getDataTypeForChannel(robotId: string, channelLabel: string): string | undefined {
     const robotDataTypeChannels = this.dataTypeChannels.get(robotId)
     if (!robotDataTypeChannels) return undefined
@@ -203,7 +203,7 @@ export class VideoStoreManager {
     return undefined
   }
 
-  // 로봇의 모든 비디오 스토어 가져오기
+  // Get all video stores for a robot
   public getRobotVideoStores(robotId: string): Map<symbol, VideoStore> {
     return this.stores.get(robotId) || new Map()
   }

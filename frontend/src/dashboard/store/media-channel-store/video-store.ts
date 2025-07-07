@@ -40,17 +40,17 @@ export class VideoStore {
     this.channelLabel = channelLabel;
   }
 
-  // metadata setter (간소화된 메타데이터)
+  // Metadata setter (simplified metadata)
   setMetadata(metadata: { mediaType?: string; source?: string }): void {
     this.metadata = { ...this.metadata, ...metadata };
   }
 
-  // metadata getter (간소화된 메타데이터)
+  // Metadata getter (simplified metadata)
   getMetadata(): { mediaType?: string; source?: string } {
     return this.metadata;
   }
 
-  // 구독자 관리
+  // Subscriber management
   subscribe(callback: VideoSubscriber): () => void {
     this.subscribers.add(callback);
     return () => {
@@ -58,22 +58,22 @@ export class VideoStore {
     };
   }
 
-  // MediaStream 설정
+  // Set MediaStream
   setMediaStream(stream: MediaStream): void {
     this.mediaStream = stream;
     this.isActive = stream.active;
     
-    // 비디오 엘리먼트에 스트림 연결
+    // Connect stream to video element
     if (this.videoElement) {
       this.videoElement.srcObject = stream;
       this.startFpsMonitoring();
     }
     
-    // 구독자들에게 즉시 알림
+    // Notify subscribers immediately
     this.notifySubscribers();
   }
 
-  // 비디오 엘리먼트 설정
+  // Set video element
   setVideoElement(videoElement: HTMLVideoElement): void {
     this.videoElement = videoElement;
     
@@ -83,27 +83,27 @@ export class VideoStore {
     }
   }
 
-  // MediaStream 가져오기
+  // Get MediaStream
   getMediaStream(): MediaStream | null {
     return this.mediaStream;
   }
 
-  // 스트림 통계 가져오기
+  // Get stream statistics
   getStreamStats(): StreamStats {
     return this.streamStats;
   }
 
-  // 채널 라벨 가져오기
+  // Get channel label
   getChannelLabel(): string {
     return this.channelLabel;
   }
 
-  // 활성 상태 가져오기
+  // Get active status
   isStreamActive(): boolean {
     return this.isActive;
   }
 
-  // FPS 모니터링 시작
+  // Start FPS monitoring
   protected startFpsMonitoring(): void {
     if (this.fpsInterval) {
       clearInterval(this.fpsInterval);
@@ -115,7 +115,7 @@ export class VideoStore {
     }, 1000);
   }
 
-  // FPS 모니터링 중지
+  // Stop FPS monitoring
   protected stopFpsMonitoring(): void {
     if (this.fpsInterval) {
       clearInterval(this.fpsInterval);
@@ -123,14 +123,14 @@ export class VideoStore {
     }
   }
 
-  // FPS 업데이트 (자식 클래스에서 오버라이드 가능)
+  // Update FPS (can be overridden by child classes)
   protected updateFps(): void {
     if (!this.videoElement || !this.mediaStream) return;
 
     const fps = this.fpsCounter;
     this.fpsCounter = 0;
     
-    // 스트림 통계 업데이트
+    // Update stream statistics
     this.streamStats = {
       ...this.streamStats,
       fps: fps,
@@ -138,11 +138,11 @@ export class VideoStore {
       height: this.videoElement.videoHeight || 480
     };
     
-    // 구독자들에게 알림
+    // Notify subscribers
     this.notifySubscribers();
   }
 
-  // 구독자들에게 알림
+  // Notify subscribers
   protected notifySubscribers(): void {
     if (!this.mediaStream) {
       return;
@@ -168,7 +168,7 @@ export class VideoStore {
     });
   }
 
-  // 정리
+  // Cleanup
   destroy(): void {
     this.stopFpsMonitoring();
     
@@ -186,7 +186,7 @@ export class VideoStore {
     this.subscribers.clear();
   }
 
-  // 내부 접근용 메서드들 (자식 클래스에서 사용)
+  // Internal access methods (used by child classes)
   public getRobotId(): string {
     return this.robotId;
   }

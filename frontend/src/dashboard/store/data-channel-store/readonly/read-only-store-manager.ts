@@ -6,7 +6,7 @@ export class ReadOnlyStoreManager implements BaseStoreManager {
   private static instance: ReadOnlyStoreManager;
   // robotId -> storeType -> store
   private stores: Map<string, Map<symbol, ReadOnlyStore<any, any>>> = new Map(); 
-  // robotId -> dataType -> channelLabels[] (N:1 관계 추적)
+  // robotId -> dataType -> channelLabels[] (N:1 relationship tracking)
   private dataTypeChannels: Map<string, Map<string, string[]>> = new Map();
 
   private constructor() {}
@@ -22,16 +22,16 @@ export class ReadOnlyStoreManager implements BaseStoreManager {
     const robotStores = new Map<symbol, ReadOnlyStore<any, any>>();
     this.stores.set(robotId, robotStores);
     
-    // 데이터 타입별 채널 추적 초기화
+    // Initialize data type channel tracking
     this.dataTypeChannels.set(robotId, new Map());
     
-    console.log(`로봇 ${robotId} 읽기 전용 스토어 컨테이너 초기화`);
+    console.log(`Robot ${robotId} read-only store container initialized`);
   }
 
   public cleanupRobotStores(robotId: string) {
     const robotStores = this.stores.get(robotId);
     if (robotStores) {
-      // 모든 읽기 전용 스토어의 데이터 채널 정리
+      // Clean up data channels for all read-only stores
       robotStores.forEach(store => {
         store.cleanupDataChannel();
       });
@@ -39,7 +39,7 @@ export class ReadOnlyStoreManager implements BaseStoreManager {
     
     this.stores.delete(robotId);
     this.dataTypeChannels.delete(robotId);
-    console.log(`로봇 ${robotId} 읽기 전용 스토어 정리 완료`);
+    console.log(`Robot ${robotId} read-only stores cleanup completed`);
   }
 
   public getStore<T, I = string>(robotId: string, storeType: symbol): ReadOnlyStore<T, I> | undefined {
@@ -56,7 +56,7 @@ export class ReadOnlyStoreManager implements BaseStoreManager {
     if (!robotStores) {
       robotStores = new Map<symbol, ReadOnlyStore<any, any>>();
       this.stores.set(robotId, robotStores);
-      console.log(`로봇 ${robotId} 읽기 전용 스토어 컨테이너 동적 생성`);
+      console.log(`Robot ${robotId} read-only store container dynamically created`);
     }
     
     let store = robotStores.get(storeType) as ReadOnlyStore<T, I>;
@@ -64,7 +64,7 @@ export class ReadOnlyStoreManager implements BaseStoreManager {
     if (!store) {
       store = storeFactory(robotId);
       robotStores.set(storeType, store);
-      console.log(`읽기 전용 스토어 생성됨: ${String(storeType)} for robot ${robotId}`);
+      console.log(`Read-only store created: ${String(storeType)} for robot ${robotId}`);
     }
     
     return store;
@@ -86,7 +86,7 @@ export class ReadOnlyStoreManager implements BaseStoreManager {
     
     if (!channels.includes(channelLabel)) {
       channels.push(channelLabel);
-      console.log(`읽기 전용 채널 등록: ${channelLabel} -> ${dataType} for robot ${robotId}`);
+      console.log(`Read-only channel registered: ${channelLabel} -> ${dataType} for robot ${robotId}`);
     }
   }
 
@@ -110,7 +110,7 @@ export class ReadOnlyStoreManager implements BaseStoreManager {
     return this.dataTypeChannels.get(robotId) || new Map();
   }
 
-  // 읽기 전용 스토어 전용 메서드들
+  // Read-only store specific methods
   public getReadOnlyStores(robotId: string): Map<symbol, ReadOnlyStore<any, any>> {
     return this.stores.get(robotId) || new Map();
   }
