@@ -10,7 +10,8 @@ import { WriteOnlyStore } from "@/dashboard/store/data-channel-store/writeonly/w
 import { DataChannelConfigUtils } from "./webrtc-datachannel-config";
 
 /**
- * setup data channel for robot
+ * Setup data channel for robot
+ * Creates and configures data stores based on channel type and data type
  */
 export function createDataChannel(
   dataChannel: RTCDataChannel,
@@ -23,13 +24,13 @@ export function createDataChannel(
   
   console.log(`DataChannel ${dataChannel.label} setup started, current state:`, dataChannel.readyState, 'dataType:', dataType, 'channelType:', channelType)
 
-  // 지원되지 않는 데이터 타입인지 확인
+  // Check if data type is supported
   if (!DataChannelConfigUtils.isSupportedDataType(dataType)) {
     console.warn(`Unsupported data type: ${dataType}`)
     return
   }
 
-  // 채널을 데이터 타입에 등록 (N:1 관계)
+  // Register channel for data type (N:1 relationship)
   switch (channelType) {
     case 'writeonly':
       writeOnlyStoreManager.registerChannelForDataType(robotId, dataType, dataChannel.label)
@@ -39,7 +40,7 @@ export function createDataChannel(
       break
   }
 
-  // Store 생성 및 DataChannel 설정
+  // Create Store and setup DataChannel
   const channelTypeSymbol = DataChannelConfigUtils.getStoreSymbol(dataType)
   
   if (!channelTypeSymbol) {
@@ -95,7 +96,7 @@ export function createDataChannel(
       break;
   }
 
-  // Store에 DataChannel 설정
+  // Setup DataChannel for Store
   if (store) {
     if (store instanceof ReadOnlyStore || store instanceof WriteOnlyStore) {
       store.setDataChannel(dataChannel);
@@ -110,7 +111,7 @@ export function createDataChannel(
     return
   }
 
-  // 새로운 onmessage 핸들러 설정 (데이터 처리만)
+  // Setup new onmessage handler (data processing only)
   dataChannel.onmessage = (event) => {
     try {
       const data = event.data
@@ -126,7 +127,8 @@ export function createDataChannel(
 }
 
 /**
- * cleanup all data channels for robot
+ * Clean up all data channels for robot
+ * Removes all stores and channels associated with the robot
  */
 export function cleanupAllDataChannels(robotId: string): void {
   const readOnlyStoreManager = ReadOnlyStoreManager.getInstance();

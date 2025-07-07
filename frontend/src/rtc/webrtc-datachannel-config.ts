@@ -3,7 +3,7 @@ import { GO2_OUSTER_POINTCLOUD2_TYPE } from "@/dashboard/parser/go2-ouster-point
 import { TURTLESIM_POSITION_TYPE } from "@/dashboard/parser/turtlesim-position"
 import { TURTLESIM_REMOTE_CONTROL_TYPE } from "@/dashboard/parser/turtlesim-remote-control"
 
-// 데이터 타입별 Store 팩토리 매핑
+// Store factory mapping by data type
 export const DATA_CHANNEL_CONFIG = {
   'turtlesim_position': {
     type: 'turtlesim_position',
@@ -31,7 +31,7 @@ export const DATA_CHANNEL_CONFIG = {
   }
 } as const
 
-// 기본 데이터 채널 설정
+// Default data channel configuration
 export const DEFAULT_DATA_CHANNELS = [
   {
     label: DATA_CHANNEL_CONFIG.turtlesim_position.defaultLabel,
@@ -59,17 +59,12 @@ export const DEFAULT_DATA_CHANNELS = [
   }
 ] as const
 
-// 데이터 타입별 심볼 매핑
+// Symbol mapping by data type
 export const DATA_TYPE_SYMBOLS = {
   'turtlesim_position': TURTLESIM_POSITION_TYPE,
   'go2_low_state': GO2_LOW_STATE_TYPE,
   'go2_ouster_pointcloud': GO2_OUSTER_POINTCLOUD2_TYPE,
   'turtlesim_remote_control': TURTLESIM_REMOTE_CONTROL_TYPE
-} as const
-
-// Channel name mapping for robot and browser
-export const CHANNEL_NAME_MAPPING = {
-  // 매핑이 더 이상 필요하지 않음 (채널 이름이 일치함)
 } as const
 
 // Utility functions

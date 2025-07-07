@@ -10,25 +10,25 @@ export function setupWebSocketHandlers(
 ) {
   const unsubscribeFunctions: (() => void)[] = []
 
-  // SDP Answer 수신 핸들러
+  // SDP Answer receive handler
   const unsubscribeSdpAnswer = ws.onMessage("receive_sdp_answer", async (data: any) => {
     if (data.robot_id === robotId) {
       try {
         await callbacks.onSdpAnswer(data.sdp_answer)
       } catch (error) {
-        console.error('SDP Answer 처리 중 에러:', error)
+        console.error('SDP Answer processing error:', error)
       }
     }
   })
 
-  // ICE Candidate 수신 핸들러
+  // ICE Candidate receive handler
   const unsubscribeIceCandidate = ws.onMessage("receive_ice_candidate", async (data: any) => {
     if (data.robot_id === robotId) {
       try {
         const candidate = new RTCIceCandidate(data.ice_candidate)
         await callbacks.onIceCandidate(candidate)
       } catch (error) {
-        console.error('ICE Candidate 처리 중 에러:', error)
+        console.error('ICE Candidate processing error:', error)
       }
     }
   })

@@ -10,23 +10,23 @@ import { MEDIA_CHANNEL_CONFIG } from './webrtc-media-channel-config'
 
 export interface DataChannelConfig {
   label: string
-  dataType: string // 'turtlesim_position', 'go2_low_state', 'go2_ouster_pointcloud' 등
-  channelType: ChannelType // 채널 타입 명시
+  dataType: string // 'turtlesim_position', 'go2_low_state', 'go2_ouster_pointcloud', etc.
+  channelType: ChannelType // Channel type specification
   options?: RTCDataChannelInit
 }
 
 export interface VideoChannelConfig {
   label: string
-  dataType: string // 'turtlesim_video' 등
-  expectedTrackLabel?: string // 예상되는 비디오 트랙 라벨
+  dataType: string // 'turtlesim_video', etc.
+  expectedTrackLabel?: string // Expected video track label
 }
 
 export interface WebRTCConnectionConfig {
   robotId: string
   ws: WebSocketContextType
   onConnectionStateChange?: (isConnected: boolean) => void
-  dataChannels?: DataChannelConfig[] // 채널별 설정
-  videoChannels?: VideoChannelConfig[] // 비디오 채널 설정
+  dataChannels?: DataChannelConfig[] // Channel-specific configuration
+  videoChannels?: VideoChannelConfig[] // Video channel configuration
 }
 
 export interface MediaChannelConfig {
@@ -41,10 +41,10 @@ export class WebRTCConnection {
   private unsubscribeFunctions: (() => void)[] = []
   private pendingCandidates: RTCIceCandidate[] = []
   private dataChannels: Map<string, RTCDataChannel> = new Map()
-  private channelDataTypes: Map<string, { dataType: string; channelType: ChannelType }> = new Map() // 채널 라벨 -> 데이터 타입 및 채널 타입 매핑
-  private videoChannels: Map<string, VideoChannelConfig> = new Map() // 비디오 채널 설정
-  private videoChannelDataTypes: Map<string, string> = new Map() // 비디오 채널 라벨 -> 데이터 타입 매핑
-  private lastSdpMetadata: Map<string, any> = new Map() // SDP Answer에서 파싱된 메타데이터 저장
+  private channelDataTypes: Map<string, { dataType: string; channelType: ChannelType }> = new Map() // Channel label -> data type and channel type mapping
+  private videoChannels: Map<string, VideoChannelConfig> = new Map() // Video channel configuration
+  private videoChannelDataTypes: Map<string, string> = new Map() // Video channel label -> data type mapping
+  private lastSdpMetadata: Map<string, any> = new Map() // Metadata parsed from SDP Answer
 
   constructor(config: WebRTCConnectionConfig) {
     this.config = config
@@ -55,13 +55,13 @@ export class WebRTCConnection {
     const { unsubscribe } = setupWebSocketHandlers(this.config.ws, this.config.robotId, {
       onSdpAnswer: async (sdpAnswer) => {
         try {
-          // SDP Answer에서 메타데이터와 msid 파싱
+          // Parse metadata and msid from SDP Answer
           const metadata = parseMetadataFromSdp(sdpAnswer)
           
-          // 메타데이터 저장
+          // Store metadata
           this.lastSdpMetadata = metadata
           
-          // ontrack 핸들러 설정 (메타데이터 기반)
+          // Setup ontrack handler (metadata-based)
           this.setupVideoTrackHandler(metadata)
           
           await this.setRemoteDescription(new RTCSessionDescription({
@@ -69,7 +69,7 @@ export class WebRTCConnection {
             sdp: sdpAnswer
           }))
           
-          // SDP answer가 설정된 후에 pending된 ICE candidates 적용
+          // Apply pending ICE candidates after SDP answer is set
           if (this.pendingCandidates.length > 0) {
             for (const candidate of this.pendingCandidates) {
               try {
@@ -86,7 +86,7 @@ export class WebRTCConnection {
       },
       onIceCandidate: async (candidate) => {
         try {
-          // Remote description이 설정되어 있지 않으면 pending
+          // Queue if remote description is not set
           if (!this.peerConnection?.remoteDescription) {
             this.pendingCandidates.push(candidate)
             return
@@ -114,11 +114,11 @@ export class WebRTCConnection {
     }
     const peerConnection = new RTCPeerConnection(configuration)
 
-    // DataChannel 이벤트 핸들러 설정
+    // Setup DataChannel event handlers
     peerConnection.ondatachannel = (event) => {
       const dataChannel = event.channel
       
-      // 수신된 채널의 데이터 타입을 찾기
+      // Find data type for received channel
       const channelInfo = this.channelDataTypes.get(dataChannel.label)
       const dataType = channelInfo?.dataType
       const channelType = channelInfo?.channelType
@@ -131,45 +131,45 @@ export class WebRTCConnection {
       this.setupDataChannel(dataChannel, dataType, channelType || 'readonly')
     }
 
-    // 설정된 데이터 채널들 생성
+    // Create configured data channels
     const channelsToCreate = this.config.dataChannels || []
     
-    // 기본 채널들 추가 (설정에 없는 경우)
+    // Add default channels (if not in configuration)
     const allChannels = [...channelsToCreate, ...DEFAULT_DATA_CHANNELS.filter(ch => 
       !channelsToCreate.some(configured => configured.label === ch.label)
     )]
     
-    // 여러 데이터 채널 생성
+    // Create multiple data channels
     allChannels.forEach(channelConfig => {
       const dataChannel = peerConnection.createDataChannel(channelConfig.label, {
         ordered: true,
         ...channelConfig.options
       })
       
-      // 채널과 데이터 타입, 채널 타입 매핑 저장
+      // Store channel and data type, channel type mapping
       this.channelDataTypes.set(channelConfig.label, {
         dataType: channelConfig.dataType,
         channelType: channelConfig.channelType
       })
       
-      // 생성된 채널 설정
+      // Setup created channel
       this.setupDataChannel(dataChannel, channelConfig.dataType, channelConfig.channelType)
     })
 
-    // 비디오 채널 설정 (데이터 채널 설정 이후)
+    // Setup video channels (after data channel setup)
     this.setupVideoChannels()
 
     return peerConnection
   }
 
   private setupVideoChannels() {
-    // MediaChannelConfig에서 비디오 채널 설정 가져오기
+    // Get video channel configuration from MediaChannelConfig
     const mediaChannels = this.createMediaChannels()
     
-    // 설정된 비디오 채널들 저장
+    // Store configured video channels
     const channelsToSetup = this.config.videoChannels || []
     
-    // MediaChannelConfig에서 기본 비디오 채널 추가 (설정에 없는 경우)
+    // Add default video channels from MediaChannelConfig (if not in configuration)
     const defaultVideoChannels: VideoChannelConfig[] = mediaChannels.map(channel => ({
       label: channel.label,
       dataType: channel.dataType,
@@ -187,7 +187,7 @@ export class WebRTCConnection {
   }
 
   private setupDataChannel(dataChannel: RTCDataChannel, dataType: string, channelType: 'readonly' | 'writeonly') {
-    // DataChannel 상태 변경 이벤트 핸들러
+    // DataChannel state change event handlers
     dataChannel.onopen = () => {
       console.log(`DataChannel ${dataChannel.label} opened, state:`, dataChannel.readyState)
     }
@@ -204,11 +204,11 @@ export class WebRTCConnection {
 
     createDataChannel(dataChannel, this.config.robotId, dataType, channelType)
 
-    // DataChannel 저장
+    // Store DataChannel
     this.dataChannels.set(dataChannel.label, dataChannel)
   }
 
-  // 메타데이터 기반 Video Track 핸들러 설정
+  // Setup Video Track handler based on metadata
   private setupVideoTrackHandler(metadata: Map<string, any>): void {
     if (!this.peerConnection) {
       console.error('PeerConnection not initialized')
@@ -222,7 +222,7 @@ export class WebRTCConnection {
         if (event.streams && event.streams[0]) {
           const stream = event.streams[0]
           
-          // MSID에서 추출한 미디어 타입 사용
+          // Use media type extracted from MSID
           const mediaType = metadata.get('mediaType')
 
           if (!mediaType) {
@@ -230,10 +230,10 @@ export class WebRTCConnection {
             return
           }
 
-          // 미디어 타입이 지원되는지 확인
+          // Check if media type is supported
           if (MediaChannelConfigUtils.isSupportedMediaType(mediaType)) {
           
-            // VideoStore 생성 및 연결
+            // Create and connect VideoStore
             const videoStoreManager = VideoStoreManager.getInstance()
             const videoStore = videoStoreManager.createVideoStoreByMediaTypeAuto(
               this.config.robotId, 
@@ -241,7 +241,7 @@ export class WebRTCConnection {
             )
             
             if (videoStore) {
-              // 간소화된 메타데이터 설정 (MSID 기반)
+              // Set simplified metadata (MSID-based)
               videoStore.setMetadata({
                 mediaType,
                 source: 'robot_stream'
@@ -264,18 +264,18 @@ export class WebRTCConnection {
 
   public async startConnection(): Promise<void> {
     try {
-      // 기존 연결이 있다면 정리
+      // Clean up existing connection if any
       if (this.peerConnection) {
         this.disconnect()
       }
 
-      // VideoStoreManager 초기화
+      // Initialize VideoStoreManager
       const videoStoreManager = VideoStoreManager.getInstance()
       videoStoreManager.initializeRobotVideoStores(this.config.robotId)
 
       this.peerConnection = this.createPeerConnection()
 
-      // 이벤트 핸들러 설정
+      // Setup event handlers
       this.peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
           sendWebSocketMessage(this.config.ws, {
@@ -304,10 +304,10 @@ export class WebRTCConnection {
         console.log('DataChannel received:', event.channel.label, event.channel.readyState)
       }
 
-      // 활성화된 미디어 채널 목록 가져오기
+      // Get active media channel list
       const activeMediaChannels = MediaChannelConfigUtils.getActiveMediaChannels()
       
-      // 미디어 채널 설정이 적용된 Offer 생성
+      // Create Offer with media channel configuration applied
       const offer = await createOfferWithMediaChannels(
         this.peerConnection,
         activeMediaChannels
@@ -315,7 +315,7 @@ export class WebRTCConnection {
       
       await this.peerConnection.setLocalDescription(offer)
 
-      // SDP offer를 서버로 전송
+      // Send SDP offer to server
       sendWebSocketMessage(this.config.ws, {
         type: "send_sdp_offer",
         robot_id: this.config.robotId,
@@ -357,16 +357,16 @@ export class WebRTCConnection {
   }
 
   public disconnect(): void {
-    // WebSocket 이벤트 리스너 해제
+    // Unsubscribe WebSocket event listeners
     this.unsubscribeFunctions.forEach(unsubscribe => unsubscribe())
     this.unsubscribeFunctions = []
 
-    // DataChannel 정리
+    // Clean up DataChannels
     cleanupAllDataChannels(this.config.robotId)
     this.dataChannels.clear()
     this.channelDataTypes.clear()
 
-    // VideoStore 정리
+    // Clean up VideoStores
     const videoStoreManager = VideoStoreManager.getInstance()
     videoStoreManager.cleanupRobotVideoStores(this.config.robotId)
 
@@ -387,17 +387,17 @@ export class WebRTCConnection {
     return this.dataChannels.get(label)
   }
 
-  // 모든 데이터 채널 목록 반환
+  // Return all data channel list
   public getDataChannels(): Map<string, RTCDataChannel> {
     return this.dataChannels
   }
 
-  // 채널별 데이터 타입 반환
+  // Return data type by channel
   public getChannelDataType(channelLabel: string): string | undefined {
     return this.channelDataTypes.get(channelLabel)?.dataType
   }
 
-  // 특정 데이터 타입을 처리하는 채널들 반환
+  // Return channels that handle specific data type
   public getChannelsByDataType(dataType: string): string[] {
     const channels: string[] = []
     this.channelDataTypes.forEach((type, label) => {
@@ -408,13 +408,13 @@ export class WebRTCConnection {
     return channels
   }
 
-  // 비디오 스토어 매니저 가져오기
+  // Get video store manager
   public getVideoStoreManager(): VideoStoreManager {
     return VideoStoreManager.getInstance()
   }
 
   private createMediaChannels(): MediaChannelConfig[] {
-    // MEDIA_CHANNEL_CONFIG에서 동적으로 생성
+    // Dynamically create from MEDIA_CHANNEL_CONFIG
     return Object.entries(MEDIA_CHANNEL_CONFIG).map(([mediaType, config]) => ({
       label: config.defaultLabel,
       dataType: mediaType,

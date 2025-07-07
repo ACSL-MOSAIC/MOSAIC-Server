@@ -52,14 +52,14 @@ export const MediaChannelConfigUtils = {
   },
 
   /**
-   * Get list of active media channels (설정된 모든 미디어 타입)
+   * Get list of active media channels (all configured media types)
    */
   getActiveMediaChannels(): string[] {
     return [...this.getSupportedMediaTypes()]
   },
 
   /**
-   * Get number of video tracks to request (설정된 미디어 타입 개수)
+   * Get number of video tracks to request (number of configured media types)
    */
   getRequestedVideoTrackCount(): number {
     return this.getSupportedMediaTypes().length
