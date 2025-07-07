@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Box, Text, VStack, HStack, Badge, Flex } from '@chakra-ui/react';
+import { Box, Flex } from '@chakra-ui/react';
 import { WidgetProps } from './types';
 import { Go2OusterPointCloudStore } from '../../../dashboard/store/data-channel-store/readonly/go2-ouster-pointcloud.store';
 import { ParsedPointCloud2 } from '../../../dashboard/parser/go2-ouster-pointcloud';
+import { WidgetFrame } from './WidgetFrame';
 
 export interface Go2OusterPointCloudWidgetProps extends WidgetProps {
   store: Go2OusterPointCloudStore;
@@ -197,100 +198,69 @@ export function Go2OusterPointCloudWidget({ robotId, store, dataType }: Go2Ouste
     };
   }, [store, robotId, dataType]);
 
+  // Footer info
+  const footerInfo = [
+    {
+      label: 'Points',
+      value: pointCount.toLocaleString()
+    },
+    {
+      label: 'Dimensions',
+      value: `${dimensions.width} × ${dimensions.height}`
+    },
+    {
+      label: 'Data Type',
+      value: (dataType || 'unknown').toUpperCase()
+    },
+    ...(lastUpdate ? [
+      {
+        label: 'Last Update',
+        value: lastUpdate.toLocaleTimeString()
+      }
+    ] : [])
+  ];
+
   return (
-    <VStack gap={3} align="stretch" h="100%">
-      <Flex justify="space-between" align="center">
-        <Text fontSize="sm" fontWeight="bold" color={isConnected ? 'green.500' : 'gray.500'}>
-          Go2 Ouster PointCloud
-        </Text>
-        <Badge colorScheme={isConnected ? 'green' : 'gray'} variant="subtle">
-          {isConnected ? 'Connected' : 'Disconnected'}
-        </Badge>
-      </Flex>
-      
-      <Box 
-        border="1px solid" 
-        borderColor="gray.200" 
-        borderRadius="lg" 
-        p={3}
-        bg="white"
-        boxShadow="sm"
-        flex="1"
-        minH="250px"
-        position="relative"
-        overflow="hidden"
-      >
-        {error ? (
-          <Flex 
-            direction="column" 
-            align="center" 
-            justify="center" 
-            h="100%" 
-            color="red.500"
-            textAlign="center"
-          >
-            <Text fontSize="2xl" mb={2}>⚠️</Text>
-            <Text fontSize="sm">{error}</Text>
-          </Flex>
-        ) : (
-          <Box
-            width="100%"
-            height="100%"
-            position="relative"
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            bg="black"
-            borderRadius="md"
-          >
-            <canvas
-              ref={canvasRef}
-              style={{
-                maxWidth: '100%',
-                maxHeight: '100%',
-                objectFit: 'contain',
-                borderRadius: '6px'
-              }}
-            />
-          </Box>
-        )}
-      </Box>
-      
-      <VStack gap={2} align="stretch">
-        <HStack justify="space-between" fontSize="xs">
-          <Text color="gray.600" fontWeight="medium">Points</Text>
-          <Text color="gray.800" fontFamily="mono">
-            {pointCount.toLocaleString()}
-          </Text>
-        </HStack>
-        
-        <HStack justify="space-between" fontSize="xs">
-          <Text color="gray.600" fontWeight="medium">Dimensions</Text>
-          <Text color="gray.800" fontFamily="mono">
-            {dimensions.width} × {dimensions.height}
-          </Text>
-        </HStack>
-        
-        <HStack justify="space-between" fontSize="xs">
-          <Text color="gray.600" fontWeight="medium">Data Type</Text>
-          <Text color="gray.800" fontFamily="mono" textTransform="uppercase">
-            {dataType || 'unknown'}
-          </Text>
-        </HStack>
-
-        {lastUpdate && (
-          <HStack justify="space-between" fontSize="xs">
-            <Text color="gray.600" fontWeight="medium">Last Update</Text>
-            <Text color="gray.800" fontFamily="mono">
-              {lastUpdate.toLocaleTimeString()}
-            </Text>
-          </HStack>
-        )}
-
-        <Text fontSize="xs" color="gray.500" textAlign="center">
-          {isConnected ? 'PointCloud data active' : 'Waiting for data...'}
-        </Text>
-      </VStack>
-    </VStack>
+    <WidgetFrame
+      title="Go2 Ouster PointCloud"
+      isConnected={isConnected}
+      footerInfo={footerInfo}
+      footerMessage={isConnected ? 'PointCloud data active' : 'Waiting for data...'}
+    >
+      {error ? (
+        <Flex 
+          direction="column" 
+          align="center" 
+          justify="center" 
+          h="100%" 
+          color="red.500"
+          textAlign="center"
+        >
+          <Box fontSize="2xl" mb={2}>⚠️</Box>
+          <Box fontSize="sm">{error}</Box>
+        </Flex>
+      ) : (
+        <Box
+          width="100%"
+          height="100%"
+          position="relative"
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          bg="black"
+          borderRadius="md"
+        >
+          <canvas
+            ref={canvasRef}
+            style={{
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'contain',
+              borderRadius: '6px'
+            }}
+          />
+        </Box>
+      )}
+    </WidgetFrame>
   );
 } 
