@@ -98,7 +98,16 @@ export function createDataChannel(
 
   // Setup DataChannel for Store
   if (store) {
-    if (store instanceof ReadOnlyStore || store instanceof WriteOnlyStore) {
+    if (store instanceof ReadOnlyStore) {
+      // ReadOnlyStore는 다중 채널 지원
+      store.addDataChannel(dataChannel);
+      console.log(`Data channel setup completed for ${store.constructor.name}:`, {
+        robotId,
+        channelLabel: dataChannel.label,
+        channelState: dataChannel.readyState
+      });
+    } else if (store instanceof WriteOnlyStore) {
+      // WriteOnlyStore는 기존 방식 유지
       store.setDataChannel(dataChannel);
       console.log(`Data channel setup completed for ${store.constructor.name}:`, {
         robotId,

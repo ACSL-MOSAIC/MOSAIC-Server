@@ -12,6 +12,7 @@ interface ChunkData {
 // 전역 chunkMap과 cleanup 타이머
 const chunkMap: Map<string, ChunkData> = new Map();
 const CHUNK_TIMEOUT = 5000; // 5초
+const MAX_CONCURRENT_MESSAGES = 3; // 최대 2개의 메시지 동시 처리
 
 // 주기적으로 오래된 chunk 데이터 정리
 setInterval(() => {
@@ -58,8 +59,16 @@ export const parsePointCloud2 = (buffer: ArrayBuffer): ParsedPointCloud2 | null 
 
 export const parsePointCloud2FromDataChunk = (dataChunk: chunking.DataChunk): ParsedPointCloud2 | null => {
     try {
-        // 새로운 메시지 ID인 경우 초기화
+        // 새로운 메시지 ID인 경우 초기화 (최대 2개까지만 유지)
         if (!chunkMap.has(dataChunk.messageId)) {
+            // 최대 개수 초과 시 가장 오래된 메시지 삭제
+            if (chunkMap.size >= MAX_CONCURRENT_MESSAGES) {
+                const oldestMessageId = Array.from(chunkMap.entries())
+                    .sort((a, b) => a[1].timestamp - b[1].timestamp)[0][0];
+                chunkMap.delete(oldestMessageId);
+                console.log(`Removed oldest message: ${oldestMessageId} to make room for: ${dataChunk.messageId}`);
+            }
+            
             chunkMap.set(dataChunk.messageId, {
                 messageId: dataChunk.messageId,
                 chunks: new Map(),
@@ -79,7 +88,6 @@ export const parsePointCloud2FromDataChunk = (dataChunk: chunking.DataChunk): Pa
             // chunk들을 순서대로 조합
             const combinedData = combineChunks(chunkData);
             
-
             // PointCloud2 객체 생성
             const pointCloud = pointcloud.PointCloud2.decode(combinedData);
             
@@ -91,6 +99,8 @@ export const parsePointCloud2FromDataChunk = (dataChunk: chunking.DataChunk): Pa
                 ...pointCloud.toJSON(),
                 timestamp: Date.now()
             };
+            
+            console.log(`Completed frame: ${dataChunk.messageId}, remaining messages: ${chunkMap.size}`);
             return parsedPointCloud;
         }
 
