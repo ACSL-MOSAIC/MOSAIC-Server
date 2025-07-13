@@ -280,11 +280,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       }
       
       refreshIntervalRef.current = setInterval(() => {
-        console.log("10초마다 로봇 리스트 갱신")
+        console.log("1초마다 로봇 리스트 갱신")
         sendMessage({
           type: "get_robot_list"
         })
-      }, 10000)
+      }, 1000)
     }
 
     return () => {

@@ -1,4 +1,4 @@
-export type WidgetType = 'go2_low_state' | 'go2_ouster_pointcloud' | 'turtlesim_position' | 'turtlesim_remote_control' | 'turtlesim_video';
+export type WidgetType = 'go2_low_state' | 'go2_ouster_pointcloud' | 'turtlesim_position' | 'turtlesim_remote_control' | 'turtlesim_video' | 'universal';
 
 export interface WidgetPosition {
   x: number;
@@ -13,6 +13,7 @@ export interface WidgetConfig {
   position: WidgetPosition;
   robotId: string;
   dataType: string;
+  config?: any; // Universal widget config
 }
 
 export interface DashboardTab {

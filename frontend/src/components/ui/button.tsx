@@ -1,9 +1,9 @@
 import type { ButtonProps as ChakraButtonProps } from "@chakra-ui/react"
 import {
   AbsoluteCenter,
+  Box,
   Button as ChakraButton,
   Span,
-  Spinner,
 } from "@chakra-ui/react"
 import * as React from "react"
 
@@ -22,13 +22,34 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {loading && !loadingText ? (
           <>
             <AbsoluteCenter display="inline-flex">
-              <Spinner size="inherit" color="inherit" />
+              <Box
+                w="1em"
+                h="1em"
+                border="2px solid"
+                borderColor="currentColor"
+                borderTopColor="transparent"
+                borderRadius="50%"
+                style={{
+                  animation: 'spin 1s linear infinite'
+                }}
+              />
             </AbsoluteCenter>
             <Span opacity={0}>{children}</Span>
           </>
         ) : loading && loadingText ? (
           <>
-            <Spinner size="inherit" color="inherit" />
+            <Box
+              w="1em"
+              h="1em"
+              border="2px solid"
+              borderColor="currentColor"
+              borderTopColor="transparent"
+              borderRadius="50%"
+              mr={2}
+              style={{
+                animation: 'spin 1s linear infinite'
+              }}
+            />
             {loadingText}
           </>
         ) : (

@@ -31,7 +31,7 @@ interface TabManagerProps {
   tabs: Array<{ id: string; name: string }>;
   activeTabId: string;
   onTabChange: (tabId: string) => void;
-  onAddWidget: (robotId: string, type: WidgetType) => void;
+  onAddWidget: (robotId: string, type: WidgetType, config?: any) => void;
   connectedRobots: string[];
 }
 

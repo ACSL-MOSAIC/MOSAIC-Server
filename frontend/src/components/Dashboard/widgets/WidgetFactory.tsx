@@ -22,10 +22,16 @@ import { MediaChannelConfigUtils } from "../../../rtc/webrtc-media-channel-confi
 import { TURTLESIM_VIDEO_TYPE } from '../../../dashboard/parser/turtlesim-video'
 import { useWebSocket } from '@/contexts/WebSocketContext'
 import { useRobotMapping } from '@/hooks/useRobotMapping'
+import { UniversalWidget } from './dynamic/UniversalWidget'
+import { UniversalWidgetConfig } from '../../../dashboard/store/data-channel-store/readonly/dynamic/universal-widget-config'
 
 export interface WidgetFactoryProps extends WidgetProps {
   type: string;
   connections?: { [key: string]: boolean };
+  config?: UniversalWidgetConfig; // 범용 위젯 설정
+  widgetId?: string;
+  onRemove?: () => void;
+  onUpdateConfig?: (newConfig: UniversalWidgetConfig) => void;
 }
 
 // NO_DATA component
@@ -59,7 +65,7 @@ function NoDataWidget({ robotId, type }: { robotId: string; type: string }) {
   )
 }
 
-export function WidgetFactory({ type, robotId, dataType, connections }: WidgetFactoryProps) {
+export function WidgetFactory({ type, robotId, dataType, connections, config, widgetId, onRemove, onUpdateConfig }: WidgetFactoryProps) {
   console.log('WidgetFactory rendering', { type, robotId, dataType, connections })
   
   // Check connection status
@@ -117,6 +123,13 @@ export function WidgetFactory({ type, robotId, dataType, connections }: WidgetFa
         'turtlesim_video'
       );
       return <TurtlesimVideoWidget robotId={robotId} widgetId={robotId} store={videoStore as TurtlesimVideoStore} dataType={dataType} />;
+    
+    case 'universal':
+      if (!config) {
+        console.error('Universal widget requires config')
+        return <div>Universal widget requires config</div>
+      }
+      return <UniversalWidget config={config} connections={connections} onUpdateConfig={onUpdateConfig} onRemove={onRemove} widgetId={widgetId} />;
     
     default:
       console.log('Unknown widget type:', type)

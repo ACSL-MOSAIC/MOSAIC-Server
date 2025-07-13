@@ -172,7 +172,7 @@ export function DashboardGrid() {
     }
   };
 
-  const handleAddWidget = (selectedRobotId: string, type: WidgetType) => {
+  const handleAddWidget = (selectedRobotId: string, type: WidgetType, config?: any) => {
     if (!dashboardConfig) return;
 
     // Set appropriate data type based on widget type
@@ -193,6 +193,9 @@ export function DashboardGrid() {
       case 'turtlesim_video':
         dataType = 'turtlesim_video';
         break;
+      case 'universal':
+        dataType = 'universal';
+        break;
       default:
         dataType = 'go2_low_state';
     }
@@ -202,7 +205,8 @@ export function DashboardGrid() {
       type,
       position: { x: 0, y: 0, w: 4, h: 4 },
       robotId: selectedRobotId,
-      dataType
+      dataType,
+      config
     };
 
     const newConfig = addWidget(dashboardConfig, dashboardConfig.activeTabId, newWidget);
@@ -337,27 +341,20 @@ export function DashboardGrid() {
             height="100%"
             display="flex"
             flexDirection="column"
+            mb={4}
           >
-            <Flex justify="space-between" mb={2} className="widget-header" cursor="move">
-              <Box>
-                <strong>Robot:</strong> {getRobotName(widget.robotId)}
-              </Box>
-              <Button 
-                size="sm" 
-                colorScheme="red" 
-                onClick={() => handleRemoveWidget(widget.id)}
-              >
-                Remove
-              </Button>
-            </Flex>
-            <Box flex="1" overflow="hidden">
-              <WidgetFactory 
-                type={widget.type}
-                robotId={widget.robotId}
-                dataType={widget.dataType}
-                connections={connections}
-              />
-            </Box>
+            <WidgetFactory 
+              type={widget.type}
+              robotId={widget.robotId}
+              dataType={widget.dataType}
+              connections={connections}
+              config={widget.config}
+              widgetId={widget.id}
+              onRemove={() => handleRemoveWidget(widget.id)}
+              onUpdateConfig={(newConfig) => {
+                // 위젯 config만 교체하는 로직 필요(추후 구현)
+              }}
+            />
           </Box>
         ))}
       </ResponsiveGridLayout>

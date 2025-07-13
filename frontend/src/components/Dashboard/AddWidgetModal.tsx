@@ -18,11 +18,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useRobotMapping } from "@/hooks/useRobotMapping"
+import { UniversalWidgetConfigurator } from './widgets/dynamic/UniversalWidgetConfigurator'
 
 interface AddWidgetModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (robotId: string, type: WidgetType) => void;
+  onAdd: (robotId: string, type: WidgetType, config?: any) => void;
   connectedRobots: string[];
 }
 
@@ -30,6 +31,7 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
   console.log('AddWidgetModal rendering, robots:', connectedRobots)
   const [selectedRobotId, setSelectedRobotId] = useState<string>("");
   const [selectedType, setSelectedType] = useState<string>("go2_low_state");
+  const [showUniversalConfig, setShowUniversalConfig] = useState(false);
   const { getRobotName } = useRobotMapping();
 
   const robotCollection = createListCollection({
@@ -45,16 +47,39 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
       { label: "Go2 Ouster PointCloud", value: "go2_ouster_pointcloud" },
       { label: "Turtlesim Position", value: "turtlesim_position" },
       { label: "Turtlesim Remote Control", value: "turtlesim_remote_control" },
-      { label: "Turtlesim Video", value: "turtlesim_video" }
+      { label: "Turtlesim Video", value: "turtlesim_video" },
+      { label: "Universal Widget", value: "universal" }
     ]
   });
 
   const handleAdd = () => {
     if (selectedRobotId) {
-      onAdd(selectedRobotId, selectedType as WidgetType);
-      onClose();
+      if (selectedType === 'universal') {
+        setShowUniversalConfig(true);
+      } else {
+        onAdd(selectedRobotId, selectedType as WidgetType);
+        onClose();
+      }
     }
   };
+
+  const handleUniversalConfigComplete = (config: any) => {
+    onAdd(selectedRobotId, 'universal' as WidgetType, config);
+    setShowUniversalConfig(false);
+    onClose();
+  };
+
+  // Universal Widget 설정 모달이 열려있으면 해당 모달을 렌더링
+  if (showUniversalConfig) {
+    return (
+      <UniversalWidgetConfigurator
+        isOpen={showUniversalConfig}
+        onClose={() => setShowUniversalConfig(false)}
+        onComplete={handleUniversalConfigComplete}
+        robotId={selectedRobotId}
+      />
+    );
+  }
 
   return (
     <DialogRoot

@@ -1,9 +1,9 @@
 "use client"
 
 import {
+  Box,
   Toaster as ChakraToaster,
   Portal,
-  Spinner,
   Stack,
   Toast,
   createToaster,
@@ -21,7 +21,17 @@ export const Toaster = () => {
         {(toast) => (
           <Toast.Root width={{ md: "sm" }} color={toast.meta?.color}>
             {toast.type === "loading" ? (
-              <Spinner size="sm" color="blue.solid" />
+              <Box
+                w="1em"
+                h="1em"
+                border="2px solid"
+                borderColor="blue.solid"
+                borderTopColor="transparent"
+                borderRadius="50%"
+                style={{
+                  animation: 'spin 1s linear infinite'
+                }}
+              />
             ) : (
               <Toast.Indicator />
             )}
