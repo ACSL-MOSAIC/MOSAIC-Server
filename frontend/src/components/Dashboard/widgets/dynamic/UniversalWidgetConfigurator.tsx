@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Box,
   Button,
@@ -9,7 +9,8 @@ import {
   Field,
   IconButton,
   Fieldset,
-  Portal
+  Portal,
+  Divider
 } from '@chakra-ui/react'
 // Simple icon components
 const AddIcon = () => (
@@ -25,6 +26,7 @@ const DeleteIcon = () => (
 )
 import { UniversalWidgetConfig, DataSourceConfig, VisualizationConfig, VisualizationType } from '../../../../dashboard/store/data-channel-store/readonly/dynamic/universal-widget-config'
 import { DataChannelConfigUtils } from '../../../../rtc/webrtc-datachannel-config'
+import { ReadOnlyStoreManager } from '../../../../dashboard/store/data-channel-store/readonly/read-only-store-manager'
 import {
   DialogActionTrigger,
   DialogBody,
@@ -35,6 +37,33 @@ import {
   DialogRoot,
   DialogTitle,
 } from "@/components/ui/dialog"
+
+function getFieldPathsFromSample(obj: any, prefix = ''): { path: string, type: string }[] {
+  if (typeof obj !== 'object' || obj === null) return []
+  let paths: { path: string, type: string }[] = []
+  for (const key in obj) {
+    if (!obj.hasOwnProperty(key)) continue
+    const value = obj[key]
+    const path = prefix ? `${prefix}.${key}` : key
+    if (typeof value === 'object' && value !== null) {
+      if (Array.isArray(value)) {
+        // 배열이면 첫 번째 요소만 예시로
+        if (value.length > 0 && typeof value[0] === 'object') {
+          paths = paths.concat(getFieldPathsFromSample(value[0], `${path}[0]`))
+        } else {
+          // 배열의 타입 추론
+          const arrType = value.length > 0 ? typeof value[0] : 'any'
+          paths.push({ path: `${path}[0]`, type: arrType })
+        }
+      } else {
+        paths = paths.concat(getFieldPathsFromSample(value, path))
+      }
+    } else {
+      paths.push({ path, type: typeof value })
+    }
+  }
+  return paths
+}
 
 interface UniversalWidgetConfiguratorProps {
   isOpen: boolean
@@ -152,8 +181,59 @@ export function UniversalWidgetConfigurator({
       return
     }
     
-    onComplete(config)
+    // fieldPath 타입 정리
+    const newConfig = {
+      ...config,
+      visualizations: config.visualizations.map(viz => ({
+        ...viz,
+        dataMapping: {
+          ...viz.dataMapping,
+          fieldPath: viz.type === 'json'
+            ? (Array.isArray(viz.dataMapping.fieldPath) ? viz.dataMapping.fieldPath : [viz.dataMapping.fieldPath].filter(Boolean))
+            : (Array.isArray(viz.dataMapping.fieldPath) ? viz.dataMapping.fieldPath[0] || '' : viz.dataMapping.fieldPath)
+        }
+      }))
+    }
+    onComplete(newConfig)
     onClose()
+  }
+
+  // 필드 경로 자동 추출용 상태
+  const [fieldPathOptions, setFieldPathOptions] = useState<{ path: string, type: string }[]>([])
+
+  // 데이터 타입 변경 시 필드 경로 자동 추출
+  useEffect(() => {
+    if (config.dataSources.length === 0) return
+    const dataSource = config.dataSources[config.dataSources.length - 1]
+    const readOnlyStoreManager = ReadOnlyStoreManager.getInstance()
+    const storeSymbol = DataChannelConfigUtils.getStoreSymbol(dataSource.dataType)
+    if (storeSymbol) {
+      const store = readOnlyStoreManager.getStore(dataSource.robotId, storeSymbol)
+      if (store) {
+        const sample = store.getLast?.()
+        if (sample) {
+          const paths = getFieldPathsFromSample(sample)
+          setFieldPathOptions(paths)
+        } else {
+          setFieldPathOptions([])
+        }
+      }
+    }
+  }, [config.dataSources])
+
+  // 시각화 타입에 따라 필드 경로 옵션 필터링
+  const getFilteredFieldPathOptions = (vizType: string) => {
+    switch (vizType) {
+      case 'number':
+      case 'gauge':
+      case 'lineChart':
+        return fieldPathOptions.filter(opt => opt.type === 'number')
+      case 'text':
+        return fieldPathOptions.filter(opt => ['string', 'number', 'boolean'].includes(opt.type))
+      case 'json':
+      default:
+        return fieldPathOptions
+    }
   }
 
   return (
@@ -178,8 +258,8 @@ export function UniversalWidgetConfigurator({
           <VStack gap={4} align="stretch">
 
         {/* 기본 설정 */}
-        <Fieldset.Root>
-          <Fieldset.Legend>기본 설정</Fieldset.Legend>
+        <Fieldset.Root mb={4} style={{ background: '#f8fafc', borderRadius: 8, padding: 16, border: '1px solid #e2e8f0' }}>
+          <Fieldset.Legend><Text fontWeight="bold" fontSize="md">기본 설정</Text></Fieldset.Legend>
           <Fieldset.Content>
             <Field.Root>
               <Field.Label>위젯 제목</Field.Label>
@@ -209,10 +289,10 @@ export function UniversalWidgetConfigurator({
             </Field.Root>
           </Fieldset.Content>
         </Fieldset.Root>
-
+        <Box as="hr" my={2} borderColor="#e2e8f0" />
         {/* 데이터 소스 설정 */}
-        <Fieldset.Root>
-          <Fieldset.Legend>데이터 소스</Fieldset.Legend>
+        <Fieldset.Root mb={4} style={{ background: '#f8fafc', borderRadius: 8, padding: 16, border: '1px solid #e2e8f0' }}>
+          <Fieldset.Legend><Text fontWeight="bold" fontSize="md">데이터 소스</Text></Fieldset.Legend>
           <Fieldset.Content>
             <HStack justify="space-between" mb={2}>
               <Text fontWeight="bold">데이터 소스</Text>
@@ -223,15 +303,14 @@ export function UniversalWidgetConfigurator({
             </HStack>
             
             {config.dataSources.map((dataSource, index) => (
-              <Box key={index} p={3} border="1px" borderColor="gray.200" borderRadius="md" mb={2}>
-                <HStack justify="space-between" mb={2}>
+              <Box key={index} p={3} border="1px solid #e2e8f0" borderRadius="md" mb={2} bg="#fff" display="flex" flexDirection="column" gap={2}>
+                <HStack justify="space-between" alignItems="center" mb={2}>
                   <Text fontSize="sm" fontWeight="bold">데이터 소스 {index + 1}</Text>
                   <IconButton
-                    size="sm"
-                    onClick={() => removeDataSource(index)}
                     aria-label="데이터 소스 제거"
-                    colorScheme="red"
+                    size="xs"
                     variant="ghost"
+                    onClick={() => removeDataSource(index)}
                   >
                     <DeleteIcon />
                   </IconButton>
@@ -261,10 +340,10 @@ export function UniversalWidgetConfigurator({
             ))}
           </Fieldset.Content>
         </Fieldset.Root>
-
+        <Box as="hr" my={2} borderColor="#e2e8f0" />
         {/* 시각화 설정 */}
-        <Fieldset.Root>
-          <Fieldset.Legend>시각화</Fieldset.Legend>
+        <Fieldset.Root mb={4} style={{ background: '#f8fafc', borderRadius: 8, padding: 16, border: '1px solid #e2e8f0' }}>
+          <Fieldset.Legend><Text fontWeight="bold" fontSize="md">시각화</Text></Fieldset.Legend>
           <Fieldset.Content>
             {config.dataSources.map((dataSource, dataSourceIndex) => (
               <Box key={dataSourceIndex} mb={4}>
@@ -284,15 +363,14 @@ export function UniversalWidgetConfigurator({
                 {config.visualizations
                   .filter(v => v.dataSourceIndex === dataSourceIndex)
                   .map(visualization => (
-                    <Box key={visualization.id} p={3} border="1px" borderColor="gray.200" borderRadius="md" mb={2}>
-                      <HStack justify="space-between" mb={2}>
-                        <Text fontSize="sm">시각화: {visualization.title}</Text>
+                    <Box key={visualization.id} p={3} border="1px solid #e2e8f0" borderRadius="md" mb={2} bg="#fff" display="flex" flexDirection="column" gap={2}>
+                      <HStack justify="space-between" alignItems="center" mb={2}>
+                        <Text fontSize="sm" fontWeight="bold">시각화: {visualization.title}</Text>
                         <IconButton
-                          size="sm"
-                          onClick={() => removeVisualization(visualization.id)}
                           aria-label="시각화 제거"
-                          colorScheme="red"
+                          size="xs"
                           variant="ghost"
+                          onClick={() => removeVisualization(visualization.id)}
                         >
                           <DeleteIcon />
                         </IconButton>
@@ -331,14 +409,77 @@ export function UniversalWidgetConfigurator({
                         
                         <Field.Root>
                           <Field.Label fontSize="sm">데이터 필드 경로</Field.Label>
-                          <Input
-                            size="sm"
-                            value={visualization.dataMapping.fieldPath}
-                            onChange={(e) => updateVisualization(visualization.id, { 
-                              dataMapping: { ...visualization.dataMapping, fieldPath: e.target.value }
-                            })}
-                            placeholder="예: motor_state[0].q, power_v"
-                          />
+                          <Box display="flex" flexDirection="column" gap={2}>
+                            {visualization.type === 'json' ? (
+                              <>
+                                {(Array.isArray(visualization.dataMapping.fieldPath) ? visualization.dataMapping.fieldPath : [visualization.dataMapping.fieldPath].filter(Boolean)).map((field, idx, arr) => (
+                                  <Box key={idx} display="flex" gap={2} alignItems="center" mb={1}>
+                                    <Input
+                                      size="sm"
+                                      value={field}
+                                      onChange={e => {
+                                        const newFields = [...arr]
+                                        newFields[idx] = e.target.value
+                                        updateVisualization(visualization.id, { dataMapping: { ...visualization.dataMapping, fieldPath: newFields } })
+                                      }}
+                                      placeholder="필드 경로"
+                                      flex="1"
+                                    />
+                                    {getFilteredFieldPathOptions(visualization.type).length > 0 && (
+                                      <select
+                                        value={field}
+                                        onChange={e => {
+                                          const newFields = [...arr]
+                                          newFields[idx] = e.target.value
+                                          updateVisualization(visualization.id, { dataMapping: { ...visualization.dataMapping, fieldPath: newFields } })
+                                        }}
+                                        style={{ minWidth: 120 }}
+                                      >
+                                        <option value="">필드 선택</option>
+                                        {getFilteredFieldPathOptions(visualization.type).map(opt => (
+                                          <option key={opt.path} value={opt.path}>{opt.path} ({opt.type})</option>
+                                        ))}
+                                      </select>
+                                    )}
+                                    {arr.length > 1 && (
+                                      <Button size="xs" colorScheme="red" variant="ghost" onClick={() => {
+                                        const newFields = arr.filter((_, i) => i !== idx)
+                                        updateVisualization(visualization.id, { dataMapping: { ...visualization.dataMapping, fieldPath: newFields } })
+                                      }}>-</Button>
+                                    )}
+                                  </Box>
+                                ))}
+                                <Button size="xs" colorScheme="blue" variant="outline" mt={1} onClick={() => {
+                                  const arr = Array.isArray(visualization.dataMapping.fieldPath) ? visualization.dataMapping.fieldPath : [visualization.dataMapping.fieldPath].filter(Boolean)
+                                  updateVisualization(visualization.id, { dataMapping: { ...visualization.dataMapping, fieldPath: [...arr, ''] } })
+                                }}>+ 필드 추가</Button>
+                              </>
+                            ) : (
+                              <Box display="flex" gap={2} alignItems="center">
+                                <Input
+                                  size="sm"
+                                  value={visualization.dataMapping.fieldPath}
+                                  onChange={(e) => updateVisualization(visualization.id, { 
+                                    dataMapping: { ...visualization.dataMapping, fieldPath: e.target.value }
+                                  })}
+                                  placeholder="예: motor_state[0].q, power_v"
+                                  flex="1"
+                                />
+                                {getFilteredFieldPathOptions(visualization.type).length > 0 && (
+                                  <select
+                                    value={visualization.dataMapping.fieldPath}
+                                    onChange={e => updateVisualization(visualization.id, { dataMapping: { ...visualization.dataMapping, fieldPath: e.target.value } })}
+                                    style={{ minWidth: 120 }}
+                                  >
+                                    <option value="">필드 선택</option>
+                                    {getFilteredFieldPathOptions(visualization.type).map(opt => (
+                                      <option key={opt.path} value={opt.path}>{opt.path} ({opt.type})</option>
+                                    ))}
+                                  </select>
+                                )}
+                              </Box>
+                            )}
+                          </Box>
                         </Field.Root>
                         
                         <Field.Root>

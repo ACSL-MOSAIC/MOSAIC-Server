@@ -253,6 +253,21 @@ export function DashboardGrid() {
     updateConfig(newConfig);
   };
 
+  // UniversalWidget에서 config 수정 시 위젯만 교체
+  const handleUpdateWidgetConfig = (widgetId: string, newConfig: any) => {
+    if (!dashboardConfig) return;
+    const newTabs = dashboardConfig.tabs.map(tab => {
+      if (tab.id !== dashboardConfig.activeTabId) return tab;
+      return {
+        ...tab,
+        widgets: tab.widgets.map(w =>
+          w.id === widgetId ? { ...w, config: newConfig } : w
+        )
+      }
+    })
+    updateConfig({ ...dashboardConfig, tabs: newTabs })
+  }
+
   // Disconnect all connections on component unmount
   useEffect(() => {
     return () => {
@@ -351,9 +366,7 @@ export function DashboardGrid() {
               config={widget.config}
               widgetId={widget.id}
               onRemove={() => handleRemoveWidget(widget.id)}
-              onUpdateConfig={(newConfig) => {
-                // 위젯 config만 교체하는 로직 필요(추후 구현)
-              }}
+              onUpdateConfig={(newConfig) => handleUpdateWidgetConfig(widget.id, newConfig)}
             />
           </Box>
         ))}

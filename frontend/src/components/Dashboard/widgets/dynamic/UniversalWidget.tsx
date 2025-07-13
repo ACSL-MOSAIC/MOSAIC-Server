@@ -208,7 +208,15 @@ const JsonVisualization: React.FC<{
   config: VisualizationConfig
   data: any
 }> = ({ config, data }) => {
-  const value = getNestedValue(data, config.dataMapping.fieldPath)
+  let value: any
+  if (Array.isArray(config.dataMapping.fieldPath)) {
+    value = {}
+    for (const path of config.dataMapping.fieldPath) {
+      value[path] = getNestedValue(data, path)
+    }
+  } else {
+    value = getNestedValue(data, config.dataMapping.fieldPath)
+  }
   return (
     <Box
       p={3}
@@ -221,10 +229,10 @@ const JsonVisualization: React.FC<{
       borderColor="gray.200"
       bg="white"
     >
-      <Text fontSize="sm" fontWeight="bold" mb={2}>{config.title}</Text>
+      <Text fontSize="md" fontWeight="bold" mb={3} borderBottom="1px solid #e2e8f0" pb={2}>{config.title}</Text>
       <Box
         bg="gray.50"
-        p={2}
+        p={3}
         borderRadius="md"
         fontSize="xs"
         fontFamily="mono"
