@@ -8,9 +8,10 @@ interface TurtlesimPositionWidgetProps {
   robotId: string
   store: TurtlesimPositionStore
   dataType?: string
+  onRemove?: () => void
 }
 
-export function TurtlesimPositionWidget({ robotId, store, dataType }: TurtlesimPositionWidgetProps) {
+export function TurtlesimPositionWidget({ robotId, store, dataType, onRemove }: TurtlesimPositionWidgetProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>()
   const [position, setPosition] = useState<ParsedTurtlesimPosition | null>(null)
@@ -252,6 +253,7 @@ export function TurtlesimPositionWidget({ robotId, store, dataType }: TurtlesimP
       isConnected={isConnected}
       footerInfo={footerInfo}
       footerMessage={position ? undefined : 'Waiting for connection...'}
+      onRemove={onRemove}
     >
       <canvas
         ref={canvasRef}

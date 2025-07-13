@@ -9,13 +9,15 @@ interface TurtlesimVideoWidgetProps {
   widgetId: string
   store: VideoStore
   dataType: string
+  onRemove?: () => void
 }
 
 export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
   robotId,
   widgetId,
   store,
-  dataType
+  dataType,
+  onRemove
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [videoData, setVideoData] = useState<VideoData | null>(null)
@@ -214,6 +216,7 @@ export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
       isConnected={isConnected}
       footerInfo={footerInfo}
       footerMessage={isConnected ? 'Video stream active' : 'Waiting for stream...'}
+      onRemove={onRemove}
     >
       {error ? (
         <Flex 

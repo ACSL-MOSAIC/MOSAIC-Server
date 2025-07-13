@@ -8,6 +8,7 @@ interface TurtlesimRemoteControlWidgetProps {
   robotId: string
   store: TurtlesimRemoteControlStore
   dataType?: string
+  onRemove?: () => void
 }
 
 // 방향 아이콘 컴포넌트
@@ -29,7 +30,7 @@ const DirectionIcon = ({ direction }: { direction: string }) => {
   )
 }
 
-export function TurtlesimRemoteControlWidget({ robotId, store, dataType }: TurtlesimRemoteControlWidgetProps) {
+export function TurtlesimRemoteControlWidget({ robotId, store, dataType, onRemove }: TurtlesimRemoteControlWidgetProps) {
   const [lastCommand, setLastCommand] = useState<ParsedTurtlesimRemoteControl | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [commandHistory, setCommandHistory] = useState<string[]>([])
@@ -139,6 +140,7 @@ export function TurtlesimRemoteControlWidget({ robotId, store, dataType }: Turtl
       footerInfo={footerInfo}
       footerMessage={isConnected ? 'Ready to send commands' : 'Waiting for connection...'}
       padding="4"
+      onRemove={onRemove}
     >
       {/* 컨트롤 패드 */}
       <VStack gap={4} align="center" h="100%" justify="center">

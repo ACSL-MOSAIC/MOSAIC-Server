@@ -350,6 +350,7 @@ export function UniversalWidget({ config, connections, onUpdateConfig, onRemove,
         title={config.title}
         isConnected={false}
         footerMessage="Robot not connected"
+        onRemove={onRemove}
       >
         <Flex 
           direction="column" 
@@ -370,6 +371,7 @@ export function UniversalWidget({ config, connections, onUpdateConfig, onRemove,
         title={config.title}
         isConnected={false}
         footerMessage="Waiting for data..."
+        onRemove={onRemove}
       >
         <Flex 
           direction="column" 
@@ -460,9 +462,10 @@ export function UniversalWidget({ config, connections, onUpdateConfig, onRemove,
       title={config.title}
       isConnected={isConnected}
       footerMessage={`Connected to ${config.dataSources.length} data source(s)`}
+      onRemove={onRemove}
     >
-      {/* 설정(수정) + Remove 버튼 같은 줄에 배치 */}
-      <Box display="flex" justifyContent="flex-end" alignItems="center" mb={2} gap={2}>
+      {/* 설정 버튼만 남김 */}
+      <Box display="flex" justifyContent="flex-end" alignItems="center" mb={2}>
         <IconButton
           aria-label="설정"
           size="sm"
@@ -471,14 +474,6 @@ export function UniversalWidget({ config, connections, onUpdateConfig, onRemove,
         >
           <FiSettings />
         </IconButton>
-        <Button
-          size="sm"
-          colorScheme="red"
-          variant="solid"
-          onClick={onRemove}
-        >
-          Remove
-        </Button>
       </Box>
       <Box p={2} h="100%">
         {renderVisualizations()}

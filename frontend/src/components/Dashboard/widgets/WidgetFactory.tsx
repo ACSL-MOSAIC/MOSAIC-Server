@@ -88,7 +88,7 @@ export function WidgetFactory({ type, robotId, dataType, connections, config, wi
         GO2_LOW_STATE_TYPE,
         (robotId) => new Go2LowStateStore(robotId)
       );
-      return <Go2LowStateWidget robotId={robotId} store={lowStateStore as Go2LowStateStore} dataType={dataType} />;
+      return <Go2LowStateWidget robotId={robotId} store={lowStateStore as Go2LowStateStore} dataType={dataType} onRemove={onRemove} />;
     
     case 'go2_ouster_pointcloud':
       // Dynamic store creation
@@ -97,7 +97,7 @@ export function WidgetFactory({ type, robotId, dataType, connections, config, wi
         GO2_OUSTER_POINTCLOUD2_TYPE,
         (robotId) => new Go2OusterPointCloudStore(robotId)
       );
-      return <Go2OusterPointCloudWidget robotId={robotId} store={pointCloudStore as Go2OusterPointCloudStore} dataType={dataType} />;
+      return <Go2OusterPointCloudWidget robotId={robotId} store={pointCloudStore as Go2OusterPointCloudStore} dataType={dataType} onRemove={onRemove} />;
     
     case 'turtlesim_position':
       // Dynamic store creation
@@ -106,7 +106,7 @@ export function WidgetFactory({ type, robotId, dataType, connections, config, wi
         TURTLESIM_POSITION_TYPE,
         (robotId) => new TurtlesimPositionStore(robotId)
       );
-      return <TurtlesimPositionWidget robotId={robotId} store={positionStore as TurtlesimPositionStore} dataType={dataType} />;
+      return <TurtlesimPositionWidget robotId={robotId} store={positionStore as TurtlesimPositionStore} dataType={dataType} onRemove={onRemove} />;
     
     case 'turtlesim_remote_control':
       // Dynamic store creation
@@ -115,14 +115,14 @@ export function WidgetFactory({ type, robotId, dataType, connections, config, wi
         TURTLESIM_REMOTE_CONTROL_TYPE,
         (robotId) => new TurtlesimRemoteControlStore(robotId)
       );
-      return <TurtlesimRemoteControlWidget robotId={robotId} store={remoteControlStore as TurtlesimRemoteControlStore} dataType={dataType} />;
+      return <TurtlesimRemoteControlWidget robotId={robotId} store={remoteControlStore as TurtlesimRemoteControlStore} dataType={dataType} onRemove={onRemove} />;
     
     case 'turtlesim_video':
       const videoStore = videoStoreManager.createVideoStoreByMediaTypeAuto(
         robotId,
         'turtlesim_video'
       );
-      return <TurtlesimVideoWidget robotId={robotId} widgetId={robotId} store={videoStore as TurtlesimVideoStore} dataType={dataType} />;
+      return <TurtlesimVideoWidget robotId={robotId} widgetId={robotId} store={videoStore as TurtlesimVideoStore} dataType={dataType} onRemove={onRemove} />;
     
     case 'universal':
       if (!config) {

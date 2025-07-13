@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, Text, VStack, HStack, Badge, Flex } from '@chakra-ui/react'
+import { Box, Text, VStack, HStack, Badge, Flex, Button } from '@chakra-ui/react'
 
 export interface WidgetFrameProps {
   title: string
@@ -12,6 +12,7 @@ export interface WidgetFrameProps {
   footerMessage?: string
   minHeight?: string
   padding?: string
+  onRemove?: () => void
 }
 
 export function WidgetFrame({ 
@@ -21,18 +22,40 @@ export function WidgetFrame({
   footerInfo = [], 
   footerMessage,
   minHeight = "250px",
-  padding = "3"
+  padding = "3",
+  onRemove
 }: WidgetFrameProps) {
   return (
     <VStack gap={3} align="stretch" h="100%">
-      {/* Header */}
-      <Flex justify="space-between" align="center">
+      {/* Header - 드래그 가능한 영역 */}
+      <Flex 
+        justify="space-between" 
+        align="center" 
+        className="widget-header"
+        cursor="move"
+      >
         <Text fontSize="sm" fontWeight="bold" color={isConnected ? 'green.500' : 'gray.500'}>
           {title}
         </Text>
-        <Badge colorScheme={isConnected ? 'green' : 'gray'} variant="subtle">
-          {isConnected ? 'Connected' : 'Disconnected'}
-        </Badge>
+        
+        <HStack gap={2}>
+          <Badge colorScheme={isConnected ? 'green' : 'gray'} variant="subtle">
+            {isConnected ? 'Connected' : 'Disconnected'}
+          </Badge>
+          {onRemove && (
+            <Button
+              size="xs"
+              variant="solid"
+              colorScheme="teal"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove();
+              }}
+            >
+              Remove
+            </Button>
+          )}
+        </HStack>
       </Flex>
       
       {/* Main Container */}

@@ -9,7 +9,7 @@ export interface Go2OusterPointCloudWidgetProps extends WidgetProps {
   store: Go2OusterPointCloudStore;
 }
 
-export function Go2OusterPointCloudWidget({ robotId, store, dataType }: Go2OusterPointCloudWidgetProps) {
+export function Go2OusterPointCloudWidget({ robotId, store, dataType, onRemove }: Go2OusterPointCloudWidgetProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [pointCount, setPointCount] = useState(0);
@@ -226,6 +226,7 @@ export function Go2OusterPointCloudWidget({ robotId, store, dataType }: Go2Ouste
       isConnected={isConnected}
       footerInfo={footerInfo}
       footerMessage={isConnected ? 'PointCloud data active' : 'Waiting for data...'}
+      onRemove={onRemove}
     >
       {error ? (
         <Flex 

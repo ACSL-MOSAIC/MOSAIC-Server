@@ -122,7 +122,7 @@ function IMUVisualizer({ imuState }: { imuState: Go2ImuStateData }) {
   );
 }
 
-export function Go2LowStateWidget({ robotId, store, dataType }: Go2LowStateWidgetProps) {
+export function Go2LowStateWidget({ robotId, store, dataType, onRemove }: Go2LowStateWidgetProps) {
   const [data, setData] = useState<ParsedGo2LowState | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [motorHistory, setMotorHistory] = useState<{ labels: string[]; values: number[][][] }>(
@@ -177,6 +177,7 @@ export function Go2LowStateWidget({ robotId, store, dataType }: Go2LowStateWidge
         title="Go2 Low State"
         isConnected={false}
         footerMessage="Loading..."
+        onRemove={onRemove}
       >
         <Flex 
           direction="column" 
@@ -299,6 +300,7 @@ export function Go2LowStateWidget({ robotId, store, dataType }: Go2LowStateWidge
       footerInfo={footerInfo}
       footerMessage={isConnected ? 'Go2 Low State data active' : 'Waiting for data...'}
       padding="4"
+      onRemove={onRemove}
     >
       <TabsRoot defaultValue="motor" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <TabsList style={{ flexShrink: 0 }}>
