@@ -2,18 +2,20 @@ import React, { useEffect, useState, useMemo } from 'react'
 import { Box, Text, Flex, Grid, GridItem, VStack, HStack, IconButton, Button } from '@chakra-ui/react'
 import { WidgetFrame } from '../WidgetFrame'
 import { ReadOnlyStoreManager } from '../../../../dashboard/store/data-channel-store/readonly/read-only-store-manager'
-import { UniversalWidgetConfig, VisualizationConfig } from '../../../../dashboard/store/data-channel-store/readonly/dynamic/universal-widget-config'
+import { UniversalWidgetConfig, VisualizationConfig, ChartConfig, GaugeConfig } from '../../../../dashboard/store/data-channel-store/readonly/dynamic/universal-widget-config'
 import { DataChannelConfigUtils } from '../../../../rtc/webrtc-datachannel-config'
-import { Line } from 'react-chartjs-2'
+import { Line, Bar, Scatter } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 } from 'chart.js'
 import { FiSettings } from 'react-icons/fi'
 import { UniversalWidgetConfigurator } from './UniversalWidgetConfigurator'
@@ -25,9 +27,11 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 )
 
 interface UniversalWidgetProps {
@@ -56,98 +60,272 @@ const getNestedValue = (obj: any, path: string): any => {
   }, obj)
 }
 
-// 시각화 컴포넌트들
-const LineChartVisualization: React.FC<{
+// 개선된 차트 시각화 컴포넌트
+const EnhancedChartVisualization: React.FC<{
   config: VisualizationConfig
   data: any[]
   maxDataPoints?: number
-}> = ({ config, data, maxDataPoints = 50 }) => {
+}> = ({ config, data, maxDataPoints = 100 }) => {
+  const chartConfig = config.chartConfig || {
+    xAxis: { fieldPath: 'timestamp', label: 'Time' },
+    yAxes: [{ fieldPath: config.dataMapping.fieldPath, label: config.dataMapping.label || 'Value', color: config.dataMapping.color || '#3182ce' }],
+    chartType: 'line',
+    showLegend: true,
+    showGrid: true,
+    animation: true,
+    tension: 0.1,
+    pointRadius: 3,
+    borderWidth: 2
+  }
+
   const chartData = useMemo(() => {
     const recentData = data.slice(-maxDataPoints)
-    const values = recentData.map(item => {
-      const value = getNestedValue(item, config.dataMapping.fieldPath)
-      return typeof value === 'number' ? value : 0
+    
+    // X축 데이터 준비
+    const xValues = recentData.map(item => {
+      const xValue = getNestedValue(item, chartConfig.xAxis.fieldPath)
+      if (chartConfig.xAxis.fieldPath === 'timestamp') {
+        return new Date(xValue).toLocaleTimeString() // 시간을 문자열로 표시
+      }
+      return xValue
     })
     
-    const labels = recentData.map(item => 
-      new Date(item.timestamp).toLocaleTimeString()
-    )
+    // Y축 데이터셋들 준비
+    const datasets = chartConfig.yAxes.map((yAxis, index) => {
+      const values = recentData.map(item => {
+        const value = getNestedValue(item, yAxis.fieldPath)
+        return typeof value === 'number' ? value : 0
+      })
+      
+      const baseColor = yAxis.color || config.dataMapping.color || '#3182ce'
+      const backgroundColor = chartConfig.chartType === 'area' 
+        ? `${baseColor}40` // 투명도 추가
+        : baseColor
+      
+      return {
+        label: yAxis.label || yAxis.fieldPath,
+        data: values,
+        borderColor: baseColor,
+        backgroundColor: backgroundColor,
+        tension: chartConfig.tension || 0.1,
+        pointRadius: chartConfig.pointRadius || 3,
+        borderWidth: chartConfig.borderWidth || 2,
+        fill: chartConfig.chartType === 'area' ? true : false,
+        pointBackgroundColor: baseColor,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: baseColor,
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2
+      }
+    })
     
     return {
-      labels,
-      datasets: [{
-        label: config.dataMapping.label || config.dataMapping.fieldPath,
-        data: values,
-        borderColor: config.dataMapping.color || '#3182ce',
-        backgroundColor: config.dataMapping.color || '#3182ce',
-        tension: 0.1
-      }]
+      labels: xValues,
+      datasets
     }
-  }, [data, config, maxDataPoints])
+  }, [data, chartConfig, maxDataPoints])
+
+  const chartOptions = useMemo(() => {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: chartConfig.animation ? 750 : 0,
+        easing: 'easeInOutQuart' as const
+      },
+      plugins: {
+        legend: { 
+          display: chartConfig.showLegend !== false,
+          position: 'top' as const,
+          labels: {
+            usePointStyle: true,
+            padding: 20,
+            font: {
+              size: 12
+            }
+          }
+        },
+        tooltip: {
+          mode: 'index' as const,
+          intersect: false,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: 1,
+          cornerRadius: 8,
+          displayColors: true
+        }
+      },
+      scales: {
+        x: {
+          type: 'category' as const,
+          display: true,
+          grid: {
+            display: chartConfig.showGrid !== false,
+            color: 'rgba(0, 0, 0, 0.1)',
+            drawBorder: false
+          },
+          ticks: {
+            color: '#666',
+            font: { size: 11 },
+            maxTicksLimit: 8
+          }
+        },
+        y: {
+          display: true,
+          grid: {
+            display: chartConfig.showGrid !== false,
+            color: 'rgba(0, 0, 0, 0.1)',
+            drawBorder: false
+          },
+          ticks: {
+            color: '#666',
+            font: { size: 11 }
+          },
+          beginAtZero: true
+        }
+      },
+      interaction: {
+        mode: 'nearest' as const,
+        axis: 'x' as const,
+        intersect: false
+      },
+      elements: {
+        point: {
+          hoverRadius: 8
+        }
+      }
+    }
+  }, [chartConfig])
+
+  const renderChart = () => {
+    switch (chartConfig.chartType) {
+      case 'bar':
+        return <Bar data={chartData} options={chartOptions} height={200} />
+      case 'scatter':
+        return <Scatter data={chartData} options={chartOptions} height={200} />
+      case 'area':
+      case 'line':
+      default:
+        return <Line data={chartData} options={chartOptions} height={200} />
+    }
+  }
 
   return (
-    <Box p={2}>
-      <Text fontSize="sm" fontWeight="bold" mb={2}>{config.title}</Text>
-      <Line 
-        data={chartData}
-        options={{
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          },
-          scales: {
-            y: { beginAtZero: true }
-          }
-        }}
-        height={100}
-      />
+    <Box
+      p={4}
+      h="100%"
+      display="flex"
+      flexDirection="column"
+      borderRadius="lg"
+      boxShadow="0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
+      border="1px solid"
+      borderColor="gray.200"
+      bg="white"
+      _hover={{
+        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+      }}
+      transition="all 0.2s"
+    >
+      <Text fontSize="lg" fontWeight="bold" mb={3} color="gray.800">
+        {config.title}
+      </Text>
+      <Box flex="1" position="relative">
+        {renderChart()}
+      </Box>
     </Box>
   )
 }
 
-const GaugeVisualization: React.FC<{
+import GaugeChart from 'react-gauge-chart'
+
+// 개선된 게이지 시각화 컴포넌트
+const EnhancedGaugeVisualization: React.FC<{
   config: VisualizationConfig
   data: any
 }> = ({ config, data }) => {
   const value = getNestedValue(data, config.dataMapping.fieldPath)
   const numericValue = typeof value === 'number' ? value : 0
   
+  const gaugeConfig = config.gaugeConfig || {
+    min: 0,
+    max: 100,
+    thresholds: { warning: 70, critical: 90 },
+    colors: { low: '#10b981', medium: '#f59e0b', high: '#ef4444' },
+    showValue: true,
+    showUnit: true,
+    animation: true,
+    size: 'medium'
+  }
+  
+  const normalizedValue = Math.max(gaugeConfig.min || 0, Math.min(gaugeConfig.max || 100, numericValue))
+  const percentage = ((normalizedValue - (gaugeConfig.min || 0)) / ((gaugeConfig.max || 100) - (gaugeConfig.min || 0))) / 100
+  
+  // 색상 결정
+  const getGaugeColors = () => {
+    const lowColor = gaugeConfig.colors?.low || '#10b981'
+    const mediumColor = gaugeConfig.colors?.medium || '#f59e0b'
+    const highColor = gaugeConfig.colors?.high || '#ef4444'
+    
+    return [lowColor, mediumColor, highColor]
+  }
+  
+  // 크기 설정
+  const sizeMap = {
+    small: { width: 200, height: 200 },
+    medium: { width: 250, height: 250 },
+    large: { width: 300, height: 300 }
+  }
+  
+  const size = sizeMap[gaugeConfig.size || 'medium']
+  
   return (
-    <Box p={2} textAlign="center">
-      <Text fontSize="sm" fontWeight="bold" mb={2}>{config.title}</Text>
+    <Box
+      p={4}
+      h="100%"
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      borderRadius="lg"
+      boxShadow="0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
+      border="1px solid"
+      borderColor="gray.200"
+      bg="white"
+      _hover={{
+        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+      }}
+      transition="all 0.2s"
+    >
+      <Text fontSize="lg" fontWeight="bold" mb={4} color="gray.800">
+        {config.title}
+      </Text>
+      
       <Box
-        w="80px"
-        h="80px"
-        borderRadius="50%"
-        border="8px solid"
-        borderColor="gray.200"
+        width={size.width}
+        height={size.height}
         display="flex"
+        flexDirection="column"
         alignItems="center"
         justifyContent="center"
-        mx="auto"
-        position="relative"
-        _before={{
-          content: '""',
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '60px',
-          height: '60px',
-          borderRadius: '50%',
-          background: `conic-gradient(${config.dataMapping.color || '#3182ce'} 0deg, ${config.dataMapping.color || '#3182ce'} ${Math.min(numericValue * 3.6, 360)}deg, #e2e8f0 ${Math.min(numericValue * 3.6, 360)}deg, #e2e8f0 360deg)`
-        }}
       >
-        <Text fontSize="lg" fontWeight="bold" zIndex={1}>
-          {numericValue.toFixed(1)}
-        </Text>
+        <GaugeChart
+          id={`gauge-${config.id}`}
+          nrOfLevels={3}
+          colors={getGaugeColors()}
+          percent={percentage}
+          arcWidth={0.3}
+          textColor="#464A4F"
+          needleColor="#345243"
+          needleBaseColor="#345243"
+          hideText={!gaugeConfig.showValue}
+          animate={gaugeConfig.animation}
+          formatTextValue={() => `${normalizedValue.toFixed(1)}${gaugeConfig.showUnit && config.dataMapping.unit ? ` ${config.dataMapping.unit}` : ''}`}
+        />
       </Box>
-      {config.dataMapping.unit && (
-        <Text fontSize="xs" color="gray.500" mt={1}>
-          {config.dataMapping.unit}
-        </Text>
-      )}
     </Box>
   )
 }
@@ -159,9 +337,27 @@ const TextVisualization: React.FC<{
   const value = getNestedValue(data, config.dataMapping.fieldPath)
   
   return (
-    <Box p={2}>
-      <Text fontSize="sm" fontWeight="bold" mb={1}>{config.title}</Text>
-      <Text fontSize="lg" color={config.dataMapping.color || 'inherit'}>
+    <Box
+      p={4}
+      h="100%"
+      display="flex"
+      flexDirection="column"
+      justifyContent="center"
+      alignItems="center"
+      borderRadius="lg"
+      boxShadow="0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
+      border="1px solid"
+      borderColor="gray.200"
+      bg="white"
+      _hover={{
+        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+      }}
+      transition="all 0.2s"
+    >
+      <Text fontSize="lg" fontWeight="bold" mb={3} color="gray.800">
+        {config.title}
+      </Text>
+      <Text fontSize="2xl" fontWeight="bold" color={config.dataMapping.color || 'gray.700'}>
         {String(value || 'N/A')}
       </Text>
     </Box>
@@ -175,28 +371,32 @@ const NumberVisualization: React.FC<{
   const value = getNestedValue(data, config.dataMapping.fieldPath)
   const numericValue = typeof value === 'number' ? value : 0
   
-  console.log('NumberVisualization - 렌더링:', { config, data, value, numericValue })
-  
   return (
     <Box
-      p={3}
+      p={4}
       h="100%"
       display="flex"
       flexDirection="column"
       justifyContent="center"
       alignItems="center"
-      borderRadius="md"
-      boxShadow="sm"
+      borderRadius="lg"
+      boxShadow="0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
       border="1px solid"
       borderColor="gray.200"
       bg="white"
+      _hover={{
+        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+      }}
+      transition="all 0.2s"
     >
-      <Text fontSize="sm" fontWeight="bold" mb={2}>{config.title}</Text>
-      <Text fontSize="2xl" fontWeight="bold" color={config.dataMapping.color || 'inherit'}>
+      <Text fontSize="lg" fontWeight="bold" mb={3} color="gray.800">
+        {config.title}
+      </Text>
+      <Text fontSize="4xl" fontWeight="bold" color={config.dataMapping.color || 'blue.500'}>
         {numericValue.toFixed(2)}
       </Text>
       {config.dataMapping.unit && (
-        <Text fontSize="xs" color="gray.500">
+        <Text fontSize="lg" color="gray.600" mt={2}>
           {config.dataMapping.unit}
         </Text>
       )}
@@ -262,13 +462,22 @@ const VisualizationRenderer: React.FC<{
   data: any
   dataHistory?: any[]
 }> = ({ config, data, dataHistory = [] }) => {
-  console.log('VisualizationRenderer - 렌더링:', { config, data, dataHistory })
-  
   switch (config.type) {
+    case 'chart': {
+      // 내부 chartType에 따라 분기
+      const chartType = config.chartConfig?.chartType || 'line';
+      const xAxis = config.chartConfig?.xAxis || { fieldPath: 'timestamp' };
+      const yAxes = config.chartConfig?.yAxes && config.chartConfig.yAxes.length > 0 ? config.chartConfig.yAxes : [{ fieldPath: config.dataMapping.fieldPath }];
+      const chartConfig = { ...config, chartConfig: { ...config.chartConfig, chartType, xAxis, yAxes } };
+      return <EnhancedChartVisualization config={chartConfig} data={dataHistory} />;
+    }
     case 'lineChart':
-      return <LineChartVisualization config={config} data={dataHistory} />
+    case 'barChart':
+    case 'scatterChart':
+    case 'areaChart':
+      return <EnhancedChartVisualization config={config} data={dataHistory} />
     case 'gauge':
-      return <GaugeVisualization config={config} data={data} />
+      return <EnhancedGaugeVisualization config={config} data={data} />
     case 'text':
       return <TextVisualization config={config} data={data} />
     case 'number':

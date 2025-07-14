@@ -9,8 +9,7 @@ import {
   Field,
   IconButton,
   Fieldset,
-  Portal,
-  Divider
+  Portal
 } from '@chakra-ui/react'
 // Simple icon components
 const AddIcon = () => (
@@ -24,7 +23,7 @@ const DeleteIcon = () => (
     <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
   </svg>
 )
-import { UniversalWidgetConfig, DataSourceConfig, VisualizationConfig, VisualizationType } from '../../../../dashboard/store/data-channel-store/readonly/dynamic/universal-widget-config'
+import { UniversalWidgetConfig, DataSourceConfig, VisualizationConfig, VisualizationType, UniversalWidgetConfigUtils, ChartConfig, ChartAxisConfig } from '../../../../dashboard/store/data-channel-store/readonly/dynamic/universal-widget-config'
 import { DataChannelConfigUtils } from '../../../../rtc/webrtc-datachannel-config'
 import { ReadOnlyStoreManager } from '../../../../dashboard/store/data-channel-store/readonly/read-only-store-manager'
 import {
@@ -236,6 +235,27 @@ export function UniversalWidgetConfigurator({
     }
   }
 
+  // yAxes, xAxis 기본값 보장
+  const getYAxisArray = (chartConfig: ChartConfig | undefined, fallbackField: string): ChartAxisConfig[] => {
+    if (chartConfig && Array.isArray(chartConfig.yAxes) && chartConfig.yAxes.length > 0) return chartConfig.yAxes
+    return [{ fieldPath: fallbackField }]
+  }
+  const getXAxis = (chartConfig: ChartConfig | undefined): ChartAxisConfig => {
+    if (chartConfig && chartConfig.xAxis) return chartConfig.xAxis
+    return { fieldPath: 'timestamp' }
+  }
+
+  // chartConfig 업데이트 시 항상 xAxis, yAxes 기본값 보장
+  const updateChartConfig = (oldConfig: ChartConfig | undefined, updates: Partial<ChartConfig>, fallbackField: string): ChartConfig => {
+    return {
+      xAxis: oldConfig?.xAxis || { fieldPath: 'timestamp' },
+      yAxes: oldConfig?.yAxes && oldConfig.yAxes.length > 0 ? oldConfig.yAxes : [{ fieldPath: fallbackField }],
+      chartType: updates.chartType || oldConfig?.chartType || 'line',
+      ...oldConfig,
+      ...updates
+    }
+  }
+
   return (
     <DialogRoot
       size={{ base: "xs", md: "lg" }}
@@ -378,7 +398,7 @@ export function UniversalWidgetConfigurator({
                       
                       <VStack gap={2} align="stretch">
                         <Field.Root>
-                          <Field.Label fontSize="sm">제목</Field.Label>
+                          <Field.Label>제목</Field.Label>
                           <Input
                             size="sm"
                             value={visualization.title}
@@ -387,7 +407,7 @@ export function UniversalWidgetConfigurator({
                         </Field.Root>
                         
                         <Field.Root>
-                          <Field.Label fontSize="sm">시각화 타입</Field.Label>
+                          <Field.Label>Visualization Type</Field.Label>
                           <select
                             value={visualization.type}
                             onChange={(e) => updateVisualization(visualization.id, { type: e.target.value as VisualizationType })}
@@ -399,16 +419,42 @@ export function UniversalWidgetConfigurator({
                               fontSize: '14px'
                             }}
                           >
-                            <option value="number">숫자</option>
-                            <option value="gauge">게이지</option>
-                            <option value="lineChart">차트</option>
-                            <option value="text">텍스트</option>
+                            <option value="chart">Chart</option>
+                            <option value="number">Number</option>
+                            <option value="gauge">Gauge</option>
+                            <option value="text">Text</option>
                             <option value="json">JSON</option>
                           </select>
                         </Field.Root>
+                        {/* Chart 내부 타입 선택 UI */}
+                        {visualization.type === 'chart' && (
+                          <>
+                            <Field.Root>
+                              <Field.Label fontSize="sm">Chart Type</Field.Label>
+                              <select
+                                value={visualization.chartConfig?.chartType ?? 'line'}
+                                onChange={(e) => updateVisualization(visualization.id, { 
+                                  chartConfig: updateChartConfig(visualization.chartConfig, { chartType: e.target.value as any }, visualization.dataMapping.fieldPath)
+                                })}
+                                style={{
+                                  padding: '8px',
+                                  border: '1px solid #d1d5db',
+                                  borderRadius: '6px',
+                                  width: '100%',
+                                  fontSize: '14px'
+                                }}
+                              >
+                                <option value="line">Line Chart</option>
+                                <option value="bar">Bar Chart</option>
+                                <option value="scatter">Scatter Chart</option>
+                                <option value="area">Area Chart</option>
+                              </select>
+                            </Field.Root>
+                          </>
+                        )}
                         
                         <Field.Root>
-                          <Field.Label fontSize="sm">데이터 필드 경로</Field.Label>
+                          <Field.Label>데이터 필드 경로</Field.Label>
                           <Box display="flex" flexDirection="column" gap={2}>
                             {visualization.type === 'json' ? (
                               <>
@@ -458,7 +504,7 @@ export function UniversalWidgetConfigurator({
                               <Box display="flex" gap={2} alignItems="center">
                                 <Input
                                   size="sm"
-                                  value={visualization.dataMapping.fieldPath}
+                                  value={Array.isArray(visualization.dataMapping.fieldPath) ? visualization.dataMapping.fieldPath[0] || '' : visualization.dataMapping.fieldPath}
                                   onChange={(e) => updateVisualization(visualization.id, { 
                                     dataMapping: { ...visualization.dataMapping, fieldPath: e.target.value }
                                   })}
@@ -467,7 +513,7 @@ export function UniversalWidgetConfigurator({
                                 />
                                 {getFilteredFieldPathOptions(visualization.type).length > 0 && (
                                   <select
-                                    value={visualization.dataMapping.fieldPath}
+                                    value={Array.isArray(visualization.dataMapping.fieldPath) ? visualization.dataMapping.fieldPath[0] || '' : visualization.dataMapping.fieldPath}
                                     onChange={e => updateVisualization(visualization.id, { dataMapping: { ...visualization.dataMapping, fieldPath: e.target.value } })}
                                     style={{ minWidth: 120 }}
                                   >
@@ -483,7 +529,7 @@ export function UniversalWidgetConfigurator({
                         </Field.Root>
                         
                         <Field.Root>
-                          <Field.Label fontSize="sm">라벨</Field.Label>
+                          <Field.Label>라벨</Field.Label>
                           <Input
                             size="sm"
                             value={visualization.dataMapping.label || ''}
@@ -495,7 +541,7 @@ export function UniversalWidgetConfigurator({
                         </Field.Root>
                         
                         <Field.Root>
-                          <Field.Label fontSize="sm">단위</Field.Label>
+                          <Field.Label>단위</Field.Label>
                           <Input
                             size="sm"
                             value={visualization.dataMapping.unit || ''}
@@ -505,6 +551,175 @@ export function UniversalWidgetConfigurator({
                             placeholder="예: V, A, rad/s"
                           />
                         </Field.Root>
+                        
+                        {/* 차트 전용 설정 */}
+                        {(visualization.type === 'lineChart' || visualization.type === 'barChart' || visualization.type === 'scatterChart' || visualization.type === 'areaChart') && (
+                          <>
+                            <Field.Root>
+                              <Field.Label fontSize="sm">X Axis Field</Field.Label>
+                              <select
+                                value={visualization.chartConfig?.xAxis?.fieldPath || 'timestamp'}
+                                onChange={(e) => updateVisualization(visualization.id, { 
+                                  chartConfig: updateChartConfig(visualization.chartConfig, { xAxis: { fieldPath: e.target.value } }, visualization.dataMapping.fieldPath)
+                                })}
+                                style={{
+                                  padding: '8px',
+                                  border: '1px solid #d1d5db',
+                                  borderRadius: '6px',
+                                  width: '100%',
+                                  fontSize: '14px'
+                                }}
+                              >
+                                <option value="timestamp">timestamp</option>
+                                {fieldPathOptions.map(opt => (
+                                  <option key={opt.path} value={opt.path}>{opt.path} ({opt.type})</option>
+                                ))}
+                              </select>
+                            </Field.Root>
+                            <Field.Root>
+                              <Field.Label fontSize="sm">Y Axes</Field.Label>
+                              <VStack gap={2} align="stretch">
+                                {getYAxisArray(visualization.chartConfig, visualization.dataMapping.fieldPath).map((yAxis: ChartAxisConfig, yIdx: number, arr: ChartAxisConfig[]) => (
+                                  <Box key={yIdx} display="flex" gap={2} alignItems="center" border="1px solid #e2e8f0" borderRadius="md" p={2} bg="#fff">
+                                    <select
+                                      value={typeof yAxis.fieldPath === 'string' ? yAxis.fieldPath : ''}
+                                      onChange={e => {
+                                        const newYAxes = [...getYAxisArray(visualization.chartConfig, visualization.dataMapping.fieldPath)]
+                                        newYAxes[yIdx] = { ...newYAxes[yIdx], fieldPath: e.target.value }
+                                        updateVisualization(visualization.id, { chartConfig: updateChartConfig(visualization.chartConfig, { yAxes: newYAxes }, visualization.dataMapping.fieldPath) })
+                                      }}
+                                      style={{ minWidth: 120 }}
+                                    >
+                                      <option value="">Select field</option>
+                                      {fieldPathOptions.filter(opt => opt.type === 'number').map(opt => (
+                                        <option key={String(opt.path)} value={typeof opt.path === 'string' ? opt.path : ''}>{typeof opt.path === 'string' ? opt.path : ''} ({opt.type})</option>
+                                      ))}
+                                    </select>
+                                    <Input
+                                      size="sm"
+                                      value={typeof yAxis.label === 'string' ? yAxis.label : ''}
+                                      onChange={e => {
+                                        const newYAxes = [...getYAxisArray(visualization.chartConfig, visualization.dataMapping.fieldPath)]
+                                        newYAxes[yIdx] = { ...newYAxes[yIdx], label: e.target.value }
+                                        updateVisualization(visualization.id, { chartConfig: updateChartConfig(visualization.chartConfig, { yAxes: newYAxes }, visualization.dataMapping.fieldPath) })
+                                      }}
+                                    />
+                                    <Input
+                                      size="sm"
+                                      value={typeof yAxis.color === 'string' ? yAxis.color : ''}
+                                      onChange={e => {
+                                        const newYAxes = [...getYAxisArray(visualization.chartConfig, visualization.dataMapping.fieldPath)]
+                                        newYAxes[yIdx] = { ...newYAxes[yIdx], color: e.target.value }
+                                        updateVisualization(visualization.id, { chartConfig: updateChartConfig(visualization.chartConfig, { yAxes: newYAxes }, visualization.dataMapping.fieldPath) })
+                                      }}
+                                    />
+                                    <Input
+                                      size="sm"
+                                      value={typeof yAxis.unit === 'string' ? yAxis.unit : ''}
+                                      onChange={e => {
+                                        const newYAxes = [...getYAxisArray(visualization.chartConfig, visualization.dataMapping.fieldPath)]
+                                        newYAxes[yIdx] = { ...newYAxes[yIdx], unit: e.target.value }
+                                        updateVisualization(visualization.id, { chartConfig: updateChartConfig(visualization.chartConfig, { yAxes: newYAxes }, visualization.dataMapping.fieldPath) })
+                                      }}
+                                    />
+                                    {arr.length > 1 && (
+                                      <Button size="xs" colorScheme="red" variant="ghost" onClick={() => {
+                                        const newYAxes = arr.filter((_, i) => i !== yIdx)
+                                        updateVisualization(visualization.id, { chartConfig: updateChartConfig(visualization.chartConfig, { yAxes: newYAxes }, visualization.dataMapping.fieldPath) })
+                                      }}>-</Button>
+                                    )}
+                                  </Box>
+                                ))}
+                                <Button size="xs" colorScheme="blue" variant="outline" mt={1} onClick={() => {
+                                  const yAxes = getYAxisArray(visualization.chartConfig, visualization.dataMapping.fieldPath)
+                                  updateVisualization(visualization.id, { chartConfig: updateChartConfig(visualization.chartConfig, { yAxes: [...yAxes, { fieldPath: '' }], xAxis: getXAxis(visualization.chartConfig) }, visualization.dataMapping.fieldPath) })
+                                }}>+ Add Y Axis</Button>
+                              </VStack>
+                            </Field.Root>
+                            <Field.Root>
+                              <Field.Label fontSize="sm">Chart Type</Field.Label>
+                              <select
+                                value={visualization.chartConfig?.chartType ?? 'line'}
+                                onChange={(e) => updateVisualization(visualization.id, { 
+                                  chartConfig: updateChartConfig(visualization.chartConfig, { chartType: e.target.value as any }, visualization.dataMapping.fieldPath)
+                                })}
+                                style={{
+                                  padding: '8px',
+                                  border: '1px solid #d1d5db',
+                                  borderRadius: '6px',
+                                  width: '100%',
+                                  fontSize: '14px'
+                                }}
+                              >
+                                <option value="line">Line Chart</option>
+                                <option value="bar">Bar Chart</option>
+                                <option value="scatter">Scatter Chart</option>
+                                <option value="area">Area Chart</option>
+                              </select>
+                            </Field.Root>
+                          </>
+                        )}
+                        
+                        {/* 게이지 전용 설정 */}
+                        {visualization.type === 'gauge' && (
+                          <>
+                            <Field.Root>
+                              <Field.Label fontSize="sm">최소값</Field.Label>
+                              <Input
+                                size="sm"
+                                type="number"
+                                value={visualization.gaugeConfig?.min || 0}
+                                onChange={(e) => updateVisualization(visualization.id, { 
+                                  gaugeConfig: { 
+                                    ...visualization.gaugeConfig,
+                                    min: parseFloat(e.target.value) || 0
+                                  }
+                                })}
+                                placeholder="0"
+                              />
+                            </Field.Root>
+                            
+                            <Field.Root>
+                              <Field.Label fontSize="sm">최대값</Field.Label>
+                              <Input
+                                size="sm"
+                                type="number"
+                                value={visualization.gaugeConfig?.max || 100}
+                                onChange={(e) => updateVisualization(visualization.id, { 
+                                  gaugeConfig: { 
+                                    ...visualization.gaugeConfig,
+                                    max: parseFloat(e.target.value) || 100
+                                  }
+                                })}
+                                placeholder="100"
+                              />
+                            </Field.Root>
+                            
+                            <Field.Root>
+                              <Field.Label fontSize="sm">게이지 크기</Field.Label>
+                              <select
+                                value={visualization.gaugeConfig?.size || 'medium'}
+                                onChange={(e) => updateVisualization(visualization.id, { 
+                                  gaugeConfig: { 
+                                    ...visualization.gaugeConfig,
+                                    size: e.target.value as any
+                                  }
+                                })}
+                                style={{
+                                  padding: '8px',
+                                  border: '1px solid #d1d5db',
+                                  borderRadius: '6px',
+                                  width: '100%',
+                                  fontSize: '14px'
+                                }}
+                              >
+                                <option value="small">작음</option>
+                                <option value="medium">보통</option>
+                                <option value="large">큼</option>
+                              </select>
+                            </Field.Root>
+                          </>
+                        )}
                       </VStack>
                     </Box>
                   ))}
