@@ -314,6 +314,8 @@ export class ReadOnlyStoreManager {
 
 #### 3.2.4 4단계: 위젯 컴포넌트 생성
 
+모든 DataChannel 기반 위젯은 `onRemove?: () => void` prop을 지원해야 하며, 이 prop이 전달되면 위젯 상단(헤더) 우측에 **Remove** 버튼이 자동으로 표시됩니다. Remove 버튼은 영어로 "Remove"라고 표시되며, Chakra UI의 Button 컴포넌트로 스타일링됩니다. 실제로는 모든 위젯이 WidgetFrame 컴포넌트를 사용하며, WidgetFrame이 Remove 버튼을 자동으로 렌더링합니다.
+
 ```typescript
 // frontend/src/components/Dashboard/widgets/NewDataTypeWidget.tsx
 import React, { useEffect, useState } from 'react';
@@ -327,7 +329,7 @@ export interface NewDataTypeWidgetProps extends WidgetProps {
   store: NewDataTypeStore;
 }
 
-export function NewDataTypeWidget({ robotId, store, dataType }: NewDataTypeWidgetProps) {
+export function NewDataTypeWidget({ robotId, store, dataType, onRemove }: NewDataTypeWidgetProps) {
   const [data, setData] = useState<ParsedNewDataType | null>(null);
 
   useEffect(() => {
@@ -343,6 +345,7 @@ export function NewDataTypeWidget({ robotId, store, dataType }: NewDataTypeWidge
       robotId={robotId}
       dataType={dataType}
       isConnected={!!data}
+      onRemove={onRemove}
     >
       {!data ? (
         <Text color="gray.500">Loading...</Text>
@@ -355,6 +358,27 @@ export function NewDataTypeWidget({ robotId, store, dataType }: NewDataTypeWidge
     </WidgetFrame>
   );
 }
+```
+
+WidgetFrame 내부에서는 다음과 같이 Remove 버튼을 렌더링합니다:
+
+```tsx
+<Flex justify="space-between" align="center">
+  <Text fontSize="sm" fontWeight="bold">{title}</Text>
+  {onRemove && (
+    <Button
+      size="xs"
+      variant="solid"
+      colorScheme="teal"
+      onClick={e => {
+        e.stopPropagation();
+        onRemove();
+      }}
+    >
+      Remove
+    </Button>
+  )}
+</Flex>
 ```
 
 #### 3.2.5 5단계: 채널 설정 추가
@@ -764,6 +788,8 @@ export class ReadOnlyStoreManager {
 
 #### 3.2.4 Step 4: Create Widget Component
 
+All DataChannel-based widgets must support the `onRemove?: () => void` prop, and when this prop is passed, a **Remove** button is automatically displayed in the top-right corner of the widget header. The Remove button is displayed in English as "Remove" and is styled with Chakra UI's Button component. In practice, all widgets use the WidgetFrame component, which automatically renders the Remove button.
+
 ```typescript
 // frontend/src/components/Dashboard/widgets/NewDataTypeWidget.tsx
 import React, { useEffect, useState } from 'react';
@@ -777,7 +803,7 @@ export interface NewDataTypeWidgetProps extends WidgetProps {
   store: NewDataTypeStore;
 }
 
-export function NewDataTypeWidget({ robotId, store, dataType }: NewDataTypeWidgetProps) {
+export function NewDataTypeWidget({ robotId, store, dataType, onRemove }: NewDataTypeWidgetProps) {
   const [data, setData] = useState<ParsedNewDataType | null>(null);
 
   useEffect(() => {
@@ -793,6 +819,7 @@ export function NewDataTypeWidget({ robotId, store, dataType }: NewDataTypeWidge
       robotId={robotId}
       dataType={dataType}
       isConnected={!!data}
+      onRemove={onRemove}
     >
       {!data ? (
         <Text color="gray.500">Loading...</Text>
@@ -805,6 +832,27 @@ export function NewDataTypeWidget({ robotId, store, dataType }: NewDataTypeWidge
     </WidgetFrame>
   );
 }
+```
+
+Inside WidgetFrame, the Remove button is rendered as follows:
+
+```tsx
+<Flex justify="space-between" align="center">
+  <Text fontSize="sm" fontWeight="bold">{title}</Text>
+  {onRemove && (
+    <Button
+      size="xs"
+      variant="solid"
+      colorScheme="teal"
+      onClick={e => {
+        e.stopPropagation();
+        onRemove();
+      }}
+    >
+      Remove
+    </Button>
+  )}
+</Flex>
 ```
 
 #### 3.2.5 Step 5: Add Channel Configuration
