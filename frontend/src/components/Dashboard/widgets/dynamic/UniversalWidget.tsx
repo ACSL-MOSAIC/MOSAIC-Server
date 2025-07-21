@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react'
 import { Box, Text, Flex, Grid, GridItem, VStack, HStack, IconButton, Button } from '@chakra-ui/react'
 import { WidgetFrame } from '../WidgetFrame'
 import { ReadOnlyStoreManager } from '../../../../dashboard/store/data-channel-store/readonly/read-only-store-manager'
-import { UniversalWidgetConfig, VisualizationConfig, ChartConfig, GaugeConfig } from '../../../../dashboard/store/data-channel-store/readonly/dynamic/universal-widget-config'
+import { UniversalWidgetConfig, VisualizationConfig, ChartConfig, GaugeConfig } from './universal-widget-config'
 import { DataChannelConfigUtils } from '../../../../rtc/config/webrtc-datachannel-config'
 import { Line, Bar, Scatter } from 'react-chartjs-2'
 import {

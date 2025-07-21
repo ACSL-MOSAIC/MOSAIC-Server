@@ -23,7 +23,7 @@ import { TURTLESIM_VIDEO_TYPE } from '../../../dashboard/parser/turtlesim-video'
 import { useWebSocket } from '@/contexts/WebSocketContext'
 import { useRobotMapping } from '@/hooks/useRobotMapping'
 import { UniversalWidget } from './dynamic/UniversalWidget'
-import { UniversalWidgetConfig } from '../../../dashboard/store/data-channel-store/readonly/dynamic/universal-widget-config'
+import { UniversalWidgetConfig } from './dynamic/universal-widget-config'
 
 export interface WidgetFactoryProps extends WidgetProps {
   type: string;
