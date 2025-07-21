@@ -270,7 +270,7 @@ export function DynamicTypeManager({ robotId, isOpen, onClose, onTypeUpdated }: 
               <Dialog.CloseTrigger />
             </Dialog.Header>
             
-            <Dialog.Body p={6}>
+            <Dialog.Body p={6} overflowY="auto" maxH="70vh">
               {!isEditing ? (
                 // 타입 목록 보기
                 <VStack gap={6} align="stretch">

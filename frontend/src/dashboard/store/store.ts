@@ -13,9 +13,8 @@ export class DataStore<T, I = string> {
 
     add(data: I) {
         const parsedData = this.parser(data)
-
+        console.log(`[DataStore] 데이터 추가됨:`, parsedData)
         if (parsedData === null) {
-            // null 반환은 파싱 실패가 아니라 아직 완성되지 않은 데이터일 수 있음
             return
         }
 
