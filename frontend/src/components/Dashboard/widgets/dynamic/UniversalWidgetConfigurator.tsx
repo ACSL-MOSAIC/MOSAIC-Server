@@ -89,14 +89,38 @@ export function UniversalWidgetConfigurator({
     }
   )
 
-  // 사용 가능한 데이터 타입들 (readonly만)
-  const availableDataTypes = DataChannelConfigUtils.getReadOnlyDataTypes()
+  const readOnlyStoreManager = ReadOnlyStoreManager.getInstance()
+  const robotStores = readOnlyStoreManager.getReadOnlyStores(robotId)
+  const connectedStores = readOnlyStoreManager.getConnectedReadOnlyStores(robotId)
+  
+  // 스토어 정보를 담은 배열 생성 (심볼 -> 데이터 타입 매핑)
+  const storeInfo = Array.from(robotStores.entries()).map(([symbol, store]) => {
+    const symbolStr = symbol.toString()
+    // 심볼에서 데이터 타입 추출 (예: Symbol(go2_low_state) -> go2_low_state)
+    const dataType = symbolStr.replace(/^Symbol\((.+)\)$/, '$1')
+    const isConnected = connectedStores.includes(store)
+    
+    return {
+      symbol,
+      store,
+      dataType,
+      isConnected,
+      storeName: store.constructor.name,
+      lastData: store.getLast?.() || null
+    }
+  })
+  
+  // 연결된 스토어만 필터링 (선택사항)
+  const availableStores = storeInfo.filter(info => info.isConnected)
+  const availableDataTypes = availableStores.map(info => info.dataType)
 
   // 데이터 소스 추가
   const addDataSource = () => {
+    if (availableStores.length === 0) return
+    
     const newDataSource: DataSourceConfig = {
       robotId,
-      dataType: availableDataTypes[0] || 'go2_low_state'
+      dataType: availableStores[0].dataType
     }
     
     setConfig(prev => ({
@@ -204,21 +228,17 @@ export function UniversalWidgetConfigurator({
   useEffect(() => {
     if (config.dataSources.length === 0) return
     const dataSource = config.dataSources[config.dataSources.length - 1]
-    const readOnlyStoreManager = ReadOnlyStoreManager.getInstance()
-    const storeSymbol = DataChannelConfigUtils.getStoreSymbol(dataSource.dataType)
-    if (storeSymbol) {
-      const store = readOnlyStoreManager.getStore(dataSource.robotId, storeSymbol)
-      if (store) {
-        const sample = store.getLast?.()
-        if (sample) {
-          const paths = getFieldPathsFromSample(sample)
-          setFieldPathOptions(paths)
-        } else {
-          setFieldPathOptions([])
-        }
-      }
+    
+    // 스토어 정보에서 해당 데이터 타입의 스토어 찾기
+    const selectedStoreInfo = availableStores.find(info => info.dataType === dataSource.dataType)
+    
+    if (selectedStoreInfo?.lastData) {
+      const paths = getFieldPathsFromSample(selectedStoreInfo.lastData)
+      setFieldPathOptions(paths)
+    } else {
+      setFieldPathOptions([])
     }
-  }, [config.dataSources])
+  }, [config.dataSources, availableStores])
 
   // 시각화 타입에 따라 필드 경로 옵션 필터링
   const getFilteredFieldPathOptions = (vizType: string) => {
@@ -316,13 +336,23 @@ export function UniversalWidgetConfigurator({
           <Fieldset.Content>
             <HStack justify="space-between" mb={2}>
               <Text fontWeight="bold">데이터 소스</Text>
-              <Button size="sm" onClick={addDataSource}>
+              <Button 
+                size="sm" 
+                onClick={addDataSource}
+                disabled={availableStores.length === 0}
+              >
                 <AddIcon />
                 데이터 소스 추가
               </Button>
             </HStack>
             
-            {config.dataSources.map((dataSource, index) => (
+            {availableStores.length === 0 ? (
+              <Box p={4} textAlign="center" color="gray.500" bg="#fff" borderRadius="md" border="1px solid #e2e8f0">
+                <Text fontSize="sm">연결된 스토어가 없습니다.</Text>
+                <Text fontSize="xs" mt={1}>로봇과 연결 후 스토어를 사용할 수 있습니다.</Text>
+              </Box>
+            ) : (
+              config.dataSources.map((dataSource, index) => (
               <Box key={index} p={3} border="1px solid #e2e8f0" borderRadius="md" mb={2} bg="#fff" display="flex" flexDirection="column" gap={2}>
                 <HStack justify="space-between" alignItems="center" mb={2}>
                   <Text fontSize="sm" fontWeight="bold">데이터 소스 {index + 1}</Text>
@@ -337,7 +367,7 @@ export function UniversalWidgetConfigurator({
                 </HStack>
                 
                 <Field.Root>
-                  <Field.Label fontSize="sm">데이터 타입</Field.Label>
+                  <Field.Label fontSize="sm">스토어 선택</Field.Label>
                   <select
                     value={dataSource.dataType}
                     onChange={(e) => updateDataSource(index, e.target.value)}
@@ -349,15 +379,41 @@ export function UniversalWidgetConfigurator({
                       fontSize: '14px'
                     }}
                   >
-                    {availableDataTypes.map(dataType => (
-                      <option key={dataType} value={dataType}>
-                        {dataType}
+                    {availableStores.map(storeInfo => (
+                      <option key={storeInfo.dataType} value={storeInfo.dataType}>
+                        {storeInfo.storeName} ({storeInfo.dataType}) - {storeInfo.isConnected ? '연결됨' : '연결 안됨'}
                       </option>
                     ))}
                   </select>
                 </Field.Root>
+                
+                {/* 선택된 스토어의 샘플 데이터 미리보기 */}
+                {(() => {
+                  const selectedStoreInfo = availableStores.find(info => info.dataType === dataSource.dataType)
+                  if (selectedStoreInfo?.lastData) {
+                    return (
+                      <Field.Root>
+                        <Field.Label fontSize="sm">샘플 데이터</Field.Label>
+                        <Box 
+                          p={2} 
+                          bg="#f7fafc" 
+                          borderRadius="md" 
+                          fontSize="xs" 
+                          fontFamily="monospace"
+                          maxH="100px"
+                          overflow="auto"
+                          border="1px solid #e2e8f0"
+                        >
+                          <pre>{JSON.stringify(selectedStoreInfo.lastData, null, 2)}</pre>
+                        </Box>
+                      </Field.Root>
+                    )
+                  }
+                  return null
+                })()}
               </Box>
-            ))}
+            ))
+            )}
           </Fieldset.Content>
         </Fieldset.Root>
         <Box as="hr" my={2} borderColor="#e2e8f0" />

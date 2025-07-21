@@ -504,43 +504,76 @@ export function UniversalWidget({ config, connections, onUpdateConfig, onRemove,
     
     console.log('UniversalWidget - 스토어 초기화 시작:', config.dataSources)
     
+    // 모든 스토어 가져오기
+    const robotStores = readOnlyStoreManager.getReadOnlyStores(config.dataSources[0]?.robotId || '')
+    console.log('UniversalWidget - 로봇 스토어들:', robotStores)
+    
     config.dataSources.forEach(dataSource => {
-      // 올바른 심볼로 스토어 가져오기
-      const storeSymbol = DataChannelConfigUtils.getStoreSymbol(dataSource.dataType)
-      console.log(`UniversalWidget - 데이터 타입: ${dataSource.dataType}, 심볼:`, storeSymbol)
+      // 스토어 심볼에서 데이터 타입 추출하여 매칭
+      const matchingStore = Array.from(robotStores.entries()).find(([symbol, store]) => {
+        const symbolStr = symbol.toString()
+        const dataType = symbolStr.replace(/^Symbol\((.+)\)$/, '$1')
+        return dataType === dataSource.dataType
+      })
       
-      if (storeSymbol) {
-        const store = readOnlyStoreManager.getStore(dataSource.robotId, storeSymbol)
-        console.log(`UniversalWidget - 스토어 찾음:`, store)
-        if (store) {
-          newStores.set(dataSource.dataType, store)
-        }
+      console.log(`UniversalWidget - 데이터 타입: ${dataSource.dataType}, 매칭된 스토어:`, matchingStore)
+      
+      if (matchingStore) {
+        const [symbol, store] = matchingStore
+        newStores.set(dataSource.dataType, store)
+        console.log(`UniversalWidget - 스토어 추가됨: ${dataSource.dataType}`)
+      } else {
+        console.warn(`UniversalWidget - 스토어를 찾을 수 없음: ${dataSource.dataType}`)
       }
     })
     
     console.log('UniversalWidget - 최종 스토어 맵:', newStores)
     setStores(newStores)
+    
+    // 초기 데이터 설정
+    const initialData = new Map<string, any>()
+    newStores.forEach((store, dataType) => {
+      const lastData = store.getLast?.()
+      if (lastData) {
+        initialData.set(dataType, lastData)
+        console.log(`UniversalWidget - 초기 데이터 설정: ${dataType}`, lastData)
+      }
+    })
+    
+    if (initialData.size > 0) {
+      setData(initialData)
+      setIsConnected(true)
+      console.log('UniversalWidget - 초기 데이터로 연결 상태 설정됨')
+    }
   }, [config.dataSources, readOnlyStoreManager])
 
   // 데이터 구독
   useEffect(() => {
+    if (stores.size === 0) return
+    
     const unsubscribers: (() => void)[] = []
     
     console.log('UniversalWidget - 데이터 구독 시작, 스토어 개수:', stores.size)
     
     stores.forEach((store, dataType) => {
       console.log(`UniversalWidget - ${dataType} 스토어 구독 시작`)
-      const unsubscribe = store.subscribe((newData: any) => {
-        console.log(`UniversalWidget - ${dataType} 데이터 수신:`, newData)
-        setData(prev => new Map(prev).set(dataType, newData))
-        setDataHistory(prev => {
-          const history = prev.get(dataType) || []
-          const newHistory = [...history, newData].slice(-100) // 최근 100개 데이터 유지
-          return new Map(prev).set(dataType, newHistory)
+      
+      // 스토어가 유효한지 확인
+      if (store && typeof store.subscribe === 'function') {
+        const unsubscribe = store.subscribe((newData: any) => {
+          console.log(`UniversalWidget - ${dataType} 데이터 수신:`, newData)
+          setData(prev => new Map(prev).set(dataType, newData))
+          setDataHistory(prev => {
+            const history = prev.get(dataType) || []
+            const newHistory = [...history, newData].slice(-100) // 최근 100개 데이터 유지
+            return new Map(prev).set(dataType, newHistory)
+          })
+          setIsConnected(true)
         })
-        setIsConnected(true)
-      })
-      unsubscribers.push(unsubscribe)
+        unsubscribers.push(unsubscribe)
+      } else {
+        console.warn(`UniversalWidget - ${dataType} 스토어가 유효하지 않음:`, store)
+      }
     })
     
     return () => {
@@ -552,6 +585,11 @@ export function UniversalWidget({ config, connections, onUpdateConfig, onRemove,
   // 연결 상태 확인
   const isRobotConnected = connections ? 
     config.dataSources.some(source => connections[source.robotId]) : false
+    
+  // 스토어 연결 상태 확인
+  const areStoresConnected = stores.size > 0 && Array.from(stores.values()).some(store => 
+    store && typeof store.isChannelConnected === 'function' ? store.isChannelConnected() : false
+  )
 
   if (!isRobotConnected) {
     return (
@@ -574,7 +612,7 @@ export function UniversalWidget({ config, connections, onUpdateConfig, onRemove,
     )
   }
 
-  if (!isConnected) {
+  if (!isConnected && !areStoresConnected) {
     return (
       <WidgetFrame
         title={config.title}
@@ -590,6 +628,7 @@ export function UniversalWidget({ config, connections, onUpdateConfig, onRemove,
           color="gray.500"
         >
           <Text>Waiting for data...</Text>
+          <Text fontSize="sm" mt={2}>스토어 연결 상태: {stores.size > 0 ? `${stores.size}개 스토어` : '스토어 없음'}</Text>
         </Flex>
       </WidgetFrame>
     )
@@ -601,6 +640,9 @@ export function UniversalWidget({ config, connections, onUpdateConfig, onRemove,
     console.log('UniversalWidget - config.visualizations:', config.visualizations)
     console.log('UniversalWidget - data:', data)
     console.log('UniversalWidget - dataHistory:', dataHistory)
+    console.log('UniversalWidget - stores:', stores)
+    console.log('UniversalWidget - isConnected:', isConnected)
+    console.log('UniversalWidget - areStoresConnected:', areStoresConnected)
     
     const vizComponents = config.visualizations.map(viz => {
       const dataSource = config.dataSources[viz.dataSourceIndex]

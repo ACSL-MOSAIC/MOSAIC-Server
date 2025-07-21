@@ -54,13 +54,6 @@ export interface BaseStoreManager {
    */
   getChannelsForDataType(robotId: string, dataType: string): string[]
   
-  /**
-   * Get data type for a specific channel
-   * @param robotId - The robot identifier
-   * @param channelLabel - The channel label
-   * @returns The data type string or undefined if not found
-   */
-  getDataTypeForChannel(robotId: string, channelLabel: string): string | undefined
   
   /**
    * Get all channel mappings for a robot

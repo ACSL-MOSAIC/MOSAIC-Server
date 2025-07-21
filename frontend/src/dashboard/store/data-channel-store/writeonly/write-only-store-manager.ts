@@ -148,18 +148,6 @@ export class WriteOnlyStoreManager implements BaseStoreManager {
     return this.dataTypeChannels.get(robotId)?.get(dataType) || [];
   }
 
-  public getDataTypeForChannel(robotId: string, channelLabel: string): string | undefined {
-    const robotDataTypeChannels = this.dataTypeChannels.get(robotId);
-    if (!robotDataTypeChannels) return undefined;
-    
-    for (const [dataType, channels] of robotDataTypeChannels.entries()) {
-      if (channels.includes(channelLabel)) {
-        return dataType;
-      }
-    }
-    return undefined;
-  }
-
   public getRobotChannelMapping(robotId: string): Map<string, string[]> {
     return this.dataTypeChannels.get(robotId) || new Map();
   }
