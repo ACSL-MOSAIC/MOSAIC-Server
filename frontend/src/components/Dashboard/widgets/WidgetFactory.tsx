@@ -18,7 +18,7 @@ import { TURTLESIM_REMOTE_CONTROL_TYPE } from '../../../dashboard/parser/turtles
 import { TurtlesimVideoWidget } from './TurtlesimVideoWidget'
 import { TurtlesimVideoStore } from '../../../dashboard/store/media-channel-store/turtlesim-video.store'
 import { VideoStoreManager } from '../../../dashboard/store/media-channel-store/video-store-manager'
-import { MediaChannelConfigUtils } from "../../../rtc/webrtc-media-channel-config"
+import { MediaChannelConfigUtils } from "../../../rtc/config/webrtc-media-channel-config"
 import { TURTLESIM_VIDEO_TYPE } from '../../../dashboard/parser/turtlesim-video'
 import { useWebSocket } from '@/contexts/WebSocketContext'
 import { useRobotMapping } from '@/hooks/useRobotMapping'

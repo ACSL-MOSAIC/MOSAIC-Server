@@ -7,7 +7,7 @@ import { TurtlesimRemoteControlStore } from "@/dashboard/store/data-channel-stor
 import { DataStore } from "@/dashboard/store/store";
 import { ReadOnlyStore } from "@/dashboard/store/data-channel-store/readonly/read-only-store";
 import { WriteOnlyStore } from "@/dashboard/store/data-channel-store/writeonly/write-only-store";
-import { DataChannelConfigUtils } from "./webrtc-datachannel-config";
+import { DataChannelConfigUtils } from "./config/webrtc-datachannel-config";
 
 /**
  * Setup data channel for robot
@@ -25,7 +25,7 @@ export function createDataChannel(
   console.log(`DataChannel ${dataChannel.label} setup started, current state:`, dataChannel.readyState, 'dataType:', dataType, 'channelType:', channelType)
 
   // Check if data type is supported (including base types for pointcloud)
-  if (!DataChannelConfigUtils.isSupportedDataType(dataType) && !dataType.startsWith('go2_ouster_pointcloud')) {
+  if (!DataChannelConfigUtils.isSupportedDataType(dataType)) {
     console.warn(`Unsupported data type: ${dataType}`)
     return
   }
@@ -52,7 +52,7 @@ export function createDataChannel(
   
   switch (channelType) {
     case 'readonly':
-      switch (dataType) {
+      switch (dataType as any) {
         case 'turtlesim_position':
           store = readOnlyStoreManager.createStoreIfNotExists(
             robotId, 

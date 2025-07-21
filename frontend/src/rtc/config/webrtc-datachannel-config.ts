@@ -121,7 +121,7 @@ export const DataChannelConfigUtils = {
    * Check if the data type is supported
    */
   isSupportedDataType(dataType: string): dataType is keyof typeof DATA_CHANNEL_CONFIG {
-    return dataType in DATA_CHANNEL_CONFIG
+    return dataType in DATA_TYPE_SYMBOLS
   },
 
   /**
@@ -148,21 +148,28 @@ export const DataChannelConfigUtils = {
   },
 
   /**
-   * Return the readonly data types
+   * Return the readonly data types (unique store types only)
    */
   getReadOnlyDataTypes(): string[] {
-    return Object.entries(DATA_CHANNEL_CONFIG)
-      .filter(([_, config]) => config.channelType === 'readonly')
-      .map(([dataType, _]) => dataType)
+    const dataTypes = Array.from(new Set(
+      Object.entries(DATA_CHANNEL_CONFIG)
+        .filter(([_, config]) => config.channelType === 'readonly')
+        .map(([_, config]) => config.type)
+    ))
+    
+    console.log('readonly data types:', dataTypes)
+    return dataTypes
   },
 
   /**
    * Return the writeonly data types
    */
   getWriteOnlyDataTypes(): string[] {
-    return Object.entries(DATA_CHANNEL_CONFIG)
-      .filter(([_, config]) => config.channelType === 'writeonly')
-      .map(([dataType, _]) => dataType)
+    return Array.from(new Set(
+      Object.entries(DATA_CHANNEL_CONFIG)
+        .filter(([_, config]) => config.channelType === 'writeonly')
+        .map(([_, config]) => config.type)
+    ))
   }
 }
 

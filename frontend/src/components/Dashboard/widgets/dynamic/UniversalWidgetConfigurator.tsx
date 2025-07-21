@@ -24,7 +24,7 @@ const DeleteIcon = () => (
   </svg>
 )
 import { UniversalWidgetConfig, DataSourceConfig, VisualizationConfig, VisualizationType, UniversalWidgetConfigUtils, ChartConfig, ChartAxisConfig } from '../../../../dashboard/store/data-channel-store/readonly/dynamic/universal-widget-config'
-import { DataChannelConfigUtils } from '../../../../rtc/webrtc-datachannel-config'
+import { DataChannelConfigUtils } from '../../../../rtc/config/webrtc-datachannel-config'
 import { ReadOnlyStoreManager } from '../../../../dashboard/store/data-channel-store/readonly/read-only-store-manager'
 import {
   DialogActionTrigger,

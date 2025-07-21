@@ -3,10 +3,10 @@ import { setupWebSocketHandlers, sendWebSocketMessage } from "./ws-adaptor"
 import { createDataChannel, cleanupAllDataChannels } from "./webrtc-utils"
 import { VideoStoreManager } from "@/dashboard/store/media-channel-store/video-store-manager"
 import { VideoStore } from "@/dashboard/store/media-channel-store/video-store"
-import { ChannelType, DEFAULT_DATA_CHANNELS, DataChannelConfigUtils } from "./webrtc-datachannel-config"
+import { ChannelType, DEFAULT_DATA_CHANNELS, DataChannelConfigUtils } from "./config/webrtc-datachannel-config"
 import { createOfferWithMediaChannels, parseMetadataFromSdp } from "./webrtc-sdp-utils"
-import { MediaChannelConfigUtils } from "./webrtc-media-channel-config"
-import { MEDIA_CHANNEL_CONFIG } from './webrtc-media-channel-config'
+import { MediaChannelConfigUtils } from "./config/webrtc-media-channel-config"
+import { MEDIA_CHANNEL_CONFIG } from './config/webrtc-media-channel-config'
 
 export interface DataChannelConfig {
   label: string

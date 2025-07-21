@@ -3,7 +3,7 @@ import { Box, Text, Flex, Grid, GridItem, VStack, HStack, IconButton, Button } f
 import { WidgetFrame } from '../WidgetFrame'
 import { ReadOnlyStoreManager } from '../../../../dashboard/store/data-channel-store/readonly/read-only-store-manager'
 import { UniversalWidgetConfig, VisualizationConfig, ChartConfig, GaugeConfig } from '../../../../dashboard/store/data-channel-store/readonly/dynamic/universal-widget-config'
-import { DataChannelConfigUtils } from '../../../../rtc/webrtc-datachannel-config'
+import { DataChannelConfigUtils } from '../../../../rtc/config/webrtc-datachannel-config'
 import { Line, Bar, Scatter } from 'react-chartjs-2'
 import {
   Chart as ChartJS,

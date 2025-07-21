@@ -1,6 +1,6 @@
 import { VideoStore } from "./video-store"
 import { TurtlesimVideoStore } from "./turtlesim-video.store"
-import { MediaChannelConfigUtils } from "../../../rtc/webrtc-media-channel-config"
+import { MediaChannelConfigUtils } from "../../../rtc/config/webrtc-media-channel-config"
 
 export class VideoStoreManager {
   private static instance: VideoStoreManager
