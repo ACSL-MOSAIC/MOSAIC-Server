@@ -153,11 +153,18 @@ export function createDataChannel(
   }
 
   // Setup new onmessage handler (data processing only)
-  dataChannel.onmessage = (event) => {
+  dataChannel.onmessage = async (event) => {
     try {
       const data = event.data
+
+      let nonBlobData;
+      if (data instanceof Blob) {
+        nonBlobData = await data.arrayBuffer();
+      } else {
+        nonBlobData = data;
+      }
       if (store) {
-        store.add(data);
+        store.add(nonBlobData);
       }
     } catch (error) {
       console.error(`Error processing data for ${dataChannel.label} (${dataType}):`, error);
