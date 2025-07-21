@@ -83,6 +83,7 @@ export function DynamicTypeManager({ robotId, isOpen, onClose, onTypeUpdated }: 
   const [typeName, setTypeName] = useState('')
   const [description, setDescription] = useState('')
   const [channelType, setChannelType] = useState<'readonly' | 'writeonly'>('readonly')
+  const [channelLabel, setChannelLabel] = useState('')
   const [jsonSchema, setJsonSchema] = useState('')
   const [isValid, setIsValid] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -137,6 +138,7 @@ export function DynamicTypeManager({ robotId, isOpen, onClose, onTypeUpdated }: 
     setDescription('')
     setJsonSchema('')
     setChannelType('readonly')
+    setChannelLabel('')
     setIsValid(false)
     setIsEditing(false)
     setEditingConfig(null)
@@ -154,6 +156,7 @@ export function DynamicTypeManager({ robotId, isOpen, onClose, onTypeUpdated }: 
     setTypeName(config.name)
     setDescription(config.description || '')
     setChannelType(config.channelType)
+    setChannelLabel(config.channelLabel || '')
     setJsonSchema(JSON.stringify(config.schema, null, 2))
     setIsValid(true)
     setIsEditing(true)
@@ -175,6 +178,11 @@ export function DynamicTypeManager({ robotId, isOpen, onClose, onTypeUpdated }: 
       return
     }
 
+    if (!channelLabel.trim()) {
+      alert('채널 라벨은 필수값입니다. WebRTC 데이터 채널의 라벨을 입력해주세요.')
+      return
+    }
+
     setIsLoading(true)
     try {
       const schema = JSON.parse(jsonSchema)
@@ -185,6 +193,7 @@ export function DynamicTypeManager({ robotId, isOpen, onClose, onTypeUpdated }: 
           name: typeName.trim(),
           schema,
           channelType,
+          channelLabel: channelLabel.trim(),
           description: description.trim() || undefined
         })
         
@@ -200,6 +209,7 @@ export function DynamicTypeManager({ robotId, isOpen, onClose, onTypeUpdated }: 
           name: typeName.trim(),
           schema,
           channelType,
+          channelLabel: channelLabel.trim(),
           description: description.trim() || undefined
         })
         
@@ -215,7 +225,7 @@ export function DynamicTypeManager({ robotId, isOpen, onClose, onTypeUpdated }: 
     } finally {
       setIsLoading(false)
     }
-  }, [isValid, typeName, jsonSchema, isEditing, editingConfig, robotId, channelType, description, resetForm, loadDynamicTypes, stableOnTypeUpdated])
+  }, [isValid, typeName, jsonSchema, isEditing, editingConfig, robotId, channelType, channelLabel, description, resetForm, loadDynamicTypes, stableOnTypeUpdated])
 
   // 취소
   const cancelEdit = useCallback(() => {
@@ -363,6 +373,23 @@ export function DynamicTypeManager({ robotId, isOpen, onClose, onTypeUpdated }: 
                       <option value="readonly">읽기 전용 (ReadOnly)</option>
                       <option value="writeonly">쓰기 전용 (WriteOnly)</option>
                     </select>
+                  </Box>
+
+                  {/* 채널 라벨 */}
+                  <Box>
+                    <Text fontSize="xs" fontWeight="medium" color="gray.600" mb={1}>
+                      채널 라벨 *
+                    </Text>
+                    <Input
+                      size="sm"
+                      value={channelLabel}
+                      onChange={(e) => setChannelLabel(e.target.value)}
+                      placeholder={`${typeName || 'type-name'}_data_channel`}
+                      required
+                    />
+                    <Text fontSize="xs" color="gray.500" mt={1}>
+                      WebRTC 데이터 채널의 라벨입니다. 고유한 이름을 입력해주세요.
+                    </Text>
                   </Box>
 
                   {/* JSON Schema */}

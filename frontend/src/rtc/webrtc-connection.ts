@@ -7,6 +7,7 @@ import { ChannelType, DEFAULT_DATA_CHANNELS, DataChannelConfigUtils } from "./co
 import { createOfferWithMediaChannels, parseMetadataFromSdp } from "./webrtc-sdp-utils"
 import { MediaChannelConfigUtils } from "./config/webrtc-media-channel-config"
 import { MEDIA_CHANNEL_CONFIG } from './config/webrtc-media-channel-config'
+import { DynamicTypeManager } from "@/dashboard/dynamic/dynamic-type-config"
 
 export interface DataChannelConfig {
   label: string
@@ -155,6 +156,34 @@ export class WebRTCConnection {
       // Setup created channel
       this.setupDataChannel(dataChannel, channelConfig.dataType, channelConfig.channelType)
     })
+
+    // Create dynamic data channels
+    try {
+      const dynamicTypeManager = DynamicTypeManager.getInstance()
+      const dynamicChannels = dynamicTypeManager.createAllDynamicChannelsForRobot(this.config.robotId, peerConnection)
+      
+      dynamicChannels.forEach((dataChannel: RTCDataChannel) => {
+        // 동적 타입의 실제 이름 찾기
+        const dynamicTypeManager = DynamicTypeManager.getInstance()
+        const configs = dynamicTypeManager.getConfigsByRobotId(this.config.robotId)
+        const config = configs.find(c => c.channelLabel === dataChannel.label)
+        
+        if (config) {
+          // Store channel and data type, channel type mapping
+          this.channelDataTypes.set(dataChannel.label, {
+            dataType: config.name, // 실제 동적 타입 이름 사용
+            channelType: config.channelType
+          })
+          
+          // Setup created channel
+          this.setupDataChannel(dataChannel, config.name, config.channelType)
+        } else {
+          console.warn(`동적 타입 설정을 찾을 수 없음: ${dataChannel.label}`)
+        }
+      })
+    } catch (error) {
+      console.error('Failed to create dynamic channels:', error)
+    }
 
     // Setup video channels (after data channel setup)
     this.setupVideoChannels()

@@ -8,12 +8,6 @@ export abstract class ReadOnlyStore<T, I = string> extends DataStore<T, I> {
         super(robotId, maxSize, parser)
     }
 
-    // 단일 채널 설정 (기존 호환성)
-    public setDataChannel(channel: RTCDataChannel): void {
-        this.dataChannels.set(channel.label, channel)
-        console.log(`ReadOnlyStore[${this.robotId}] data channel set:`, channel.label)
-    }
-
     // 다중 채널 추가
     public addDataChannel(channel: RTCDataChannel): void {
         this.dataChannels.set(channel.label, channel)

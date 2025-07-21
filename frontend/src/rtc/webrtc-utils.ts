@@ -8,6 +8,7 @@ import { DataStore } from "@/dashboard/store/store";
 import { ReadOnlyStore } from "@/dashboard/store/data-channel-store/readonly/read-only-store";
 import { WriteOnlyStore } from "@/dashboard/store/data-channel-store/writeonly/write-only-store";
 import { DataChannelConfigUtils } from "./config/webrtc-datachannel-config";
+import { DynamicTypeManager } from "@/dashboard/dynamic/dynamic-type-config";
 
 /**
  * Setup data channel for robot
@@ -25,7 +26,10 @@ export function createDataChannel(
   console.log(`DataChannel ${dataChannel.label} setup started, current state:`, dataChannel.readyState, 'dataType:', dataType, 'channelType:', channelType)
 
   // Check if data type is supported (including base types for pointcloud)
-  if (!DataChannelConfigUtils.isSupportedDataType(dataType)) {
+  const dynamicTypeManager = DynamicTypeManager.getInstance()
+  const isDynamicType = dynamicTypeManager.getConfigByRobotAndName(robotId, dataType)
+  
+  if (!DataChannelConfigUtils.isSupportedDataType(dataType) && !isDynamicType) {
     console.warn(`Unsupported data type: ${dataType}`)
     return
   }
@@ -41,7 +45,15 @@ export function createDataChannel(
   }
 
   // Create Store and setup DataChannel
-  const channelTypeSymbol = DataChannelConfigUtils.getStoreSymbol(dataType)
+  let channelTypeSymbol: symbol | undefined
+  
+  if (isDynamicType) {
+    // 동적 타입의 경우 동적 심볼 생성 (캐시된 Symbol 사용)
+    channelTypeSymbol = dynamicTypeManager.getDynamicSymbol(robotId, dataType)
+  } else {
+    // 정적 타입의 경우 기존 방식 사용
+    channelTypeSymbol = DataChannelConfigUtils.getStoreSymbol(dataType) || undefined
+  }
   
   if (!channelTypeSymbol) {
     console.warn(`Unknown data type: ${dataType} for channel ${dataChannel.label}`)
@@ -75,8 +87,18 @@ export function createDataChannel(
           );
           break;
         default:
-          console.warn(`Unsupported data type for readonly: ${dataType}`);
-          return;
+          // 동적 타입 처리
+          if (isDynamicType) {
+            console.log(`webrtc-utils: 동적 타입 스토어 찾기 - ${dataType}`)
+            store = dynamicTypeManager.getDynamicStoreFromManager(robotId, dataType)
+            if (!store) {
+              console.warn(`동적 스토어를 찾을 수 없음: ${dataType}`)
+              return
+            }
+          } else {
+            console.warn(`Unsupported data type for readonly: ${dataType}`);
+            return;
+          }
       }
       break;
       
@@ -90,8 +112,18 @@ export function createDataChannel(
           );
           break;
         default:
-          console.warn(`Unsupported data type for writeonly: ${dataType}`);
-          return;
+          // 동적 타입 처리
+          if (isDynamicType) {
+            console.log(`webrtc-utils: 동적 타입 스토어 찾기 - ${dataType}`)
+            store = dynamicTypeManager.getDynamicStoreFromManager(robotId, dataType)
+            if (!store) {
+              console.warn(`동적 스토어를 찾을 수 없음: ${dataType}`)
+              return
+            }
+          } else {
+            console.warn(`Unsupported data type for writeonly: ${dataType}`);
+            return;
+          }
       }
       break;
   }
@@ -122,9 +154,9 @@ export function createDataChannel(
 
   // Setup new onmessage handler (data processing only)
   dataChannel.onmessage = (event) => {
+    console.log(`webrtc-utils: data 받음:`, event.data)
     try {
       const data = event.data
-      
       if (store) {
         store.add(data);
       }

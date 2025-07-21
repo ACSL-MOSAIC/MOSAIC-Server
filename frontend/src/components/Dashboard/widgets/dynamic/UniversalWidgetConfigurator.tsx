@@ -112,7 +112,6 @@ export function UniversalWidgetConfigurator({
   
   // 연결된 스토어만 필터링 (선택사항)
   const availableStores = storeInfo.filter(info => info.isConnected)
-  const availableDataTypes = availableStores.map(info => info.dataType)
 
   // 데이터 소스 추가
   const addDataSource = () => {
