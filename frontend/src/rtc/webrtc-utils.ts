@@ -154,7 +154,6 @@ export function createDataChannel(
 
   // Setup new onmessage handler (data processing only)
   dataChannel.onmessage = (event) => {
-    console.log(`webrtc-utils: data 받음:`, event.data)
     try {
       const data = event.data
       if (store) {
