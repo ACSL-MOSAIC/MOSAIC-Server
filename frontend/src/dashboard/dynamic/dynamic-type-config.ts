@@ -1,6 +1,9 @@
 import { ParsedData } from "../parser/parsed.type"
 import { DataStore } from "../store/store"
 import { ReadOnlyStore } from "../store/data-channel-store/readonly/read-only-store"
+import { WriteOnlyStore } from "../store/data-channel-store/writeonly/write-only-store"
+import { ReadOnlyStoreManager } from "../store/data-channel-store/readonly/read-only-store-manager"
+import { WriteOnlyStoreManager } from "../store/data-channel-store/writeonly/write-only-store-manager"
 
 // JSON Schema 타입 정의
 export interface JsonSchema {
@@ -258,7 +261,7 @@ export class DynamicTypeManager {
     return parserFunction(JSON, Date)
   }
 
-  // 동적 스토어 생성
+  // 동적 스토어 생성 및 기존 매니저에 등록
   createDynamicStore(configId: string, robotId: string, maxSize: number = 1000): DataStore<any, string> {
     const config = this.configs.get(configId)
     if (!config) {
@@ -268,8 +271,36 @@ export class DynamicTypeManager {
     const interfaceName = this.generateInterfaceName(config.name)
     const parser = this.createDynamicParser(configId)
     
-    // ReadOnlyStore와 WriteOnlyStore 모두 추상 클래스이므로 DataStore를 직접 사용
-    return new DataStore(robotId, maxSize, parser)
+    // 동적 타입 심볼 생성
+    const dynamicSymbol = Symbol(`dynamic_${robotId}_${config.name}`)
+    
+    if (config.channelType === 'readonly') {
+      // ReadOnlyStoreManager를 통해 동적 ReadOnlyStore 생성 및 등록
+      const readOnlyManager = ReadOnlyStoreManager.getInstance()
+      const store = readOnlyManager.createStoreIfNotExists(
+        robotId,
+        dynamicSymbol,
+        (robotId) => new DynamicReadOnlyStore(robotId, maxSize, parser)
+      )
+      
+      // 채널 등록
+      readOnlyManager.registerChannelForDataType(robotId, config.name, `dynamic_${robotId}_${config.name}`)
+      
+      return store
+    } else {
+      // WriteOnlyStoreManager를 통해 동적 WriteOnlyStore 생성 및 등록
+      const writeOnlyManager = WriteOnlyStoreManager.getInstance()
+      const store = writeOnlyManager.createStoreIfNotExists(
+        robotId,
+        dynamicSymbol,
+        (robotId) => new DynamicWriteOnlyStore(robotId, maxSize, parser)
+      )
+      
+      // 채널 등록
+      writeOnlyManager.registerChannelForDataType(robotId, config.name, `dynamic_${robotId}_${config.name}`)
+      
+      return store
+    }
   }
 
   // 타입 가드 생성
@@ -386,6 +417,76 @@ export class DynamicTypeManager {
     
     this.saveConfigsToStorage()
     return true
+  }
+
+  // 기존 스토어 매니저에서 동적 스토어 조회 (기존 메서드들과 동일한 방식으로)
+  getDynamicStoreFromManager(robotId: string, typeName: string): DataStore<any, string> | undefined {
+    const config = this.getConfigByRobotAndName(robotId, typeName)
+    if (!config) {
+      return undefined
+    }
+
+    const dynamicSymbol = Symbol(`dynamic_${robotId}_${typeName}`)
+
+    if (config.channelType === 'readonly') {
+      const readOnlyManager = ReadOnlyStoreManager.getInstance()
+      return readOnlyManager.getStore(robotId, dynamicSymbol)
+    } else {
+      const writeOnlyManager = WriteOnlyStoreManager.getInstance()
+      return writeOnlyManager.getStore(robotId, dynamicSymbol)
+    }
+  }
+
+  // 로봇의 모든 동적 스토어 조회 (기존 getAllStores와 동일한 방식)
+  getAllDynamicStoresForRobot(robotId: string): DataStore<any, string>[] {
+    const configs = this.getConfigsByRobotId(robotId)
+    const stores: DataStore<any, string>[] = []
+
+    configs.forEach(config => {
+      const store = this.getDynamicStoreFromManager(robotId, config.name)
+      if (store) {
+        stores.push(store)
+      }
+    })
+
+    return stores
+  }
+
+  // 동적 타입으로 스토어 생성 및 기존 매니저에 완전히 통합
+  createAndIntegrateDynamicStore(configId: string, robotId: string, maxSize: number = 1000): DataStore<any, string> {
+    // 이미 생성된 스토어가 있는지 확인
+    const config = this.getConfig(configId)
+    if (!config) {
+      throw new Error(`Dynamic type config not found: ${configId}`)
+    }
+
+    const existingStore = this.getDynamicStoreFromManager(robotId, config.name)
+    if (existingStore) {
+      return existingStore
+    }
+
+    // 새로 생성하고 기존 매니저에 등록
+    return this.createDynamicStore(configId, robotId, maxSize)
+  }
+}
+
+// 동적 ReadOnlyStore 구현체
+class DynamicReadOnlyStore extends ReadOnlyStore<any, string> {
+  constructor(robotId: string, maxSize: number, parser: (data: string) => any) {
+    super(robotId, maxSize, parser)
+  }
+}
+
+// 동적 WriteOnlyStore 구현체
+class DynamicWriteOnlyStore extends WriteOnlyStore<any, string> {
+  constructor(robotId: string, maxSize: number, parser: (data: string) => any) {
+    super(robotId, maxSize, parser)
+  }
+
+  protected sendData(data: any): void {
+    if (this.dataChannel && this.dataChannel.readyState === 'open') {
+      this.dataChannel.send(JSON.stringify(data))
+    }
   }
 }
 

@@ -25,7 +25,11 @@ import { useRobotMapping } from "@/hooks/useRobotMapping"
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
-export function DashboardGrid() {
+interface DashboardGridProps {
+  onOpenDynamicTypeModal: (robotId: string) => void
+}
+
+export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
   const { data: dashboardConfig, isLoading, refetch } = useDashboardConfigQuery();
   const { mutate: saveDashboardConfig } = useDashboardConfigMutation();
   const queryClient = useQueryClient();
@@ -298,6 +302,7 @@ export function DashboardGrid() {
         onDisconnect={disconnectFromRobot}
         onConnectAll={handleConnectAllRobots}
         onDisconnectAll={handleDisconnectAllRobots}
+        onOpenDynamicTypeModal={onOpenDynamicTypeModal}
       />
 
       {/* Dashboard controls */}

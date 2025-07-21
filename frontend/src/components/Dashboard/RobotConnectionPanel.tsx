@@ -1,7 +1,8 @@
-import { Box, Grid, Text, Button, Flex, Badge, Icon } from "@chakra-ui/react"
+import { Box, Grid, Text, Button, Flex, Badge, Icon, VStack, IconButton } from "@chakra-ui/react"
 import { useWebSocket } from "@/contexts/WebSocketContext"
 import { useRobotMapping } from "@/hooks/useRobotMapping"
-import { IoVideocam, IoVideocamOff, IoPower, IoPowerOutline } from "react-icons/io5"
+import { IoVideocam, IoVideocamOff, IoPower, IoPowerOutline, IoSettings } from "react-icons/io5"
+import { useCallback, useMemo } from "react"
 
 interface RobotConnectionPanelProps {
   connections: { [key: string]: boolean }
@@ -9,6 +10,7 @@ interface RobotConnectionPanelProps {
   onDisconnect: (robotId: string) => void
   onConnectAll: () => void
   onDisconnectAll: () => void
+  onOpenDynamicTypeModal: (robotId: string) => void
 }
 
 function RobotConnectionPanel({ 
@@ -16,16 +18,17 @@ function RobotConnectionPanel({
   onConnect, 
   onDisconnect, 
   onConnectAll, 
-  onDisconnectAll 
+  onDisconnectAll,
+  onOpenDynamicTypeModal
 }: RobotConnectionPanelProps) {
   const { robots } = useWebSocket()
   const { getRobotName } = useRobotMapping()
 
-  const readyRobots = robots.filter((robot) => robot.state === "READY_TO_CONNECT")
-  const connectedRobots = robots.filter((robot) => connections[robot.robot_id])
-  const disconnectedRobots = robots.filter((robot) => !connections[robot.robot_id])
+  const readyRobots = useMemo(() => robots.filter((robot) => robot.state === "READY_TO_CONNECT"), [robots])
+  const connectedRobots = useMemo(() => robots.filter((robot) => connections[robot.robot_id]), [robots, connections])
+  const disconnectedRobots = useMemo(() => robots.filter((robot) => !connections[robot.robot_id]), [robots, connections])
 
-  const getStatusColor = (robotId: string) => {
+  const getStatusColor = useCallback((robotId: string) => {
     if (connections[robotId]) {
       return "green"
     }
@@ -34,9 +37,9 @@ function RobotConnectionPanel({
       return "blue"
     }
     return "gray"
-  }
+  }, [connections, robots])
 
-  const getStatusText = (robotId: string) => {
+  const getStatusText = useCallback((robotId: string) => {
     if (connections[robotId]) {
       return "Connected"
     }
@@ -45,7 +48,7 @@ function RobotConnectionPanel({
       return "Ready"
     }
     return "Unavailable"
-  }
+  }, [connections, robots])
 
   if (robots.length === 0) {
     return (
@@ -121,7 +124,7 @@ function RobotConnectionPanel({
                 Status: {robot.state}
               </Text>
 
-              <Flex gap={2}>
+              <Flex gap={2} align="center">
                 {isConnected ? (
                   <Button
                     colorScheme="red"
@@ -144,6 +147,16 @@ function RobotConnectionPanel({
                     Connect
                   </Button>
                 )}
+                
+                {/* 동적 타입 관리 버튼 */}
+                <IconButton
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onOpenDynamicTypeModal(robot.robot_id)}
+                  aria-label="동적 타입 관리"
+                >
+                  <IoSettings />
+                </IconButton>
               </Flex>
             </Box>
           )

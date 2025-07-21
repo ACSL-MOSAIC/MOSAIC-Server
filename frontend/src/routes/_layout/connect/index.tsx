@@ -1,7 +1,9 @@
-import { Container, Heading } from "@chakra-ui/react"
+import { Container, Heading, Box } from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
 import { DashboardGrid } from "@/components/Dashboard/DashboardGrid"
+import { DynamicTypeManager } from "@/components/Dashboard/DynamicTypeManager"
 import useAuth from "@/hooks/useAuth"
+import { useState } from "react"
 
 export const Route = createFileRoute("/_layout/connect/")({
   component: ConnectPage,
@@ -9,6 +11,10 @@ export const Route = createFileRoute("/_layout/connect/")({
 
 function ConnectPage() {
   const { user } = useAuth()
+  const [dynamicTypeModalState, setDynamicTypeModalState] = useState<{
+    isOpen: boolean
+    robotId: string
+  }>({ isOpen: false, robotId: '' })
 
   if (!user) {
     return (
@@ -21,11 +27,27 @@ function ConnectPage() {
   }
 
   return (
-    <Container maxW="container.xl" py={8}>
-      <Heading size="lg" mb={8}>
-        로봇 대시보드
-      </Heading>
-      <DashboardGrid userId={user.id} />
-    </Container>
+    <>
+      <Container maxW="container.xl" py={8}>
+        <Heading size="lg" mb={8}>
+          로봇 대시보드
+        </Heading>
+        <DashboardGrid 
+          onOpenDynamicTypeModal={(robotId: string) => 
+            setDynamicTypeModalState({ isOpen: true, robotId })
+          }
+        />
+      </Container>
+      
+      {/* DynamicTypeManager를 Container 밖에 배치 */}
+      <DynamicTypeManager 
+        robotId={dynamicTypeModalState.robotId}
+        isOpen={dynamicTypeModalState.isOpen}
+        onClose={() => setDynamicTypeModalState({ isOpen: false, robotId: '' })}
+        onTypeUpdated={() => {
+          console.log('Dynamic types updated')
+        }}
+      />
+    </>
   )
 } 
