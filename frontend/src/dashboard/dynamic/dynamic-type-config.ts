@@ -95,38 +95,31 @@ export class DynamicTypeManager {
     return `export type ${interfaceName} = any`
   }
 
-  // 동적 파서 함수 생성
+  // 동적 파서 함수 생성 (import 문 제거)
   private generateParserFunction(interfaceName: string): string {
     return `
-      import { ParsedData } from "../parser/parsed.type"
-      
-      export type Parsed${interfaceName} = ParsedData<${interfaceName}>
-      
-      export const parse${interfaceName} = (data: string): Parsed${interfaceName} => {
-        const json = JSON.parse(data)
-        return {
-          ...json,
-          timestamp: Date.now()
+      const parse${interfaceName} = (data) => {
+        try {
+          const json = JSON.parse(data)
+          return {
+            ...json,
+            timestamp: Date.now()
+          }
+        } catch (error) {
+          console.error('Failed to parse ${interfaceName} data:', error)
+          return null
         }
       }
-      
-      export const ${interfaceName.toUpperCase()}_TYPE = Symbol('${interfaceName.toLowerCase()}')
     `
   }
 
-  // 동적 스토어 클래스 생성
+  // 동적 스토어 클래스 생성 (import 문 제거)
   private generateStoreClass(interfaceName: string, channelType: 'readonly' | 'writeonly'): string {
     const baseClass = channelType === 'readonly' ? 'ReadOnlyStore' : 'WriteOnlyStore'
-    const importPath = channelType === 'readonly' 
-      ? '../store/data-channel-store/readonly/read-only-store'
-      : '../store/data-channel-store/writeonly/write-only-store'
     
     return `
-      import { ${baseClass} } from "${importPath}"
-      import { Parsed${interfaceName}, parse${interfaceName} } from "../../parser/dynamic/${interfaceName.toLowerCase()}"
-      
-      export class ${interfaceName}Store extends ${baseClass}<Parsed${interfaceName}> {
-        constructor(robotId: string, maxSize: number = 1000) {
+      class ${interfaceName}Store extends ${baseClass} {
+        constructor(robotId, maxSize = 1000) {
           super(robotId, maxSize, parse${interfaceName})
         }
       }
@@ -239,6 +232,14 @@ export class DynamicTypeManager {
     this.configs.set(id, fullConfig)
     this.saveConfigsToStorage()
     
+    // 타입 등록 시 자동으로 스토어 생성
+    try {
+      console.log(`DynamicTypeManager: 동적 타입 등록 시 스토어 자동 생성 - ${config.name}`)
+      this.createDynamicStore(id, config.robotId)
+    } catch (error) {
+      console.error(`DynamicTypeManager: 동적 타입 등록 시 스토어 생성 실패 - ${config.name}:`, error)
+    }
+    
     return id
   }
 
@@ -252,7 +253,7 @@ export class DynamicTypeManager {
     const interfaceName = this.generateInterfaceName(config.name)
     const parserCode = this.generateParserFunction(interfaceName)
     
-    // 동적으로 함수 생성
+    // 동적으로 함수 생성 (필요한 것들을 매개변수로 전달)
     const parserFunction = new Function('JSON', 'Date', `
       ${parserCode}
       return parse${interfaceName};
@@ -348,6 +349,17 @@ export class DynamicTypeManager {
         this.configs.clear()
         configsArray.forEach(config => {
           this.configs.set(config.id, config)
+        })
+        
+        // 설정 로드 후 모든 동적 스토어 자동 생성
+        console.log('DynamicTypeManager: 설정 로드 후 동적 스토어 자동 생성 시작')
+        configsArray.forEach(config => {
+          try {
+            console.log(`DynamicTypeManager: 동적 스토어 생성 - ${config.name}`)
+            this.createDynamicStore(config.id, config.robotId)
+          } catch (error) {
+            console.error(`DynamicTypeManager: 동적 스토어 생성 실패 - ${config.name}:`, error)
+          }
         })
       }
     } catch (error) {
