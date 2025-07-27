@@ -52,8 +52,10 @@ services:
   backend:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
     restart: always # <-- backend 서비스 자체의 restart 옵션 (이건 올바름)
+    container_name: prod-backend
     networks:
       - default
+      - proxy
     depends_on:
       db:
         condition: service_healthy # <-- condition은 올바른 depends_on 옵션
@@ -87,3 +89,8 @@ services:
 
 volumes:
   app-db-data:
+
+networks:
+  default:
+  proxy:
+    external: true
