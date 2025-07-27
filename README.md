@@ -4,10 +4,6 @@
 
 # Add Wiget and datasouce on dashboard
 
-
-
-
-
 ## MediaStream (Video)
 
 [MediaStream setup docs](docs/MEDIASTREAM_SETUP.md)
