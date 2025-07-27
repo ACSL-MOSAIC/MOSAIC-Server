@@ -1,4 +1,4 @@
- services:
+services:
   # 서비스 이름을 'frontend'로 정의 (원하는 이름으로 변경 가능)
   frontend:
     container_name: prod-frontend
