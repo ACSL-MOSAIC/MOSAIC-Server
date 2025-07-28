@@ -89,9 +89,15 @@ export function DynamicTypeManager({ robotId, isOpen, onClose, onTypeUpdated }: 
   const [isLoading, setIsLoading] = useState(false)
 
   // 동적 타입 목록 로드
-  const loadDynamicTypes = useCallback(() => {
-    const configs = dynamicTypeManager.getConfigsByRobotId(robotId)
-    setDynamicTypes(configs)
+  const loadDynamicTypes = useCallback(async () => {
+    try {
+      // DynamicTypeManager 초기화
+      await dynamicTypeManager.initialize()
+      const configs = dynamicTypeManager.getConfigsByRobotId(robotId)
+      setDynamicTypes(configs)
+    } catch (error) {
+      console.error('Failed to load dynamic types:', error)
+    }
   }, [robotId])
 
   // isOpen이 false가 될 때만 resetForm 실행
@@ -163,11 +169,16 @@ export function DynamicTypeManager({ robotId, isOpen, onClose, onTypeUpdated }: 
   }, [])
 
   // 타입 삭제
-  const deleteType = useCallback((configId: string) => {
+  const deleteType = useCallback(async (configId: string) => {
     if (confirm('정말로 이 동적 타입을 삭제하시겠습니까?')) {
-      dynamicTypeManager.deleteConfig(configId)
-      loadDynamicTypes()
-      stableOnTypeUpdated()
+      try {
+        await dynamicTypeManager.deleteConfig(configId)
+        loadDynamicTypes()
+        stableOnTypeUpdated()
+      } catch (error) {
+        console.error('동적 타입 삭제 실패:', error)
+        alert('동적 타입 삭제에 실패했습니다. 다시 시도해주세요.')
+      }
     }
   }, [loadDynamicTypes, stableOnTypeUpdated])
 
@@ -189,7 +200,7 @@ export function DynamicTypeManager({ robotId, isOpen, onClose, onTypeUpdated }: 
       
       if (isEditing && editingConfig) {
         // 수정
-        const success = dynamicTypeManager.updateConfig(editingConfig.id, {
+        const success = await dynamicTypeManager.updateConfig(editingConfig.id, {
           name: typeName.trim(),
           schema,
           channelType,
@@ -204,7 +215,7 @@ export function DynamicTypeManager({ robotId, isOpen, onClose, onTypeUpdated }: 
         }
       } else {
         // 새로 추가
-        const configId = dynamicTypeManager.registerDynamicType({
+        const configId = await dynamicTypeManager.registerDynamicType({
           robotId,
           name: typeName.trim(),
           schema,
