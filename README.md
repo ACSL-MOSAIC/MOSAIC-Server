@@ -180,7 +180,7 @@ For detailed deployment instructions, see [Deployment Guide](docs/DEPLOYMENT.md)
 ### API Documentation
 
 - **WebSocket API**: See [WebSocket Documentation](docs/WEBSOCKET_API.md)
-- **WebRTC Setup**: See [MediaStream Setup](docs/MEDIASTREAM_SETUP.md) and [DataChannel Setup](docs/DATACHANNEL_SETUP.md)
+- **WebRTC Setup**: See [MediaStream Setup](docs/MEDIASTREAM_SETUP.md) and [DataChannel Setup](docs/DATACHANNEL.md)
 
 ## 🏗️ Project Structure
 
