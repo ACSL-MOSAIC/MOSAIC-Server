@@ -74,11 +74,6 @@ graph TB
 - **Command history tracking** and validation
 - **Emergency stop functionality**
 
-### 🔧 ROS2 & ROS1 Integration
-- **Native ROS2 and ROS1 support** for seamless robot ecosystem integration
-- **Topic-based data streaming** from robot sensors
-- **Service-based command execution** for robot control
-- **Parameter management** and configuration
 
 ### 📈 Scalable Architecture
 - **Modular design** supporting easy extension to new robot platforms
@@ -103,7 +98,12 @@ graph TB
    cd ai-gcs-server
    ```
 
-2. **Backend Setup**
+2. **Setting .env file**
+
+    Set up the `.env` file for the backend and the `frontend/.env` file for the frontend. Each environment file configures environment variables for its respective service.
+
+
+3. **Backend Setup**
    ```bash
    cd backend
    uv sync
@@ -111,14 +111,14 @@ graph TB
    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
-3. **Frontend Setup**
+4. **Frontend Setup**
    ```bash
    cd frontend
    npm install
    npm run dev
    ```
 
-4. **Database Setup**
+5. **Database Setup**
    ```bash
    # need pre-setup local postgresql
    cd backend
