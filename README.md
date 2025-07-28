@@ -127,6 +127,9 @@ graph TB
 
 ### Production Deployment
 
+1. change .env file which located on deploy/prod
+
+2. run docker compose command below:
 ```bash
 # Using Docker Compose
 docker-compose -f deploy/prod/docker-compose.backend.yaml up -d

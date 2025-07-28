@@ -204,45 +204,55 @@ graph TB
 Create a `.env` file in the `deploy/prod/` directory and set the following variables:
 
 ```bash
-# Domain Configuration
-DOMAIN=your-domain.com
-FRONTEND_HOST=https://your-domain.com
-ENVIRONMENT=production
-BACKEND_CORS_ORIGINS=https://your-domain.com
+DOMAIN=https://api.acslgcs.com
+FRONTEND_HOST=https://acslgcs.com
+ENVIRONMENT=local
 
-# Security
-SECRET_KEY=your-super-secret-key-here
+PROJECT_NAME="Full Stack FastAPI Project"
+STACK_NAME=full-stack-fastapi-project
 
-# Database Configuration
-POSTGRES_SERVER=db
-POSTGRES_PORT=5432
-POSTGRES_DB=acsl_gcs
-POSTGRES_USER=acsl_user
-POSTGRES_PASSWORD=your-secure-password
+# Backend
+BACKEND_CORS_ORIGINS="http://localhost,http://localhost:5173"
 
-# Admin User
+SECRET_KEY=your-secret-key
 FIRST_SUPERUSER=admin@example.com
-FIRST_SUPERUSER_PASSWORD=your-admin-password
+FIRST_SUPERUSER_PASSWORD=ascl1234
 
-# Docker Image Configuration
-DOCKER_IMAGE_BACKEND=acsl-backend
-TAG=latest
+# Postgres
+POSTGRES_SERVER=localhost
+POSTGRES_PORT=5555
+POSTGRES_DB=ascl_local
+POSTGRES_USER=chungjung
+POSTGRES_PASSWORD=chungjung1234
+
+
+# Configure these with your own Docker registry images
+DOCKER_IMAGE_BACKEND=backend
+DOCKER_IMAGE_FRONTEND=frontend
+
+
 ```
 
 ### 3.2 Environment Variables Description (Backend) - Modify .env file
 
 | Variable | Description | Required | Example |
 |----------|-------------|----------|---------|
-| `DOMAIN` | Service domain | ✅ | `acslgcs.com` |
+| `DOMAIN` | Service domain | ✅ | `https://api.acslgcs.com` |
 | `FRONTEND_HOST` | Frontend URL | ✅ | `https://acslgcs.com` |
-| `ENVIRONMENT` | Execution environment | ✅ | `production` |
-| `BACKEND_CORS_ORIGINS` | CORS allowed domains | ✅ | `https://acslgcs.com` |
+| `ENVIRONMENT` | Execution environment | ✅ | `local` / `production` |
+| `PROJECT_NAME` | Project name | ✅ | `"Full Stack FastAPI Project"` |
+| `STACK_NAME` | Docker stack name | ✅ | `full-stack-fastapi-project` |
+| `BACKEND_CORS_ORIGINS` | CORS allowed domains | ✅ | `"http://localhost,http://localhost:5173"` |
 | `SECRET_KEY` | JWT secret key | ✅ | `your-secret-key` |
-| `POSTGRES_DB` | Database name | ✅ | `acsl_gcs` |
-| `POSTGRES_USER` | Database user | ✅ | `acsl_user` |
-| `POSTGRES_PASSWORD` | Database password | ✅ | `secure-password` |
 | `FIRST_SUPERUSER` | Initial admin email | ✅ | `admin@example.com` |
-| `FIRST_SUPERUSER_PASSWORD` | Initial admin password | ✅ | `admin-password` |
+| `FIRST_SUPERUSER_PASSWORD` | Initial admin password | ✅ | `ascl1234` |
+| `POSTGRES_SERVER` | Database server | ✅ | `localhost` |
+| `POSTGRES_PORT` | Database port | ✅ | `5432` |
+| `POSTGRES_DB` | Database name | ✅ | `ascl_local` |
+| `POSTGRES_USER` | Database user | ✅ | `chungjung` |
+| `POSTGRES_PASSWORD` | Database password | ✅ | `pw` |
+| `DOCKER_IMAGE_BACKEND` | Backend Docker image name | ✅ | `backend` |
+| `DOCKER_IMAGE_FRONTEND` | Frontend Docker image name | ✅ | `frontend` |
 
 ### 3.3 Environment Variables Description (Frontend) - Modify args directly in Docker-compose.yaml file
 
