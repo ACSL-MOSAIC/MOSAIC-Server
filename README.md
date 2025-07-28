@@ -176,7 +176,6 @@ For detailed deployment instructions, see [Deployment Guide](docs/DEPLOYMENT.md)
 
 ### API Documentation
 
-- **REST API**: [OpenAPI Documentation](http://localhost:8000/docs)
 - **WebSocket API**: See [WebSocket Documentation](docs/WEBSOCKET_API.md)
 - **WebRTC Setup**: See [MediaStream Setup](docs/MEDIASTREAM_SETUP.md) and [DataChannel Setup](docs/DATACHANNEL_SETUP.md)
 
@@ -214,8 +213,3 @@ ai-gcs-server/
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-- **Documentation**: [Full Documentation](docs/)
-    
