@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:17
-    restart: always # <-- db 서비스 자체의 restart 옵션 (이건 올바름)
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -28,8 +28,7 @@ services:
       - default
     depends_on:
       db:
-        condition: service_healthy # <-- condition은 올바른 depends_on 옵션
-        # restart: true  # <-- 이 라인을 제거했습니다.
+        condition: service_healthy
     command: bash scripts/prestart.sh
     env_file:
       - .env
@@ -46,20 +45,17 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
-    # prestart 서비스 자체에 restart 정책이 필요하면 여기에 추가하세요.
-    # restart: on-failure # 예시
 
   backend:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
-    restart: always # <-- backend 서비스 자체의 restart 옵션 (이건 올바름)
+    restart: always
     container_name: prod-backend
     networks:
       - default
       - proxy
     depends_on:
       db:
-        condition: service_healthy # <-- condition은 올바른 depends_on 옵션
-        # restart: true  # <-- 이 라인을 제거했습니다.
+        condition: service_healthy
       prestart:
         condition: service_completed_successfully
     env_file:
