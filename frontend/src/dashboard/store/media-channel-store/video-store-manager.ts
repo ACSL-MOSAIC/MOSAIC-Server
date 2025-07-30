@@ -1,6 +1,6 @@
-import { VideoStore } from "./video-store"
+import { MediaChannelConfigUtils } from "@/rtc/config/webrtc-media-channel-config.ts"
 import { TurtlesimVideoStore } from "./turtlesim-video.store"
-import { MediaChannelConfigUtils } from "../../../rtc/config/webrtc-media-channel-config"
+import type { VideoStore } from "./video-store"
 
 export class VideoStoreManager {
   private static instance: VideoStoreManager
@@ -26,7 +26,9 @@ export class VideoStoreManager {
       this.stores.set(robotId, new Map())
       this.dataTypeChannels.set(robotId, new Map())
       this.mediaTypeStoreTypes.set(robotId, new Map())
-      console.log(`VideoStoreManager: Robot ${robotId} video stores initialized`)
+      console.log(
+        `VideoStoreManager: Robot ${robotId} video stores initialized`,
+      )
     }
   }
 
@@ -35,14 +37,16 @@ export class VideoStoreManager {
     const robotStores = this.stores.get(robotId)
     if (robotStores) {
       // Clean up all stores
-      robotStores.forEach(store => store.destroy())
+      for (const [, store] of robotStores.entries()) {
+        store.destroy() // Assuming VideoStore has a destroy method
+      }
       robotStores.clear()
     }
-    
+
     this.stores.delete(robotId)
     this.dataTypeChannels.delete(robotId)
     this.mediaTypeStoreTypes.delete(robotId)
-    
+
     console.log(`VideoStoreManager: Robot ${robotId} video stores cleaned up`)
   }
 
@@ -50,7 +54,7 @@ export class VideoStoreManager {
   public createStoreIfNotExists(
     robotId: string,
     storeType: symbol,
-    storeFactory: (robotId: string) => VideoStore
+    storeFactory: (robotId: string) => VideoStore,
   ): VideoStore {
     let robotStores = this.stores.get(robotId)
     if (!robotStores) {
@@ -62,7 +66,9 @@ export class VideoStoreManager {
     if (!store) {
       store = storeFactory(robotId)
       robotStores.set(storeType, store)
-      console.log(`VideoStoreManager: New VideoStore created: ${String(storeType)} for robot ${robotId}`)
+      console.log(
+        `VideoStoreManager: New VideoStore created: ${String(storeType)} for robot ${robotId}`,
+      )
     }
 
     return store
@@ -73,7 +79,7 @@ export class VideoStoreManager {
     robotId: string,
     mediaType: string,
     storeType: symbol,
-    storeFactory: (robotId: string, channelLabel: string) => VideoStore
+    storeFactory: (robotId: string, channelLabel: string) => VideoStore,
   ): VideoStore | null {
     // Store media type to store type mapping
     let robotMediaTypeStoreTypes = this.mediaTypeStoreTypes.get(robotId)
@@ -82,19 +88,26 @@ export class VideoStoreManager {
       this.mediaTypeStoreTypes.set(robotId, robotMediaTypeStoreTypes)
     }
     robotMediaTypeStoreTypes.set(mediaType, storeType)
-    
+
     // Generate channel label (media type based)
     const channelLabel = this.generateChannelLabel(mediaType, robotId)
-    
+
     // Modify store factory function (include channelLabel)
-    const modifiedStoreFactory = (robotId: string) => storeFactory(robotId, channelLabel)
-    
-    const store = this.createStoreIfNotExists(robotId, storeType, modifiedStoreFactory)
-    
+    const modifiedStoreFactory = (robotId: string) =>
+      storeFactory(robotId, channelLabel)
+
+    const store = this.createStoreIfNotExists(
+      robotId,
+      storeType,
+      modifiedStoreFactory,
+    )
+
     // Register channel
     this.registerChannelForDataType(robotId, mediaType, channelLabel)
-    
-    console.log(`VideoStoreManager: VideoStore created for media type ${mediaType}`)
+
+    console.log(
+      `VideoStoreManager: VideoStore created for media type ${mediaType}`,
+    )
     return store
   }
 
@@ -103,85 +116,108 @@ export class VideoStoreManager {
     // Check existing channel count
     const existingChannels = this.getChannelsForDataType(robotId, mediaType)
     const channelIndex = existingChannels.length
-    
+
     return `${mediaType}_track_${channelIndex}`
   }
 
   // Auto-create VideoStore by media type (used by widgets)
   public createVideoStoreByMediaTypeAuto(
     robotId: string,
-    mediaType: string
+    mediaType: string,
   ): VideoStore | null {
     // Check if media type is supported
     if (!MediaChannelConfigUtils.isSupportedMediaType(mediaType)) {
       console.warn(`VideoStoreManager: Unsupported media type: ${mediaType}`)
       return null
     }
-    
+
     // Get store type symbol
     const storeType = MediaChannelConfigUtils.getMediaTypeSymbol(mediaType)
     if (!storeType) {
-      console.warn(`VideoStoreManager: Symbol not found for media type ${mediaType}`)
+      console.warn(
+        `VideoStoreManager: Symbol not found for media type ${mediaType}`,
+      )
       return null
     }
-    
+
     // Check if existing store exists
     const existingStore = this.getVideoStoreByMediaType(robotId, mediaType)
     if (existingStore) {
-      console.log(`VideoStoreManager: Reusing existing VideoStore: ${mediaType} for robot ${robotId}`)
       return existingStore
     }
-    
+
     // Media type to store factory mapping
-    const storeFactories: Record<string, (robotId: string, channelLabel: string) => VideoStore> = {
-      'turtlesim_video': (robotId: string, channelLabel: string) => new TurtlesimVideoStore(robotId, channelLabel),
+    const storeFactories: Record<
+      string,
+      (robotId: string, channelLabel: string) => VideoStore
+    > = {
+      turtlesim_video: (robotId: string, channelLabel: string) =>
+        new TurtlesimVideoStore(robotId, channelLabel),
       // Other media types can be added here
       // 'go2_camera': (robotId: string, channelLabel: string) => new Go2CameraStore(robotId, channelLabel),
       // 'thermal_camera': (robotId: string, channelLabel: string) => new ThermalCameraStore(robotId, channelLabel),
     }
-    
+
     const storeFactory = storeFactories[mediaType]
     if (!storeFactory) {
-      console.warn(`VideoStoreManager: No store factory for media type ${mediaType}`)
+      console.warn(
+        `VideoStoreManager: No store factory for media type ${mediaType}`,
+      )
       return null
     }
-    
-    console.log(`VideoStoreManager: Creating new VideoStore: ${mediaType} for robot ${robotId}`)
-    return this.createVideoStoreByMediaType(robotId, mediaType, storeType, storeFactory)
+
+    console.log(
+      `VideoStoreManager: Creating new VideoStore: ${mediaType} for robot ${robotId}`,
+    )
+    return this.createVideoStoreByMediaType(
+      robotId,
+      mediaType,
+      storeType,
+      storeFactory,
+    )
   }
 
   // Get VideoStore by media type
-  public getVideoStoreByMediaType(robotId: string, mediaType: string): VideoStore | undefined {
+  public getVideoStoreByMediaType(
+    robotId: string,
+    mediaType: string,
+  ): VideoStore | undefined {
     const robotMediaTypeStoreTypes = this.mediaTypeStoreTypes.get(robotId)
     if (!robotMediaTypeStoreTypes) return undefined
-    
+
     const storeType = robotMediaTypeStoreTypes.get(mediaType)
     if (!storeType) return undefined
-    
+
     const robotStores = this.stores.get(robotId)
     if (!robotStores) return undefined
-    
+
     return robotStores.get(storeType)
   }
 
   // Same pattern as data channels: register channel
-  public registerChannelForDataType(robotId: string, dataType: string, channelLabel: string) {
+  public registerChannelForDataType(
+    robotId: string,
+    dataType: string,
+    channelLabel: string,
+  ) {
     let robotDataTypeChannels = this.dataTypeChannels.get(robotId)
-    
+
     if (!robotDataTypeChannels) {
       robotDataTypeChannels = new Map<string, string[]>()
       this.dataTypeChannels.set(robotId, robotDataTypeChannels)
     }
-    
+
     let channels = robotDataTypeChannels.get(dataType)
     if (!channels) {
       channels = []
       robotDataTypeChannels.set(dataType, channels)
     }
-    
+
     if (!channels.includes(channelLabel)) {
       channels.push(channelLabel)
-      console.log(`VideoStoreManager: Video channel registered: ${channelLabel} -> ${dataType} for robot ${robotId}`)
+      console.log(
+        `VideoStoreManager: Video channel registered: ${channelLabel} -> ${dataType} for robot ${robotId}`,
+      )
     }
   }
 
@@ -191,10 +227,13 @@ export class VideoStoreManager {
   }
 
   // Find data type by channel label
-  public getDataTypeForChannel(robotId: string, channelLabel: string): string | undefined {
+  public getDataTypeForChannel(
+    robotId: string,
+    channelLabel: string,
+  ): string | undefined {
     const robotDataTypeChannels = this.dataTypeChannels.get(robotId)
     if (!robotDataTypeChannels) return undefined
-    
+
     for (const [dataType, channels] of robotDataTypeChannels.entries()) {
       if (channels.includes(channelLabel)) {
         return dataType
@@ -207,4 +246,4 @@ export class VideoStoreManager {
   public getRobotVideoStores(robotId: string): Map<symbol, VideoStore> {
     return this.stores.get(robotId) || new Map()
   }
-} 
+}
