@@ -13,7 +13,7 @@ from app.websocket.signal import manager
 logger = logging.getLogger(__name__)
 
 async def handle_get_robot_list(websocket: WebSocket, data: dict, repo: RobotRepository):
-    logger.info(f"Handling get_robot_list request: {data}")
+    logger.debug(f"Handling get_robot_list request: {data}")
     try:
         msg = GetRobotListMsg(**data)
     except ValidationError as e:
@@ -26,7 +26,7 @@ async def handle_get_robot_list(websocket: WebSocket, data: dict, repo: RobotRep
         robots = repo.get_by_owner(msg.user_id)
         robot_infos = [RobotInfo(robot_id=str(r.id), state=r.status) for r in robots]
         response = RobotListMsg(type="robot_list", robots=robot_infos)
-        logger.info(f"Sending robot list response: {response.model_dump()}")
+        logger.debug(f"Sending robot list response: {response.model_dump()}")
         await websocket.send_json(response.model_dump())
 
     except Exception as e:
