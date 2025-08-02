@@ -1,24 +1,18 @@
-import {
-  Container,
-  Image,
-  Input,
-  Text,
-  Button,
-} from "@chakra-ui/react"
+import { Button, Container, Image, Input, Text } from "@chakra-ui/react"
 import {
   Link as RouterLink,
   createFileRoute,
   redirect,
 } from "@tanstack/react-router"
-import { FiLock, FiMail } from "react-icons/fi"
 import { useState } from "react"
+import { FiLock, FiMail } from "react-icons/fi"
 
 import type { Body_users_login_access_token as AccessToken } from "@/client"
 import { Field } from "@/components/ui/field"
 import { InputGroup } from "@/components/ui/input-group"
 import { PasswordInput } from "@/components/ui/password-input"
 import useAuth, { isLoggedIn } from "@/hooks/useAuth"
-import Logo from "/assets/images/fastapi-logo.svg"
+import Logo from "/assets/images/acsl-logo.svg"
 import { emailPattern } from "../utils"
 
 export const Route = createFileRoute("/login")({
@@ -39,17 +33,20 @@ function Login() {
     password: "",
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [errors, setErrors] = useState<{ username?: string; password?: string }>({})
+  const [errors, setErrors] = useState<{
+    username?: string
+    password?: string
+  }>({})
 
   const validateForm = () => {
     const newErrors: { username?: string; password?: string } = {}
-    
+
     if (!formData.username) {
       newErrors.username = "Username is required"
     } else if (!emailPattern.value.test(formData.username)) {
       newErrors.username = emailPattern.message
     }
-    
+
     if (!formData.password) {
       newErrors.password = "Password is required"
     } else if (formData.password.length < 8) {
@@ -62,7 +59,7 @@ function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateForm() || isSubmitting) return
 
     setIsSubmitting(true)
@@ -71,7 +68,11 @@ function Login() {
     try {
       const response = await loginMutation.mutateAsync(formData)
       if (response.existing_connection && response.user_id) {
-        if (window.confirm("이미 다른 기기에서 로그인되어 있습니다. 기존 연결을 해제하고 로그인하시겠습니까?")) {
+        if (
+          window.confirm(
+            "이미 다른 기기에서 로그인되어 있습니다. 기존 연결을 해제하고 로그인하시겠습니까?",
+          )
+        ) {
           await disconnectMutation.mutateAsync(response.user_id)
           await loginMutation.mutateAsync(formData)
         }
@@ -85,9 +86,9 @@ function Login() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }))
   }
 
@@ -110,10 +111,7 @@ function Login() {
         alignSelf="center"
         mb={4}
       />
-      <Field
-        invalid={!!errors.username}
-        errorText={errors.username || !!error}
-      >
+      <Field invalid={!!errors.username} errorText={errors.username || !!error}>
         <InputGroup w="100%" startElement={<FiMail />}>
           <Input
             id="username"
@@ -143,4 +141,3 @@ function Login() {
     </Container>
   )
 }
-

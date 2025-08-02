@@ -5,9 +5,9 @@ import { useState } from "react"
 import {
   type Body_users_login_access_token as AccessToken,
   type ApiError,
-  UsersService,
   type UserPublic,
   type UserRegister,
+  UsersService,
 } from "@/client"
 import { OpenAPI } from "@/client/core/OpenAPI"
 import { handleError } from "@/utils"
@@ -18,7 +18,9 @@ const isLoggedIn = () => {
 
 const useAuth = () => {
   const [error, setError] = useState<string | null>(null)
-  const [existingConnection, setExistingConnection] = useState<{ userId: string } | null>(null)
+  const [existingConnection, setExistingConnection] = useState<{
+    userId: string
+  } | null>(null)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: user } = useQuery<UserPublic | null, Error>({
@@ -46,12 +48,12 @@ const useAuth = () => {
     const response = await UsersService.loginAccessToken({
       formData: data,
     })
-    
+
     if (response.existing_connection && response.user_id) {
       setExistingConnection({ userId: response.user_id })
       return response
     }
-    
+
     localStorage.setItem("access_token", response.access_token)
     // OpenAPI 설정에 토큰 설정
     OpenAPI.TOKEN = response.access_token
@@ -73,8 +75,8 @@ const useAuth = () => {
 
   const disconnectMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const response = await UsersService.disconnectExistingSession({ 
-        requestBody: { user_id: userId } 
+      const response = await UsersService.disconnectExistingSession({
+        requestBody: { user_id: userId },
       })
       return response
     },

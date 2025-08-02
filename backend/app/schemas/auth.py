@@ -1,9 +1,4 @@
-from sqlmodel import SQLModel, Field
-
-
-# Generic message
-class Message(SQLModel):
-    message: str
+from sqlmodel import Field, SQLModel
 
 
 # JSON payload containing access token
@@ -20,8 +15,3 @@ class TokenPayload(SQLModel):
 class NewPassword(SQLModel):
     token: str
     new_password: str = Field(min_length=8, max_length=40)
-
-
-class UpdatePassword(SQLModel):
-    current_password: str
-    new_password: str = Field(min_length=8, max_length=40) 

@@ -1,12 +1,18 @@
-import { WebSocketContextType } from "@/contexts/WebSocketContext"
-import { setupWebSocketHandlers, sendWebSocketMessage } from "./ws-adaptor"
-import { createDataChannel, cleanupAllDataChannels } from "./webrtc-utils"
-import { VideoStoreManager } from "@/dashboard/store/media-channel-store/video-store-manager"
-import { ChannelType, DEFAULT_DATA_CHANNELS } from "./config/webrtc-datachannel-config"
-import { createOfferWithMediaChannels, parseMetadataFromSdp } from "./webrtc-sdp-utils"
-import { MediaChannelConfigUtils } from "./config/webrtc-media-channel-config"
-import { MEDIA_CHANNEL_CONFIG } from './config/webrtc-media-channel-config'
+import type { WebSocketContextType } from "@/contexts/WebSocketContext"
 import { DynamicTypeManager } from "@/dashboard/dynamic/dynamic-type-config"
+import { VideoStoreManager } from "@/dashboard/store/media-channel-store/video-store-manager"
+import {
+  type ChannelType,
+  DEFAULT_DATA_CHANNELS,
+} from "./config/webrtc-datachannel-config"
+import { MediaChannelConfigUtils } from "./config/webrtc-media-channel-config"
+import { MEDIA_CHANNEL_CONFIG } from "./config/webrtc-media-channel-config"
+import {
+  createOfferWithMediaChannels,
+  parseMetadataFromSdp,
+} from "./webrtc-sdp-utils"
+import { cleanupAllDataChannels, createDataChannel } from "./webrtc-utils"
+import { sendWebSocketMessage, setupWebSocketHandlers } from "./ws-adaptor"
 
 export interface DataChannelConfig {
   label: string
@@ -41,7 +47,10 @@ export class WebRTCConnection {
   private unsubscribeFunctions: (() => void)[] = []
   private pendingCandidates: RTCIceCandidate[] = []
   private dataChannels: Map<string, RTCDataChannel> = new Map()
-  private channelDataTypes: Map<string, { dataType: string; channelType: ChannelType }> = new Map() // Channel label -> data type and channel type mapping
+  private channelDataTypes: Map<
+    string,
+    { dataType: string; channelType: ChannelType }
+  > = new Map() // Channel label -> data type and channel type mapping
   private videoChannels: Map<string, VideoChannelConfig> = new Map() // Video channel configuration
   private videoChannelDataTypes: Map<string, string> = new Map() // Video channel label -> data type mapping
   private lastSdpMetadata: Map<string, any> = new Map() // Metadata parsed from SDP Answer
@@ -52,52 +61,61 @@ export class WebRTCConnection {
   }
 
   private setupWebSocketHandlers() {
-    const { unsubscribe } = setupWebSocketHandlers(this.config.ws, this.config.robotId, {
-      onSdpAnswer: async (sdpAnswer) => {
-        try {
-          // Parse metadata and msid from SDP Answer
-          const metadata = parseMetadataFromSdp(sdpAnswer)
-          
-          // Store metadata
-          this.lastSdpMetadata = metadata
-          
-          // Setup ontrack handler (metadata-based)
-          this.setupVideoTrackHandler(metadata)
-          
-          await this.setRemoteDescription(new RTCSessionDescription({
-            type: 'answer',
-            sdp: sdpAnswer
-          }))
-          
-          // Apply pending ICE candidates after SDP answer is set
-          if (this.pendingCandidates.length > 0) {
-            for (const candidate of this.pendingCandidates) {
-              try {
-                await this.addIceCandidate(candidate)
-              } catch (error) {
-                console.error('Pending ICE candidate application failed:', error)
-              }
-            }
-            this.pendingCandidates = []
-          }
-        } catch (error) {
-          console.error('SDP Answer processing error:', error)
-        }
-      },
-      onIceCandidate: async (candidate) => {
-        try {
-          // Queue if remote description is not set
-          if (!this.peerConnection?.remoteDescription) {
-            this.pendingCandidates.push(candidate)
-            return
-          }
+    const { unsubscribe } = setupWebSocketHandlers(
+      this.config.ws,
+      this.config.robotId,
+      {
+        onSdpAnswer: async (sdpAnswer) => {
+          try {
+            // Parse metadata and msid from SDP Answer
+            const metadata = parseMetadataFromSdp(sdpAnswer)
 
-          await this.addIceCandidate(candidate)
-        } catch (error) {
-          console.error('ICE Candidate processing error:', error)
-        }
-      }
-    })
+            // Store metadata
+            this.lastSdpMetadata = metadata
+
+            // Setup ontrack handler (metadata-based)
+            this.setupVideoTrackHandler(metadata)
+
+            await this.setRemoteDescription(
+              new RTCSessionDescription({
+                type: "answer",
+                sdp: sdpAnswer,
+              }),
+            )
+
+            // Apply pending ICE candidates after SDP answer is set
+            if (this.pendingCandidates.length > 0) {
+              for (const candidate of this.pendingCandidates) {
+                try {
+                  await this.addIceCandidate(candidate)
+                } catch (error) {
+                  console.error(
+                    "Pending ICE candidate application failed:",
+                    error,
+                  )
+                }
+              }
+              this.pendingCandidates = []
+            }
+          } catch (error) {
+            console.error("SDP Answer processing error:", error)
+          }
+        },
+        onIceCandidate: async (candidate) => {
+          try {
+            // Queue if remote description is not set
+            if (!this.peerConnection?.remoteDescription) {
+              this.pendingCandidates.push(candidate)
+              return
+            }
+
+            await this.addIceCandidate(candidate)
+          } catch (error) {
+            console.error("ICE Candidate processing error:", error)
+          }
+        },
+      },
+    )
 
     this.unsubscribeFunctions.push(unsubscribe)
   }
@@ -108,72 +126,89 @@ export class WebRTCConnection {
         {
           urls: "turn:turn.acslgcs.com:3478",
           username: "gistacsl",
-          credential: "qwqw!12321"
-        }
-      ]
+          credential: "qwqw!12321",
+        },
+      ],
     }
     const peerConnection = new RTCPeerConnection(configuration)
 
     // Setup DataChannel event handlers
     peerConnection.ondatachannel = (event) => {
       const dataChannel = event.channel
-      
+
       // Find data type for received channel
       const channelInfo = this.channelDataTypes.get(dataChannel.label)
       const dataType = channelInfo?.dataType
       const channelType = channelInfo?.channelType
-      
+
       if (!dataType) {
         console.error(`Unregistered channel received: ${dataChannel.label}`)
         return
       }
-      
-      this.setupDataChannel(dataChannel, dataType, channelType || 'readonly')
+
+      this.setupDataChannel(dataChannel, dataType, channelType || "readonly")
     }
 
     // Create configured data channels
     const channelsToCreate = this.config.dataChannels || []
-    
+
     // Add default channels (if not in configuration)
-    const allChannels = [...channelsToCreate, ...DEFAULT_DATA_CHANNELS.filter(ch => 
-      !channelsToCreate.some(configured => configured.label === ch.label)
-    )]
-    
+    const allChannels = [
+      ...channelsToCreate,
+      ...DEFAULT_DATA_CHANNELS.filter(
+        (ch) =>
+          !channelsToCreate.some((configured) => configured.label === ch.label),
+      ),
+    ]
+
     // Create multiple data channels
-    allChannels.forEach(channelConfig => {
-      const dataChannel = peerConnection.createDataChannel(channelConfig.label, {
-        ordered: true,
-        ...channelConfig.options
-      })
-      
+    allChannels.forEach((channelConfig) => {
+      const dataChannel = peerConnection.createDataChannel(
+        channelConfig.label,
+        {
+          ordered: true,
+          ...channelConfig.options,
+        },
+      )
+
       // Store channel and data type, channel type mapping
       this.channelDataTypes.set(channelConfig.label, {
         dataType: channelConfig.dataType,
-        channelType: channelConfig.channelType
+        channelType: channelConfig.channelType,
       })
-      
+
       // Setup created channel
-      this.setupDataChannel(dataChannel, channelConfig.dataType, channelConfig.channelType)
+      this.setupDataChannel(
+        dataChannel,
+        channelConfig.dataType,
+        channelConfig.channelType,
+      )
     })
 
     // Create dynamic data channels
     try {
       const dynamicTypeManager = DynamicTypeManager.getInstance()
-      const dynamicChannels = dynamicTypeManager.createAllDynamicChannelsForRobot(this.config.robotId, peerConnection)
-      
+      const dynamicChannels =
+        dynamicTypeManager.createAllDynamicChannelsForRobot(
+          this.config.robotId,
+          peerConnection,
+        )
+
       dynamicChannels.forEach((dataChannel: RTCDataChannel) => {
         // 동적 타입의 실제 이름 찾기
         const dynamicTypeManager = DynamicTypeManager.getInstance()
-        const configs = dynamicTypeManager.getConfigsByRobotId(this.config.robotId)
-        const config = configs.find(c => c.channelLabel === dataChannel.label)
-        
+        const configs = dynamicTypeManager.getConfigsByRobotId(
+          this.config.robotId,
+        )
+        const config = configs.find((c) => c.channelLabel === dataChannel.label)
+
         if (config) {
           // Store channel and data type, channel type mapping
           this.channelDataTypes.set(dataChannel.label, {
             dataType: config.name, // 실제 동적 타입 이름 사용
-            channelType: config.channelType
+            channelType: config.channelType,
           })
-          
+
           // Setup created channel
           this.setupDataChannel(dataChannel, config.name, config.channelType)
         } else {
@@ -181,7 +216,7 @@ export class WebRTCConnection {
         }
       })
     } catch (error) {
-      console.error('Failed to create dynamic channels:', error)
+      console.error("Failed to create dynamic channels:", error)
     }
 
     // Setup video channels (after data channel setup)
@@ -193,35 +228,54 @@ export class WebRTCConnection {
   private setupVideoChannels() {
     // Get video channel configuration from MediaChannelConfig
     const mediaChannels = this.createMediaChannels()
-    
+
     // Store configured video channels
     const channelsToSetup = this.config.videoChannels || []
-    
-    // Add default video channels from MediaChannelConfig (if not in configuration)
-    const defaultVideoChannels: VideoChannelConfig[] = mediaChannels.map(channel => ({
-      label: channel.label,
-      dataType: channel.dataType,
-      expectedTrackLabel: channel.expectedTrackLabel
-    }))
-    
-    const allVideoChannels = [...channelsToSetup, ...defaultVideoChannels.filter(ch => 
-      !channelsToSetup.some(configured => configured.label === ch.label)
-    )]
 
-    allVideoChannels.forEach(channelConfig => {
+    // Add default video channels from MediaChannelConfig (if not in configuration)
+    const defaultVideoChannels: VideoChannelConfig[] = mediaChannels.map(
+      (channel) => ({
+        label: channel.label,
+        dataType: channel.dataType,
+        expectedTrackLabel: channel.expectedTrackLabel,
+      }),
+    )
+
+    const allVideoChannels = [
+      ...channelsToSetup,
+      ...defaultVideoChannels.filter(
+        (ch) =>
+          !channelsToSetup.some((configured) => configured.label === ch.label),
+      ),
+    ]
+
+    allVideoChannels.forEach((channelConfig) => {
       this.videoChannels.set(channelConfig.label, channelConfig)
-      this.videoChannelDataTypes.set(channelConfig.label, channelConfig.dataType)
+      this.videoChannelDataTypes.set(
+        channelConfig.label,
+        channelConfig.dataType,
+      )
     })
   }
 
-  private setupDataChannel(dataChannel: RTCDataChannel, dataType: string, channelType: 'readonly' | 'writeonly') {
+  private setupDataChannel(
+    dataChannel: RTCDataChannel,
+    dataType: string,
+    channelType: "readonly" | "writeonly",
+  ) {
     // DataChannel state change event handlers
     dataChannel.onopen = () => {
-      console.log(`DataChannel ${dataChannel.label} opened, state:`, dataChannel.readyState)
+      console.log(
+        `DataChannel ${dataChannel.label} opened, state:`,
+        dataChannel.readyState,
+      )
     }
 
     dataChannel.onclose = () => {
-      console.log(`DataChannel ${dataChannel.label} closed, state:`, dataChannel.readyState)
+      console.log(
+        `DataChannel ${dataChannel.label} closed, state:`,
+        dataChannel.readyState,
+      )
       this.dataChannels.delete(dataChannel.label)
       this.channelDataTypes.delete(dataChannel.label)
     }
@@ -239,52 +293,54 @@ export class WebRTCConnection {
   // Setup Video Track handler based on metadata
   private setupVideoTrackHandler(metadata: Map<string, any>): void {
     if (!this.peerConnection) {
-      console.error('PeerConnection not initialized')
+      console.error("PeerConnection not initialized")
       return
     }
 
     this.peerConnection.ontrack = (event) => {
-      
-      if (event.track.kind === 'video') {
-        
-        if (event.streams && event.streams[0]) {
+      if (event.track.kind === "video") {
+        if (event.streams?.[0]) {
           const stream = event.streams[0]
-          
+
           // Use media type extracted from MSID
-          const mediaType = metadata.get('mediaType')
+          const mediaType = metadata.get("mediaType")
 
           if (!mediaType) {
-            console.warn('Media type not found in metadata')
+            console.warn("Media type not found in metadata")
             return
           }
 
           // Check if media type is supported
           if (MediaChannelConfigUtils.isSupportedMediaType(mediaType)) {
-          
             // Create and connect VideoStore
             const videoStoreManager = VideoStoreManager.getInstance()
-            const videoStore = videoStoreManager.createVideoStoreByMediaTypeAuto(
-              this.config.robotId, 
-              mediaType
-            )
-            
+            const videoStore =
+              videoStoreManager.createVideoStoreByMediaTypeAuto(
+                this.config.robotId,
+                mediaType,
+              )
+
             if (videoStore) {
               // Set simplified metadata (MSID-based)
               videoStore.setMetadata({
                 mediaType,
-                source: 'robot_stream'
+                source: "robot_stream",
               })
-              
+
               videoStore.setMediaStream(stream)
-              console.log(`Video Store connected: ${mediaType} for robot ${this.config.robotId}`)
+              console.log(
+                `Video Store connected: ${mediaType} for robot ${this.config.robotId}`,
+              )
             } else {
-              console.warn(`Video Store not found: ${mediaType} for robot ${this.config.robotId}`)
+              console.warn(
+                `Video Store not found: ${mediaType} for robot ${this.config.robotId}`,
+              )
             }
           } else {
             console.warn(`Unsupported media type: ${mediaType}`)
           }
         } else {
-          console.warn('Video track has no stream')
+          console.warn("Video track has no stream")
         }
       }
     }
@@ -309,84 +365,100 @@ export class WebRTCConnection {
           sendWebSocketMessage(this.config.ws, {
             type: "send_ice_candidate",
             robot_id: this.config.robotId,
-            ice_candidate: event.candidate
+            ice_candidate: event.candidate,
           })
         }
       }
 
       this.peerConnection.oniceconnectionstatechange = () => {
-        const isConnected = this.peerConnection?.iceConnectionState === 'connected'
-        console.log('Connection state:', isConnected ? 'connected' : 'disconnected')
+        const isConnected =
+          this.peerConnection?.iceConnectionState === "connected"
+        console.log(
+          "Connection state:",
+          isConnected ? "connected" : "disconnected",
+        )
         this.config.onConnectionStateChange?.(isConnected)
       }
 
       this.peerConnection.onsignalingstatechange = () => {
-        console.log('Signaling state changed:', this.peerConnection?.signalingState)
+        console.log(
+          "Signaling state changed:",
+          this.peerConnection?.signalingState,
+        )
       }
 
       this.peerConnection.onconnectionstatechange = () => {
-        console.log('Connection state changed:', this.peerConnection?.connectionState)
+        console.log(
+          "Connection state changed:",
+          this.peerConnection?.connectionState,
+        )
       }
 
       this.peerConnection.ondatachannel = (event) => {
-        console.log('DataChannel received:', event.channel.label, event.channel.readyState)
+        console.log(
+          "DataChannel received:",
+          event.channel.label,
+          event.channel.readyState,
+        )
       }
 
       // Get active media channel list
-      const activeMediaChannels = MediaChannelConfigUtils.getActiveMediaChannels()
-      
+      const activeMediaChannels =
+        MediaChannelConfigUtils.getActiveMediaChannels()
+
       // Create Offer with media channel configuration applied
       const offer = await createOfferWithMediaChannels(
         this.peerConnection,
-        activeMediaChannels
+        activeMediaChannels,
       )
-      
+
       await this.peerConnection.setLocalDescription(offer)
 
       // Send SDP offer to server
       sendWebSocketMessage(this.config.ws, {
         type: "send_sdp_offer",
         robot_id: this.config.robotId,
-        sdp_offer: offer.sdp || ''
+        sdp_offer: offer.sdp || "",
       })
-
     } catch (error) {
-      console.error('Connection start error:', error)
+      console.error("Connection start error:", error)
       throw error
     }
   }
 
-  public async setRemoteDescription(description: RTCSessionDescription): Promise<void> {
+  public async setRemoteDescription(
+    description: RTCSessionDescription,
+  ): Promise<void> {
     if (!this.peerConnection) {
-      console.error('PeerConnection not initialized')
+      console.error("PeerConnection not initialized")
       throw new Error("PeerConnection not initialized")
     }
 
     try {
       await this.peerConnection.setRemoteDescription(description)
     } catch (error) {
-      console.error('Remote description setting failed:', error)
+      console.error("Remote description setting failed:", error)
       throw error
     }
   }
 
   public async addIceCandidate(candidate: RTCIceCandidate): Promise<void> {
     if (!this.peerConnection) {
-      console.error('PeerConnection not initialized')
+      console.error("PeerConnection not initialized")
       throw new Error("PeerConnection not initialized")
     }
 
     try {
       await this.peerConnection.addIceCandidate(candidate)
     } catch (error) {
-      console.error('ICE candidate addition failed:', error)
+      console.error("ICE candidate addition failed:", error)
       throw error
     }
   }
 
   public disconnect(): void {
     // Unsubscribe WebSocket event listeners
-    this.unsubscribeFunctions.forEach(unsubscribe => unsubscribe())
+    this.unsubscribeFunctions.forEach((unsubscribe) => unsubscribe())
     this.unsubscribeFunctions = []
 
     // Clean up DataChannels
@@ -446,7 +518,7 @@ export class WebRTCConnection {
     return Object.entries(MEDIA_CHANNEL_CONFIG).map(([mediaType, config]) => ({
       label: config.defaultLabel,
       dataType: mediaType,
-      expectedTrackLabel: config.defaultLabel
+      expectedTrackLabel: config.defaultLabel,
     }))
   }
 }

@@ -1,5 +1,12 @@
-import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react"
 import useAuth from "@/hooks/useAuth"
+import {
+  type ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react"
 
 // 로봇 정보 타입
 export interface RobotInfo {
@@ -116,7 +123,10 @@ export interface WebSocketContextType {
   robots: RobotInfo[]
   ws: WebSocket | null
   sendMessage: (message: WebSocketMessage) => void
-  onMessage: <T extends WebSocketMessage>(type: T["type"], callback: (data: T) => void) => () => void
+  onMessage: <T extends WebSocketMessage>(
+    type: T["type"],
+    callback: (data: T) => void,
+  ) => () => void
   disconnect: () => void
 }
 
@@ -129,8 +139,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
   const refreshIntervalRef = useRef<NodeJS.Timeout>()
   const isConnectingRef = useRef(false)
-  const messageHandlersRef = useRef<Map<string, ((data: any) => void)[]>>(new Map())
-  
+  const messageHandlersRef = useRef<Map<string, ((data: any) => void)[]>>(
+    new Map(),
+  )
+
   const logout = () => {
     console.log("로그아웃 처리 중...")
     disconnect()
@@ -144,7 +156,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     console.log("WebSocket 연결 시도...")
 
     const environment = import.meta.env.VITE_ENVIRONMENT
-    const productionWsURL = 'wss://api.acslgcs.com'
+    const productionWsURL = "wss://api.acslgcs.com"
     const localWsURL = "ws://localhost:8000"
     const wsURL = environment === "production" ? productionWsURL : localWsURL
 
@@ -159,7 +171,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       setWs(websocket)
       // 연결 즉시 로봇 리스트 요청
       sendMessage({
-        type: "get_robot_list"
+        type: "get_robot_list",
       })
 
       // 30초마다 ping 메시지 전송
@@ -189,7 +201,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         // 등록된 메시지 핸들러 호출
         const handlers = messageHandlersRef.current.get(data.type)
         if (handlers) {
-          handlers.forEach(handler => handler(data))
+          handlers.forEach((handler) => handler(data))
         }
       } catch (error) {
         console.error("WebSocket 메시지 처리 중 오류:", error)
@@ -205,7 +217,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       console.log("WebSocket 연결 종료:", event.code, event.reason)
       isConnectingRef.current = false
       setWs(null)
-      
+
       if (refreshIntervalRef.current) {
         clearInterval(refreshIntervalRef.current)
       }
@@ -224,7 +236,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       console.log("WebSocket 메시지 전송:", message)
       const messageWithUserId = {
         ...message,
-        user_id: user?.id
+        user_id: user?.id,
       }
       ws.send(JSON.stringify(messageWithUserId))
     } else {
@@ -232,7 +244,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const onMessage = <T extends WebSocketMessage>(type: T["type"], callback: (data: T) => void) => {
+  const onMessage = <T extends WebSocketMessage>(
+    type: T["type"],
+    callback: (data: T) => void,
+  ) => {
     const handlers = messageHandlersRef.current.get(type) || []
     handlers.push(callback as (data: any) => void)
     messageHandlersRef.current.set(type, handlers)
@@ -278,11 +293,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       if (refreshIntervalRef.current) {
         clearInterval(refreshIntervalRef.current)
       }
-      
+
       refreshIntervalRef.current = setInterval(() => {
         console.log("1초마다 로봇 리스트 갱신")
         sendMessage({
-          type: "get_robot_list"
+          type: "get_robot_list",
         })
       }, 1000)
     }
@@ -295,7 +310,9 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   }, [ws?.readyState])
 
   return (
-    <WebSocketContext.Provider value={{ robots, ws, sendMessage, onMessage, disconnect }}>
+    <WebSocketContext.Provider
+      value={{ robots, ws, sendMessage, onMessage, disconnect }}
+    >
       {children}
     </WebSocketContext.Provider>
   )
@@ -307,4 +324,4 @@ export function useWebSocket() {
     throw new Error("useWebSocket must be used within a WebSocketProvider")
   }
   return context
-} 
+}

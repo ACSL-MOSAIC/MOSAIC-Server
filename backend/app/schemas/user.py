@@ -1,4 +1,5 @@
 import uuid
+
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -53,4 +54,4 @@ class UserPublic(UserBase):
 
 class UsersPublic(SQLModel):
     data: list[UserPublic]
-    count: int 
+    count: int

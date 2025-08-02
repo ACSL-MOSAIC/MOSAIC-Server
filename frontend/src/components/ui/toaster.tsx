@@ -29,7 +29,7 @@ export const Toaster = () => {
                 borderTopColor="transparent"
                 borderRadius="50%"
                 style={{
-                  animation: 'spin 1s linear infinite'
+                  animation: "spin 1s linear infinite",
                 }}
               />
             ) : (

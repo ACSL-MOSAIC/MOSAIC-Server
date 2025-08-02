@@ -1,5 +1,5 @@
-import  { useState, useRef } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useRef, useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
 
 import {
@@ -143,7 +143,11 @@ const AddRobot = () => {
                 <Select.Root
                   collection={statusOptions}
                   value={[status]}
-                  onValueChange={({ value }) => setValue("status", value[0] as RobotStatus, { shouldValidate: true })}
+                  onValueChange={({ value }) =>
+                    setValue("status", value[0] as RobotStatus, {
+                      shouldValidate: true,
+                    })
+                  }
                   size="md"
                 >
                   <Select.Control>
@@ -163,8 +167,8 @@ const AddRobot = () => {
                       zIndex={1000}
                     >
                       {statusOptions.items.map((option) => (
-                        <Select.Item 
-                          item={option} 
+                        <Select.Item
+                          item={option}
                           key={option.value}
                           px={4}
                           py={2}
@@ -221,4 +225,4 @@ const AddRobot = () => {
   )
 }
 
-export default AddRobot 
+export default AddRobot

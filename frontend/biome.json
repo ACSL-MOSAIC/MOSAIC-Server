@@ -21,6 +21,16 @@
       },
       "style": {
         "noNonNullAssertion": "off"
+      },
+      "complexity": {
+        "noForEach": "off",
+        "noStaticOnlyClass": "off"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "warn"
+      },
+      "a11y": {
+        "noSvgWithoutTitle": "off"
       }
     }
   },

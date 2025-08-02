@@ -13,7 +13,12 @@ import { useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
 import { FaExchangeAlt } from "react-icons/fa"
 
-import { type ApiError, type RobotPublic, type RobotStatus, RobotsService } from "@/client"
+import {
+  type ApiError,
+  type RobotPublic,
+  type RobotStatus,
+  RobotsService,
+} from "@/client"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 import {
@@ -136,7 +141,11 @@ const EditRobot = ({ robot }: EditRobotProps) => {
                 <Select.Root
                   collection={statusOptions}
                   value={[status]}
-                  onValueChange={({ value }) => setValue("status", value[0] as RobotStatus, { shouldValidate: true })}
+                  onValueChange={({ value }) =>
+                    setValue("status", value[0] as RobotStatus, {
+                      shouldValidate: true,
+                    })
+                  }
                   size="md"
                 >
                   <Select.Control>
@@ -156,8 +165,8 @@ const EditRobot = ({ robot }: EditRobotProps) => {
                       zIndex={1000}
                     >
                       {statusOptions.items.map((option) => (
-                        <Select.Item 
-                          item={option} 
+                        <Select.Item
+                          item={option}
                           key={option.value}
                           px={4}
                           py={2}
@@ -211,4 +220,4 @@ const EditRobot = ({ robot }: EditRobotProps) => {
   )
 }
 
-export default EditRobot 
+export default EditRobot

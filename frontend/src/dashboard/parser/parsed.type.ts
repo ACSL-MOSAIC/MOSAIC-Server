@@ -1,3 +1,3 @@
 export type ParsedData<T> = T & {
-    timestamp: number
+  timestamp: number
 }

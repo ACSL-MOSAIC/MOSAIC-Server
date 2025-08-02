@@ -1,6 +1,6 @@
+import { WebSocketProvider } from "@/contexts/WebSocketContext"
 import { Flex } from "@chakra-ui/react"
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
-import { WebSocketProvider } from "@/contexts/WebSocketContext"
 
 import Navbar from "@/components/Common/Navbar"
 import Sidebar from "@/components/Common/Sidebar"

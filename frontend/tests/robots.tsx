@@ -1,13 +1,13 @@
-import React from 'react'
-import { createFileRoute } from '@tanstack/react-router'
-import { RobotControl } from '../src/components/Robots/RobotControl'
+import { createFileRoute } from "@tanstack/react-router"
+import React from "react"
+import { RobotControl } from "../src/components/Robots/RobotControl"
 
 interface Robot {
   id: string
   name: string
 }
 
-export const Route = createFileRoute('/robots')({
+export const Route = createFileRoute("/robots")({
   component: RobotsPage,
 })
 
@@ -17,7 +17,7 @@ function RobotsPage() {
   return (
     <div className="container mx-auto p-8">
       <h1 className="text-3xl font-bold mb-8">로봇 제어 시스템</h1>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {robots.map((robot) => (
           <div key={robot.id} className="border rounded-lg p-4">
@@ -28,4 +28,4 @@ function RobotsPage() {
       </div>
     </div>
   )
-} 
+}

@@ -1,16 +1,3 @@
-import React, { useState } from 'react';
-import { 
-  Button, 
-  Input, 
-  useDisclosure, 
-  Flex, 
-  IconButton, 
-  Text,
-  HStack,
-  Box,
-  Tabs
-} from '@chakra-ui/react';
-import { FiPlus, FiX, FiEdit2, FiGrid } from 'react-icons/fi';
 import {
   DialogActionTrigger,
   DialogBody,
@@ -20,71 +7,85 @@ import {
   DialogHeader,
   DialogRoot,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { AddWidgetModal } from './AddWidgetModal';
-import { WidgetType } from './types';
+} from "@/components/ui/dialog"
+import {
+  Box,
+  Button,
+  Flex,
+  HStack,
+  IconButton,
+  Input,
+  Text,
+  useDisclosure,
+} from "@chakra-ui/react"
+import { useState } from "react"
+import { FiEdit2, FiGrid, FiPlus, FiX } from "react-icons/fi"
+import { AddWidgetModal } from "./AddWidgetModal"
+import type { WidgetType } from "./types"
 
 interface TabManagerProps {
-  onAddTab: (tabName: string) => void;
-  onRemoveTab: (tabId: string) => void;
-  onRenameTab: (tabId: string, newName: string) => void;
-  tabs: Array<{ id: string; name: string }>;
-  activeTabId: string;
-  onTabChange: (tabId: string) => void;
-  onAddWidget: (robotId: string, type: WidgetType, config?: any) => void;
-  connectedRobots: string[];
+  onAddTab: (tabName: string) => void
+  onRemoveTab: (tabId: string) => void
+  onRenameTab: (tabId: string, newName: string) => void
+  tabs: Array<{ id: string; name: string }>
+  activeTabId: string
+  onTabChange: (tabId: string) => void
+  onAddWidget: (robotId: string, type: WidgetType, config?: any) => void
+  connectedRobots: string[]
 }
 
-export function TabManager({ 
-  onAddTab, 
-  onRemoveTab, 
-  onRenameTab, 
-  tabs, 
-  activeTabId, 
+export function TabManager({
+  onAddTab,
+  onRemoveTab,
+  onRenameTab,
+  tabs,
+  activeTabId,
   onTabChange,
   onAddWidget,
-  connectedRobots
+  connectedRobots,
 }: TabManagerProps) {
-  const { open, onOpen, onClose } = useDisclosure();
-  const { open: widgetModalOpen, onOpen: onWidgetModalOpen, onClose: onWidgetModalClose } = useDisclosure();
-  const [newTabName, setNewTabName] = useState('');
-  const [editingTab, setEditingTab] = useState<{ id: string; name: string } | null>(null);
-  const [editName, setEditName] = useState('');
+  const { open, onOpen, onClose } = useDisclosure()
+  const {
+    open: widgetModalOpen,
+    onOpen: onWidgetModalOpen,
+    onClose: onWidgetModalClose,
+  } = useDisclosure()
+  const [newTabName, setNewTabName] = useState("")
+  const [editingTab, setEditingTab] = useState<{
+    id: string
+    name: string
+  } | null>(null)
+  const [editName, setEditName] = useState("")
 
   const handleAddTab = () => {
     if (newTabName.trim()) {
-      onAddTab(newTabName.trim());
-      setNewTabName('');
-      onClose();
+      onAddTab(newTabName.trim())
+      setNewTabName("")
+      onClose()
     }
-  };
+  }
 
   const handleRenameTab = () => {
     if (editingTab && editName.trim()) {
-      onRenameTab(editingTab.id, editName.trim());
-      setEditingTab(null);
-      setEditName('');
+      onRenameTab(editingTab.id, editName.trim())
+      setEditingTab(null)
+      setEditName("")
     }
-  };
+  }
 
   const startEditTab = (tab: { id: string; name: string }) => {
-    setEditingTab(tab);
-    setEditName(tab.name);
-  };
+    setEditingTab(tab)
+    setEditName(tab.name)
+  }
 
   const cancelEdit = () => {
-    setEditingTab(null);
-    setEditName('');
-  };
+    setEditingTab(null)
+    setEditName("")
+  }
 
   return (
     <Box mb={6}>
-      <Box 
-        borderBottom="1px solid" 
-        borderColor="gray.200" 
-        bg="white"
-        p={2}
-      >
+      <Box borderBottom="1px solid" borderColor="gray.200" bg="white" p={2}>
         <Flex justify="space-between" align="center">
           <HStack gap={6} flex="1">
             {tabs.map((tab) => (
@@ -98,7 +99,7 @@ export function TabManager({
                 borderRadius="md"
                 transition="all 0.2s ease-in-out"
                 _hover={{
-                  bg: activeTabId === tab.id ? 'blue.50' : 'gray.50'
+                  bg: activeTabId === tab.id ? "blue.50" : "gray.50",
                 }}
               >
                 {editingTab?.id === tab.id ? (
@@ -107,10 +108,10 @@ export function TabManager({
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        handleRenameTab();
-                      } else if (e.key === 'Escape') {
-                        cancelEdit();
+                      if (e.key === "Enter") {
+                        handleRenameTab()
+                      } else if (e.key === "Escape") {
+                        cancelEdit()
                       }
                     }}
                     onClick={(e) => e.stopPropagation()}
@@ -122,13 +123,13 @@ export function TabManager({
                     border="1px solid"
                     borderColor="blue.300"
                     _focus={{
-                      borderColor: 'blue.500',
-                      boxShadow: '0 0 0 1px rgba(59, 130, 246, 0.1)'
+                      borderColor: "blue.500",
+                      boxShadow: "0 0 0 1px rgba(59, 130, 246, 0.1)",
                     }}
                   />
                 ) : (
-                  <Text 
-                    fontSize="sm" 
+                  <Text
+                    fontSize="sm"
                     fontWeight={activeTabId === tab.id ? "600" : "500"}
                     color={activeTabId === tab.id ? "blue.600" : "gray.600"}
                     transition="all 0.2s ease-in-out"
@@ -136,7 +137,7 @@ export function TabManager({
                     {tab.name}
                   </Text>
                 )}
-                
+
                 {/* Active tab bottom line */}
                 {activeTabId === tab.id && (
                   <Box
@@ -153,7 +154,7 @@ export function TabManager({
               </Box>
             ))}
           </HStack>
-          
+
           <HStack gap={2} ml={4}>
             {/* Add widget button */}
             <Button
@@ -163,36 +164,40 @@ export function TabManager({
               disabled={connectedRobots.length === 0}
               color={connectedRobots.length === 0 ? "gray.300" : "gray.500"}
               _hover={{
-                bg: connectedRobots.length === 0 ? 'gray.50' : 'blue.50',
-                color: connectedRobots.length === 0 ? 'gray.300' : 'blue.500'
+                bg: connectedRobots.length === 0 ? "gray.50" : "blue.50",
+                color: connectedRobots.length === 0 ? "gray.300" : "blue.500",
               }}
-              title={connectedRobots.length === 0 ? "No robots connected. Please connect a robot first." : "Add Widget"}
+              title={
+                connectedRobots.length === 0
+                  ? "No robots connected. Please connect a robot first."
+                  : "Add Widget"
+              }
             >
               <FiGrid size={14} />
               Add Widget
             </Button>
-            
+
             {editingTab?.id !== activeTabId && (
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => {
-                  const currentTab = tabs.find(tab => tab.id === activeTabId);
+                  const currentTab = tabs.find((tab) => tab.id === activeTabId)
                   if (currentTab) {
-                    startEditTab(currentTab);
+                    startEditTab(currentTab)
                   }
                 }}
                 color="gray.500"
                 _hover={{
-                  bg: 'gray.100',
-                  color: 'gray.700'
+                  bg: "gray.100",
+                  color: "gray.700",
                 }}
               >
                 <FiEdit2 size={14} />
                 Edit Tab Name
               </Button>
             )}
-            
+
             {tabs.length > 1 && (
               <IconButton
                 size="sm"
@@ -201,21 +206,21 @@ export function TabManager({
                 onClick={() => onRemoveTab(activeTabId)}
                 color="gray.500"
                 _hover={{
-                  bg: 'red.50',
-                  color: 'red.500'
+                  bg: "red.50",
+                  color: "red.500",
                 }}
               >
                 <FiX size={14} />
               </IconButton>
             )}
-            
+
             <Button
               size="sm"
               onClick={onOpen}
               colorScheme="blue"
               variant="ghost"
               _hover={{
-                bg: 'blue.50'
+                bg: "blue.50",
               }}
             >
               <FiPlus size={14} />
@@ -237,8 +242,8 @@ export function TabManager({
               value={newTabName}
               onChange={(e) => setNewTabName(e.target.value)}
               onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handleAddTab();
+                if (e.key === "Enter") {
+                  handleAddTab()
                 }
               }}
               autoFocus
@@ -246,13 +251,11 @@ export function TabManager({
           </DialogBody>
           <DialogFooter>
             <DialogCloseTrigger asChild>
-              <Button variant="outline">
-                Cancel
-              </Button>
+              <Button variant="outline">Cancel</Button>
             </DialogCloseTrigger>
             <DialogActionTrigger asChild>
-              <Button 
-                onClick={handleAddTab} 
+              <Button
+                onClick={handleAddTab}
                 disabled={!newTabName.trim()}
                 colorScheme="blue"
               >
@@ -271,5 +274,5 @@ export function TabManager({
         connectedRobots={connectedRobots}
       />
     </Box>
-  );
-} 
+  )
+}

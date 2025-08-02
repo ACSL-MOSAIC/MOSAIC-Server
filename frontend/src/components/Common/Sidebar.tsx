@@ -5,8 +5,8 @@ import { FaBars } from "react-icons/fa"
 import { FiLogOut } from "react-icons/fi"
 
 import type { UserPublic } from "@/client"
-import useAuth from "@/hooks/useAuth"
 import { useWebSocket } from "@/contexts/WebSocketContext"
+import useAuth from "@/hooks/useAuth"
 import {
   DrawerBackdrop,
   DrawerBody,
@@ -98,4 +98,3 @@ const Sidebar = () => {
   )
 }
 export default Sidebar
-

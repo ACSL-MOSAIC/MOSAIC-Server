@@ -7,10 +7,13 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from app import crud
 from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
+from app.api.dto import Message
+from app.api.dto.login_dto import DisconnectRequest, LoginResponse
 from app.core import security
 from app.core.config import settings
 from app.core.security import get_password_hash
-from app.schemas import Message, NewPassword, Token, UserPublic
+from app.schemas.auth import NewPassword
+from app.schemas.user import UserPublic
 from app.utils import (
     generate_password_reset_token,
     generate_reset_password_email,
@@ -19,7 +22,6 @@ from app.utils import (
 )
 from app.websocket.signal import manager
 from app.websocket.signal.dto.user_rtc_dto import ForceLogoutMsg
-from app.api.dto.login_dto import LoginResponse, DisconnectRequest
 
 router = APIRouter(tags=["login"])
 
@@ -46,7 +48,7 @@ def login_access_token(
             access_token="",
             existing_connection=True,
             message="Another session is already active. Do you want to disconnect it?",
-            user_id=str(user.id)
+            user_id=str(user.id),
         )
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -55,7 +57,7 @@ def login_access_token(
             user.id, expires_delta=access_token_expires
         ),
         existing_connection=False,
-        user_id=str(user.id)
+        user_id=str(user.id),
     )
 
 
@@ -67,17 +69,17 @@ async def disconnect_existing_session(request: DisconnectRequest) -> Message:
     existing_ws = manager.get_user_connection(request.user_id)
     if not existing_ws:
         raise HTTPException(status_code=404, detail="No active session found")
-    
+
     # Send force logout message to existing browser
     force_logout_msg = ForceLogoutMsg(
         type="force_logout",
-        message="You have been logged out because you logged in from another browser."
+        message="You have been logged out because you logged in from another browser.",
     )
     await manager.send_to_user(force_logout_msg.model_dump(), request.user_id)
-    
+
     # Unregister WebSocket connection
     manager.disconnect_user(request.user_id)
-    
+
     return Message(message="Session disconnected successfully")
 
 
