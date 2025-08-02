@@ -1,13 +1,13 @@
 import uuid
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any
 
-from sqlmodel import Field, SQLModel, JSON
+from sqlmodel import JSON, Field, SQLModel
 
 
 # Shared properties
 class DashboardBase(SQLModel):
-    dashboard_config: Dict[str, Any] = Field(default_factory=dict, sa_type=JSON)
+    dashboard_config: dict[str, Any] = Field(default_factory=dict, sa_type=JSON)
 
 
 # Properties to receive via API on creation/update
@@ -37,4 +37,4 @@ class DashboardPublic(DashboardBase):
 
 class DashboardPublicList(SQLModel):
     data: list[DashboardPublic]
-    count: int 
+    count: int

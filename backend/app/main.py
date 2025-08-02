@@ -1,22 +1,24 @@
+import logging
+
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
-import logging
 
 from app.api.main import api_router
 from app.core.config import settings
-from app.websocket.signal.user_rtc import user_rtc_endpoint
 from app.websocket.signal.robots_rtc import robot_rtc_endpoint
+from app.websocket.signal.user_rtc import user_rtc_endpoint
 
 # 로깅 설정
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler()  # 콘솔에 출력
-    ]
+    ],
 )
+
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     return f"{route.tags[0]}-{route.name}"

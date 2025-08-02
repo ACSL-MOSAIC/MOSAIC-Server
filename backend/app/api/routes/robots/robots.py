@@ -5,8 +5,15 @@ from fastapi import APIRouter, HTTPException
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
+from app.api.dto import Message
 from app.repositories import RobotRepository
-from app.schemas import Robot, RobotCreate, RobotPublic, RobotsPublic, RobotUpdate, Message
+from app.schemas.robot import (
+    Robot,
+    RobotCreate,
+    RobotPublic,
+    RobotsPublic,
+    RobotUpdate,
+)
 
 router = APIRouter(tags=["robots"])
 
@@ -39,7 +46,7 @@ def read_robot(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) ->
     """
     robot_repo = RobotRepository(session)
     robot = robot_repo.get(id)
-    
+
     if not robot:
         raise HTTPException(status_code=404, detail="Robot not found")
     if not current_user.is_superuser and (robot.owner_id != current_user.id):
@@ -72,12 +79,12 @@ def update_robot(
     """
     robot_repo = RobotRepository(session)
     robot = robot_repo.get(id)
-    
+
     if not robot:
         raise HTTPException(status_code=404, detail="Robot not found")
     if not current_user.is_superuser and (robot.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    
+
     updated_robot = robot_repo.update(id, robot_in)
     if not updated_robot:
         raise HTTPException(status_code=404, detail="Robot not found")
@@ -93,12 +100,12 @@ def delete_robot(
     """
     robot_repo = RobotRepository(session)
     robot = robot_repo.get(id)
-    
+
     if not robot:
         raise HTTPException(status_code=404, detail="Robot not found")
     if not current_user.is_superuser and (robot.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    
+
     if not robot_repo.delete(id):
         raise HTTPException(status_code=404, detail="Robot not found")
-    return Message(message="Robot deleted successfully") 
+    return Message(message="Robot deleted successfully")

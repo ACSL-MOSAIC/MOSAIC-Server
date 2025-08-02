@@ -1,5 +1,6 @@
 import uuid
 from typing import Optional
+
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -36,4 +37,4 @@ class ItemPublic(ItemBase):
 
 class ItemsPublic(SQLModel):
     data: list[ItemPublic]
-    count: int 
+    count: int
