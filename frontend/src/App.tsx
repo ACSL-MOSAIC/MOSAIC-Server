@@ -1,8 +1,8 @@
-import React from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { RouterProvider, createRouter } from "@tanstack/react-router"
-import { routeTree } from "./routeTree.gen"
+import React from "react"
 import { WebSocketProvider } from "./contexts/WebSocketContext"
+import { routeTree } from "./routeTree.gen"
 
 const queryClient = new QueryClient()
 
@@ -24,4 +24,4 @@ function App() {
   )
 }
 
-export default App 
+export default App

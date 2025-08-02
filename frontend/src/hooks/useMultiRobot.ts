@@ -173,7 +173,7 @@
 //       if (message.type === "receive_sdp_answer") {
 //         const { robot_id, sdp_answer } = message
 //         console.log(`로봇 ${robot_id}의 SDP answer 수신:`, sdp_answer)
-        
+
 //         const connection = connectionRefs.current[robot_id]
 //         if (!connection) {
 //           console.error(`로봇 ${robot_id}의 연결 객체를 찾을 수 없습니다.`)
@@ -188,7 +188,7 @@
 //       } else if (message.type === "receive_ice_candidate") {
 //         const { robot_id, ice_candidate } = message
 //         console.log(`로봇 ${robot_id}의 ICE candidate 수신:`, ice_candidate)
-        
+
 //         const connection = connectionRefs.current[robot_id]
 //         if (!connection) {
 //           console.error(`로봇 ${robot_id}의 연결 객체를 찾을 수 없습니다.`)
@@ -226,4 +226,4 @@
 //     sendControlData,
 //     connectionRefs: connectionRefs.current
 //   }
-// } 
+// }

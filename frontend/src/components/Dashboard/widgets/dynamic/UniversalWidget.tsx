@@ -1,26 +1,42 @@
-import React, { useEffect, useState, useMemo } from 'react'
-import { Box, Text, Flex, Grid, GridItem, VStack, HStack, IconButton, Button } from '@chakra-ui/react'
-import { WidgetFrame } from '../WidgetFrame'
-import { ReadOnlyStoreManager } from '../../../../dashboard/store/data-channel-store/readonly/read-only-store-manager'
-import { UniversalWidgetConfig, VisualizationConfig, ChartConfig, GaugeConfig } from './universal-widget-config'
-import { DataChannelConfigUtils } from '../../../../rtc/config/webrtc-datachannel-config'
-import { Line, Bar, Scatter } from 'react-chartjs-2'
 import {
-  Chart as ChartJS,
+  Box,
+  Button,
+  Flex,
+  Grid,
+  GridItem,
+  HStack,
+  IconButton,
+  Text,
+  VStack,
+} from "@chakra-ui/react"
+import {
+  BarElement,
   CategoryScale,
+  Chart as ChartJS,
+  Filler,
+  Legend,
+  LineElement,
   LinearScale,
   PointElement,
-  LineElement,
-  BarElement,
   Title,
   Tooltip,
-  Legend,
-  Filler
-} from 'chart.js'
-import { FiSettings } from 'react-icons/fi'
-import { UniversalWidgetConfigurator } from './UniversalWidgetConfigurator'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
+} from "chart.js"
+import type React from "react"
+import { useEffect, useMemo, useState } from "react"
+import { Bar, Line, Scatter } from "react-chartjs-2"
+import { FiSettings } from "react-icons/fi"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism"
+import { ReadOnlyStoreManager } from "../../../../dashboard/store/data-channel-store/readonly/read-only-store-manager"
+import { DataChannelConfigUtils } from "../../../../rtc/config/webrtc-datachannel-config"
+import { WidgetFrame } from "../WidgetFrame"
+import { UniversalWidgetConfigurator } from "./UniversalWidgetConfigurator"
+import {
+  ChartConfig,
+  GaugeConfig,
+  type UniversalWidgetConfig,
+  type VisualizationConfig,
+} from "./universal-widget-config"
 
 ChartJS.register(
   CategoryScale,
@@ -31,7 +47,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 )
 
 interface UniversalWidgetProps {
@@ -44,18 +60,18 @@ interface UniversalWidgetProps {
 
 // 중첩된 객체에서 값을 가져오는 유틸리티 함수
 const getNestedValue = (obj: any, path: string): any => {
-  if (!path) return obj; // 경로가 빈 문자열이면 전체 객체 반환
-  return path.split('.').reduce((current, key) => {
+  if (!path) return obj // 경로가 빈 문자열이면 전체 객체 반환
+  return path.split(".").reduce((current, key) => {
     if (current === null || current === undefined) return null
-    
+
     // 배열 인덱스 처리 (예: "motor_state[0].q")
     const arrayMatch = key.match(/^(.+)\[(\d+)\]$/)
     if (arrayMatch) {
       const arrayKey = arrayMatch[1]
-      const index = parseInt(arrayMatch[2])
+      const index = Number.parseInt(arrayMatch[2])
       return current[arrayKey]?.[index]
     }
-    
+
     return current[key]
   }, obj)
 }
@@ -67,41 +83,48 @@ const EnhancedChartVisualization: React.FC<{
   maxDataPoints?: number
 }> = ({ config, data, maxDataPoints = 100 }) => {
   const chartConfig = config.chartConfig || {
-    xAxis: { fieldPath: 'timestamp', label: 'Time' },
-    yAxes: [{ fieldPath: config.dataMapping.fieldPath, label: config.dataMapping.label || 'Value', color: config.dataMapping.color || '#3182ce' }],
-    chartType: 'line',
+    xAxis: { fieldPath: "timestamp", label: "Time" },
+    yAxes: [
+      {
+        fieldPath: config.dataMapping.fieldPath,
+        label: config.dataMapping.label || "Value",
+        color: config.dataMapping.color || "#3182ce",
+      },
+    ],
+    chartType: "line",
     showLegend: true,
     showGrid: true,
     animation: true,
     tension: 0.1,
     pointRadius: 3,
-    borderWidth: 2
+    borderWidth: 2,
   }
 
   const chartData = useMemo(() => {
     const recentData = data.slice(-maxDataPoints)
-    
+
     // X축 데이터 준비
-    const xValues = recentData.map(item => {
+    const xValues = recentData.map((item) => {
       const xValue = getNestedValue(item, chartConfig.xAxis.fieldPath)
-      if (chartConfig.xAxis.fieldPath === 'timestamp') {
+      if (chartConfig.xAxis.fieldPath === "timestamp") {
         return new Date(xValue).toLocaleTimeString() // 시간을 문자열로 표시
       }
       return xValue
     })
-    
+
     // Y축 데이터셋들 준비
     const datasets = chartConfig.yAxes.map((yAxis, index) => {
-      const values = recentData.map(item => {
+      const values = recentData.map((item) => {
         const value = getNestedValue(item, yAxis.fieldPath)
-        return typeof value === 'number' ? value : 0
+        return typeof value === "number" ? value : 0
       })
-      
-      const baseColor = yAxis.color || config.dataMapping.color || '#3182ce'
-      const backgroundColor = chartConfig.chartType === 'area' 
-        ? `${baseColor}40` // 투명도 추가
-        : baseColor
-      
+
+      const baseColor = yAxis.color || config.dataMapping.color || "#3182ce"
+      const backgroundColor =
+        chartConfig.chartType === "area"
+          ? `${baseColor}40` // 투명도 추가
+          : baseColor
+
       return {
         label: yAxis.label || yAxis.fieldPath,
         data: values,
@@ -110,20 +133,20 @@ const EnhancedChartVisualization: React.FC<{
         tension: chartConfig.tension || 0.1,
         pointRadius: chartConfig.pointRadius || 3,
         borderWidth: chartConfig.borderWidth || 2,
-        fill: chartConfig.chartType === 'area' ? true : false,
+        fill: chartConfig.chartType === "area",
         pointBackgroundColor: baseColor,
-        pointBorderColor: '#fff',
+        pointBorderColor: "#fff",
         pointBorderWidth: 2,
         pointHoverRadius: 6,
         pointHoverBackgroundColor: baseColor,
-        pointHoverBorderColor: '#fff',
-        pointHoverBorderWidth: 2
+        pointHoverBorderColor: "#fff",
+        pointHoverBorderWidth: 2,
       }
     })
-    
+
     return {
       labels: xValues,
-      datasets
+      datasets,
     }
   }, [data, chartConfig, maxDataPoints])
 
@@ -133,82 +156,80 @@ const EnhancedChartVisualization: React.FC<{
       maintainAspectRatio: false,
       animation: {
         duration: chartConfig.animation ? 750 : 0,
-        easing: 'easeInOutQuart' as const
+        easing: "easeInOutQuart" as const,
       },
       plugins: {
-        legend: { 
+        legend: {
           display: chartConfig.showLegend !== false,
-          position: 'top' as const,
+          position: "top" as const,
           labels: {
             usePointStyle: true,
             padding: 20,
             font: {
-              size: 12
-            }
-          }
+              size: 12,
+            },
+          },
         },
         tooltip: {
-          mode: 'index' as const,
+          mode: "index" as const,
           intersect: false,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          titleColor: '#fff',
-          bodyColor: '#fff',
-          borderColor: 'rgba(255, 255, 255, 0.1)',
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          titleColor: "#fff",
+          bodyColor: "#fff",
+          borderColor: "rgba(255, 255, 255, 0.1)",
           borderWidth: 1,
           cornerRadius: 8,
-          displayColors: true
-        }
+          displayColors: true,
+        },
       },
       scales: {
         x: {
-          type: 'category' as const,
+          type: "category" as const,
           display: true,
           grid: {
             display: chartConfig.showGrid !== false,
-            color: 'rgba(0, 0, 0, 0.1)',
-            drawBorder: false
+            color: "rgba(0, 0, 0, 0.1)",
+            drawBorder: false,
           },
           ticks: {
-            color: '#666',
+            color: "#666",
             font: { size: 11 },
-            maxTicksLimit: 8
-          }
+            maxTicksLimit: 8,
+          },
         },
         y: {
           display: true,
           grid: {
             display: chartConfig.showGrid !== false,
-            color: 'rgba(0, 0, 0, 0.1)',
-            drawBorder: false
+            color: "rgba(0, 0, 0, 0.1)",
+            drawBorder: false,
           },
           ticks: {
-            color: '#666',
-            font: { size: 11 }
+            color: "#666",
+            font: { size: 11 },
           },
-          beginAtZero: true
-        }
+          beginAtZero: true,
+        },
       },
       interaction: {
-        mode: 'nearest' as const,
-        axis: 'x' as const,
-        intersect: false
+        mode: "nearest" as const,
+        axis: "x" as const,
+        intersect: false,
       },
       elements: {
         point: {
-          hoverRadius: 8
-        }
-      }
+          hoverRadius: 8,
+        },
+      },
     }
   }, [chartConfig])
 
   const renderChart = () => {
     switch (chartConfig.chartType) {
-      case 'bar':
+      case "bar":
         return <Bar data={chartData} options={chartOptions} height={200} />
-      case 'scatter':
+      case "scatter":
         return <Scatter data={chartData} options={chartOptions} height={200} />
-      case 'area':
-      case 'line':
       default:
         return <Line data={chartData} options={chartOptions} height={200} />
     }
@@ -226,7 +247,8 @@ const EnhancedChartVisualization: React.FC<{
       borderColor="gray.200"
       bg="white"
       _hover={{
-        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+        boxShadow:
+          "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
       }}
       transition="all 0.2s"
     >
@@ -240,7 +262,7 @@ const EnhancedChartVisualization: React.FC<{
   )
 }
 
-import GaugeChart from 'react-gauge-chart'
+import GaugeChart from "react-gauge-chart"
 
 // 개선된 게이지 시각화 컴포넌트
 const EnhancedGaugeVisualization: React.FC<{
@@ -248,40 +270,46 @@ const EnhancedGaugeVisualization: React.FC<{
   data: any
 }> = ({ config, data }) => {
   const value = getNestedValue(data, config.dataMapping.fieldPath)
-  const numericValue = typeof value === 'number' ? value : 0
-  
+  const numericValue = typeof value === "number" ? value : 0
+
   const gaugeConfig = config.gaugeConfig || {
     min: 0,
     max: 100,
     thresholds: { warning: 70, critical: 90 },
-    colors: { low: '#10b981', medium: '#f59e0b', high: '#ef4444' },
+    colors: { low: "#10b981", medium: "#f59e0b", high: "#ef4444" },
     showValue: true,
     showUnit: true,
     animation: true,
-    size: 'medium'
+    size: "medium",
   }
-  
-  const normalizedValue = Math.max(gaugeConfig.min || 0, Math.min(gaugeConfig.max || 100, numericValue))
-  const percentage = ((normalizedValue - (gaugeConfig.min || 0)) / ((gaugeConfig.max || 100) - (gaugeConfig.min || 0))) / 100
-  
+
+  const normalizedValue = Math.max(
+    gaugeConfig.min || 0,
+    Math.min(gaugeConfig.max || 100, numericValue),
+  )
+  const percentage =
+    (normalizedValue - (gaugeConfig.min || 0)) /
+    ((gaugeConfig.max || 100) - (gaugeConfig.min || 0)) /
+    100
+
   // 색상 결정
   const getGaugeColors = () => {
-    const lowColor = gaugeConfig.colors?.low || '#10b981'
-    const mediumColor = gaugeConfig.colors?.medium || '#f59e0b'
-    const highColor = gaugeConfig.colors?.high || '#ef4444'
-    
+    const lowColor = gaugeConfig.colors?.low || "#10b981"
+    const mediumColor = gaugeConfig.colors?.medium || "#f59e0b"
+    const highColor = gaugeConfig.colors?.high || "#ef4444"
+
     return [lowColor, mediumColor, highColor]
   }
-  
+
   // 크기 설정
   const sizeMap = {
     small: { width: 200, height: 200 },
     medium: { width: 250, height: 250 },
-    large: { width: 300, height: 300 }
+    large: { width: 300, height: 300 },
   }
-  
-  const size = sizeMap[gaugeConfig.size || 'medium']
-  
+
+  const size = sizeMap[gaugeConfig.size || "medium"]
+
   return (
     <Box
       p={4}
@@ -296,14 +324,15 @@ const EnhancedGaugeVisualization: React.FC<{
       borderColor="gray.200"
       bg="white"
       _hover={{
-        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+        boxShadow:
+          "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
       }}
       transition="all 0.2s"
     >
       <Text fontSize="lg" fontWeight="bold" mb={4} color="gray.800">
         {config.title}
       </Text>
-      
+
       <Box
         width={size.width}
         height={size.height}
@@ -323,7 +352,9 @@ const EnhancedGaugeVisualization: React.FC<{
           needleBaseColor="#345243"
           hideText={!gaugeConfig.showValue}
           animate={gaugeConfig.animation}
-          formatTextValue={() => `${normalizedValue.toFixed(1)}${gaugeConfig.showUnit && config.dataMapping.unit ? ` ${config.dataMapping.unit}` : ''}`}
+          formatTextValue={() =>
+            `${normalizedValue.toFixed(1)}${gaugeConfig.showUnit && config.dataMapping.unit ? ` ${config.dataMapping.unit}` : ""}`
+          }
         />
       </Box>
     </Box>
@@ -335,7 +366,7 @@ const TextVisualization: React.FC<{
   data: any
 }> = ({ config, data }) => {
   const value = getNestedValue(data, config.dataMapping.fieldPath)
-  
+
   return (
     <Box
       p={4}
@@ -350,15 +381,20 @@ const TextVisualization: React.FC<{
       borderColor="gray.200"
       bg="white"
       _hover={{
-        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+        boxShadow:
+          "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
       }}
       transition="all 0.2s"
     >
       <Text fontSize="lg" fontWeight="bold" mb={3} color="gray.800">
         {config.title}
       </Text>
-      <Text fontSize="2xl" fontWeight="bold" color={config.dataMapping.color || 'gray.700'}>
-        {String(value || 'N/A')}
+      <Text
+        fontSize="2xl"
+        fontWeight="bold"
+        color={config.dataMapping.color || "gray.700"}
+      >
+        {String(value || "N/A")}
       </Text>
     </Box>
   )
@@ -369,8 +405,8 @@ const NumberVisualization: React.FC<{
   data: any
 }> = ({ config, data }) => {
   const value = getNestedValue(data, config.dataMapping.fieldPath)
-  const numericValue = typeof value === 'number' ? value : 0
-  
+  const numericValue = typeof value === "number" ? value : 0
+
   return (
     <Box
       p={4}
@@ -385,14 +421,19 @@ const NumberVisualization: React.FC<{
       borderColor="gray.200"
       bg="white"
       _hover={{
-        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+        boxShadow:
+          "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
       }}
       transition="all 0.2s"
     >
       <Text fontSize="lg" fontWeight="bold" mb={3} color="gray.800">
         {config.title}
       </Text>
-      <Text fontSize="4xl" fontWeight="bold" color={config.dataMapping.color || 'blue.500'}>
+      <Text
+        fontSize="4xl"
+        fontWeight="bold"
+        color={config.dataMapping.color || "blue.500"}
+      >
         {numericValue.toFixed(2)}
       </Text>
       {config.dataMapping.unit && (
@@ -429,7 +470,15 @@ const JsonVisualization: React.FC<{
       borderColor="gray.200"
       bg="white"
     >
-      <Text fontSize="md" fontWeight="bold" mb={3} borderBottom="1px solid #e2e8f0" pb={2}>{config.title}</Text>
+      <Text
+        fontSize="md"
+        fontWeight="bold"
+        mb={3}
+        borderBottom="1px solid #e2e8f0"
+        pb={2}
+      >
+        {config.title}
+      </Text>
       <Box
         bg="gray.50"
         p={3}
@@ -445,7 +494,12 @@ const JsonVisualization: React.FC<{
         <SyntaxHighlighter
           language="json"
           style={oneLight}
-          customStyle={{ margin: 0, width: "100%", height: "100%", background: "transparent" }}
+          customStyle={{
+            margin: 0,
+            width: "100%",
+            height: "100%",
+            background: "transparent",
+          }}
           showLineNumbers
           wrapLongLines
         >
@@ -463,73 +517,96 @@ const VisualizationRenderer: React.FC<{
   dataHistory?: any[]
 }> = ({ config, data, dataHistory = [] }) => {
   switch (config.type) {
-    case 'chart': {
+    case "chart": {
       // 내부 chartType에 따라 분기
-      const chartType = config.chartConfig?.chartType || 'line';
-      const xAxis = config.chartConfig?.xAxis || { fieldPath: 'timestamp' };
-      const yAxes = config.chartConfig?.yAxes && config.chartConfig.yAxes.length > 0 ? config.chartConfig.yAxes : [{ fieldPath: config.dataMapping.fieldPath }];
-      const chartConfig = { ...config, chartConfig: { ...config.chartConfig, chartType, xAxis, yAxes } };
-      return <EnhancedChartVisualization config={chartConfig} data={dataHistory} />;
+      const chartType = config.chartConfig?.chartType || "line"
+      const xAxis = config.chartConfig?.xAxis || { fieldPath: "timestamp" }
+      const yAxes =
+        config.chartConfig?.yAxes && config.chartConfig.yAxes.length > 0
+          ? config.chartConfig.yAxes
+          : [{ fieldPath: config.dataMapping.fieldPath }]
+      const chartConfig = {
+        ...config,
+        chartConfig: { ...config.chartConfig, chartType, xAxis, yAxes },
+      }
+      return (
+        <EnhancedChartVisualization config={chartConfig} data={dataHistory} />
+      )
     }
-    case 'lineChart':
-    case 'barChart':
-    case 'scatterChart':
-    case 'areaChart':
+    case "lineChart":
+    case "barChart":
+    case "scatterChart":
+    case "areaChart":
       return <EnhancedChartVisualization config={config} data={dataHistory} />
-    case 'gauge':
+    case "gauge":
       return <EnhancedGaugeVisualization config={config} data={data} />
-    case 'text':
+    case "text":
       return <TextVisualization config={config} data={data} />
-    case 'number':
+    case "number":
       return <NumberVisualization config={config} data={data} />
-    case 'json':
+    case "json":
       return <JsonVisualization config={config} data={data} />
     default:
       return <Text>Unknown visualization type: {config.type}</Text>
   }
 }
 
-export function UniversalWidget({ config, connections, onUpdateConfig, onRemove, widgetId }: UniversalWidgetProps) {
+export function UniversalWidget({
+  config,
+  connections,
+  onUpdateConfig,
+  onRemove,
+  widgetId,
+}: UniversalWidgetProps) {
   const [stores, setStores] = useState<Map<string, any>>(new Map())
   const [data, setData] = useState<Map<string, any>>(new Map())
   const [dataHistory, setDataHistory] = useState<Map<string, any[]>>(new Map())
   const [isConnected, setIsConnected] = useState(false)
   const [isConfigOpen, setIsConfigOpen] = useState(false)
-  
+
   const readOnlyStoreManager = ReadOnlyStoreManager.getInstance()
 
   // 스토어 초기화 및 연결
   useEffect(() => {
     const newStores = new Map<string, any>()
-    
-    console.log('UniversalWidget - 스토어 초기화 시작:', config.dataSources)
-    
+
+    console.log("UniversalWidget - 스토어 초기화 시작:", config.dataSources)
+
     // 모든 스토어 가져오기
-    const robotStores = readOnlyStoreManager.getReadOnlyStores(config.dataSources[0]?.robotId || '')
-    console.log('UniversalWidget - 로봇 스토어들:', robotStores)
-    
-    config.dataSources.forEach(dataSource => {
+    const robotStores = readOnlyStoreManager.getReadOnlyStores(
+      config.dataSources[0]?.robotId || "",
+    )
+    console.log("UniversalWidget - 로봇 스토어들:", robotStores)
+
+    config.dataSources.forEach((dataSource) => {
       // 스토어 심볼에서 데이터 타입 추출하여 매칭
-      const matchingStore = Array.from(robotStores.entries()).find(([symbol, store]) => {
-        const symbolStr = symbol.toString()
-        const dataType = symbolStr.replace(/^Symbol\((.+)\)$/, '$1')
-        return dataType === dataSource.dataType
-      })
-      
-      console.log(`UniversalWidget - 데이터 타입: ${dataSource.dataType}, 매칭된 스토어:`, matchingStore)
-      
+      const matchingStore = Array.from(robotStores.entries()).find(
+        ([symbol, store]) => {
+          const symbolStr = symbol.toString()
+          const dataType = symbolStr.replace(/^Symbol\((.+)\)$/, "$1")
+          return dataType === dataSource.dataType
+        },
+      )
+
+      console.log(
+        `UniversalWidget - 데이터 타입: ${dataSource.dataType}, 매칭된 스토어:`,
+        matchingStore,
+      )
+
       if (matchingStore) {
         const [symbol, store] = matchingStore
         newStores.set(dataSource.dataType, store)
         console.log(`UniversalWidget - 스토어 추가됨: ${dataSource.dataType}`)
       } else {
-        console.warn(`UniversalWidget - 스토어를 찾을 수 없음: ${dataSource.dataType}`)
+        console.warn(
+          `UniversalWidget - 스토어를 찾을 수 없음: ${dataSource.dataType}`,
+        )
       }
     })
-    
-    console.log('UniversalWidget - 최종 스토어 맵:', newStores)
+
+    console.log("UniversalWidget - 최종 스토어 맵:", newStores)
     setStores(newStores)
-    
+
     // 초기 데이터 설정
     const initialData = new Map<string, any>()
     newStores.forEach((store, dataType) => {
@@ -539,31 +616,31 @@ export function UniversalWidget({ config, connections, onUpdateConfig, onRemove,
         console.log(`UniversalWidget - 초기 데이터 설정: ${dataType}`, lastData)
       }
     })
-    
+
     if (initialData.size > 0) {
       setData(initialData)
       setIsConnected(true)
-      console.log('UniversalWidget - 초기 데이터로 연결 상태 설정됨')
+      console.log("UniversalWidget - 초기 데이터로 연결 상태 설정됨")
     }
   }, [config.dataSources, readOnlyStoreManager])
 
   // 데이터 구독
   useEffect(() => {
     if (stores.size === 0) return
-    
+
     const unsubscribers: (() => void)[] = []
-    
-    console.log('UniversalWidget - 데이터 구독 시작, 스토어 개수:', stores.size)
-    
+
+    console.log("UniversalWidget - 데이터 구독 시작, 스토어 개수:", stores.size)
+
     stores.forEach((store, dataType) => {
       console.log(`UniversalWidget - ${dataType} 스토어 구독 시작`)
-      
+
       // 스토어가 유효한지 확인
-      if (store && typeof store.subscribe === 'function') {
+      if (store && typeof store.subscribe === "function") {
         const unsubscribe = store.subscribe((newData: any) => {
           console.log(`UniversalWidget - ${dataType} 데이터 수신:`, newData)
-          setData(prev => new Map(prev).set(dataType, newData))
-          setDataHistory(prev => {
+          setData((prev) => new Map(prev).set(dataType, newData))
+          setDataHistory((prev) => {
             const history = prev.get(dataType) || []
             const newHistory = [...history, newData].slice(-100) // 최근 100개 데이터 유지
             return new Map(prev).set(dataType, newHistory)
@@ -572,24 +649,32 @@ export function UniversalWidget({ config, connections, onUpdateConfig, onRemove,
         })
         unsubscribers.push(unsubscribe)
       } else {
-        console.warn(`UniversalWidget - ${dataType} 스토어가 유효하지 않음:`, store)
+        console.warn(
+          `UniversalWidget - ${dataType} 스토어가 유효하지 않음:`,
+          store,
+        )
       }
     })
-    
+
     return () => {
-      console.log('UniversalWidget - 구독 해제')
-      unsubscribers.forEach(unsubscribe => unsubscribe())
+      console.log("UniversalWidget - 구독 해제")
+      unsubscribers.forEach((unsubscribe) => unsubscribe())
     }
   }, [stores])
 
   // 연결 상태 확인
-  const isRobotConnected = connections ? 
-    config.dataSources.some(source => connections[source.robotId]) : false
-    
+  const isRobotConnected = connections
+    ? config.dataSources.some((source) => connections[source.robotId])
+    : false
+
   // 스토어 연결 상태 확인
-  const areStoresConnected = stores.size > 0 && Array.from(stores.values()).some(store => 
-    store && typeof store.isChannelConnected === 'function' ? store.isChannelConnected() : false
-  )
+  const areStoresConnected =
+    stores.size > 0 &&
+    Array.from(stores.values()).some((store) =>
+      store && typeof store.isChannelConnected === "function"
+        ? store.isChannelConnected()
+        : false,
+    )
 
   if (!isRobotConnected) {
     return (
@@ -599,11 +684,11 @@ export function UniversalWidget({ config, connections, onUpdateConfig, onRemove,
         footerMessage="Robot not connected"
         onRemove={onRemove}
       >
-        <Flex 
-          direction="column" 
-          align="center" 
-          justify="center" 
-          h="100%" 
+        <Flex
+          direction="column"
+          align="center"
+          justify="center"
+          h="100%"
           color="gray.500"
         >
           <Text>Robot not connected</Text>
@@ -620,15 +705,18 @@ export function UniversalWidget({ config, connections, onUpdateConfig, onRemove,
         footerMessage="Waiting for data..."
         onRemove={onRemove}
       >
-        <Flex 
-          direction="column" 
-          align="center" 
-          justify="center" 
-          h="100%" 
+        <Flex
+          direction="column"
+          align="center"
+          justify="center"
+          h="100%"
           color="gray.500"
         >
           <Text>Waiting for data...</Text>
-          <Text fontSize="sm" mt={2}>스토어 연결 상태: {stores.size > 0 ? `${stores.size}개 스토어` : '스토어 없음'}</Text>
+          <Text fontSize="sm" mt={2}>
+            스토어 연결 상태:{" "}
+            {stores.size > 0 ? `${stores.size}개 스토어` : "스토어 없음"}
+          </Text>
         </Flex>
       </WidgetFrame>
     )
@@ -636,75 +724,88 @@ export function UniversalWidget({ config, connections, onUpdateConfig, onRemove,
 
   // 레이아웃 렌더링
   const renderVisualizations = () => {
-    console.log('UniversalWidget - 시각화 렌더링 시작')
-    console.log('UniversalWidget - config.visualizations:', config.visualizations)
-    console.log('UniversalWidget - data:', data)
-    console.log('UniversalWidget - dataHistory:', dataHistory)
-    console.log('UniversalWidget - stores:', stores)
-    console.log('UniversalWidget - isConnected:', isConnected)
-    console.log('UniversalWidget - areStoresConnected:', areStoresConnected)
-    
-    const vizComponents = config.visualizations.map(viz => {
-      const dataSource = config.dataSources[viz.dataSourceIndex]
-      console.log(`UniversalWidget - 시각화 ${viz.id}:`, { 
-        viz: JSON.stringify(viz, null, 2), 
-        dataSource: JSON.stringify(dataSource, null, 2) 
-      })
-      
-      if (!dataSource) {
-        console.log(`UniversalWidget - 데이터 소스를 찾을 수 없음: ${viz.dataSourceIndex}`)
-        return null
-      }
-      
-      const vizData = data.get(dataSource.dataType) || {}
-      const vizDataHistory = dataHistory.get(dataSource.dataType) || []
-      console.log(`UniversalWidget - 시각화 데이터:`, { 
-        vizData: JSON.stringify(vizData, null, 2), 
-        vizDataHistoryLength: vizDataHistory.length 
-      })
-      
-      const component = (
-        <VisualizationRenderer
-          key={viz.id}
-          config={viz}
-          data={vizData}
-          dataHistory={vizDataHistory}
-        />
-      )
-      
-      console.log(`UniversalWidget - 생성된 컴포넌트:`, component)
-      return component
-    }).filter(Boolean)
+    console.log("UniversalWidget - 시각화 렌더링 시작")
+    console.log(
+      "UniversalWidget - config.visualizations:",
+      config.visualizations,
+    )
+    console.log("UniversalWidget - data:", data)
+    console.log("UniversalWidget - dataHistory:", dataHistory)
+    console.log("UniversalWidget - stores:", stores)
+    console.log("UniversalWidget - isConnected:", isConnected)
+    console.log("UniversalWidget - areStoresConnected:", areStoresConnected)
 
-    console.log('UniversalWidget - 레이아웃 렌더링:', { layout: config.layout, vizComponentsCount: vizComponents.length })
-    
+    const vizComponents = config.visualizations
+      .map((viz) => {
+        const dataSource = config.dataSources[viz.dataSourceIndex]
+        console.log(`UniversalWidget - 시각화 ${viz.id}:`, {
+          viz: JSON.stringify(viz, null, 2),
+          dataSource: JSON.stringify(dataSource, null, 2),
+        })
+
+        if (!dataSource) {
+          console.log(
+            `UniversalWidget - 데이터 소스를 찾을 수 없음: ${viz.dataSourceIndex}`,
+          )
+          return null
+        }
+
+        const vizData = data.get(dataSource.dataType) || {}
+        const vizDataHistory = dataHistory.get(dataSource.dataType) || []
+        console.log("UniversalWidget - 시각화 데이터:", {
+          vizData: JSON.stringify(vizData, null, 2),
+          vizDataHistoryLength: vizDataHistory.length,
+        })
+
+        const component = (
+          <VisualizationRenderer
+            key={viz.id}
+            config={viz}
+            data={vizData}
+            dataHistory={vizDataHistory}
+          />
+        )
+
+        console.log("UniversalWidget - 생성된 컴포넌트:", component)
+        return component
+      })
+      .filter(Boolean)
+
+    console.log("UniversalWidget - 레이아웃 렌더링:", {
+      layout: config.layout,
+      vizComponentsCount: vizComponents.length,
+    })
+
     if (vizComponents.length === 1) {
       // 단일 컴포넌트는 바로 반환 (부모 영역을 꽉 채움)
-      return vizComponents[0];
+      return vizComponents[0]
     }
     // 2개 이상일 때만 레이아웃 적용
     switch (config.layout) {
-      case 'grid':
+      case "grid":
         return (
-          <Grid templateColumns="repeat(auto-fit, minmax(150px, 1fr))" gap={2} h="100%">
+          <Grid
+            templateColumns="repeat(auto-fit, minmax(150px, 1fr))"
+            gap={2}
+            h="100%"
+          >
             {vizComponents.map((component, index) => (
               <GridItem key={index}>{component}</GridItem>
             ))}
           </Grid>
-        );
-      case 'horizontal':
+        )
+      case "horizontal":
         return (
           <HStack gap={2} align="stretch" h="100%">
             {vizComponents}
           </HStack>
-        );
-      case 'vertical':
+        )
       default:
         return (
           <VStack gap={2} align="stretch" h="100%">
             {vizComponents}
           </VStack>
-        );
+        )
     }
   }
 
@@ -738,10 +839,10 @@ export function UniversalWidget({ config, connections, onUpdateConfig, onRemove,
             setIsConfigOpen(false)
             onUpdateConfig?.(newConfig)
           }}
-          robotId={config.dataSources[0]?.robotId || ''}
+          robotId={config.dataSources[0]?.robotId || ""}
           initialConfig={config}
         />
       )}
     </WidgetFrame>
   )
-} 
+}

@@ -1,22 +1,26 @@
-import React from 'react'
-import { createFileRoute } from '@tanstack/react-router'
-import { RobotControl } from '../src/components/Robots/RobotControl'
-import { useQuery } from '@tanstack/react-query'
-import { RobotsService } from '@/client'
-import useAuth from '@/hooks/useAuth'
+import { RobotsService } from "@/client"
+import useAuth from "@/hooks/useAuth"
+import { useQuery } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
+import React from "react"
+import { RobotControl } from "../src/components/Robots/RobotControl"
 
 function RobotControlPage() {
   const { user: currentUser } = useAuth()
   const { robotId } = Route.useSearch()
 
-  const { data: robot, isLoading, error } = useQuery({
-    queryKey: ['robot', robotId],
+  const {
+    data: robot,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["robot", robotId],
     queryFn: async () => {
       if (!robotId) return null
       const response = await RobotsService.readRobot({ id: robotId })
       return response
     },
-    enabled: !!robotId
+    enabled: !!robotId,
   })
 
   if (isLoading) {
@@ -40,7 +44,7 @@ function RobotControlPage() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">{robot.name} 제어</h1>
       </div>
-      
+
       <div className="max-w-4xl mx-auto">
         <RobotControl userId={currentUser.id} robotId={robot.id} />
       </div>
@@ -48,11 +52,11 @@ function RobotControlPage() {
   )
 }
 
-export const Route = createFileRoute('/robot-control')({
+export const Route = createFileRoute("/robot-control")({
   component: RobotControlPage,
   validateSearch: (search: Record<string, unknown>) => {
     return {
-      robotId: search.robotId as string
+      robotId: search.robotId as string,
     }
-  }
-}) 
+  },
+})

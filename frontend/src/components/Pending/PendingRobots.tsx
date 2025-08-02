@@ -1,5 +1,4 @@
-
-import { Table, Skeleton } from "@chakra-ui/react"
+import { Skeleton, Table } from "@chakra-ui/react"
 
 export default function PendingRobots() {
   return (
@@ -36,4 +35,4 @@ export default function PendingRobots() {
       </Table.Body>
     </Table.Root>
   )
-} 
+}

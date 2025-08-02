@@ -30,7 +30,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                 borderTopColor="transparent"
                 borderRadius="50%"
                 style={{
-                  animation: 'spin 1s linear infinite'
+                  animation: "spin 1s linear infinite",
                 }}
               />
             </AbsoluteCenter>
@@ -47,7 +47,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               borderRadius="50%"
               mr={2}
               style={{
-                animation: 'spin 1s linear infinite'
+                animation: "spin 1s linear infinite",
               }}
             />
             {loadingText}

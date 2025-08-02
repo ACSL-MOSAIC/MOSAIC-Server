@@ -24,4 +24,4 @@ export const RobotActionsMenu = ({ robot }: RobotActionsMenuProps) => {
       </MenuContent>
     </MenuRoot>
   )
-} 
+}

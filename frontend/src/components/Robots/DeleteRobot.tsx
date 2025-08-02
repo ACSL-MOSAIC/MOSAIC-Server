@@ -101,4 +101,4 @@ const DeleteRobot = ({ id }: { id: string }) => {
   )
 }
 
-export default DeleteRobot 
+export default DeleteRobot

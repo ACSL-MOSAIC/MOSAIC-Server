@@ -1,15 +1,15 @@
 // Media type store factory mapping (same pattern as data channels)
 export const MEDIA_CHANNEL_CONFIG = {
-  'turtlesim_video': {
-    type: 'turtlesim_video',
-    channelType: 'readonly' as const,
-    defaultLabel: 'turtlesim_video'
+  turtlesim_video: {
+    type: "turtlesim_video",
+    channelType: "readonly" as const,
+    defaultLabel: "turtlesim_video",
   },
 } as const
 
 // Media type symbol mapping (dynamically generated)
 export const MEDIA_TYPE_SYMBOLS = {
-  'turtlesim_video': Symbol('turtlesim_video'),
+  turtlesim_video: Symbol("turtlesim_video"),
 } as const
 
 // Utility functions (same pattern as data channels)
@@ -17,15 +17,18 @@ export const MediaChannelConfigUtils = {
   /**
    * Check if media type is supported
    */
-  isSupportedMediaType(mediaType: string): mediaType is keyof typeof MEDIA_CHANNEL_CONFIG {
+  isSupportedMediaType(
+    mediaType: string,
+  ): mediaType is keyof typeof MEDIA_CHANNEL_CONFIG {
     return mediaType in MEDIA_CHANNEL_CONFIG
   },
 
   /**
    * Get channel direction for media type (currently all readonly)
    */
-  getChannelDirection(mediaType: string): 'readonly' | 'writeonly' | null {
-    const config = MEDIA_CHANNEL_CONFIG[mediaType as keyof typeof MEDIA_CHANNEL_CONFIG]
+  getChannelDirection(mediaType: string): "readonly" | "writeonly" | null {
+    const config =
+      MEDIA_CHANNEL_CONFIG[mediaType as keyof typeof MEDIA_CHANNEL_CONFIG]
     return config?.channelType || null
   },
 
@@ -33,7 +36,8 @@ export const MediaChannelConfigUtils = {
    * Get default label for media type
    */
   getDefaultMediaLabel(mediaType: string): string | null {
-    const config = MEDIA_CHANNEL_CONFIG[mediaType as keyof typeof MEDIA_CHANNEL_CONFIG]
+    const config =
+      MEDIA_CHANNEL_CONFIG[mediaType as keyof typeof MEDIA_CHANNEL_CONFIG]
     return config?.defaultLabel || null
   },
 
@@ -41,7 +45,9 @@ export const MediaChannelConfigUtils = {
    * Get symbol for media type
    */
   getMediaTypeSymbol(mediaType: string): symbol | null {
-    return MEDIA_TYPE_SYMBOLS[mediaType as keyof typeof MEDIA_TYPE_SYMBOLS] || null
+    return (
+      MEDIA_TYPE_SYMBOLS[mediaType as keyof typeof MEDIA_TYPE_SYMBOLS] || null
+    )
   },
 
   /**
@@ -69,14 +75,15 @@ export const MediaChannelConfigUtils = {
    * Generate channel label from media type
    */
   generateChannelLabel(mediaType: string, robotId: string): string {
-    const config = MEDIA_CHANNEL_CONFIG[mediaType as keyof typeof MEDIA_CHANNEL_CONFIG]
+    const config =
+      MEDIA_CHANNEL_CONFIG[mediaType as keyof typeof MEDIA_CHANNEL_CONFIG]
     if (config) {
       return `${config.defaultLabel}_${robotId}`
     }
     return `video_track_${robotId}`
-  }
+  },
 }
 
 // Type definitions
 export type MediaType = keyof typeof MEDIA_CHANNEL_CONFIG
-export type MediaChannelType = 'readonly' 
+export type MediaChannelType = "readonly"

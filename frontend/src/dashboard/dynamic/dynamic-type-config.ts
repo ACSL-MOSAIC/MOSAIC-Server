@@ -1,10 +1,10 @@
-import { ParsedData } from "../parser/parsed.type"
-import { DataStore } from "../store/store"
-import { ReadOnlyStore } from "../store/data-channel-store/readonly/read-only-store"
-import { WriteOnlyStore } from "../store/data-channel-store/writeonly/write-only-store"
-import { ReadOnlyStoreManager } from "../store/data-channel-store/readonly/read-only-store-manager"
-import { WriteOnlyStoreManager } from "../store/data-channel-store/writeonly/write-only-store-manager"
 import { DynamicTypeConfigService } from "../../client"
+import type { ParsedData } from "../parser/parsed.type"
+import { ReadOnlyStore } from "../store/data-channel-store/readonly/read-only-store"
+import { ReadOnlyStoreManager } from "../store/data-channel-store/readonly/read-only-store-manager"
+import { WriteOnlyStore } from "../store/data-channel-store/writeonly/write-only-store"
+import { WriteOnlyStoreManager } from "../store/data-channel-store/writeonly/write-only-store-manager"
+import type { DataStore } from "../store/store"
 
 // JSON Schema 타입 정의
 export interface JsonSchema {
@@ -26,11 +26,11 @@ export interface JsonSchema {
 // 동적 타입 설정
 export interface DynamicTypeConfig {
   id: string
-  robotId: string  // 특정 로봇에 종속
+  robotId: string // 특정 로봇에 종속
   name: string
   schema: JsonSchema
-  channelType: 'readonly' | 'writeonly'
-  channelLabel: string  // 채널 라벨 (필수값)
+  channelType: "readonly" | "writeonly"
+  channelLabel: string // 채널 라벨 (필수값)
   description?: string
   createdAt: number
   updatedAt: number
@@ -41,7 +41,7 @@ export class DynamicTypeManager {
   private static instance: DynamicTypeManager
   private configs: Map<string, DynamicTypeConfig> = new Map()
   private dynamicSymbols: Map<string, symbol> = new Map()
-  private isLoading: boolean = false
+  private isLoading = false
 
   private constructor() {
     // 초기화 시 즉시 로드하지 않고, 필요할 때 로드하도록 변경
@@ -90,23 +90,29 @@ export class DynamicTypeManager {
 
   // 동적 타입 가드 함수 생성
   private generateTypeGuard(schema: JsonSchema, interfaceName: string): string {
-    const generateValidation = (propSchema: JsonSchema, propName: string, path: string): string => {
+    const generateValidation = (
+      propSchema: JsonSchema,
+      propName: string,
+      path: string,
+    ): string => {
       const isRequired = schema.required?.includes(propName) ?? false
-      
+
       if (isRequired) {
         return generatePropertyValidation(propSchema, path)
-      } else {
-        return `
+      }
+      return `
           if (data.${propName} !== undefined) {
             ${generatePropertyValidation(propSchema, path)}
           }
         `
-      }
     }
 
-    const generatePropertyValidation = (propSchema: JsonSchema, path: string): string => {
+    const generatePropertyValidation = (
+      propSchema: JsonSchema,
+      path: string,
+    ): string => {
       switch (propSchema.type) {
-        case 'string':
+        case "string": {
           let stringValidation = `if (typeof data.${path} !== 'string') return false;`
           if (propSchema.minLength !== undefined) {
             stringValidation += `\n            if (data.${path}.length < ${propSchema.minLength}) return false;`
@@ -114,14 +120,16 @@ export class DynamicTypeManager {
           if (propSchema.maxLength !== undefined) {
             stringValidation += `\n            if (data.${path}.length > ${propSchema.maxLength}) return false;`
           }
-          if (propSchema.format === 'email') {
-            stringValidation += `\n            const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;`
+          if (propSchema.format === "email") {
+            stringValidation +=
+              "\n            const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;"
             stringValidation += `\n            if (!emailRegex.test(data.${path})) return false;`
           }
           return stringValidation
-          
-        case 'number':
-        case 'integer':
+        }
+
+        case "number":
+        case "integer": {
           let numberValidation = `if (typeof data.${path} !== 'number') return false;`
           if (propSchema.minimum !== undefined) {
             numberValidation += `\n            if (data.${path} < ${propSchema.minimum}) return false;`
@@ -130,11 +138,12 @@ export class DynamicTypeManager {
             numberValidation += `\n            if (data.${path} > ${propSchema.maximum}) return false;`
           }
           return numberValidation
-          
-        case 'boolean':
+        }
+
+        case "boolean":
           return `if (typeof data.${path} !== 'boolean') return false;`
-          
-        case 'array':
+
+        case "array": {
           let arrayValidation = `if (!Array.isArray(data.${path})) return false;`
           if (propSchema.minItems !== undefined) {
             arrayValidation += `\n            if (data.${path}.length < ${propSchema.minItems}) return false;`
@@ -145,11 +154,12 @@ export class DynamicTypeManager {
           if (propSchema.items) {
             arrayValidation += `\n            for (let i = 0; i < data.${path}.length; i++) {`
             arrayValidation += `\n              ${generatePropertyValidation(propSchema.items, `${path}[i]`)}`
-            arrayValidation += `\n            }`
+            arrayValidation += "\n            }"
           }
           return arrayValidation
-          
-        case 'object':
+        }
+
+        case "object":
           if (propSchema.properties) {
             let objectValidation = `if (typeof data.${path} !== 'object' || data.${path} === null) return false;`
             for (const [key, value] of Object.entries(propSchema.properties)) {
@@ -158,21 +168,21 @@ export class DynamicTypeManager {
             return objectValidation
           }
           return `if (typeof data.${path} !== 'object' || data.${path} === null) return false;`
-          
+
         default:
-          return ''
+          return ""
       }
     }
 
-    if (schema.type === 'object' && schema.properties) {
+    if (schema.type === "object" && schema.properties) {
       let validationCode = `function is${interfaceName}(data: any): data is ${interfaceName} {\n`
       validationCode += `  if (typeof data !== 'object' || data === null) return false;\n`
-      
+
       for (const [key, value] of Object.entries(schema.properties)) {
         validationCode += `  ${generateValidation(value, key, key)}\n`
       }
-      
-      validationCode += `  return true;\n}`
+
+      validationCode += "  return true;\n}"
       return validationCode
     }
 
@@ -180,33 +190,44 @@ export class DynamicTypeManager {
   }
 
   // 동적 타입 등록
-  async registerDynamicType(config: Omit<DynamicTypeConfig, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  async registerDynamicType(
+    config: Omit<DynamicTypeConfig, "id" | "createdAt" | "updatedAt">,
+  ): Promise<string> {
     const id = `dynamic_${config.robotId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const now = Date.now()
-    
+
     const fullConfig: DynamicTypeConfig = {
       ...config,
       id,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     }
 
     this.configs.set(id, fullConfig)
     await this.saveConfigsToAPI()
-    
+
     // 타입 등록 시 자동으로 스토어 생성
     try {
-      console.log(`DynamicTypeManager: 동적 타입 등록 시 스토어 자동 생성 - ${config.name}`)
+      console.log(
+        `DynamicTypeManager: 동적 타입 등록 시 스토어 자동 생성 - ${config.name}`,
+      )
       this.createDynamicStore(id, config.robotId)
     } catch (error) {
-      console.error(`DynamicTypeManager: 동적 타입 등록 시 스토어 생성 실패 - ${config.name}:`, error)
+      console.error(
+        `DynamicTypeManager: 동적 타입 등록 시 스토어 생성 실패 - ${config.name}:`,
+        error,
+      )
     }
-    
+
     return id
   }
 
   // 동적 채널 생성 함수
-  createDynamicChannel(configId: string, robotId: string, peerConnection: RTCPeerConnection): RTCDataChannel | null {
+  createDynamicChannel(
+    configId: string,
+    robotId: string,
+    peerConnection: RTCPeerConnection,
+  ): RTCDataChannel | null {
     const config = this.configs.get(configId)
     if (!config) {
       console.error(`Dynamic type config not found: ${configId}`)
@@ -214,39 +235,51 @@ export class DynamicTypeManager {
     }
 
     const channelLabel = config.channelLabel
-    
+
     try {
       // DataChannel 생성
       const dataChannel = peerConnection.createDataChannel(channelLabel, {
-        ordered: true
+        ordered: true,
       })
-      
+
       console.log(`DynamicTypeManager: 동적 채널 생성됨 - ${channelLabel}`)
-      
+
       // 채널 설정 후 스토어 생성
       this.createDynamicStore(configId, robotId)
-      
+
       return dataChannel
     } catch (error) {
-      console.error(`DynamicTypeManager: 동적 채널 생성 실패 - ${channelLabel}:`, error)
+      console.error(
+        `DynamicTypeManager: 동적 채널 생성 실패 - ${channelLabel}:`,
+        error,
+      )
       return null
     }
   }
 
   // 로봇의 모든 동적 채널 생성
-  createAllDynamicChannelsForRobot(robotId: string, peerConnection: RTCPeerConnection): RTCDataChannel[] {
+  createAllDynamicChannelsForRobot(
+    robotId: string,
+    peerConnection: RTCPeerConnection,
+  ): RTCDataChannel[] {
     const configs = this.getConfigsByRobotId(robotId)
     const channels: RTCDataChannel[] = []
-    
-    console.log(`DynamicTypeManager: 로봇 ${robotId}의 ${configs.length}개 동적 채널 생성 시작`)
-    
-    configs.forEach(config => {
-      const channel = this.createDynamicChannel(config.id, robotId, peerConnection)
+
+    console.log(
+      `DynamicTypeManager: 로봇 ${robotId}의 ${configs.length}개 동적 채널 생성 시작`,
+    )
+
+    configs.forEach((config) => {
+      const channel = this.createDynamicChannel(
+        config.id,
+        robotId,
+        peerConnection,
+      )
       if (channel) {
         channels.push(channel)
       }
     })
-    
+
     return channels
   }
 
@@ -259,18 +292,26 @@ export class DynamicTypeManager {
 
     const interfaceName = this.generateInterfaceName(config.name)
     const parserCode = this.generateParserFunction(interfaceName)
-    
+
     // 동적으로 함수 생성 (필요한 것들을 매개변수로 전달)
-    const parserFunction = new Function('JSON', 'Date', `
+    const parserFunction = new Function(
+      "JSON",
+      "Date",
+      `
       ${parserCode}
       return parse${interfaceName};
-    `)
-    
+    `,
+    )
+
     return parserFunction(JSON, Date)
   }
 
   // 동적 스토어 생성 및 기존 매니저에 등록
-  createDynamicStore(configId: string, robotId: string, maxSize: number = 1000): DataStore<any, string> {
+  createDynamicStore(
+    configId: string,
+    robotId: string,
+    maxSize = 1000,
+  ): DataStore<any, string> {
     const config = this.configs.get(configId)
     if (!config) {
       throw new Error(`Dynamic type config not found: ${configId}`)
@@ -278,46 +319,55 @@ export class DynamicTypeManager {
 
     // 동적 타입 심볼 생성 (캐시된 Symbol 사용)
     const dynamicSymbol = this.getDynamicSymbol(robotId, config.name)
-    
+
     // 기존 스토어가 있는지 확인
     const existingStore = this.getDynamicStoreFromManager(robotId, config.name)
     if (existingStore) {
-      console.log(`DynamicTypeManager: 기존 동적 스토어 재사용 - ${config.name}`)
+      console.log(
+        `DynamicTypeManager: 기존 동적 스토어 재사용 - ${config.name}`,
+      )
       return existingStore
     }
 
     const interfaceName = this.generateInterfaceName(config.name)
     const parser = this.createDynamicParser(configId)
-    
-    if (config.channelType === 'readonly') {
+
+    if (config.channelType === "readonly") {
       // ReadOnlyStoreManager를 통해 동적 ReadOnlyStore 생성 및 등록
       const readOnlyManager = ReadOnlyStoreManager.getInstance()
       const store = readOnlyManager.createStoreIfNotExists(
         robotId,
         dynamicSymbol,
-        (robotId) => new DynamicReadOnlyStore(robotId, maxSize, parser)
+        (robotId) => new DynamicReadOnlyStore(robotId, maxSize, parser),
       )
-      
+
       // 채널 등록
       const channelLabel = config.channelLabel
-      readOnlyManager.registerChannelForDataType(robotId, config.name, channelLabel)
-      
-      return store
-    } else {
-      // WriteOnlyStoreManager를 통해 동적 WriteOnlyStore 생성 및 등록
-      const writeOnlyManager = WriteOnlyStoreManager.getInstance()
-      const store = writeOnlyManager.createStoreIfNotExists(
+      readOnlyManager.registerChannelForDataType(
         robotId,
-        dynamicSymbol,
-        (robotId) => new DynamicWriteOnlyStore(robotId, maxSize, parser)
+        config.name,
+        channelLabel,
       )
-      
-      // 채널 등록
-      const channelLabel = config.channelLabel
-      writeOnlyManager.registerChannelForDataType(robotId, config.name, channelLabel)
-      
+
       return store
     }
+    // WriteOnlyStoreManager를 통해 동적 WriteOnlyStore 생성 및 등록
+    const writeOnlyManager = WriteOnlyStoreManager.getInstance()
+    const store = writeOnlyManager.createStoreIfNotExists(
+      robotId,
+      dynamicSymbol,
+      (robotId) => new DynamicWriteOnlyStore(robotId, maxSize, parser),
+    )
+
+    // 채널 등록
+    const channelLabel = config.channelLabel
+    writeOnlyManager.registerChannelForDataType(
+      robotId,
+      config.name,
+      channelLabel,
+    )
+
+    return store
   }
 
   // 타입 가드 생성
@@ -329,12 +379,15 @@ export class DynamicTypeManager {
 
     const interfaceName = this.generateInterfaceName(config.name)
     const typeGuardCode = this.generateTypeGuard(config.schema, interfaceName)
-    
-    const typeGuardFunction = new Function('data', `
+
+    const typeGuardFunction = new Function(
+      "data",
+      `
       ${typeGuardCode}
       return is${interfaceName};
-    `)
-    
+    `,
+    )
+
     return typeGuardFunction()
   }
 
@@ -342,8 +395,8 @@ export class DynamicTypeManager {
   private generateInterfaceName(name: string): string {
     return name
       .split(/[-_\s]/)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join('')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join("")
   }
 
   // API를 통한 설정 저장
@@ -352,47 +405,57 @@ export class DynamicTypeManager {
       const configsArray = Array.from(this.configs.values())
       await DynamicTypeConfigService.upsertDynamicTypeConfig({
         requestBody: {
-          configuration: configsArray as any[]
-        }
+          configuration: configsArray as any[],
+        },
       })
-      console.log('DynamicTypeManager: 설정이 API를 통해 저장되었습니다.')
+      console.log("DynamicTypeManager: 설정이 API를 통해 저장되었습니다.")
     } catch (error) {
-      console.error('Failed to save dynamic type configs to API:', error)
+      console.error("Failed to save dynamic type configs to API:", error)
     }
   }
 
   // API를 통한 설정 로드
   private async loadConfigsFromAPI(): Promise<void> {
     if (this.isLoading) return
-    
+
     this.isLoading = true
     try {
       const response = await DynamicTypeConfigService.readDynamicTypeConfig()
       const configsArray: any[] = response.configuration || []
-      
+
       this.configs.clear()
-      configsArray.forEach(config => {
+      configsArray.forEach((config) => {
         this.configs.set(config.id, config as DynamicTypeConfig)
       })
-      
+
       // 설정 로드 후 모든 동적 스토어 자동 생성
-      console.log('DynamicTypeManager: API에서 설정 로드 후 동적 스토어 자동 생성 시작')
-      configsArray.forEach(config => {
+      console.log(
+        "DynamicTypeManager: API에서 설정 로드 후 동적 스토어 자동 생성 시작",
+      )
+      configsArray.forEach((config) => {
         try {
           // 기존 스토어가 있는지 확인
-          const existingStore = this.getDynamicStoreFromManager(config.robotId, config.name)
+          const existingStore = this.getDynamicStoreFromManager(
+            config.robotId,
+            config.name,
+          )
           if (existingStore) {
-            console.log(`DynamicTypeManager: 기존 동적 스토어 사용 - ${config.name}`)
+            console.log(
+              `DynamicTypeManager: 기존 동적 스토어 사용 - ${config.name}`,
+            )
           } else {
             console.log(`DynamicTypeManager: 동적 스토어 생성 - ${config.name}`)
             this.createDynamicStore(config.id, config.robotId)
           }
         } catch (error) {
-          console.error(`DynamicTypeManager: 동적 스토어 생성 실패 - ${config.name}:`, error)
+          console.error(
+            `DynamicTypeManager: 동적 스토어 생성 실패 - ${config.name}:`,
+            error,
+          )
         }
       })
     } catch (error) {
-      console.error('Failed to load dynamic type configs from API:', error)
+      console.error("Failed to load dynamic type configs from API:", error)
       // API 로드 실패 시 빈 설정으로 초기화
       this.configs.clear()
     } finally {
@@ -412,14 +475,19 @@ export class DynamicTypeManager {
 
   // 특정 로봇의 설정 조회
   getConfigsByRobotId(robotId: string): DynamicTypeConfig[] {
-    return Array.from(this.configs.values())
-      .filter(config => config.robotId === robotId)
+    return Array.from(this.configs.values()).filter(
+      (config) => config.robotId === robotId,
+    )
   }
 
   // 특정 로봇의 특정 이름 설정 조회
-  getConfigByRobotAndName(robotId: string, name: string): DynamicTypeConfig | undefined {
-    return Array.from(this.configs.values())
-      .find(config => config.robotId === robotId && config.name === name)
+  getConfigByRobotAndName(
+    robotId: string,
+    name: string,
+  ): DynamicTypeConfig | undefined {
+    return Array.from(this.configs.values()).find(
+      (config) => config.robotId === robotId && config.name === name,
+    )
   }
 
   // 설정 삭제
@@ -433,22 +501,26 @@ export class DynamicTypeManager {
 
   // 특정 로봇의 모든 설정 삭제
   async deleteConfigsByRobotId(robotId: string): Promise<number> {
-    const configsToDelete = Array.from(this.configs.entries())
-      .filter(([_, config]) => config.robotId === robotId)
-    
+    const configsToDelete = Array.from(this.configs.entries()).filter(
+      ([_, config]) => config.robotId === robotId,
+    )
+
     configsToDelete.forEach(([id, _]) => {
       this.configs.delete(id)
     })
-    
+
     if (configsToDelete.length > 0) {
       await this.saveConfigsToAPI()
     }
-    
+
     return configsToDelete.length
   }
 
   // 설정 업데이트
-  async updateConfig(configId: string, updates: Partial<DynamicTypeConfig>): Promise<boolean> {
+  async updateConfig(
+    configId: string,
+    updates: Partial<DynamicTypeConfig>,
+  ): Promise<boolean> {
     const config = this.configs.get(configId)
     if (!config) {
       return false
@@ -457,40 +529,57 @@ export class DynamicTypeManager {
     this.configs.set(configId, {
       ...config,
       ...updates,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
     })
-    
+
     await this.saveConfigsToAPI()
     return true
   }
 
   // 기존 스토어 매니저에서 동적 스토어 조회 (기존 메서드들과 동일한 방식으로)
-  getDynamicStoreFromManager(robotId: string, typeName: string): DataStore<any, string> | undefined {
-    console.log(`DynamicTypeManager: 스토어 찾기 시도 - robotId: ${robotId}, typeName: ${typeName}`)
-    
+  getDynamicStoreFromManager(
+    robotId: string,
+    typeName: string,
+  ): DataStore<any, string> | undefined {
+    console.log(
+      `DynamicTypeManager: 스토어 찾기 시도 - robotId: ${robotId}, typeName: ${typeName}`,
+    )
+
     const config = this.getConfigByRobotAndName(robotId, typeName)
     if (!config) {
-      console.log(`DynamicTypeManager: 설정을 찾을 수 없음 - robotId: ${robotId}, typeName: ${typeName}`)
+      console.log(
+        `DynamicTypeManager: 설정을 찾을 수 없음 - robotId: ${robotId}, typeName: ${typeName}`,
+      )
       // 모든 설정 출력해서 디버깅
       const allConfigs = this.getConfigsByRobotId(robotId)
-      console.log(`DynamicTypeManager: 해당 로봇의 모든 설정:`, allConfigs.map(c => ({ name: c.name, channelLabel: c.channelLabel })))
+      console.log(
+        "DynamicTypeManager: 해당 로봇의 모든 설정:",
+        allConfigs.map((c) => ({ name: c.name, channelLabel: c.channelLabel })),
+      )
       return undefined
     }
 
-    console.log(`DynamicTypeManager: 설정 찾음 - name: ${config.name}, channelLabel: ${config.channelLabel}`)
+    console.log(
+      `DynamicTypeManager: 설정 찾음 - name: ${config.name}, channelLabel: ${config.channelLabel}`,
+    )
     const dynamicSymbol = this.getDynamicSymbol(robotId, typeName)
 
-    if (config.channelType === 'readonly') {
+    if (config.channelType === "readonly") {
       const readOnlyManager = ReadOnlyStoreManager.getInstance()
       const store = readOnlyManager.getStore(robotId, dynamicSymbol)
-      console.log(`DynamicTypeManager: ReadOnly 스토어 찾기 결과:`, store ? '성공' : '실패')
-      return store
-    } else {
-      const writeOnlyManager = WriteOnlyStoreManager.getInstance()
-      const store = writeOnlyManager.getStore(robotId, dynamicSymbol)
-      console.log(`DynamicTypeManager: WriteOnly 스토어 찾기 결과:`, store ? '성공' : '실패')
+      console.log(
+        "DynamicTypeManager: ReadOnly 스토어 찾기 결과:",
+        store ? "성공" : "실패",
+      )
       return store
     }
+    const writeOnlyManager = WriteOnlyStoreManager.getInstance()
+    const store = writeOnlyManager.getStore(robotId, dynamicSymbol)
+    console.log(
+      "DynamicTypeManager: WriteOnly 스토어 찾기 결과:",
+      store ? "성공" : "실패",
+    )
+    return store
   }
 
   // 로봇의 모든 동적 스토어 조회 (기존 getAllStores와 동일한 방식)
@@ -498,7 +587,7 @@ export class DynamicTypeManager {
     const configs = this.getConfigsByRobotId(robotId)
     const stores: DataStore<any, string>[] = []
 
-    configs.forEach(config => {
+    configs.forEach((config) => {
       const store = this.getDynamicStoreFromManager(robotId, config.name)
       if (store) {
         stores.push(store)
@@ -509,7 +598,11 @@ export class DynamicTypeManager {
   }
 
   // 동적 타입으로 스토어 생성 및 기존 매니저에 완전히 통합
-  createAndIntegrateDynamicStore(configId: string, robotId: string, maxSize: number = 1000): DataStore<any, string> {
+  createAndIntegrateDynamicStore(
+    configId: string,
+    robotId: string,
+    maxSize = 1000,
+  ): DataStore<any, string> {
     // 이미 생성된 스토어가 있는지 확인
     const config = this.getConfig(configId)
     if (!config) {
@@ -532,22 +625,13 @@ export class DynamicTypeManager {
 }
 
 // 동적 ReadOnlyStore 구현체
-class DynamicReadOnlyStore extends ReadOnlyStore<any, string> {
-  constructor(robotId: string, maxSize: number, parser: (data: string) => any) {
-    super(robotId, maxSize, parser)
-  }
-
-}
+class DynamicReadOnlyStore extends ReadOnlyStore<any, string> {}
 
 // 동적 WriteOnlyStore 구현체
 class DynamicWriteOnlyStore extends WriteOnlyStore<any, string> {
-  constructor(robotId: string, maxSize: number, parser: (data: string) => any) {
-    super(robotId, maxSize, parser)
-  }
-
   protected sendData(data: any): void {
-    if (this.dataChannel && this.dataChannel.readyState === 'open') {
-      console.log(`[DynamicWriteOnlyStore] 데이터 전송:`, data)
+    if (this.dataChannel && this.dataChannel.readyState === "open") {
+      console.log("[DynamicWriteOnlyStore] 데이터 전송:", data)
       this.dataChannel.send(JSON.stringify(data))
     }
   }

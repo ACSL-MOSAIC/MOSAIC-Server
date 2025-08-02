@@ -13,8 +13,8 @@ import { z } from "zod"
 
 import { RobotsService } from "@/client"
 import { RobotActionsMenu } from "@/components/Common/RobotActionsMenu"
-import AddRobot from "@/components/Robots/AddRobot"
 import PendingRobots from "@/components/Pending/PendingRobots"
+import AddRobot from "@/components/Robots/AddRobot"
 import {
   PaginationItems,
   PaginationNextTrigger,
@@ -31,7 +31,10 @@ const PER_PAGE = 5
 function getRobotsQueryOptions({ page }: { page: number }) {
   return {
     queryFn: () =>
-      RobotsService.readRobots({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
+      RobotsService.readRobots({
+        skip: (page - 1) * PER_PAGE,
+        limit: PER_PAGE,
+      }),
     queryKey: ["robots", { page }],
   }
 }
@@ -145,4 +148,4 @@ function Robots() {
       <RobotsTable />
     </Container>
   )
-} 
+}
