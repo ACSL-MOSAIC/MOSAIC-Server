@@ -1,21 +1,20 @@
 import {
+  type DynamicTypeConfig,
+  dynamicTypeManager,
+} from "@/dashboard/dynamic/dynamic-type-config.ts"
+import {
   Badge,
   Box,
   Button,
   Dialog,
   HStack,
-  IconButton,
   Input,
   Text,
   Textarea,
   VStack,
 } from "@chakra-ui/react"
-import React, { useState, useEffect, useCallback } from "react"
-import { IoAdd, IoSettings } from "react-icons/io5"
-import {
-  type DynamicTypeConfig,
-  dynamicTypeManager,
-} from "../../dashboard/dynamic/dynamic-type-config"
+import { useCallback, useEffect, useState } from "react"
+import { IoAdd } from "react-icons/io5"
 import { DynamicTypeList } from "./DynamicTypeList"
 
 interface DynamicTypeManagerProps {
@@ -238,7 +237,7 @@ export function DynamicTypeManager({
         }
       } else {
         // 새로 추가
-        const configId = await dynamicTypeManager.registerDynamicType({
+        await dynamicTypeManager.registerDynamicType({
           robotId,
           name: typeName.trim(),
           schema,

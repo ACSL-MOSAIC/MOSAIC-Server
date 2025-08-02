@@ -1,6 +1,6 @@
+import { ReadOnlyStoreManager } from "@/dashboard/store/data-channel-store/readonly/read-only-store-manager.ts"
 import {
   Box,
-  Button,
   Flex,
   Grid,
   GridItem,
@@ -27,15 +27,11 @@ import { Bar, Line, Scatter } from "react-chartjs-2"
 import { FiSettings } from "react-icons/fi"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism"
-import { ReadOnlyStoreManager } from "../../../../dashboard/store/data-channel-store/readonly/read-only-store-manager"
-import { DataChannelConfigUtils } from "../../../../rtc/config/webrtc-datachannel-config"
 import { WidgetFrame } from "../WidgetFrame"
 import { UniversalWidgetConfigurator } from "./UniversalWidgetConfigurator"
-import {
-  ChartConfig,
-  GaugeConfig,
-  type UniversalWidgetConfig,
-  type VisualizationConfig,
+import type {
+  UniversalWidgetConfig,
+  VisualizationConfig,
 } from "./universal-widget-config"
 
 ChartJS.register(
@@ -113,7 +109,7 @@ const EnhancedChartVisualization: React.FC<{
     })
 
     // Y축 데이터셋들 준비
-    const datasets = chartConfig.yAxes.map((yAxis, index) => {
+    const datasets = chartConfig.yAxes.map((yAxis, _) => {
       const values = recentData.map((item) => {
         const value = getNestedValue(item, yAxis.fieldPath)
         return typeof value === "number" ? value : 0
@@ -556,7 +552,6 @@ export function UniversalWidget({
   connections,
   onUpdateConfig,
   onRemove,
-  widgetId,
 }: UniversalWidgetProps) {
   const [stores, setStores] = useState<Map<string, any>>(new Map())
   const [data, setData] = useState<Map<string, any>>(new Map())
@@ -581,7 +576,7 @@ export function UniversalWidget({
     config.dataSources.forEach((dataSource) => {
       // 스토어 심볼에서 데이터 타입 추출하여 매칭
       const matchingStore = Array.from(robotStores.entries()).find(
-        ([symbol, store]) => {
+        ([symbol, _]) => {
           const symbolStr = symbol.toString()
           const dataType = symbolStr.replace(/^Symbol\((.+)\)$/, "$1")
           return dataType === dataSource.dataType
@@ -594,7 +589,7 @@ export function UniversalWidget({
       )
 
       if (matchingStore) {
-        const [symbol, store] = matchingStore
+        const [_, store] = matchingStore
         newStores.set(dataSource.dataType, store)
         console.log(`UniversalWidget - 스토어 추가됨: ${dataSource.dataType}`)
       } else {

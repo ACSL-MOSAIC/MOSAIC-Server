@@ -15,11 +15,10 @@ import {
   HStack,
   IconButton,
   Input,
-  Tabs,
   Text,
   useDisclosure,
 } from "@chakra-ui/react"
-import React, { useState } from "react"
+import { useState } from "react"
 import { FiEdit2, FiGrid, FiPlus, FiX } from "react-icons/fi"
 import { AddWidgetModal } from "./AddWidgetModal"
 import type { WidgetType } from "./types"

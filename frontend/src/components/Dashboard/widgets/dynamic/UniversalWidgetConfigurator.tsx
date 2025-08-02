@@ -6,11 +6,10 @@ import {
   HStack,
   IconButton,
   Input,
-  Portal,
   Text,
   VStack,
 } from "@chakra-ui/react"
-import React, { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 // Simple icon components
 const AddIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -33,16 +32,14 @@ import {
   DialogRoot,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ReadOnlyStoreManager } from "../../../../dashboard/store/data-channel-store/readonly/read-only-store-manager"
-import { DataChannelConfigUtils } from "../../../../rtc/config/webrtc-datachannel-config"
-import {
-  type ChartAxisConfig,
-  type ChartConfig,
-  type DataSourceConfig,
-  type UniversalWidgetConfig,
-  UniversalWidgetConfigUtils,
-  type VisualizationConfig,
-  type VisualizationType,
+import { ReadOnlyStoreManager } from "@/dashboard/store/data-channel-store/readonly/read-only-store-manager.ts"
+import type {
+  ChartAxisConfig,
+  ChartConfig,
+  DataSourceConfig,
+  UniversalWidgetConfig,
+  VisualizationConfig,
+  VisualizationType,
 } from "./universal-widget-config"
 
 function getFieldPathsFromSample(
