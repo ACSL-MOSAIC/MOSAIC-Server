@@ -1,15 +1,17 @@
-import { DynamicTypeManager } from "@/dashboard/dynamic/dynamic-type-config"
-import { Go2LowStateStore } from "@/dashboard/store/data-channel-store/readonly/go2-low-state.store"
-import { Go2OusterPointCloudStore } from "@/dashboard/store/data-channel-store/readonly/go2-ouster-pointcloud.store"
-import { ReadOnlyStore } from "@/dashboard/store/data-channel-store/readonly/read-only-store"
-import { ReadOnlyStoreManager } from "@/dashboard/store/data-channel-store/readonly/read-only-store-manager"
-import { TurtlesimPositionStore } from "@/dashboard/store/data-channel-store/readonly/turtlesim-position.store"
-import { TurtlesimRemoteControlStore } from "@/dashboard/store/data-channel-store/writeonly/turtlesim-remote-control.store"
-import { VideoRecorderStore } from "@/dashboard/store/data-channel-store/writeonly/video-recorder.store.ts"
-import { WriteOnlyStore } from "@/dashboard/store/data-channel-store/writeonly/write-only-store"
-import { WriteOnlyStoreManager } from "@/dashboard/store/data-channel-store/writeonly/write-only-store-manager"
-import type { DataStore } from "@/dashboard/store/store"
-import { DataChannelConfigUtils } from "./config/webrtc-datachannel-config"
+import {DynamicTypeManager} from "@/dashboard/dynamic/dynamic-type-config"
+import {Go2LowStateStore} from "@/dashboard/store/data-channel-store/readonly/go2-low-state.store"
+import {Go2OusterPointCloudStore} from "@/dashboard/store/data-channel-store/readonly/go2-ouster-pointcloud.store"
+import {ReadOnlyStore} from "@/dashboard/store/data-channel-store/readonly/read-only-store"
+import {ReadOnlyStoreManager} from "@/dashboard/store/data-channel-store/readonly/read-only-store-manager"
+import {TurtlesimPositionStore} from "@/dashboard/store/data-channel-store/readonly/turtlesim-position.store"
+import {
+  TurtlesimRemoteControlStore
+} from "@/dashboard/store/data-channel-store/writeonly/turtlesim-remote-control.store"
+import {VideoRecorderStore} from "@/dashboard/store/data-channel-store/writeonly/video-recorder.store.ts"
+import {WriteOnlyStore} from "@/dashboard/store/data-channel-store/writeonly/write-only-store"
+import {WriteOnlyStoreManager} from "@/dashboard/store/data-channel-store/writeonly/write-only-store-manager"
+import type {DataStore} from "@/dashboard/store/store"
+import {DataChannelConfigUtils} from "./config/webrtc-datachannel-config"
 
 /**
  * Setup data channel for robot
@@ -196,11 +198,18 @@ export function createDataChannel(
   }
 
   // Setup new onmessage handler (data processing only)
-  dataChannel.onmessage = (event) => {
+  dataChannel.onmessage = async (event) => {
     try {
       const data = event.data
+
+      let nonBlobData = null
+      if (data instanceof Blob) {
+        nonBlobData = await data.arrayBuffer()
+      } else {
+        nonBlobData = data
+      }
       if (store) {
-        store.add(data)
+        store.add(nonBlobData)
       }
     } catch (error) {
       console.error(

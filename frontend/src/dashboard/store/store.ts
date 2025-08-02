@@ -13,7 +13,6 @@ export class DataStore<T, I = string> {
 
   add(data: I) {
     const parsedData = this.parser(data)
-    // console.log(`[DataStore] 데이터 추가됨:`, parsedData)
     if (parsedData === null) {
       return
     }
