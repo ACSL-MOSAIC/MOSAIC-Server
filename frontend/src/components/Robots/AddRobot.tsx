@@ -6,15 +6,14 @@ import {
   Button,
   DialogActionTrigger,
   DialogTitle,
+  HStack,
   Input,
-  Select,
   Text,
   VStack,
-  createListCollection,
 } from "@chakra-ui/react"
-import { FaPlus } from "react-icons/fa"
+import { FaPlus, FaRandom } from "react-icons/fa"
 
-import { type RobotCreate, type RobotStatus, RobotsService } from "@/client"
+import { type RobotCreate, RobotsService } from "@/client"
 import type { ApiError } from "@/client/core/ApiError"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
@@ -29,16 +28,6 @@ import {
 } from "../ui/dialog"
 import { Field } from "../ui/field"
 
-const statusOptions = createListCollection({
-  items: [
-    { label: "Ready to Connect", value: "READY_TO_CONNECT" as RobotStatus },
-    { label: "Connecting", value: "CONNECTING" as RobotStatus },
-    { label: "Connected", value: "CONNECTED" as RobotStatus },
-    { label: "Disconnected", value: "DISCONNECTED" as RobotStatus },
-    { label: "Removed", value: "REMOVED" as RobotStatus },
-  ],
-})
-
 const AddRobot = () => {
   const [isOpen, setIsOpen] = useState(false)
   const dialogContentRef = useRef<HTMLDivElement>(null)
@@ -49,20 +38,21 @@ const AddRobot = () => {
     handleSubmit,
     reset,
     setValue,
-    watch,
     formState: { errors, isValid, isSubmitting },
   } = useForm<RobotCreate>({
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
-      name: "",
-      status: "DISCONNECTED" as RobotStatus,
-      description: "",
       id: "",
+      name: "",
+      description: "",
     },
   })
 
-  const status = watch("status") as RobotStatus
+  const handleGenerateUUID = () => {
+    const newUUID = crypto.randomUUID()
+    setValue("id", newUUID)
+  }
 
   const mutation = useMutation({
     mutationFn: (data: RobotCreate) =>
@@ -106,16 +96,27 @@ const AddRobot = () => {
             <Text mb={4}>Fill in the details to add a new robot.</Text>
             <VStack gap={4}>
               <Field
+                required
                 invalid={!!errors.id}
                 errorText={errors.id?.message}
-                label="ID (Optional)"
+                label="ID"
               >
-                <Input
-                  id="id"
-                  {...register("id")}
-                  placeholder="Enter custom ID (optional)"
-                  type="text"
-                />
+                <HStack alignItems="stretch" width="100%">
+                  <Input
+                    id="id"
+                    {...register("id")}
+                    placeholder="Enter custom ID (uuid format)"
+                    type="text"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateUUID}
+                  >
+                    <FaRandom />
+                  </Button>
+                </HStack>
               </Field>
 
               <Field
@@ -132,56 +133,6 @@ const AddRobot = () => {
                   placeholder="Name"
                   type="text"
                 />
-              </Field>
-
-              <Field
-                required
-                invalid={!!errors.status}
-                errorText={errors.status?.message}
-                label="Status"
-              >
-                <Select.Root
-                  collection={statusOptions}
-                  value={[status]}
-                  onValueChange={({ value }) =>
-                    setValue("status", value[0] as RobotStatus, {
-                      shouldValidate: true,
-                    })
-                  }
-                  size="md"
-                >
-                  <Select.Control>
-                    <Select.Trigger>
-                      <Select.ValueText placeholder="Select status" />
-                    </Select.Trigger>
-                    <Select.IndicatorGroup>
-                      <Select.Indicator />
-                    </Select.IndicatorGroup>
-                  </Select.Control>
-                  <Select.Positioner>
-                    <Select.Content
-                      bg="white"
-                      borderRadius="md"
-                      boxShadow="md"
-                      minW="200px"
-                      zIndex={1000}
-                    >
-                      {statusOptions.items.map((option) => (
-                        <Select.Item
-                          item={option}
-                          key={option.value}
-                          px={4}
-                          py={2}
-                          cursor="pointer"
-                          _hover={{ bg: "gray.100" }}
-                        >
-                          {option.label}
-                          <Select.ItemIndicator />
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Select.Root>
               </Field>
 
               <Field
