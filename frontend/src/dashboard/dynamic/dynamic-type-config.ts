@@ -4,6 +4,7 @@ import { ReadOnlyStore } from "../store/data-channel-store/readonly/read-only-st
 import { WriteOnlyStore } from "../store/data-channel-store/writeonly/write-only-store"
 import { ReadOnlyStoreManager } from "../store/data-channel-store/readonly/read-only-store-manager"
 import { WriteOnlyStoreManager } from "../store/data-channel-store/writeonly/write-only-store-manager"
+import { DynamicTypeConfigService } from "../../client"
 
 // JSON Schema 타입 정의
 export interface JsonSchema {
@@ -39,11 +40,11 @@ export interface DynamicTypeConfig {
 export class DynamicTypeManager {
   private static instance: DynamicTypeManager
   private configs: Map<string, DynamicTypeConfig> = new Map()
-  private readonly STORAGE_KEY = 'dynamic_type_configs'
   private dynamicSymbols: Map<string, symbol> = new Map()
+  private isLoading: boolean = false
 
   private constructor() {
-    this.loadConfigsFromStorage()
+    // 초기화 시 즉시 로드하지 않고, 필요할 때 로드하도록 변경
   }
 
   static getInstance(): DynamicTypeManager {
@@ -51,6 +52,12 @@ export class DynamicTypeManager {
       DynamicTypeManager.instance = new DynamicTypeManager()
     }
     return DynamicTypeManager.instance
+  }
+
+  // 초기화 메서드 추가
+  async initialize(): Promise<void> {
+    if (this.isLoading) return
+    await this.loadConfigsFromAPI()
   }
 
   // 동적 타입의 Symbol을 생성하고 캐시하는 메서드
@@ -62,7 +69,6 @@ export class DynamicTypeManager {
     }
     return this.dynamicSymbols.get(key)!
   }
-
 
   // 동적 파서 함수 생성 (import 문 제거)
   private generateParserFunction(interfaceName: string): string {
@@ -81,7 +87,6 @@ export class DynamicTypeManager {
       }
     `
   }
-
 
   // 동적 타입 가드 함수 생성
   private generateTypeGuard(schema: JsonSchema, interfaceName: string): string {
@@ -175,7 +180,7 @@ export class DynamicTypeManager {
   }
 
   // 동적 타입 등록
-  registerDynamicType(config: Omit<DynamicTypeConfig, 'id' | 'createdAt' | 'updatedAt'>): string {
+  async registerDynamicType(config: Omit<DynamicTypeConfig, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     const id = `dynamic_${config.robotId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const now = Date.now()
     
@@ -187,7 +192,7 @@ export class DynamicTypeManager {
     }
 
     this.configs.set(id, fullConfig)
-    this.saveConfigsToStorage()
+    await this.saveConfigsToAPI()
     
     // 타입 등록 시 자동으로 스토어 생성
     try {
@@ -341,46 +346,57 @@ export class DynamicTypeManager {
       .join('')
   }
 
-  // 설정 저장
-  private saveConfigsToStorage(): void {
+  // API를 통한 설정 저장
+  private async saveConfigsToAPI(): Promise<void> {
     try {
       const configsArray = Array.from(this.configs.values())
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(configsArray))
+      await DynamicTypeConfigService.upsertDynamicTypeConfig({
+        requestBody: {
+          configuration: configsArray as any[]
+        }
+      })
+      console.log('DynamicTypeManager: 설정이 API를 통해 저장되었습니다.')
     } catch (error) {
-      console.error('Failed to save dynamic type configs to localStorage:', error)
+      console.error('Failed to save dynamic type configs to API:', error)
     }
   }
 
-  // 설정 로드
-  private loadConfigsFromStorage(): void {
+  // API를 통한 설정 로드
+  private async loadConfigsFromAPI(): Promise<void> {
+    if (this.isLoading) return
+    
+    this.isLoading = true
     try {
-      const configsJson = localStorage.getItem(this.STORAGE_KEY)
-      if (configsJson) {
-        const configsArray: DynamicTypeConfig[] = JSON.parse(configsJson)
-        this.configs.clear()
-        configsArray.forEach(config => {
-          this.configs.set(config.id, config)
-        })
-        
-        // 설정 로드 후 모든 동적 스토어 자동 생성
-        console.log('DynamicTypeManager: 설정 로드 후 동적 스토어 자동 생성 시작')
-        configsArray.forEach(config => {
-          try {
-            // 기존 스토어가 있는지 확인
-            const existingStore = this.getDynamicStoreFromManager(config.robotId, config.name)
-            if (existingStore) {
-              console.log(`DynamicTypeManager: 기존 동적 스토어 사용 - ${config.name}`)
-            } else {
-              console.log(`DynamicTypeManager: 동적 스토어 생성 - ${config.name}`)
-              this.createDynamicStore(config.id, config.robotId)
-            }
-          } catch (error) {
-            console.error(`DynamicTypeManager: 동적 스토어 생성 실패 - ${config.name}:`, error)
+      const response = await DynamicTypeConfigService.readDynamicTypeConfig()
+      const configsArray: any[] = response.configuration || []
+      
+      this.configs.clear()
+      configsArray.forEach(config => {
+        this.configs.set(config.id, config as DynamicTypeConfig)
+      })
+      
+      // 설정 로드 후 모든 동적 스토어 자동 생성
+      console.log('DynamicTypeManager: API에서 설정 로드 후 동적 스토어 자동 생성 시작')
+      configsArray.forEach(config => {
+        try {
+          // 기존 스토어가 있는지 확인
+          const existingStore = this.getDynamicStoreFromManager(config.robotId, config.name)
+          if (existingStore) {
+            console.log(`DynamicTypeManager: 기존 동적 스토어 사용 - ${config.name}`)
+          } else {
+            console.log(`DynamicTypeManager: 동적 스토어 생성 - ${config.name}`)
+            this.createDynamicStore(config.id, config.robotId)
           }
-        })
-      }
+        } catch (error) {
+          console.error(`DynamicTypeManager: 동적 스토어 생성 실패 - ${config.name}:`, error)
+        }
+      })
     } catch (error) {
-      console.error('Failed to load dynamic type configs from localStorage:', error)
+      console.error('Failed to load dynamic type configs from API:', error)
+      // API 로드 실패 시 빈 설정으로 초기화
+      this.configs.clear()
+    } finally {
+      this.isLoading = false
     }
   }
 
@@ -407,16 +423,16 @@ export class DynamicTypeManager {
   }
 
   // 설정 삭제
-  deleteConfig(configId: string): boolean {
+  async deleteConfig(configId: string): Promise<boolean> {
     const deleted = this.configs.delete(configId)
     if (deleted) {
-      this.saveConfigsToStorage()
+      await this.saveConfigsToAPI()
     }
     return deleted
   }
 
   // 특정 로봇의 모든 설정 삭제
-  deleteConfigsByRobotId(robotId: string): number {
+  async deleteConfigsByRobotId(robotId: string): Promise<number> {
     const configsToDelete = Array.from(this.configs.entries())
       .filter(([_, config]) => config.robotId === robotId)
     
@@ -425,14 +441,14 @@ export class DynamicTypeManager {
     })
     
     if (configsToDelete.length > 0) {
-      this.saveConfigsToStorage()
+      await this.saveConfigsToAPI()
     }
     
     return configsToDelete.length
   }
 
   // 설정 업데이트
-  updateConfig(configId: string, updates: Partial<DynamicTypeConfig>): boolean {
+  async updateConfig(configId: string, updates: Partial<DynamicTypeConfig>): Promise<boolean> {
     const config = this.configs.get(configId)
     if (!config) {
       return false
@@ -444,7 +460,7 @@ export class DynamicTypeManager {
       updatedAt: Date.now()
     })
     
-    this.saveConfigsToStorage()
+    await this.saveConfigsToAPI()
     return true
   }
 
@@ -507,6 +523,11 @@ export class DynamicTypeManager {
 
     // 새로 생성하고 기존 매니저에 등록
     return this.createDynamicStore(configId, robotId, maxSize)
+  }
+
+  // 설정 새로고침 (API에서 다시 로드)
+  async refreshConfigs(): Promise<void> {
+    await this.loadConfigsFromAPI()
   }
 }
 

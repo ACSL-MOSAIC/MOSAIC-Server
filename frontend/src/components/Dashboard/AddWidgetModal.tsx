@@ -1,12 +1,3 @@
-import React, { useState } from 'react'
-import {
-  Button,
-  Stack,
-  Select,
-  createListCollection,
-  Portal,
-} from "@chakra-ui/react"
-import { WidgetType } from './types'
 import {
   DialogActionTrigger,
   DialogBody,
@@ -18,28 +9,41 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useRobotMapping } from "@/hooks/useRobotMapping"
-import { UniversalWidgetConfigurator } from './widgets/dynamic/UniversalWidgetConfigurator'
+import {
+  Button,
+  Portal,
+  Select,
+  Stack,
+  createListCollection,
+} from "@chakra-ui/react"
+import { useState } from "react"
+import type { WidgetType } from "./types"
+import { UniversalWidgetConfigurator } from "./widgets/dynamic/UniversalWidgetConfigurator"
 
 interface AddWidgetModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onAdd: (robotId: string, type: WidgetType, config?: any) => void;
-  connectedRobots: string[];
+  isOpen: boolean
+  onClose: () => void
+  onAdd: (robotId: string, type: WidgetType, config?: any) => void
+  connectedRobots: string[]
 }
 
-export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddWidgetModalProps) {
-  console.log('AddWidgetModal rendering, robots:', connectedRobots)
-  const [selectedRobotId, setSelectedRobotId] = useState<string>("");
-  const [selectedType, setSelectedType] = useState<string>("go2_low_state");
-  const [showUniversalConfig, setShowUniversalConfig] = useState(false);
-  const { getRobotName } = useRobotMapping();
+export function AddWidgetModal({
+  isOpen,
+  onClose,
+  onAdd,
+  connectedRobots,
+}: AddWidgetModalProps) {
+  const [selectedRobotId, setSelectedRobotId] = useState<string>("")
+  const [selectedType, setSelectedType] = useState<string>("go2_low_state")
+  const [showUniversalConfig, setShowUniversalConfig] = useState(false)
+  const { getRobotName } = useRobotMapping()
 
   const robotCollection = createListCollection({
-    items: connectedRobots.map(robotId => ({
+    items: connectedRobots.map((robotId) => ({
       label: getRobotName(robotId),
       value: robotId,
-    }))
-  });
+    })),
+  })
 
   const widgetTypeCollection = createListCollection({
     items: [
@@ -48,26 +52,27 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
       { label: "Turtlesim Position", value: "turtlesim_position" },
       { label: "Turtlesim Remote Control", value: "turtlesim_remote_control" },
       { label: "Turtlesim Video", value: "turtlesim_video" },
-      { label: "Universal Widget", value: "universal" }
-    ]
-  });
+      { label: "Universal Widget", value: "universal" },
+      { label: "Video Recorder", value: "video_recorder" },
+    ],
+  })
 
   const handleAdd = () => {
     if (selectedRobotId) {
-      if (selectedType === 'universal') {
-        setShowUniversalConfig(true);
+      if (selectedType === "universal") {
+        setShowUniversalConfig(true)
       } else {
-        onAdd(selectedRobotId, selectedType as WidgetType);
-        onClose();
+        onAdd(selectedRobotId, selectedType as WidgetType)
+        onClose()
       }
     }
-  };
+  }
 
   const handleUniversalConfigComplete = (config: any) => {
-    onAdd(selectedRobotId, 'universal' as WidgetType, config);
-    setShowUniversalConfig(false);
-    onClose();
-  };
+    onAdd(selectedRobotId, "universal" as WidgetType, config)
+    setShowUniversalConfig(false)
+    onClose()
+  }
 
   // Universal Widget 설정 모달이 열려있으면 해당 모달을 렌더링
   if (showUniversalConfig) {
@@ -78,7 +83,7 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
         onComplete={handleUniversalConfigComplete}
         robotId={selectedRobotId}
       />
-    );
+    )
   }
 
   return (
@@ -90,9 +95,9 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
     >
       <DialogContent
         style={{
-          overflow: 'visible',
-          position: 'relative',
-          zIndex: 1000
+          overflow: "visible",
+          position: "relative",
+          zIndex: 1000,
         }}
       >
         <DialogCloseTrigger />
@@ -119,11 +124,13 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
               </Select.Control>
               <Portal>
                 <Select.Positioner style={{ zIndex: 9999 }}>
-                  <Select.Content style={{ 
-                    position: 'relative',
-                    zIndex: 9999,
-                    backgroundColor: 'white'
-                  }}>
+                  <Select.Content
+                    style={{
+                      position: "relative",
+                      zIndex: 9999,
+                      backgroundColor: "white",
+                    }}
+                  >
                     {robotCollection.items.map((robot) => (
                       <Select.Item item={robot} key={robot.value}>
                         {robot.label}
@@ -153,11 +160,13 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
               </Select.Control>
               <Portal>
                 <Select.Positioner style={{ zIndex: 9999 }}>
-                  <Select.Content style={{ 
-                    position: 'relative',
-                    zIndex: 9999,
-                    backgroundColor: 'white'
-                  }}>
+                  <Select.Content
+                    style={{
+                      position: "relative",
+                      zIndex: 9999,
+                      backgroundColor: "white",
+                    }}
+                  >
                     {widgetTypeCollection.items.map((type) => (
                       <Select.Item item={type} key={type.value}>
                         {type.label}
@@ -172,10 +181,7 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
         </DialogBody>
         <DialogFooter gap={2}>
           <DialogActionTrigger asChild>
-            <Button
-              variant="subtle"
-              colorPalette="gray"
-            >
+            <Button variant="subtle" colorPalette="gray">
               Cancel
             </Button>
           </DialogActionTrigger>
@@ -190,5 +196,5 @@ export function AddWidgetModal({ isOpen, onClose, onAdd, connectedRobots }: AddW
         </DialogFooter>
       </DialogContent>
     </DialogRoot>
-  );
-} 
+  )
+}

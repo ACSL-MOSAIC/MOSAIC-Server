@@ -9,6 +9,7 @@ import {
   type UserPublic,
   type UserRegister,
 } from "@/client"
+import { OpenAPI } from "@/client/core/OpenAPI"
 import { handleError } from "@/utils"
 
 const isLoggedIn = () => {
@@ -52,6 +53,8 @@ const useAuth = () => {
     }
     
     localStorage.setItem("access_token", response.access_token)
+    // OpenAPI 설정에 토큰 설정
+    OpenAPI.TOKEN = response.access_token
     return response
   }
 
@@ -93,6 +96,8 @@ const useAuth = () => {
 
   const logout = () => {
     localStorage.removeItem("access_token")
+    // OpenAPI 설정에서 토큰 제거
+    OpenAPI.TOKEN = undefined
     queryClient.clear()
     navigate({ to: "/login" })
   }
