@@ -64,14 +64,14 @@ BACKEND_CORS_ORIGINS="http://localhost,http://localhost:5173"
 
 SECRET_KEY=your-secret-key
 FIRST_SUPERUSER=admin@example.com
-FIRST_SUPERUSER_PASSWORD=ascl1234
+FIRST_SUPERUSER_PASSWORD=acsl1234
 
 # Postgres
 POSTGRES_SERVER=localhost
 POSTGRES_PORT=5555
-POSTGRES_DB=ascl_local
-POSTGRES_USER=chungjung
-POSTGRES_PASSWORD=chungjung1234
+POSTGRES_DB=acsl_local
+POSTGRES_USER=acsl_local
+POSTGRES_PASSWORD=qwqw!12321
 
 
 # Configure these with your own Docker registry images
@@ -83,24 +83,24 @@ DOCKER_IMAGE_FRONTEND=frontend
 
 ### 3.2 Environment Variables Description (Backend) - Modify .env file
 
-| Variable | Description | Required | Example |
-|----------|-------------|----------|---------|
-| `DOMAIN` | Service domain | ✅ | `https://api.acslgcs.com` |
-| `FRONTEND_HOST` | Frontend URL | ✅ | `https://acslgcs.com` |
-| `ENVIRONMENT` | Execution environment | ✅ | `local` / `production` |
-| `PROJECT_NAME` | Project name | ✅ | `"Full Stack FastAPI Project"` |
-| `STACK_NAME` | Docker stack name | ✅ | `full-stack-fastapi-project` |
+| Variable | Description | Required | Example                                    |
+|----------|-------------|----------|--------------------------------------------|
+| `DOMAIN` | Service domain | ✅ | `https://api.acslgcs.com`                  |
+| `FRONTEND_HOST` | Frontend URL | ✅ | `https://acslgcs.com`                      |
+| `ENVIRONMENT` | Execution environment | ✅ | `local` / `production`                     |
+| `PROJECT_NAME` | Project name | ✅ | `"Full Stack FastAPI Project"`             |
+| `STACK_NAME` | Docker stack name | ✅ | `full-stack-fastapi-project`               |
 | `BACKEND_CORS_ORIGINS` | CORS allowed domains | ✅ | `"http://localhost,http://localhost:5173"` |
-| `SECRET_KEY` | JWT secret key | ✅ | `your-secret-key` |
-| `FIRST_SUPERUSER` | Initial admin email | ✅ | `admin@example.com` |
-| `FIRST_SUPERUSER_PASSWORD` | Initial admin password | ✅ | `ascl1234` |
-| `POSTGRES_SERVER` | Database server | ✅ | `localhost` |
-| `POSTGRES_PORT` | Database port | ✅ | `5432` |
-| `POSTGRES_DB` | Database name | ✅ | `ascl_local` |
-| `POSTGRES_USER` | Database user | ✅ | `chungjung` |
-| `POSTGRES_PASSWORD` | Database password | ✅ | `pw` |
-| `DOCKER_IMAGE_BACKEND` | Backend Docker image name | ✅ | `backend` |
-| `DOCKER_IMAGE_FRONTEND` | Frontend Docker image name | ✅ | `frontend` |
+| `SECRET_KEY` | JWT secret key | ✅ | `your-secret-key`                          |
+| `FIRST_SUPERUSER` | Initial admin email | ✅ | `admin@example.com`                        |
+| `FIRST_SUPERUSER_PASSWORD` | Initial admin password | ✅ | `acsl1234`                                 |
+| `POSTGRES_SERVER` | Database server | ✅ | `localhost`                                |
+| `POSTGRES_PORT` | Database port | ✅ | `5432`                                     |
+| `POSTGRES_DB` | Database name | ✅ | `acsl_local`                               |
+| `POSTGRES_USER` | Database user | ✅ | `acsl_user`                                |
+| `POSTGRES_PASSWORD` | Database password | ✅ | `pw`                                       |
+| `DOCKER_IMAGE_BACKEND` | Backend Docker image name | ✅ | `backend`                                  |
+| `DOCKER_IMAGE_FRONTEND` | Frontend Docker image name | ✅ | `frontend`                                 |
 
 ### 3.3 Environment Variables Description (Frontend) - Modify args directly in Docker-compose.yaml file
 

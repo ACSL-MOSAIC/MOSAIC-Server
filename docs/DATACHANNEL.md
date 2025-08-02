@@ -202,7 +202,7 @@ export function MyCustomDataWidget({ robotId, store, dataType, onRemove }: MyCus
   }, [store])
 
   return (
-    <WidgetFrame title="My Custom Data" onRemove={onRemove}>
+    <WidgetFrame title="My Custom Data" robot_id={robot_id} onRemove={onRemove}>
       <VStack spacing={2} align="stretch">
         <Text fontSize="sm" color="gray.600">
           Robot: {robotId}
@@ -260,6 +260,44 @@ export const DEFAULT_DATA_CHANNELS: DataChannelConfig[] = [
     channelType: 'writeonly'
   }
 ]
+```
+
+#### **2.4.2 Update AddWidgetModal**
+Add the new widget type item to widgetTypeCollection in `frontend/src/components/Dashboard/AddWidgetModal.tsx`. 
+It makes you able to select the new widget type when adding widgets through the UI.
+
+```typescript
+const widgetTypeCollection = createListCollection({
+    items: [
+      // ... Existing widget types
+      { label: "My Custom Data", value: "my_custom_data" }, 
+      { label: "My Custom Command", value: "my_custom_command" }
+    ],
+  })
+```
+
+#### **2.4.3 Update createDataChannel Method**
+Update the `createDataChannel` method in `frontend/src/rtc/webrtc-utils.ts` to handle the new data channel.
+
+```typescript
+export function createDataChannel(
+  dataChannel: RTCDataChannel, robotId: string, dataType: string, channelType: "readonly" | "writeonly",
+): void {
+  // ... other existing code
+  switch (channelType) {
+    // or case "readonly"
+     case "writeonly":
+       switch (datatype as any) {
+        case "my_custom_command":
+         store = readOnlyStoreManager.createStoreIfNotExists(
+            robotId,
+            channelTypeSymbol,
+            (robotId) => new MyCustomCommandStore(robotId),
+          )
+          break
+       }
+  }
+}
 ```
 
 ## 3. Dynamic DataChannel Management

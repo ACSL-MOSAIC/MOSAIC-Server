@@ -1,8 +1,23 @@
-import { Box, Grid, Text, Button, Flex, Badge, Icon, VStack, IconButton } from "@chakra-ui/react"
 import { useWebSocket } from "@/contexts/WebSocketContext"
 import { useRobotMapping } from "@/hooks/useRobotMapping"
-import { IoVideocam, IoVideocamOff, IoPower, IoPowerOutline, IoSettings } from "react-icons/io5"
+import {
+  Badge,
+  Box,
+  Button,
+  Flex,
+  Grid,
+  Icon,
+  IconButton,
+  Text,
+} from "@chakra-ui/react"
 import { useCallback, useMemo } from "react"
+import {
+  IoPower,
+  IoPowerOutline,
+  IoSettings,
+  IoVideocam,
+  IoVideocamOff,
+} from "react-icons/io5"
 
 interface RobotConnectionPanelProps {
   connections: { [key: string]: boolean }
@@ -13,42 +28,53 @@ interface RobotConnectionPanelProps {
   onOpenDynamicTypeModal: (robotId: string) => void
 }
 
-function RobotConnectionPanel({ 
-  connections, 
-  onConnect, 
-  onDisconnect, 
-  onConnectAll, 
+function RobotConnectionPanel({
+  connections,
+  onConnect,
+  onDisconnect,
+  onConnectAll,
   onDisconnectAll,
-  onOpenDynamicTypeModal
+  onOpenDynamicTypeModal,
 }: RobotConnectionPanelProps) {
   const { robots } = useWebSocket()
   const { getRobotName } = useRobotMapping()
 
-  const readyRobots = useMemo(() => robots.filter((robot) => robot.state === "READY_TO_CONNECT"), [robots])
-  const connectedRobots = useMemo(() => robots.filter((robot) => connections[robot.robot_id]), [robots, connections])
-  const disconnectedRobots = useMemo(() => robots.filter((robot) => !connections[robot.robot_id]), [robots, connections])
+  const readyRobots = useMemo(
+    () => robots.filter((robot) => robot.state === "READY_TO_CONNECT"),
+    [robots],
+  )
+  const connectedRobots = useMemo(
+    () => robots.filter((robot) => connections[robot.robot_id]),
+    [robots, connections],
+  )
 
-  const getStatusColor = useCallback((robotId: string) => {
-    if (connections[robotId]) {
-      return "green"
-    }
-    const robot = robots.find(r => r.robot_id === robotId)
-    if (robot?.state === "READY_TO_CONNECT") {
-      return "blue"
-    }
-    return "gray"
-  }, [connections, robots])
+  const getStatusColor = useCallback(
+    (robotId: string) => {
+      if (connections[robotId]) {
+        return "green"
+      }
+      const robot = robots.find((r) => r.robot_id === robotId)
+      if (robot?.state === "READY_TO_CONNECT") {
+        return "blue"
+      }
+      return "gray"
+    },
+    [connections, robots],
+  )
 
-  const getStatusText = useCallback((robotId: string) => {
-    if (connections[robotId]) {
-      return "Connected"
-    }
-    const robot = robots.find(r => r.robot_id === robotId)
-    if (robot?.state === "READY_TO_CONNECT") {
-      return "Ready"
-    }
-    return "Unavailable"
-  }, [connections, robots])
+  const getStatusText = useCallback(
+    (robotId: string) => {
+      if (connections[robotId]) {
+        return "Connected"
+      }
+      const robot = robots.find((r) => r.robot_id === robotId)
+      if (robot?.state === "READY_TO_CONNECT") {
+        return "Ready"
+      }
+      return "Unavailable"
+    },
+    [connections, robots],
+  )
 
   if (robots.length === 0) {
     return (
@@ -95,11 +121,18 @@ function RobotConnectionPanel({
       </Flex>
 
       {/* Robot list */}
-      <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={4}>
+      <Grid
+        templateColumns={{
+          base: "1fr",
+          md: "repeat(2, 1fr)",
+          lg: "repeat(3, 1fr)",
+        }}
+        gap={4}
+      >
         {robots.map((robot) => {
           const isConnected = connections[robot.robot_id]
           const canConnect = robot.state === "READY_TO_CONNECT"
-          
+
           return (
             <Box
               key={robot.robot_id}
@@ -119,7 +152,7 @@ function RobotConnectionPanel({
                   {getStatusText(robot.robot_id)}
                 </Badge>
               </Flex>
-              
+
               <Text fontSize="sm" color="gray.600" mb={3}>
                 Status: {robot.state}
               </Text>
@@ -147,7 +180,7 @@ function RobotConnectionPanel({
                     Connect
                   </Button>
                 )}
-                
+
                 {/* 동적 타입 관리 버튼 */}
                 <IconButton
                   size="sm"
@@ -166,4 +199,4 @@ function RobotConnectionPanel({
   )
 }
 
-export default RobotConnectionPanel 
+export default RobotConnectionPanel

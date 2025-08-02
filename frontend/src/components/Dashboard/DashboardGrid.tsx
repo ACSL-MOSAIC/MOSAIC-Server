@@ -1,207 +1,232 @@
-import React, { useState, useEffect, useRef } from "react"
-import { Box, Button, Flex } from "@chakra-ui/react"
-import { WidgetConfig, WidgetType, DashboardConfig } from "./types"
-import { v4 as uuidv4 } from 'uuid'
-import { TabManager } from "./TabManager"
-import { useNavigate } from '@tanstack/react-router'
-import { WebRTCConnection } from "@/rtc/webrtc-connection"
 import { useWebSocket } from "@/contexts/WebSocketContext"
-import { WidgetFactory } from "./widgets/WidgetFactory"
+import { WebRTCConnection } from "@/rtc/webrtc-connection"
+import { Box, Button, Flex } from "@chakra-ui/react"
+import React, { useState, useEffect, useRef } from "react"
 import { Responsive, WidthProvider } from "react-grid-layout"
+import { v4 as uuidv4 } from "uuid"
+import { TabManager } from "./TabManager"
+import type { DashboardConfig, WidgetConfig, WidgetType } from "./types"
+import { WidgetFactory } from "./widgets/WidgetFactory"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { toaster } from "@/components/ui/toaster"
-import RobotConnectionPanel from "./RobotConnectionPanel"
-import { 
-  addTab, 
-  removeTab, 
-  renameTab, 
-  addWidget, 
-  removeWidget, 
-} from "./dashboardUtils"
-import { useDashboardConfigQuery, useDashboardConfigMutation } from "@/hooks/useDashboardConfig"
+import {
+  useDashboardConfigMutation,
+  useDashboardConfigQuery,
+} from "@/hooks/useDashboardConfig"
 import { useQueryClient } from "@tanstack/react-query"
-import { useRobotMapping } from "@/hooks/useRobotMapping"
+import RobotConnectionPanel from "./RobotConnectionPanel"
+import {
+  addTab,
+  addWidget,
+  removeTab,
+  removeWidget,
+  renameTab,
+} from "./dashboardUtils"
 
-const ResponsiveGridLayout = WidthProvider(Responsive);
+const ResponsiveGridLayout = WidthProvider(Responsive)
 
 interface DashboardGridProps {
   onOpenDynamicTypeModal: (robotId: string) => void
 }
 
 export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
-  const { data: dashboardConfig, isLoading, refetch } = useDashboardConfigQuery();
-  const { mutate: saveDashboardConfig } = useDashboardConfigMutation();
-  const queryClient = useQueryClient();
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [connections, setConnections] = useState<{ [key: string]: boolean }>({});
-  const ws = useWebSocket();
-  const { getRobotName } = useRobotMapping();
-  
+  const { data: dashboardConfig } = useDashboardConfigQuery()
+  const { mutate: saveDashboardConfig } = useDashboardConfigMutation()
+  const queryClient = useQueryClient()
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [connections, setConnections] = useState<{ [key: string]: boolean }>({})
+  const ws = useWebSocket()
+
   // Ref to manage WebRTC connection objects
-  const rtcConnections = useRef<{ [key: string]: WebRTCConnection }>({});
+  const rtcConnections = useRef<{ [key: string]: WebRTCConnection }>({})
 
   // Create refs for each robot (dynamically managed)
-  const videoRefs = useRef<{ [key: string]: React.RefObject<HTMLVideoElement> }>({});
-  const canvasRefs = useRef<{ [key: string]: React.RefObject<HTMLCanvasElement> }>({});
-  const positionElementRefs = useRef<{ [key: string]: React.RefObject<HTMLDivElement> }>({});
+  const videoRefs = useRef<{
+    [key: string]: React.RefObject<HTMLVideoElement>
+  }>({})
+  const canvasRefs = useRef<{
+    [key: string]: React.RefObject<HTMLCanvasElement>
+  }>({})
+  const positionElementRefs = useRef<{
+    [key: string]: React.RefObject<HTMLDivElement>
+  }>({})
 
   // Initialize refs function
   const initializeRefs = (robotId: string) => {
     if (!videoRefs.current[robotId]) {
-      videoRefs.current[robotId] = React.createRef<HTMLVideoElement>();
+      videoRefs.current[robotId] = React.createRef<HTMLVideoElement>()
     }
     if (!canvasRefs.current[robotId]) {
-      canvasRefs.current[robotId] = React.createRef<HTMLCanvasElement>();
+      canvasRefs.current[robotId] = React.createRef<HTMLCanvasElement>()
     }
     if (!positionElementRefs.current[robotId]) {
-      positionElementRefs.current[robotId] = React.createRef<HTMLDivElement>();
+      positionElementRefs.current[robotId] = React.createRef<HTMLDivElement>()
     }
-  };
+  }
 
   // Mark as unsaved when config changes
   const updateConfig = (newConfig: DashboardConfig) => {
-    queryClient.setQueryData(["dashboardConfig"], newConfig);
-    setHasUnsavedChanges(true);
-  };
+    queryClient.setQueryData(["dashboardConfig"], newConfig)
+    setHasUnsavedChanges(true)
+  }
 
   // Save function
   const handleSave = () => {
     if (dashboardConfig) {
-      saveDashboardConfig(dashboardConfig);
-      setHasUnsavedChanges(false);
+      saveDashboardConfig(dashboardConfig)
+      setHasUnsavedChanges(false)
       toaster.create({
         title: "Settings Saved",
         description: "Dashboard settings have been saved successfully.",
-      });
+      })
     }
-  };
+  }
 
   // Connection state change handler
-  const handleConnectionStateChange = (robotId: string, isConnected: boolean) => {
-    setConnections(prev => ({
+  const handleConnectionStateChange = (
+    robotId: string,
+    isConnected: boolean,
+  ) => {
+    setConnections((prev) => ({
       ...prev,
-      [robotId]: isConnected
-    }));
-  };
+      [robotId]: isConnected,
+    }))
+  }
 
   // Connect to robot function
   const connectToRobot = async (robotId: string) => {
     try {
       if (rtcConnections.current[robotId]) {
-        console.log(`Robot ${robotId} is already connected.`);
-        return;
+        const connection = rtcConnections.current[robotId]
+        const connectionState = connection.getPeerConnection()?.connectionState
+        if (
+          connectionState === "connected" ||
+          connectionState === "connecting"
+        ) {
+          console.log(`Robot ${robotId} is already connected.`)
+          return
+        }
+        console.log(`Reconnecting to robot ${robotId}...`)
+        connection.disconnect()
+        delete rtcConnections.current[robotId]
       }
 
       // Initialize refs
-      initializeRefs(robotId);
+      initializeRefs(robotId)
 
       const connection = new WebRTCConnection({
         robotId,
         ws,
-        onConnectionStateChange: (isConnected) => handleConnectionStateChange(robotId, isConnected)
-      });
+        onConnectionStateChange: (isConnected) =>
+          handleConnectionStateChange(robotId, isConnected),
+      })
 
-      await connection.startConnection();
-      rtcConnections.current[robotId] = connection;
-      console.log(`Robot ${robotId} connection completed`);
+      await connection.startConnection()
+      rtcConnections.current[robotId] = connection
+      console.log(`Robot ${robotId} connection completed`)
     } catch (error) {
-      console.error(`Robot ${robotId} connection failed:`, error);
-      throw error;
+      console.error(`Robot ${robotId} connection failed:`, error)
+      throw error
     }
-  };
+  }
 
   // Disconnect from robot function
   const disconnectFromRobot = (robotId: string) => {
-    const connection = rtcConnections.current[robotId];
+    const connection = rtcConnections.current[robotId]
     if (connection) {
-      connection.disconnect();
-      delete rtcConnections.current[robotId];
-      handleConnectionStateChange(robotId, false);
-      
+      connection.disconnect()
+      delete rtcConnections.current[robotId]
+      handleConnectionStateChange(robotId, false)
+
       // Auto-remove widget feature removed - changed to show NO_DATA
     }
-  };
+  }
 
   // Connect all robots function
   const handleConnectAllRobots = async () => {
-    console.log('Attempting to connect all robots');
-    const { robots } = useWebSocket();
-    const readyRobots = robots.filter((robot) => robot.state === "READY_TO_CONNECT");
-    
+    console.log("Attempting to connect all robots")
+    const readyRobots = ws.robots.filter(
+      (robot) => robot.state === "READY_TO_CONNECT",
+    )
+
     for (const robot of readyRobots) {
       try {
-        await connectToRobot(robot.robot_id);
+        await connectToRobot(robot.robot_id)
       } catch (error) {
-        console.error(`Robot ${robot.robot_id} connection failed:`, error);
+        console.error(`Robot ${robot.robot_id} connection failed:`, error)
       }
     }
-  };
+  }
 
   // Disconnect all robots function
   const handleDisconnectAllRobots = () => {
-    Object.keys(rtcConnections.current).forEach(robotId => {
-      disconnectFromRobot(robotId);
-    });
-  };
+    Object.keys(rtcConnections.current).forEach((robotId) => {
+      disconnectFromRobot(robotId)
+    })
+  }
 
   // Tab management functions
   const handleAddTab = (tabName: string) => {
     if (dashboardConfig) {
-      const newConfig = addTab(dashboardConfig, tabName);
-      updateConfig(newConfig);
+      const newConfig = addTab(dashboardConfig, tabName)
+      updateConfig(newConfig)
     }
-  };
+  }
 
   const handleRemoveTab = (tabId: string) => {
     if (dashboardConfig) {
-      const newConfig = removeTab(dashboardConfig, tabId);
-      updateConfig(newConfig);
+      const newConfig = removeTab(dashboardConfig, tabId)
+      updateConfig(newConfig)
     }
-  };
+  }
 
   const handleRenameTab = (tabId: string, newName: string) => {
     if (dashboardConfig) {
-      const newConfig = renameTab(dashboardConfig, tabId, newName);
-      updateConfig(newConfig);
+      const newConfig = renameTab(dashboardConfig, tabId, newName)
+      updateConfig(newConfig)
     }
-  };
+  }
 
   const handleTabChange = (tabId: string) => {
     if (dashboardConfig) {
       updateConfig({
         ...dashboardConfig,
-        activeTabId: tabId
-      });
+        activeTabId: tabId,
+      })
     }
-  };
+  }
 
-  const handleAddWidget = (selectedRobotId: string, type: WidgetType, config?: any) => {
-    if (!dashboardConfig) return;
+  const handleAddWidget = (
+    selectedRobotId: string,
+    type: WidgetType,
+    config?: any,
+  ) => {
+    if (!dashboardConfig) return
 
     // Set appropriate data type based on widget type
-    let dataType: string;
+    let dataType: string
     switch (type) {
-      case 'go2_low_state':
-        dataType = 'go2_low_state';
-        break;
-      case 'go2_ouster_pointcloud':
-        dataType = 'go2_ouster_pointcloud';
-        break;
-      case 'turtlesim_position':
-        dataType = 'turtlesim_position';
-        break;
-      case 'turtlesim_remote_control':
-        dataType = 'turtlesim_remote_control';
-        break;
-      case 'turtlesim_video':
-        dataType = 'turtlesim_video';
-        break;
-      case 'universal':
-        dataType = 'universal';
-        break;
+      case "go2_low_state":
+        dataType = "go2_low_state"
+        break
+      case "go2_ouster_pointcloud":
+        dataType = "go2_ouster_pointcloud"
+        break
+      case "turtlesim_position":
+        dataType = "turtlesim_position"
+        break
+      case "turtlesim_remote_control":
+        dataType = "turtlesim_remote_control"
+        break
+      case "turtlesim_video":
+        dataType = "turtlesim_video"
+        break
+      case "universal":
+        dataType = "universal"
+        break
       default:
-        dataType = 'go2_low_state';
+        dataType = "go2_low_state"
     }
 
     const newWidget: WidgetConfig = {
@@ -210,32 +235,40 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
       position: { x: 0, y: 0, w: 4, h: 4 },
       robotId: selectedRobotId,
       dataType,
-      config
-    };
+      config,
+    }
 
-    const newConfig = addWidget(dashboardConfig, dashboardConfig.activeTabId, newWidget);
-    updateConfig(newConfig);
-  };
+    const newConfig = addWidget(
+      dashboardConfig,
+      dashboardConfig.activeTabId,
+      newWidget,
+    )
+    updateConfig(newConfig)
+  }
 
   const handleRemoveWidget = (widgetId: string) => {
     if (dashboardConfig) {
-      const newConfig = removeWidget(dashboardConfig, dashboardConfig.activeTabId, widgetId);
-      updateConfig(newConfig);
+      const newConfig = removeWidget(
+        dashboardConfig,
+        dashboardConfig.activeTabId,
+        widgetId,
+      )
+      updateConfig(newConfig)
     }
-  };
+  }
 
   // Layout change handler
   const handleLayoutChange = (layout: any) => {
-    if (!dashboardConfig) return;
+    if (!dashboardConfig) return
 
     const newConfig = {
       ...dashboardConfig,
-      tabs: dashboardConfig.tabs.map(tab => {
+      tabs: dashboardConfig.tabs.map((tab) => {
         if (tab.id === dashboardConfig.activeTabId) {
           return {
             ...tab,
-            widgets: tab.widgets.map(widget => {
-              const newLayout = layout.find((l: any) => l.i === widget.id);
+            widgets: tab.widgets.map((widget) => {
+              const newLayout = layout.find((l: any) => l.i === widget.id)
               if (newLayout) {
                 return {
                   ...widget,
@@ -243,30 +276,30 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
                     x: newLayout.x,
                     y: newLayout.y,
                     w: newLayout.w,
-                    h: newLayout.h
-                  }
-                };
+                    h: newLayout.h,
+                  },
+                }
               }
-              return widget;
-            })
-          };
+              return widget
+            }),
+          }
         }
-        return tab;
-      })
-    };
-    updateConfig(newConfig);
-  };
+        return tab
+      }),
+    }
+    updateConfig(newConfig)
+  }
 
   // UniversalWidget에서 config 수정 시 위젯만 교체
   const handleUpdateWidgetConfig = (widgetId: string, newConfig: any) => {
-    if (!dashboardConfig) return;
-    const newTabs = dashboardConfig.tabs.map(tab => {
-      if (tab.id !== dashboardConfig.activeTabId) return tab;
+    if (!dashboardConfig) return
+    const newTabs = dashboardConfig.tabs.map((tab) => {
+      if (tab.id !== dashboardConfig.activeTabId) return tab
       return {
         ...tab,
-        widgets: tab.widgets.map(w =>
-          w.id === widgetId ? { ...w, config: newConfig } : w
-        )
+        widgets: tab.widgets.map((w) =>
+          w.id === widgetId ? { ...w, config: newConfig } : w,
+        ),
       }
     })
     updateConfig({ ...dashboardConfig, tabs: newTabs })
@@ -275,23 +308,27 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
   // Disconnect all connections on component unmount
   useEffect(() => {
     return () => {
-      Object.keys(rtcConnections.current).forEach(robotId => {
-        disconnectFromRobot(robotId);
-      });
-    };
-  }, []);
+      Object.keys(rtcConnections.current).forEach((robotId) => {
+        disconnectFromRobot(robotId)
+      })
+    }
+  }, [])
 
   if (!dashboardConfig) {
-    return <Box p={4}>Loading...</Box>;
+    return <Box p={4}>Loading...</Box>
   }
 
-  const activeTab = dashboardConfig.tabs.find(tab => tab.id === dashboardConfig.activeTabId);
+  const activeTab = dashboardConfig.tabs.find(
+    (tab) => tab.id === dashboardConfig.activeTabId,
+  )
   if (!activeTab) {
-    return <Box p={4}>Tab not found.</Box>;
+    return <Box p={4}>Tab not found.</Box>
   }
 
   // List of connected robot IDs
-  const connectedRobotIds = Object.keys(connections).filter(id => connections[id]);
+  const connectedRobotIds = Object.keys(connections).filter(
+    (id) => connections[id],
+  )
 
   return (
     <Box p={4} marginTop="64px">
@@ -318,7 +355,10 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
 
       {/* Tab manager */}
       <TabManager
-        tabs={dashboardConfig.tabs.map(tab => ({ id: tab.id, name: tab.name }))}
+        tabs={dashboardConfig.tabs.map((tab) => ({
+          id: tab.id,
+          name: tab.name,
+        }))}
         activeTabId={dashboardConfig.activeTabId}
         onTabChange={handleTabChange}
         onAddTab={handleAddTab}
@@ -330,17 +370,19 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
 
       <ResponsiveGridLayout
         className="layout"
-        layouts={{ lg: activeTab.widgets.map(w => ({
-          i: w.id,
-          x: w.position.x,
-          y: w.position.y,
-          w: w.position.w,
-          h: w.position.h,
-          minW: 2,
-          minH: 2,
-          maxW: 12,
-          maxH: 12
-        })) }}
+        layouts={{
+          lg: activeTab.widgets.map((w) => ({
+            i: w.id,
+            x: w.position.x,
+            y: w.position.y,
+            w: w.position.w,
+            h: w.position.h,
+            minW: 2,
+            minH: 2,
+            maxW: 12,
+            maxH: 12,
+          })),
+        }}
         breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
         cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
         rowHeight={100}
@@ -363,7 +405,7 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
             flexDirection="column"
             mb={4}
           >
-            <WidgetFactory 
+            <WidgetFactory
               type={widget.type}
               robotId={widget.robotId}
               dataType={widget.dataType}
@@ -371,11 +413,13 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
               config={widget.config}
               widgetId={widget.id}
               onRemove={() => handleRemoveWidget(widget.id)}
-              onUpdateConfig={(newConfig) => handleUpdateWidgetConfig(widget.id, newConfig)}
+              onUpdateConfig={(newConfig) =>
+                handleUpdateWidgetConfig(widget.id, newConfig)
+              }
             />
           </Box>
         ))}
       </ResponsiveGridLayout>
     </Box>
-  );
-} 
+  )
+}

@@ -1,52 +1,52 @@
 export class DataStore<T, I = string> {
-    robotId: string
-    data: T[] = []
-    maxSize: number = 1000
-    parser: (data: I) => T | null
-    private subscribers: ((data: T) => void)[] = []
+  robotId: string
+  data: T[] = []
+  maxSize = 1000
+  parser: (data: I) => T | null
+  private subscribers: ((data: T) => void)[] = []
 
-    constructor(robotId: string, maxSize: number = 1000, parser: (data: I) => T | null) {
-        this.maxSize = maxSize
-        this.robotId = robotId
-        this.parser = parser
+  constructor(robotId: string, maxSize = 1000, parser: (data: I) => T | null) {
+    this.maxSize = maxSize
+    this.robotId = robotId
+    this.parser = parser
+  }
+
+  add(data: I) {
+    const parsedData = this.parser(data)
+    // console.log(`[DataStore] 데이터 추가됨:`, parsedData)
+    if (parsedData === null) {
+      return
     }
 
-    add(data: I) {
-        const parsedData = this.parser(data)
-        console.log(`[DataStore] 데이터 추가됨:`, parsedData)
-        if (parsedData === null) {
-            return
-        }
-
-        this.data.push(parsedData)
-        if (this.data.length > this.maxSize) {
-            this.data.shift()
-        }
-        
-        this.subscribers.forEach(subscriber => subscriber(parsedData))
+    this.data.push(parsedData)
+    if (this.data.length > this.maxSize) {
+      this.data.shift()
     }
 
-    subscribe(callback: (data: T) => void) {
-        this.subscribers.push(callback)
+    this.subscribers.forEach((subscriber) => subscriber(parsedData))
+  }
 
-        if (this.data.length > 0) {
-            callback(this.getLast())
-        }
+  subscribe(callback: (data: T) => void) {
+    this.subscribers.push(callback)
 
-        return () => {
-            this.subscribers = this.subscribers.filter(sub => sub !== callback)
-        }
+    if (this.data.length > 0) {
+      callback(this.getLast())
     }
 
-    get(index: number) {
-        return this.data[index]
+    return () => {
+      this.subscribers = this.subscribers.filter((sub) => sub !== callback)
     }
+  }
 
-    getLast() {
-        return this.data[this.data.length - 1]
-    }
+  get(index: number) {
+    return this.data[index]
+  }
 
-    isFull() {
-        return this.data.length >= this.maxSize
-    }
+  getLast() {
+    return this.data[this.data.length - 1]
+  }
+
+  isFull() {
+    return this.data.length >= this.maxSize
+  }
 }
