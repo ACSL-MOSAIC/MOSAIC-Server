@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel # noqa
+from sqlmodel import SQLModel  # noqa
 
 from .auth import NewPassword, Token, TokenPayload  # noqa
 from .dashboard import (

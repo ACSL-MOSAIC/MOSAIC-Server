@@ -1,6 +1,6 @@
-# Generic message
-class Message:
-    message: str
+from pydantic import BaseModel
 
-    def __init__(self, message: str):
-        self.message = message
+
+# Generic message
+class Message(BaseModel):
+    message: str
