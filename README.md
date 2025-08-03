@@ -129,12 +129,17 @@ graph TB
 
 1. change .env file which located on deploy/prod
 
-2. run docker compose command below:
-```bash
-# Using Docker Compose
-docker-compose -f deploy/prod/docker-compose.backend.yaml up -d
-docker-compose -f deploy/prod/docker-compose.frontend.yaml up -d
-```
+2. create docker network named "proxy"
+   ```bash
+   docker network create proxy
+   ```
+
+3. run docker compose command below:
+   ```bash
+   # Using Docker Compose
+   docker-compose -f deploy/prod/docker-compose.backend.yaml up -d
+   docker-compose -f deploy/prod/docker-compose.frontend.yaml up -d
+   ```
 
 For detailed deployment instructions, see [Deployment Guide](docs/DEPLOYMENT.md).
 
