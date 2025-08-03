@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from app.schemas.robot import RobotStatus
+
 
 class WebSocketBaseMsg(BaseModel):
     type: str
@@ -13,6 +15,12 @@ class UpdateRobotStateMsg(WebSocketBaseMsg):
 class WebSocketErrorMsg(WebSocketBaseMsg):
     error: str
     detail: str | None = None
+
+
+class SendStateMsg(WebSocketBaseMsg):
+    user_id: str
+    robot_id: str
+    state: RobotStatus
 
 
 class SendSdpAnswerMsg(WebSocketBaseMsg):
