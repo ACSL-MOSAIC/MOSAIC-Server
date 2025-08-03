@@ -14,6 +14,7 @@ from app.websocket.signal.dto.robot_rtc_dto import (
     ReceiveSdpAnswerMsg,
     SendIceCandidateMsg,
     SendSdpAnswerMsg,
+    SendStateMsg,
     WebSocketErrorMsg,
 )
 
@@ -89,28 +90,35 @@ async def handle_send_ice_candidate(
     await manager.send_to_user(receive_msg.model_dump(), msg.user_id)
 
 
-async def handle_disconnected_robot_rtc(
+async def handle_send_state(
     websocket: WebSocket, data: dict, repo: RobotRepository
 ) -> None:
-    logger.info(f"Handling disconnected_robot_rtc request: {data}")
+    logger.info(f"Handling send_state request: {data}")
     try:
-        logger.info(
-            f"Updating robot {data['robot_id']} status to {RobotStatus.READY_TO_CONNECT}"
-        )
-        repo.update(data["robot_id"], RobotUpdate(status=RobotStatus.READY_TO_CONNECT))
-
+        msg = SendStateMsg(**data)
     except ValidationError as e:
-        logger.error(f"Invalid disconnected_robot_rtc message: {str(e)}")
+        logger.error(f"Invalid send_state message: {str(e)}")
         error = WebSocketErrorMsg(
-            type="error", error="Invalid disconnected_robot_rtc message", detail=str(e)
+            type="error", error="Invalid send_state message", detail=str(e)
         )
         await websocket.send_json(error.model_dump())
+        return
+
+    try:
+        repo.update(UUID(msg.robot_id), RobotUpdate(status=msg.state))
+    except Exception as e:
+        logger.error(f"Exception during update robot state: {str(e)}")
+        error = WebSocketErrorMsg(
+            type="error", error="Exception during update robot state", detail=str(e)
+        )
+        await websocket.send_json(error.model_dump())
+        repo.rollback()
 
 
 handlers = {
     "send_sdp_answer": handle_send_sdp_answer,
     "send_ice_candidate": handle_send_ice_candidate,
-    "disconnected_robot_rtc": handle_disconnected_robot_rtc,
+    "send_state": handle_send_state,
 }
 
 
@@ -125,7 +133,7 @@ async def robot_rtc_endpoint(
 
     await manager.connect_robot(websocket, robot_id)
     repo = RobotRepository(session)
-    repo.update(UUID(robot_id), RobotUpdate(status=RobotStatus.READY_TO_CONNECT))
+    # repo.update(UUID(robot_id), RobotUpdate(status=RobotStatus.READY_TO_CONNECT))
 
     try:
         while True:

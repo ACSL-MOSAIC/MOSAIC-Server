@@ -15,6 +15,7 @@ from app.websocket.signal.dto.user_rtc_dto import (
     ReceiveSdpOfferMsg,
     RobotInfo,
     RobotListMsg,
+    SendClosePeerConnectionMsg,
     SendIceCandidateMsg,
     SendSdpOfferMsg,
     WebSocketErrorMsg,
@@ -145,47 +146,42 @@ async def handle_send_ice_candidate(
     await manager.send_to_robot(receive_msg.model_dump(), msg.robot_id)
 
 
-async def handle_connected_robot_rtc(
-    websocket: WebSocket, data: dict, repo: RobotRepository
+async def handle_send_close_peer_connection(
+    websocket: WebSocket, data: dict, _: RobotRepository
 ) -> None:
-    logger.info(f"Handling connected_robot_rtc request: {data}")
+    logger.info(f"Handling send_close_peer_connection request: {data}")
     try:
-        repo.update(data["robot_id"], RobotUpdate(status=RobotStatus.CONNECTED))
+        msg = SendClosePeerConnectionMsg(**data)
     except ValidationError as e:
-        logger.error(f"Invalid connected_robot_rtc message: {str(e)}")
+        logger.error(f"Invalid send_close_peer_connection message: {str(e)}")
         error = WebSocketErrorMsg(
-            type="error", error="Invalid connected_robot_rtc message", detail=str(e)
+            type="error",
+            error="Invalid send_close_peer_connection message",
+            detail=str(e),
         )
         await websocket.send_json(error.model_dump())
+        return
 
-
-async def handle_disconnected_robot_rtc(
-    websocket: WebSocket, data: dict, repo: RobotRepository
-) -> None:
-    logger.info(f"Handling disconnected_robot_rtc request: {data}")
-    try:
-        robot_ws = manager.get_robot_connection(data["robot_id"])
-        if robot_ws is not None:
-            repo.update(
-                data["robot_id"], RobotUpdate(status=RobotStatus.READY_TO_CONNECT)
-            )
-        else:
-            repo.update(data["robot_id"], RobotUpdate(status=RobotStatus.DISCONNECTED))
-
-    except ValidationError as e:
-        logger.error(f"Invalid disconnected_robot_rtc message: {str(e)}")
+    robot_ws = manager.get_robot_connection(msg.robot_id)
+    if robot_ws is None:
+        logger.error(f"Robot websocket not found for robot_id: {msg.robot_id}")
         error = WebSocketErrorMsg(
-            type="error", error="Invalid disconnected_robot_rtc message", detail=str(e)
+            type="error",
+            error="Robot websocket not found",
+            detail=f"robot_id: {msg.robot_id}",
         )
         await websocket.send_json(error.model_dump())
+        return
+
+    logger.info("Forwarding Close Peer Connection msg to robot")
+    await manager.send_to_robot(msg.model_dump(), msg.robot_id)
 
 
 handlers = {
     "get_robot_list": handle_get_robot_list,
     "send_sdp_offer": handle_send_sdp_offer,
     "send_ice_candidate": handle_send_ice_candidate,
-    "connected_robot_rtc": handle_connected_robot_rtc,
-    "disconnected_robot_rtc": handle_disconnected_robot_rtc,
+    "send_close_peer_connection": handle_send_close_peer_connection,
 }
 
 

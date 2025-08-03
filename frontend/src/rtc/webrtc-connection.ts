@@ -477,6 +477,12 @@ export class WebRTCConnection {
     this.pendingCandidates = []
     this.lastSdpMetadata.clear()
     this.config.onConnectionStateChange?.(false)
+
+    // Send Close Peer Connection msg to robot
+    sendWebSocketMessage(this.config.ws, {
+      type: "send_close_peer_connection",
+      robot_id: this.config.robotId,
+    })
   }
 
   public getPeerConnection(): RTCPeerConnection | null {

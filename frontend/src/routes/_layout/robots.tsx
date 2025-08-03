@@ -1,4 +1,5 @@
 import {
+  Box,
   Container,
   EmptyState,
   Flex,
@@ -8,7 +9,8 @@ import {
 } from "@chakra-ui/react"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { FiSearch } from "react-icons/fi"
+import { useState } from "react"
+import { FiCopy, FiSearch } from "react-icons/fi"
 import { z } from "zod"
 
 import { RobotsService } from "@/client"
@@ -21,6 +23,7 @@ import {
   PaginationPrevTrigger,
   PaginationRoot,
 } from "@/components/ui/pagination.tsx"
+import useCustomToast from "@/hooks/useCustomToast"
 
 const robotsSearchSchema = z.object({
   page: z.number().catch(1),
@@ -47,6 +50,8 @@ export const Route = createFileRoute("/_layout/robots")({
 function RobotsTable() {
   const navigate = useNavigate({ from: Route.fullPath })
   const { page } = Route.useSearch()
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const { showSuccessToast } = useCustomToast()
 
   const { data, isLoading, isPlaceholderData } = useQuery({
     ...getRobotsQueryOptions({ page }),
@@ -60,6 +65,15 @@ function RobotsTable() {
 
   const robots = data?.data.slice(0, PER_PAGE) ?? []
   const count = data?.count ?? 0
+
+  const handleCopyId = async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(id)
+      showSuccessToast("ID copied to clipboard")
+    } catch (err) {
+      console.error("Failed to copy ID:", err)
+    }
+  }
 
   if (isLoading) {
     return <PendingRobots />
@@ -98,8 +112,19 @@ function RobotsTable() {
         <Table.Body>
           {robots?.map((robot) => (
             <Table.Row key={robot.id} opacity={isPlaceholderData ? 0.5 : 1}>
-              <Table.Cell truncate maxW="sm">
-                {robot.id}
+              <Table.Cell
+                truncate
+                maxW="sm"
+                position="relative"
+                onMouseEnter={() => setHoveredId(robot.id)}
+                onMouseLeave={() => setHoveredId(null)}
+                cursor="pointer"
+                onClick={() => handleCopyId(robot.id)}
+              >
+                <Box display="flex" alignItems="center" gap={2}>
+                  {robot.id}
+                  {hoveredId === robot.id && <FiCopy size={14} opacity={0.7} />}
+                </Box>
               </Table.Cell>
               <Table.Cell truncate maxW="sm">
                 {robot.name}

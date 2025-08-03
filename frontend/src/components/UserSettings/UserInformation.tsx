@@ -3,6 +3,7 @@ import {
   Button,
   Container,
   Flex,
+  HStack,
   Heading,
   Input,
   Text,
@@ -10,11 +11,12 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
+import { FiCopy } from "react-icons/fi"
 
 import {
   type ApiError,
   type UserPublic,
-  type UserUpdateMe,
+  type UserUpdate,
   UsersService,
 } from "@/client"
 import useAuth from "@/hooks/useAuth"
@@ -47,7 +49,7 @@ const UserInformation = () => {
   }
 
   const mutation = useMutation({
-    mutationFn: (data: UserUpdateMe) =>
+    mutationFn: (data: UserUpdate) =>
       UsersService.updateUserMe({ requestBody: data }),
     onSuccess: () => {
       showSuccessToast("User updated successfully.")
@@ -60,13 +62,24 @@ const UserInformation = () => {
     },
   })
 
-  const onSubmit: SubmitHandler<UserUpdateMe> = async (data) => {
+  const onSubmit: SubmitHandler<UserUpdate> = async (data) => {
     mutation.mutate(data)
   }
 
   const onCancel = () => {
     reset()
     toggleEditMode()
+  }
+
+  const handleCopyUserId = async () => {
+    if (currentUser?.id) {
+      try {
+        await navigator.clipboard.writeText(currentUser.id)
+        showSuccessToast("User ID copied to clipboard")
+      } catch (err) {
+        console.error("Failed to copy User ID:", err)
+      }
+    }
   }
 
   return (
@@ -76,7 +89,7 @@ const UserInformation = () => {
           User Information
         </Heading>
         <Box
-          w={{ sm: "full", md: "sm" }}
+          w={{ sm: "full", md: "l" }}
           as="form"
           onSubmit={handleSubmit(onSubmit)}
         >
@@ -121,9 +134,20 @@ const UserInformation = () => {
             )}
           </Field>
           <Field mt={4} label="User ID">
-            <Text fontSize="md" py={2} color="gray.600" fontFamily="mono">
-              {currentUser?.id}
-            </Text>
+            <HStack alignItems="center" gap={2}>
+              <Text fontSize="md" py={2} color="gray.600" fontFamily="mono">
+                {currentUser?.id}
+              </Text>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleCopyUserId}
+                p={1}
+              >
+                <FiCopy size={14} />
+              </Button>
+            </HStack>
           </Field>
           <Flex mt={4} gap={3}>
             <Button
