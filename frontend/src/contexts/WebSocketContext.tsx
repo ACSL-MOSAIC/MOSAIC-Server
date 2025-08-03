@@ -88,14 +88,8 @@ export interface ReceiveIceCandidateMessage extends WebSocketBaseMessage {
   }
 }
 
-// WebRTC 연결 상태 메시지 타입
-export interface ConnectedRobotRtcMessage extends WebSocketBaseMessage {
-  type: "connected_robot_rtc"
-  robot_id: string
-}
-
-export interface DisconnectedRobotRtcMessage extends WebSocketBaseMessage {
-  type: "disconnected_robot_rtc"
+export interface SendClosePeerConnectionMessage extends WebSocketBaseMessage {
+  type: "send_close_peer_connection"
   robot_id: string
 }
 
@@ -115,8 +109,7 @@ export type WebSocketMessage =
   | SendIceCandidateMessage
   | ReceiveIceCandidateMessage
   | WebSocketErrorMessage
-  | ConnectedRobotRtcMessage
-  | DisconnectedRobotRtcMessage
+  | SendClosePeerConnectionMessage
   | ForceLogoutMessage
 
 export interface WebSocketContextType {

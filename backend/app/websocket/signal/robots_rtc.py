@@ -14,8 +14,8 @@ from app.websocket.signal.dto.robot_rtc_dto import (
     ReceiveSdpAnswerMsg,
     SendIceCandidateMsg,
     SendSdpAnswerMsg,
-    WebSocketErrorMsg,
     SendStateMsg,
+    WebSocketErrorMsg,
 )
 
 logger = logging.getLogger(__name__)
@@ -112,6 +112,7 @@ async def handle_send_state(
             type="error", error="Exception during update robot state", detail=str(e)
         )
         await websocket.send_json(error.model_dump())
+        repo.rollback()
 
 
 handlers = {
@@ -132,7 +133,7 @@ async def robot_rtc_endpoint(
 
     await manager.connect_robot(websocket, robot_id)
     repo = RobotRepository(session)
-    repo.update(UUID(robot_id), RobotUpdate(status=RobotStatus.READY_TO_CONNECT))
+    # repo.update(UUID(robot_id), RobotUpdate(status=RobotStatus.READY_TO_CONNECT))
 
     try:
         while True:

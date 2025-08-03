@@ -49,3 +49,7 @@ class RobotRepository:
         self.session.delete(db_robot)
         self.session.commit()
         return True
+
+    def rollback(self) -> None:
+        """Rollback the current transaction."""
+        self.session.rollback()

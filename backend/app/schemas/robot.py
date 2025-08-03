@@ -6,14 +6,17 @@ from sqlmodel import Field, Relationship, SQLModel
 
 
 class RobotStatus(str, Enum):
-    INITIALIZING = "INITIALIZING" # Robot is being initialized (power on)
-    READY_TO_CONNECT = "READY_TO_CONNECT" # Robot is ready to connect (waiting for peer)
-    CONNECTING = "CONNECTING" # Robot is connecting to peer (handling sdp offer and ice candidates)
-    CONNECTED = "CONNECTED" # Robot is connected to peer (peer connection established)
-    DISCONNECTING = "DISCONNECTING" # Robot is disconnecting from peer (handling disconnection)
-    FAILED = "FAILED" # Robot failed to connect (error during connection)
-    SHUTTING_DOWN = "SHUTTING_DOWN" # Robot is shutting down (power off)
-    DISCONNECTED = "DISCONNECTED" # Robot is disconnected (websocket connection closed)
+    READY_TO_CONNECT = (
+        "READY_TO_CONNECT"  # Robot is ready to connect (waiting for peer)
+    )
+    CONNECTING = "CONNECTING"  # Robot is connecting to peer (handling sdp offer and ice candidates)
+    CONNECTED = "CONNECTED"  # Robot is connected to peer (peer connection established)
+    DISCONNECTING = (
+        "DISCONNECTING"  # Robot is disconnecting from peer (handling disconnection)
+    )
+    FAILED = "FAILED"  # Robot failed to connect (error during connection)
+    SHUTTING_DOWN = "SHUTTING_DOWN"  # Robot is shutting down (power off)
+    DISCONNECTED = "DISCONNECTED"  # Robot is disconnected (websocket connection closed)
     REMOVED = "REMOVED"
 
 

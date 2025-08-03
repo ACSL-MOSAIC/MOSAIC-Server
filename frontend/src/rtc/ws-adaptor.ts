@@ -1,4 +1,5 @@
 import type {
+  SendClosePeerConnectionMessage,
   SendIceCandidateMessage,
   SendSdpOfferMessage,
   WebSocketContextType,
@@ -54,7 +55,10 @@ export function setupWebSocketHandlers(
 
 export function sendWebSocketMessage(
   ws: WebSocketContextType,
-  message: SendSdpOfferMessage | SendIceCandidateMessage,
+  message:
+    | SendSdpOfferMessage
+    | SendIceCandidateMessage
+    | SendClosePeerConnectionMessage,
 ) {
   ws.sendMessage(message)
 }
