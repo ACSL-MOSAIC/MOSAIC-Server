@@ -1,5 +1,9 @@
 import { useWebSocket } from "@/contexts/WebSocketContext"
-import { WebRTCConnection } from "@/rtc/webrtc-connection"
+import {
+  type DataChannelConfig,
+  type VideoChannelConfig,
+  WebRTCConnection,
+} from "@/rtc/webrtc-connection"
 import { Box, Button, Flex } from "@chakra-ui/react"
 import React, { useState, useEffect, useRef } from "react"
 import { Responsive, WidthProvider } from "react-grid-layout"
@@ -14,6 +18,7 @@ import {
   useDashboardConfigMutation,
   useDashboardConfigQuery,
 } from "@/hooks/useDashboardConfig"
+import { DEFAULT_DATA_CHANNELS } from "@/rtc/config/webrtc-datachannel-config.ts"
 import { useQueryClient } from "@tanstack/react-query"
 import RobotConnectionPanel from "./RobotConnectionPanel"
 import {
@@ -115,11 +120,42 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
       // Initialize refs
       initializeRefs(robotId)
 
+      const dataChannelConfigs: DataChannelConfig[] = []
+      const videoChannelConfigs: VideoChannelConfig[] = []
+
+      activeTab?.widgets.forEach((widgetConfig) => {
+        if (widgetConfig.type === "turtlesim_video") {
+          // turtlesim video is the only video type
+          const videoChannelConfig: VideoChannelConfig = {
+            label: widgetConfig.id,
+            dataType: widgetConfig.dataType,
+          }
+          videoChannelConfigs.push(videoChannelConfig)
+        } else {
+          // For other widget types, create data channel configs
+          const dcConfigs = DEFAULT_DATA_CHANNELS.filter(
+            (dc) => dc.dataType === widgetConfig.dataType,
+          ).map((dc) => {
+            const dataChannelConfig: DataChannelConfig = {
+              label: dc.label,
+              dataType: dc.dataType,
+              channelType: dc.channelType,
+            }
+            return dataChannelConfig
+          })
+          dataChannelConfigs.push(...dcConfigs)
+        }
+      })
+
+      console.log("DataChannel Configs:", dataChannelConfigs)
+
       const connection = new WebRTCConnection({
         robotId,
         ws,
         onConnectionStateChange: (isConnected) =>
           handleConnectionStateChange(robotId, isConnected),
+        dataChannels: dataChannelConfigs,
+        videoChannels: videoChannelConfigs,
       })
 
       await connection.startConnection()
@@ -224,6 +260,9 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
         break
       case "universal":
         dataType = "universal"
+        break
+      case "video_recorder":
+        dataType = "video_recorder"
         break
       default:
         dataType = "go2_low_state"

@@ -152,17 +152,8 @@ export class WebRTCConnection {
     // Create configured data channels
     const channelsToCreate = this.config.dataChannels || []
 
-    // Add default channels (if not in configuration)
-    const allChannels = [
-      ...channelsToCreate,
-      ...DEFAULT_DATA_CHANNELS.filter(
-        (ch) =>
-          !channelsToCreate.some((configured) => configured.label === ch.label),
-      ),
-    ]
-
     // Create multiple data channels
-    allChannels.forEach((channelConfig) => {
+    channelsToCreate.forEach((channelConfig) => {
       const dataChannel = peerConnection.createDataChannel(
         channelConfig.label,
         {
