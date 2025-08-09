@@ -1,12 +1,12 @@
 export type VideoSubscriber = (videoData: VideoData) => void
+export type StreamStatsSubscriber = (stats: StreamStats) => void
 
 export interface VideoData {
   streamId: string
   robotId: string
   channelLabel: string
-  mediaStream: MediaStream
+  mediaStream: MediaStream | null
   isActive: boolean
-  stats: StreamStats
   timestamp: number
   metadata?: { mediaType?: string; source?: string }
 }
@@ -17,20 +17,37 @@ export interface StreamStats {
   height: number
 }
 
+export function getInitialVideoData(): VideoData {
+  return {
+    streamId: "-",
+    robotId: "-",
+    channelLabel: "-",
+    mediaStream: null,
+    isActive: false,
+    timestamp: Date.now(),
+  }
+}
+
+export function getInitialStreamStats(): StreamStats {
+  return {
+    fps: 0,
+    width: 0,
+    height: 0,
+  }
+}
+
 export class VideoStore {
   protected robotId: string
   protected channelLabel: string
   protected mediaStream: MediaStream | null = null
   protected videoElement: HTMLVideoElement | null = null
   protected subscribers: Set<VideoSubscriber> = new Set()
+  protected streamStatsSubscribers: Set<StreamStatsSubscriber> = new Set()
   protected isActive = false
-  protected streamStats: StreamStats = {
-    fps: 0,
-    width: 0,
-    height: 0,
-  }
+  protected streamStats: StreamStats = getInitialStreamStats()
   protected fpsCounter = 0
   protected fpsInterval: number | null = null
+  protected lastFpsUpdate: number = Date.now()
   protected metadata: { mediaType?: string; source?: string } = {}
 
   constructor(robotId: string, channelLabel: string) {
@@ -53,6 +70,13 @@ export class VideoStore {
     this.subscribers.add(callback)
     return () => {
       this.subscribers.delete(callback)
+    }
+  }
+
+  subscribeStreamStats(callback: StreamStatsSubscriber): () => void {
+    this.streamStatsSubscribers.add(callback)
+    return () => {
+      this.streamStatsSubscribers.delete(callback)
     }
   }
 
@@ -125,7 +149,11 @@ export class VideoStore {
   protected updateFps(): void {
     if (!this.videoElement || !this.mediaStream) return
 
-    const fps = this.fpsCounter
+    const currentTime = Date.now()
+    const elapsedTime = currentTime - this.lastFpsUpdate
+    const fps = Math.round((this.fpsCounter * 1000) / elapsedTime)
+
+    this.lastFpsUpdate = currentTime
     this.fpsCounter = 0
 
     // Update stream statistics
@@ -137,7 +165,7 @@ export class VideoStore {
     }
 
     // Notify subscribers
-    this.notifySubscribers()
+    this.notifyStreamStatsSubscribers()
   }
 
   // Notify subscribers
@@ -152,7 +180,6 @@ export class VideoStore {
       channelLabel: this.channelLabel,
       mediaStream: this.mediaStream,
       isActive: this.isActive,
-      stats: this.streamStats,
       timestamp: Date.now(),
       metadata: this.metadata,
     }
@@ -169,9 +196,25 @@ export class VideoStore {
     })
   }
 
+  protected notifyStreamStatsSubscribers(): void {
+    this.streamStatsSubscribers.forEach((callback) => {
+      try {
+        callback(this.streamStats)
+      } catch (error) {
+        console.error(
+          `VideoStore[${this.channelLabel}] StreamStats subscriber callback error:`,
+          error,
+        )
+      }
+    })
+  }
+
   // Cleanup
   destroy(): void {
     this.stopFpsMonitoring()
+
+    this.isActive = false
+    this.notifySubscribers()
 
     if (this.mediaStream) {
       this.mediaStream.getTracks().forEach((track) => track.stop())
@@ -183,8 +226,9 @@ export class VideoStore {
       this.videoElement = null
     }
 
-    this.isActive = false
     this.subscribers.clear()
+
+    this.streamStats = getInitialStreamStats()
   }
 
   // Internal access methods (used by child classes)
@@ -218,6 +262,7 @@ export class VideoStore {
 
   public setStreamStats(stats: StreamStats): void {
     this.streamStats = stats
+    this.notifyStreamStatsSubscribers()
   }
 
   public incrementFpsCounter(): void {

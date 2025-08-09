@@ -5,7 +5,7 @@ export class DataStore<T, I = string> {
   parser: (data: I) => T | null
   private subscribers: ((data: T) => void)[] = []
 
-  constructor(robotId: string, maxSize, parser: (data: I) => T | null) {
+  constructor(robotId: string, maxSize: number, parser: (data: I) => T | null) {
     this.maxSize = maxSize
     this.robotId = robotId
     this.parser = parser

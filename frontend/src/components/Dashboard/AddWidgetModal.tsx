@@ -8,6 +8,7 @@ import {
   DialogRoot,
   DialogTitle,
 } from "@/components/ui/dialog"
+import type { RobotInfo } from "@/contexts/WebSocketContext.tsx"
 import { useRobotMapping } from "@/hooks/useRobotMapping"
 import {
   Button,
@@ -24,14 +25,14 @@ interface AddWidgetModalProps {
   isOpen: boolean
   onClose: () => void
   onAdd: (robotId: string, type: WidgetType, config?: any) => void
-  connectedRobots: string[]
+  robots: RobotInfo[]
 }
 
 export function AddWidgetModal({
   isOpen,
   onClose,
   onAdd,
-  connectedRobots,
+  robots,
 }: AddWidgetModalProps) {
   const [selectedRobotId, setSelectedRobotId] = useState<string>("")
   const [selectedType, setSelectedType] = useState<string>("go2_low_state")
@@ -39,9 +40,9 @@ export function AddWidgetModal({
   const { getRobotName } = useRobotMapping()
 
   const robotCollection = createListCollection({
-    items: connectedRobots.map((robotId) => ({
-      label: getRobotName(robotId),
-      value: robotId,
+    items: robots.map((robotInfo) => ({
+      label: getRobotName(robotInfo.robot_id),
+      value: robotInfo.robot_id,
     })),
   })
 

@@ -1,10 +1,7 @@
 import type { WebSocketContextType } from "@/contexts/WebSocketContext"
 import { DynamicTypeManager } from "@/dashboard/dynamic/dynamic-type-config"
 import { VideoStoreManager } from "@/dashboard/store/media-channel-store/video-store-manager"
-import {
-  type ChannelType,
-  DEFAULT_DATA_CHANNELS,
-} from "./config/webrtc-datachannel-config"
+import type { ChannelType } from "./config/webrtc-datachannel-config"
 import { MediaChannelConfigUtils } from "./config/webrtc-media-channel-config"
 import { MEDIA_CHANNEL_CONFIG } from "./config/webrtc-media-channel-config"
 import {

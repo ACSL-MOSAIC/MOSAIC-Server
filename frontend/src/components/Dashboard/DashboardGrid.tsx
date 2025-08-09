@@ -4,7 +4,7 @@ import {
   type VideoChannelConfig,
   WebRTCConnection,
 } from "@/rtc/webrtc-connection"
-import { Box, Button, Flex } from "@chakra-ui/react"
+import { Box } from "@chakra-ui/react"
 import React, { useState, useEffect, useRef } from "react"
 import { Responsive, WidthProvider } from "react-grid-layout"
 import { v4 as uuidv4 } from "uuid"
@@ -364,13 +364,8 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
     return <Box p={4}>Tab not found.</Box>
   }
 
-  // List of connected robot IDs
-  const connectedRobotIds = Object.keys(connections).filter(
-    (id) => connections[id],
-  )
-
   return (
-    <Box p={4} marginTop="64px">
+    <Box p={4} marginTop="16px">
       {/* Robot connection management panel */}
       <RobotConnectionPanel
         connections={connections}
@@ -380,17 +375,6 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
         onDisconnectAll={handleDisconnectAllRobots}
         onOpenDynamicTypeModal={onOpenDynamicTypeModal}
       />
-
-      {/* Dashboard controls */}
-      <Flex justify="flex-end" mb={4}>
-        <Button
-          colorScheme="teal"
-          onClick={handleSave}
-          disabled={!hasUnsavedChanges}
-        >
-          💾 {hasUnsavedChanges ? "Save" : "Saved"}
-        </Button>
-      </Flex>
 
       {/* Tab manager */}
       <TabManager
@@ -404,7 +388,9 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
         onRemoveTab={handleRemoveTab}
         onRenameTab={handleRenameTab}
         onAddWidget={handleAddWidget}
-        connectedRobots={connectedRobotIds}
+        onSaveChanges={handleSave}
+        hasUnsavedChanges={hasUnsavedChanges}
+        robots={ws.robots}
       />
 
       <ResponsiveGridLayout
@@ -430,7 +416,7 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
         isDraggable={true}
         isResizable={true}
         margin={[16, 16]}
-        draggableHandle=".widget-header"
+        draggableHandle=".draggable-header"
       >
         {activeTab.widgets.map((widget) => (
           <Box

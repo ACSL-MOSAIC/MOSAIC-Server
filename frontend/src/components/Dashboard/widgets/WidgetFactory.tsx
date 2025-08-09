@@ -15,8 +15,6 @@ import { VideoRecorderStore } from "@/dashboard/store/data-channel-store/writeon
 import { WriteOnlyStoreManager } from "@/dashboard/store/data-channel-store/writeonly/write-only-store-manager.ts"
 import type { TurtlesimVideoStore } from "@/dashboard/store/media-channel-store/turtlesim-video.store.ts"
 import { VideoStoreManager } from "@/dashboard/store/media-channel-store/video-store-manager.ts"
-import { useRobotMapping } from "@/hooks/useRobotMapping"
-import { Badge, Box, Text } from "@chakra-ui/react"
 import { Go2LowStateWidget } from "./Go2LowStateWidget"
 import { Go2OusterPointCloudWidget } from "./Go2OusterPointCloudWidget"
 import { TurtlesimPositionWidget } from "./TurtlesimPositionWidget"
@@ -36,37 +34,6 @@ export interface WidgetFactoryProps extends WidgetProps {
   onUpdateConfig?: (newConfig: UniversalWidgetConfig) => void
 }
 
-// NO_DATA component
-function NoDataWidget({ robotId, type }: { robotId: string; type: string }) {
-  const { getRobotName } = useRobotMapping()
-
-  return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      height="100%"
-      bg="gray.50"
-      borderRadius="md"
-      p={4}
-    >
-      <Badge colorScheme="gray" mb={2}>
-        Not Connected
-      </Badge>
-      <Text fontSize="sm" color="gray.500" textAlign="center">
-        {getRobotName(robotId)}
-      </Text>
-      <Text fontSize="xs" color="gray.400" textAlign="center">
-        {type} Widget
-      </Text>
-      <Text fontSize="xs" color="gray.400" textAlign="center" mt={2}>
-        Data will be displayed when robot is connected
-      </Text>
-    </Box>
-  )
-}
-
 export function WidgetFactory({
   type,
   robotId,
@@ -77,14 +44,6 @@ export function WidgetFactory({
   onRemove,
   onUpdateConfig,
 }: WidgetFactoryProps) {
-  // Check connection status
-  const isConnected = connections ? connections[robotId] : false
-
-  // Show NO_DATA if not connected
-  if (!isConnected) {
-    return <NoDataWidget robotId={robotId} type={type} />
-  }
-
   const readOnlyStoreManager = ReadOnlyStoreManager.getInstance()
   const writeOnlyStoreManager = WriteOnlyStoreManager.getInstance()
   const videoStoreManager = VideoStoreManager.getInstance()
@@ -169,7 +128,6 @@ export function WidgetFactory({
       return (
         <TurtlesimVideoWidget
           robotId={robotId}
-          widgetId={robotId}
           store={videoStore as TurtlesimVideoStore}
           dataType={dataType}
           onRemove={onRemove}
