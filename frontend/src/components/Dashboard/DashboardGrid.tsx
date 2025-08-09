@@ -99,6 +99,38 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
     }))
   }
 
+  const widgetConfigToChannelConfig = (widgetConfig: WidgetConfig) => {
+    const dataChannelConfigs: DataChannelConfig[] = []
+    const videoChannelConfigs: VideoChannelConfig[] = []
+
+    if (widgetConfig.type === "turtlesim_video") {
+      // turtlesim video is the only video type
+      const videoChannelConfig: VideoChannelConfig = {
+        label: widgetConfig.id,
+        dataType: widgetConfig.dataType,
+      }
+      videoChannelConfigs.push(videoChannelConfig)
+    } else {
+      // For other widget types, create data channel configs
+      const dcConfigs = DEFAULT_DATA_CHANNELS.filter(
+        (dc) => dc.dataType === widgetConfig.dataType,
+      ).map((dc) => {
+        const dataChannelConfig: DataChannelConfig = {
+          label: dc.label,
+          dataType: dc.dataType,
+          channelType: dc.channelType,
+        }
+        return dataChannelConfig
+      })
+      dataChannelConfigs.push(...dcConfigs)
+    }
+
+    return {
+      dataChannelConfigs,
+      videoChannelConfigs,
+    }
+  }
+
   // Connect to robot function
   const connectToRobot = async (robotId: string) => {
     try {
@@ -124,27 +156,12 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
       const videoChannelConfigs: VideoChannelConfig[] = []
 
       activeTab?.widgets.forEach((widgetConfig) => {
-        if (widgetConfig.type === "turtlesim_video") {
-          // turtlesim video is the only video type
-          const videoChannelConfig: VideoChannelConfig = {
-            label: widgetConfig.id,
-            dataType: widgetConfig.dataType,
-          }
-          videoChannelConfigs.push(videoChannelConfig)
-        } else {
-          // For other widget types, create data channel configs
-          const dcConfigs = DEFAULT_DATA_CHANNELS.filter(
-            (dc) => dc.dataType === widgetConfig.dataType,
-          ).map((dc) => {
-            const dataChannelConfig: DataChannelConfig = {
-              label: dc.label,
-              dataType: dc.dataType,
-              channelType: dc.channelType,
-            }
-            return dataChannelConfig
-          })
-          dataChannelConfigs.push(...dcConfigs)
-        }
+        const {
+          dataChannelConfigs: dcConfigs,
+          videoChannelConfigs: vcConfigs,
+        } = widgetConfigToChannelConfig(widgetConfig)
+        dataChannelConfigs.push(...dcConfigs)
+        videoChannelConfigs.push(...vcConfigs)
       })
 
       console.log("DataChannel Configs:", dataChannelConfigs)

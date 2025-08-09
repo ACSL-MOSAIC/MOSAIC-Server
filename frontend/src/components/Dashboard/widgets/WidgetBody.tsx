@@ -29,7 +29,7 @@ function NoDataWidget() {
         Not Connected
       </Badge>
       <Text fontSize="xs" color="gray.400" textAlign="center" mt={2}>
-        Data will be displayed when robot is connected
+        Reconnect or connect to a robot is required.
       </Text>
     </Box>
   )
