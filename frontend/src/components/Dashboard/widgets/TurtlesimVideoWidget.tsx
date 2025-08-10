@@ -51,8 +51,6 @@ export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
     // 비디오 엘리먼트 설정
     if (videoRef.current) {
       store.setVideoElement(videoRef.current)
-    } else {
-      console.log("❌ 비디오 엘리먼트가 없습니다. 비디오 설정을 건너뜁니다.")
     }
 
     // MediaStream 상태 확인
