@@ -5,6 +5,7 @@ export type WidgetType =
   | "turtlesim_remote_control"
   | "turtlesim_video"
   | "universal"
+  | "video_recorder"
 
 export interface WidgetPosition {
   x: number

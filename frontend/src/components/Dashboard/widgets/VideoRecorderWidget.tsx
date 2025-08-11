@@ -1,4 +1,3 @@
-import type { ParsedVideoRecordingCommand } from "@/dashboard/parser/video-recorder.ts"
 import type { VideoRecorderStore } from "@/dashboard/store/data-channel-store/writeonly/video-recorder.store.ts"
 import { HStack, IconButton, VStack } from "@chakra-ui/react"
 import { useEffect, useState } from "react"
@@ -69,12 +68,6 @@ export function VideoRecordingWidget({
     // WebRTC 연결 상태 확인
     const checkConnectionStatus = () => {
       const dataChannel = store.getDataChannel()
-      console.log("VideoRecordingWidget - 데이터 채널 상태 확인:", {
-        robotId,
-        hasDataChannel: !!dataChannel,
-        readyState: dataChannel?.readyState,
-        label: dataChannel?.label,
-      })
 
       if (dataChannel && dataChannel.readyState === "open") {
         setIsConnected(true)
@@ -88,24 +81,12 @@ export function VideoRecordingWidget({
 
     // 실시간 연결 상태 변경 리스너 등록
     const unsubscribeConnection = store.onConnectionStateChange((connected) => {
-      console.log("VideoRecordingWidget - 연결 상태 변경:", {
-        connected,
-        robotId,
-      })
       setIsConnected(connected)
     })
-
-    // 명령 전송 후 상태 업데이트를 위한 구독
-    const unsubscribeData = store.subscribe(
-      (data: ParsedVideoRecordingCommand) => {
-        console.log("VideoRecordingWidget - 데이터 수신:", data)
-      },
-    )
 
     return () => {
       console.log(`VideoRecordingWidget - cleanup for robot ${robotId}`)
       unsubscribeConnection()
-      unsubscribeData()
     }
   }, [store, robotId])
 

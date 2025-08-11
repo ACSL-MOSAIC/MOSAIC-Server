@@ -1,6 +1,10 @@
 import { useWebSocket } from "@/contexts/WebSocketContext"
-import { WebRTCConnection } from "@/rtc/webrtc-connection"
-import { Box, Button, Flex } from "@chakra-ui/react"
+import {
+  type DataChannelConfig,
+  type VideoChannelConfig,
+  WebRTCConnection,
+} from "@/rtc/webrtc-connection"
+import { Box } from "@chakra-ui/react"
 import React, { useState, useEffect, useRef } from "react"
 import { Responsive, WidthProvider } from "react-grid-layout"
 import { v4 as uuidv4 } from "uuid"
@@ -14,6 +18,7 @@ import {
   useDashboardConfigMutation,
   useDashboardConfigQuery,
 } from "@/hooks/useDashboardConfig"
+import { DEFAULT_DATA_CHANNELS } from "@/rtc/config/webrtc-datachannel-config.ts"
 import { useQueryClient } from "@tanstack/react-query"
 import RobotConnectionPanel from "./RobotConnectionPanel"
 import {
@@ -94,6 +99,38 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
     }))
   }
 
+  const widgetConfigToChannelConfig = (widgetConfig: WidgetConfig) => {
+    const dataChannelConfigs: DataChannelConfig[] = []
+    const videoChannelConfigs: VideoChannelConfig[] = []
+
+    if (widgetConfig.type === "turtlesim_video") {
+      // turtlesim video is the only video type
+      const videoChannelConfig: VideoChannelConfig = {
+        label: widgetConfig.id,
+        dataType: widgetConfig.dataType,
+      }
+      videoChannelConfigs.push(videoChannelConfig)
+    } else {
+      // For other widget types, create data channel configs
+      const dcConfigs = DEFAULT_DATA_CHANNELS.filter(
+        (dc) => dc.dataType === widgetConfig.dataType,
+      ).map((dc) => {
+        const dataChannelConfig: DataChannelConfig = {
+          label: dc.label,
+          dataType: dc.dataType,
+          channelType: dc.channelType,
+        }
+        return dataChannelConfig
+      })
+      dataChannelConfigs.push(...dcConfigs)
+    }
+
+    return {
+      dataChannelConfigs,
+      videoChannelConfigs,
+    }
+  }
+
   // Connect to robot function
   const connectToRobot = async (robotId: string) => {
     try {
@@ -115,11 +152,29 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
       // Initialize refs
       initializeRefs(robotId)
 
+      const dataChannelConfigs: DataChannelConfig[] = []
+      const videoChannelConfigs: VideoChannelConfig[] = []
+
+      activeTab?.widgets
+        .filter((wc) => wc.robotId === robotId)
+        .forEach((widgetConfig) => {
+          const {
+            dataChannelConfigs: dcConfigs,
+            videoChannelConfigs: vcConfigs,
+          } = widgetConfigToChannelConfig(widgetConfig)
+          dataChannelConfigs.push(...dcConfigs)
+          videoChannelConfigs.push(...vcConfigs)
+        })
+
+      console.log("DataChannel Configs:", dataChannelConfigs)
+
       const connection = new WebRTCConnection({
         robotId,
         ws,
         onConnectionStateChange: (isConnected) =>
           handleConnectionStateChange(robotId, isConnected),
+        dataChannels: dataChannelConfigs,
+        videoChannels: videoChannelConfigs,
       })
 
       await connection.startConnection()
@@ -225,6 +280,9 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
       case "universal":
         dataType = "universal"
         break
+      case "video_recorder":
+        dataType = "video_recorder"
+        break
       default:
         dataType = "go2_low_state"
     }
@@ -325,13 +383,8 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
     return <Box p={4}>Tab not found.</Box>
   }
 
-  // List of connected robot IDs
-  const connectedRobotIds = Object.keys(connections).filter(
-    (id) => connections[id],
-  )
-
   return (
-    <Box p={4} marginTop="64px">
+    <Box p={4} marginTop="16px">
       {/* Robot connection management panel */}
       <RobotConnectionPanel
         connections={connections}
@@ -341,17 +394,6 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
         onDisconnectAll={handleDisconnectAllRobots}
         onOpenDynamicTypeModal={onOpenDynamicTypeModal}
       />
-
-      {/* Dashboard controls */}
-      <Flex justify="flex-end" mb={4}>
-        <Button
-          colorScheme="teal"
-          onClick={handleSave}
-          disabled={!hasUnsavedChanges}
-        >
-          💾 {hasUnsavedChanges ? "Save" : "Saved"}
-        </Button>
-      </Flex>
 
       {/* Tab manager */}
       <TabManager
@@ -365,7 +407,9 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
         onRemoveTab={handleRemoveTab}
         onRenameTab={handleRenameTab}
         onAddWidget={handleAddWidget}
-        connectedRobots={connectedRobotIds}
+        onSaveChanges={handleSave}
+        hasUnsavedChanges={hasUnsavedChanges}
+        robots={ws.robots}
       />
 
       <ResponsiveGridLayout
@@ -391,7 +435,7 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
         isDraggable={true}
         isResizable={true}
         margin={[16, 16]}
-        draggableHandle=".widget-header"
+        draggableHandle=".draggable-header"
       >
         {activeTab.widgets.map((widget) => (
           <Box

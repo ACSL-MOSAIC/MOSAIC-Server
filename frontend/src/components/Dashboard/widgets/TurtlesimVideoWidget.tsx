@@ -1,6 +1,9 @@
-import type {
-  VideoData,
-  VideoStore,
+import {
+  type StreamStats,
+  type VideoData,
+  type VideoStore,
+  getInitialStreamStats,
+  getInitialVideoData,
 } from "@/dashboard/store/media-channel-store/video-store"
 import { Box, Flex, IconButton } from "@chakra-ui/react"
 import type React from "react"
@@ -9,7 +12,6 @@ import { WidgetFrame } from "./WidgetFrame"
 
 interface TurtlesimVideoWidgetProps {
   robotId: string
-  widgetId: string
   store: VideoStore
   dataType: string
   onRemove?: () => void
@@ -17,30 +19,20 @@ interface TurtlesimVideoWidgetProps {
 
 export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
   robotId,
-  widgetId,
   store,
   onRemove,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [videoData, setVideoData] = useState<VideoData | null>(null)
+  const [videoData, setVideoData] = useState<VideoData | null>(
+    getInitialVideoData(),
+  )
+  const [streamStats, setStreamStats] = useState<StreamStats>(
+    getInitialStreamStats(),
+  )
   const [isPlaying, setIsPlaying] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
-  const animationFrameRef = useRef<number | null>(null)
-
-  // FPS 측정을 위한 requestAnimationFrame (컴포넌트 최상위 레벨로 이동)
-  const measureFPSCallback = useCallback(() => {
-    if (!videoRef.current || videoRef.current.paused || !store) {
-      animationFrameRef.current = requestAnimationFrame(measureFPSCallback)
-      return
-    }
-
-    // 비디오 프레임이 렌더링될 때 FPS 카운터 증가
-    store.incrementFpsCounter()
-
-    animationFrameRef.current = requestAnimationFrame(measureFPSCallback)
-  }, [store])
 
   // 비디오 프레임 콜백 (더 정확한 FPS 측정)
   const videoFrameCallback = useCallback(() => {
@@ -55,38 +47,7 @@ export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
     }
   }, [store])
 
-  useEffect(() => {
-    if (!store) return
-
-    const unsubscribe = store.subscribe((data) => {
-      setVideoData(data)
-      setIsConnected(data.isActive)
-      setError(null)
-    })
-
-    // 초기 데이터 설정
-    if (store.getMediaStream()) {
-      const initialData: VideoData = {
-        streamId: store.getMediaStream()?.id || "",
-        robotId: store.getRobotId(),
-        channelLabel: store.getChannelLabel(),
-        mediaStream: store.getMediaStream()!,
-        isActive: store.isStreamActive(),
-        stats: store.getStreamStats(),
-        timestamp: Date.now(),
-      }
-      setVideoData(initialData)
-      setIsConnected(store.isStreamActive())
-    }
-
-    // FPS 측정 시작
-    animationFrameRef.current = requestAnimationFrame(measureFPSCallback)
-
-    // 비디오 프레임 콜백 시작 (더 정확한 FPS 측정)
-    if (videoRef.current?.requestVideoFrameCallback) {
-      videoRef.current.requestVideoFrameCallback(videoFrameCallback)
-    }
-
+  const configureVideo = () => {
     // 비디오 엘리먼트 설정
     if (videoRef.current) {
       store.setVideoElement(videoRef.current)
@@ -134,24 +95,59 @@ export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
         videoElement.removeEventListener("pause", handlePause)
         videoElement.removeEventListener("loadedmetadata", handleLoadedMetadata)
         videoElement.removeEventListener("error", handleError)
-
-        // FPS 측정 정리
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current)
-        }
-
-        unsubscribe()
       }
     }
 
     return () => {
-      // FPS 측정 정리
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
+      // 비디오 엘리먼트가 변경되면 이전 이벤트 핸들러 제거
+      if (videoRef.current) {
+        videoRef.current.srcObject = null
       }
-      unsubscribe()
     }
-  }, [store, robotId, widgetId, measureFPSCallback, videoFrameCallback])
+  }
+
+  useEffect(() => {
+    if (!store) return
+
+    const unsubscribe = store.subscribe((data) => {
+      setVideoData(data)
+      setIsConnected(data.isActive)
+      setError(null)
+      if (data.isActive) {
+        configureVideo()
+      }
+    })
+
+    const unscribeStreamStats = store.subscribeStreamStats((stats) => {
+      setStreamStats(stats)
+    })
+
+    // 초기 데이터 설정
+    if (store.getMediaStream()) {
+      const initialData: VideoData = {
+        streamId: store.getMediaStream()?.id || "",
+        robotId: store.getRobotId(),
+        channelLabel: store.getChannelLabel(),
+        mediaStream: store.getMediaStream()!,
+        isActive: store.isStreamActive(),
+        timestamp: Date.now(),
+      }
+      setVideoData(initialData)
+      setIsConnected(store.isStreamActive())
+    }
+
+    // 비디오 프레임 콜백 시작 (더 정확한 FPS 측정)
+    if (videoRef.current?.requestVideoFrameCallback) {
+      videoRef.current.requestVideoFrameCallback(videoFrameCallback)
+    }
+    const closing = configureVideo()
+
+    return () => {
+      closing()
+      unsubscribe()
+      unscribeStreamStats()
+    }
+  }, [store, videoRef.current, videoFrameCallback])
 
   const handlePlayPause = () => {
     if (videoRef.current) {
@@ -189,29 +185,30 @@ export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
   }, [])
 
   // Footer info
-  const footerInfo = videoData
-    ? [
-        {
-          label: "FPS",
-          value: `${videoData.stats.fps} fps`,
-        },
-        {
-          label: "Resolution",
-          value:
-            videoData.stats.width && videoData.stats.height
-              ? `${videoData.stats.width}x${videoData.stats.height}`
-              : "Unknown",
-        },
-        {
-          label: "Status",
-          value: videoData.isActive ? "Active" : "Inactive",
-        },
-        {
-          label: "Stream ID",
-          value: `${videoData.streamId.slice(0, 8)}...`,
-        },
-      ]
-    : []
+  const footerInfo =
+    videoData && streamStats
+      ? [
+          {
+            label: "FPS",
+            value: `${streamStats.fps} fps`,
+          },
+          {
+            label: "Resolution",
+            value:
+              streamStats.width && streamStats.height
+                ? `${streamStats.width}x${streamStats.height}`
+                : "Unknown",
+          },
+          {
+            label: "Status",
+            value: videoData.isActive ? "Active" : "Inactive",
+          },
+          {
+            label: "Stream ID",
+            value: `${videoData.streamId.slice(0, 8)}...`,
+          },
+        ]
+      : []
 
   return (
     <WidgetFrame

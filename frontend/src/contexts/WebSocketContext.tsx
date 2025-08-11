@@ -178,7 +178,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     websocket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
-        console.log("WebSocket 메시지 수신:", data)
+        // console.log("WebSocket 메시지 수신:", data)
 
         if (data.type === "force_logout") {
           console.log("강제 로그아웃 메시지 수신:", data.message)
@@ -226,7 +226,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
   const sendMessage = (message: WebSocketMessage) => {
     if (ws?.readyState === WebSocket.OPEN) {
-      console.log("WebSocket 메시지 전송:", message)
+      // console.log("WebSocket 메시지 전송:", message)
       const messageWithUserId = {
         ...message,
         user_id: user?.id,
@@ -288,7 +288,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       }
 
       refreshIntervalRef.current = setInterval(() => {
-        console.log("1초마다 로봇 리스트 갱신")
+        // console.log("1초마다 로봇 리스트 갱신")
         sendMessage({
           type: "get_robot_list",
         })

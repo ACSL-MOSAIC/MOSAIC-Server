@@ -273,7 +273,7 @@ export function TurtlesimPositionWidget({
     <WidgetFrame
       title="Turtlesim Position"
       robot_id={robotId}
-      isConnected={isConnected}
+      isConnected={isConnected && store.getChannelInfo().state === "open"}
       footerInfo={footerInfo}
       footerMessage={position ? undefined : "Waiting for connection..."}
       onRemove={onRemove}

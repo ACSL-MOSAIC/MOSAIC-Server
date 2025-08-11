@@ -36,7 +36,14 @@ export function Go2OusterPointCloudWidget({
     }
 
     const unsubscribe = store.subscribe((data: ParsedPointCloud2) => {
-      if (!canvasRef.current || !data) {
+      if (!data) {
+        // skip if no data
+        return
+      }
+      setIsConnected(true)
+
+      if (!canvasRef.current) {
+        // skip if canvas is not ready
         return
       }
 
@@ -260,7 +267,7 @@ export function Go2OusterPointCloudWidget({
     <WidgetFrame
       title="Go2 Ouster PointCloud"
       robot_id={robotId}
-      isConnected={isConnected}
+      isConnected={isConnected && store.getChannelInfo().state === "open"}
       footerInfo={footerInfo}
       footerMessage={
         isConnected ? "PointCloud data active" : "Waiting for data..."

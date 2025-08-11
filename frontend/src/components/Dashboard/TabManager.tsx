@@ -8,6 +8,7 @@ import {
   DialogRoot,
   DialogTitle,
 } from "@/components/ui/dialog"
+import type { RobotInfo } from "@/contexts/WebSocketContext.tsx"
 import {
   Box,
   Button,
@@ -31,7 +32,9 @@ interface TabManagerProps {
   activeTabId: string
   onTabChange: (tabId: string) => void
   onAddWidget: (robotId: string, type: WidgetType, config?: any) => void
-  connectedRobots: string[]
+  onSaveChanges: () => void
+  hasUnsavedChanges: boolean
+  robots: RobotInfo[]
 }
 
 export function TabManager({
@@ -42,7 +45,9 @@ export function TabManager({
   activeTabId,
   onTabChange,
   onAddWidget,
-  connectedRobots,
+  onSaveChanges,
+  hasUnsavedChanges,
+  robots,
 }: TabManagerProps) {
   const { open, onOpen, onClose } = useDisclosure()
   const {
@@ -161,17 +166,12 @@ export function TabManager({
               size="sm"
               variant="ghost"
               onClick={onWidgetModalOpen}
-              disabled={connectedRobots.length === 0}
-              color={connectedRobots.length === 0 ? "gray.300" : "gray.500"}
+              color="gray.500"
               _hover={{
-                bg: connectedRobots.length === 0 ? "gray.50" : "blue.50",
-                color: connectedRobots.length === 0 ? "gray.300" : "blue.500",
+                bg: "blue.50",
+                color: "blue.500",
               }}
-              title={
-                connectedRobots.length === 0
-                  ? "No robots connected. Please connect a robot first."
-                  : "Add Widget"
-              }
+              title="Add Widget"
             >
               <FiGrid size={14} />
               Add Widget
@@ -226,6 +226,14 @@ export function TabManager({
               <FiPlus size={14} />
               Add Tab
             </Button>
+
+            <Button
+              colorScheme="teal"
+              onClick={onSaveChanges}
+              disabled={!hasUnsavedChanges}
+            >
+              💾 {hasUnsavedChanges ? "Save" : "Saved"}
+            </Button>
           </HStack>
         </Flex>
       </Box>
@@ -271,7 +279,7 @@ export function TabManager({
         isOpen={widgetModalOpen}
         onClose={onWidgetModalClose}
         onAdd={onAddWidget}
-        connectedRobots={connectedRobots}
+        robots={robots}
       />
     </Box>
   )

@@ -1,7 +1,7 @@
 import { DashboardGrid } from "@/components/Dashboard/DashboardGrid"
 import { DynamicTypeManager } from "@/components/Dashboard/DynamicTypeManager"
 import useAuth from "@/hooks/useAuth"
-import { Box, Container, Heading } from "@chakra-ui/react"
+import { Container, Heading } from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
 import { useState } from "react"
 
@@ -29,7 +29,7 @@ function ConnectPage() {
   return (
     <>
       <Container maxW="container.xl" py={8}>
-        <Heading size="lg" mb={8}>
+        <Heading size="lg" mb={1}>
           로봇 대시보드
         </Heading>
         <DashboardGrid
