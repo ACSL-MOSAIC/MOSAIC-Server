@@ -40,7 +40,7 @@ export function WidgetHeader({
         </VStack>
 
         <HStack gap={2}>
-          <Badge colorScheme={isConnected ? "green" : "gray"} variant="subtle">
+          <Badge colorPalette={isConnected ? "green" : "gray"} variant="subtle">
             {isConnected ? "Connected" : "Disconnected"}
           </Badge>
         </HStack>

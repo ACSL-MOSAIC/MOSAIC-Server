@@ -155,14 +155,16 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
       const dataChannelConfigs: DataChannelConfig[] = []
       const videoChannelConfigs: VideoChannelConfig[] = []
 
-      activeTab?.widgets.forEach((widgetConfig) => {
-        const {
-          dataChannelConfigs: dcConfigs,
-          videoChannelConfigs: vcConfigs,
-        } = widgetConfigToChannelConfig(widgetConfig)
-        dataChannelConfigs.push(...dcConfigs)
-        videoChannelConfigs.push(...vcConfigs)
-      })
+      activeTab?.widgets
+        .filter((wc) => wc.robotId === robotId)
+        .forEach((widgetConfig) => {
+          const {
+            dataChannelConfigs: dcConfigs,
+            videoChannelConfigs: vcConfigs,
+          } = widgetConfigToChannelConfig(widgetConfig)
+          dataChannelConfigs.push(...dcConfigs)
+          videoChannelConfigs.push(...vcConfigs)
+        })
 
       console.log("DataChannel Configs:", dataChannelConfigs)
 

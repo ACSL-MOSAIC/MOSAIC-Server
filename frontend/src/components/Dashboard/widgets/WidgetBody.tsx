@@ -74,9 +74,13 @@ export function WidgetBody({
               <Text color="gray.600" fontWeight="medium">
                 {info.label}
               </Text>
-              <Text color="gray.800" fontFamily="mono">
-                {info.value}
-              </Text>
+              {typeof info.value === 'string' ? (
+                <Text color="gray.800" fontFamily="mono">
+                  {info.value}
+                </Text>
+              ) : (
+                info.value
+              )}
             </HStack>
           ))}
 
