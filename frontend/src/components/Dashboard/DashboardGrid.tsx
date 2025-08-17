@@ -423,14 +423,14 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
             h: w.position.h,
             minW: 2,
             minH: 2,
-            maxW: 12,
-            maxH: 12,
+            maxW: 15,
+            maxH: 15,
           })),
         }}
-        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-        cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+        breakpoints={{ lg: 1500, md: 1245, sm: 960, xs: 600, xxs: 0 }}
+        cols={{ lg: 15, md: 11, sm: 8, xs: 5, xxs: 3 }}
         rowHeight={100}
-        width={1200}
+        width={1500}
         onLayoutChange={handleLayoutChange}
         isDraggable={true}
         isResizable={true}

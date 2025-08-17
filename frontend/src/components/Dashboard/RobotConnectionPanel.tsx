@@ -11,13 +11,7 @@ import {
   Text,
 } from "@chakra-ui/react"
 import { useCallback, useMemo } from "react"
-import {
-  IoPower,
-  IoPowerOutline,
-  IoSettings,
-  IoVideocam,
-  IoVideocamOff,
-} from "react-icons/io5"
+import { IoPower, IoPowerOutline, IoSettings } from "react-icons/io5"
 
 interface RobotConnectionPanelProps {
   connections: { [key: string]: boolean }
@@ -125,7 +119,7 @@ function RobotConnectionPanel({
         templateColumns={{
           base: "1fr",
           md: "repeat(2, 1fr)",
-          lg: "repeat(3, 1fr)",
+          lg: "repeat(4, 1fr)",
         }}
         gap={4}
       >
@@ -165,7 +159,7 @@ function RobotConnectionPanel({
                     onClick={() => onDisconnect(robot.robot_id)}
                     flex="1"
                   >
-                    <Icon as={IoVideocamOff} mr={2} />
+                    <Icon as={IoPowerOutline} mr={2} />
                     Disconnect
                   </Button>
                 ) : (
@@ -176,7 +170,7 @@ function RobotConnectionPanel({
                     disabled={!canConnect}
                     flex="1"
                   >
-                    <Icon as={IoVideocam} mr={2} />
+                    <Icon as={IoPowerOutline} mr={2} />
                     Connect
                   </Button>
                 )}

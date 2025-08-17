@@ -18,7 +18,7 @@ function ConnectPage() {
 
   if (!user) {
     return (
-      <Container maxW="container.xl" py={8}>
+      <Container maxW="full" py={8}>
         <Heading size="lg" mb={8}>
           로그인이 필요합니다.
         </Heading>
@@ -28,7 +28,7 @@ function ConnectPage() {
 
   return (
     <>
-      <Container maxW="container.xl" py={8}>
+      <Container maxW="full" py={8}>
         <Heading size="lg" mb={1}>
           로봇 대시보드
         </Heading>
