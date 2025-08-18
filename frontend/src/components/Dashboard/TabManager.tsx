@@ -211,6 +211,7 @@ export function TabManager({
                 }}
               >
                 <FiX size={14} />
+                Delete Tab
               </IconButton>
             )}
 
