@@ -199,10 +199,9 @@ export function TabManager({
             )}
 
             {tabs.length > 1 && (
-              <IconButton
+              <Button
                 size="sm"
                 variant="ghost"
-                aria-label="Delete tab"
                 onClick={() => onRemoveTab(activeTabId)}
                 color="gray.500"
                 _hover={{
@@ -212,7 +211,7 @@ export function TabManager({
               >
                 <FiX size={14} />
                 Delete Tab
-              </IconButton>
+              </Button>
             )}
 
             <Button
