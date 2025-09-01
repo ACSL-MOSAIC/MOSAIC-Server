@@ -2,6 +2,7 @@ import {
   type DynamicTypeConfig,
   dynamicTypeManager,
 } from "@/dashboard/dynamic/dynamic-type-config.ts"
+import { useRobotMapping } from "@/hooks/useRobotMapping.ts"
 import {
   Badge,
   Box,
@@ -24,10 +25,11 @@ interface DynamicTypeManagerProps {
   onTypeUpdated?: () => void
 }
 
-// 빠른 템플릿들
+// Quick templates
 const QUICK_TEMPLATES = {
   "sensor-data": {
     name: "sensor-data",
+    channelType: "readonly",
     schema: {
       type: "object",
       properties: {
@@ -38,10 +40,11 @@ const QUICK_TEMPLATES = {
       },
       required: ["temperature", "humidity", "timestamp"],
     },
-    description: "센서 데이터 (온도, 습도, 압력)",
+    description: "Sensor data (temperature, humidity, pressure)",
   },
   "position-data": {
     name: "position-data",
+    channelType: "readonly",
     schema: {
       type: "object",
       properties: {
@@ -53,10 +56,11 @@ const QUICK_TEMPLATES = {
       },
       required: ["x", "y", "timestamp"],
     },
-    description: "위치 데이터 (x, y, z, 방향)",
+    description: "Position data (x, y, z, direction)",
   },
   "control-command": {
     name: "control-command",
+    channelType: "writeonly",
     schema: {
       type: "object",
       properties: {
@@ -70,7 +74,7 @@ const QUICK_TEMPLATES = {
       },
       required: ["command"],
     },
-    description: "제어 명령 (시작, 정지, 속도, 방향)",
+    description: "Control command (start, stop, speed, direction)",
   },
 }
 
@@ -86,12 +90,14 @@ export function DynamicTypeManager({
     null,
   )
 
-  // onTypeUpdated 콜백을 안정화
+  const { getRobotName } = useRobotMapping()
+
+  // Stabilize onTypeUpdated callback
   const stableOnTypeUpdated = useCallback(() => {
     onTypeUpdated?.()
   }, [onTypeUpdated])
 
-  // 폼 상태
+  // Form state
   const [typeName, setTypeName] = useState("")
   const [description, setDescription] = useState("")
   const [channelType, setChannelType] = useState<"readonly" | "writeonly">(
@@ -102,7 +108,7 @@ export function DynamicTypeManager({
   const [isValid, setIsValid] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  // 동적 타입 목록 로드
+  // Load dynamic types list
   const loadDynamicTypes = useCallback(async () => {
     try {
       // DynamicTypeManager 초기화
@@ -114,7 +120,7 @@ export function DynamicTypeManager({
     }
   }, [robotId])
 
-  // isOpen이 false가 될 때만 resetForm 실행
+  // Execute resetForm only when isOpen becomes false
   useEffect(() => {
     if (!isOpen) {
       resetForm()
@@ -127,7 +133,7 @@ export function DynamicTypeManager({
     }
   }, [isOpen, loadDynamicTypes])
 
-  // JSON Schema 유효성 검사
+  // JSON Schema validation
   const validateJsonSchema = (schema: string) => {
     try {
       const parsed = JSON.parse(schema)
@@ -137,22 +143,23 @@ export function DynamicTypeManager({
     }
   }
 
-  // JSON Schema 변경 시 유효성 검사
+  // Validate when JSON Schema changes
   const handleJsonSchemaChange = (value: string) => {
     setJsonSchema(value)
     setIsValid(validateJsonSchema(value))
   }
 
-  // 템플릿 적용
+  // Apply template
   const applyTemplate = (templateKey: keyof typeof QUICK_TEMPLATES) => {
     const template = QUICK_TEMPLATES[templateKey]
     setTypeName(template.name)
+    setChannelType(template.channelType as "readonly" | "writeonly")
     setDescription(template.description)
     setJsonSchema(JSON.stringify(template.schema, null, 2))
     setIsValid(true)
   }
 
-  // 폼 초기화
+  // Reset form
   const resetForm = useCallback(() => {
     setTypeName("")
     setDescription("")
@@ -164,13 +171,13 @@ export function DynamicTypeManager({
     setEditingConfig(null)
   }, [])
 
-  // 새 타입 추가
+  // Add new type
   const addNewType = useCallback(() => {
     resetForm()
     setIsEditing(true)
   }, [resetForm])
 
-  // 타입 수정 시작
+  // Start editing type
   const startEdit = useCallback((config: DynamicTypeConfig) => {
     setEditingConfig(config)
     setTypeName(config.name)
@@ -182,33 +189,33 @@ export function DynamicTypeManager({
     setIsEditing(true)
   }, [])
 
-  // 타입 삭제
+  // Delete type
   const deleteType = useCallback(
     async (configId: string) => {
-      if (confirm("정말로 이 동적 타입을 삭제하시겠습니까?")) {
+      if (confirm("Are you sure you want to delete this dynamic type?")) {
         try {
           await dynamicTypeManager.deleteConfig(configId)
           loadDynamicTypes()
           stableOnTypeUpdated()
         } catch (error) {
-          console.error("동적 타입 삭제 실패:", error)
-          alert("동적 타입 삭제에 실패했습니다. 다시 시도해주세요.")
+          console.error("Failed to delete dynamic type:", error)
+          alert("Failed to delete dynamic type. Please try again.")
         }
       }
     },
     [loadDynamicTypes, stableOnTypeUpdated],
   )
 
-  // 타입 저장 (추가 또는 수정)
+  // Save type (add or edit)
   const saveType = useCallback(async () => {
     if (!isValid || !typeName.trim()) {
-      alert("유효한 타입 이름과 JSON Schema를 입력해주세요.")
+      alert("Please enter a valid type name and JSON Schema.")
       return
     }
 
     if (!channelLabel.trim()) {
       alert(
-        "채널 라벨은 필수값입니다. WebRTC 데이터 채널의 라벨을 입력해주세요.",
+        "Channel label is required. Please enter a WebRTC data channel label.",
       )
       return
     }
@@ -218,7 +225,7 @@ export function DynamicTypeManager({
       const schema = JSON.parse(jsonSchema)
 
       if (isEditing && editingConfig) {
-        // 수정
+        // Edit
         const success = await dynamicTypeManager.updateConfig(
           editingConfig.id,
           {
@@ -231,12 +238,12 @@ export function DynamicTypeManager({
         )
 
         if (success) {
-          alert(`동적 타입 "${typeName}"이 성공적으로 수정되었습니다!`)
+          alert(`Dynamic type "${typeName}" has been successfully updated!`)
         } else {
-          alert("동적 타입 수정에 실패했습니다.")
+          alert("Failed to update dynamic type.")
         }
       } else {
-        // 새로 추가
+        // Add new
         await dynamicTypeManager.registerDynamicType({
           robotId,
           name: typeName.trim(),
@@ -246,15 +253,15 @@ export function DynamicTypeManager({
           description: description.trim() || undefined,
         })
 
-        alert(`동적 타입 "${typeName}"이 성공적으로 등록되었습니다!`)
+        alert(`Dynamic type "${typeName}" has been successfully registered!`)
       }
 
       resetForm()
       loadDynamicTypes()
       stableOnTypeUpdated()
     } catch (error) {
-      console.error("동적 타입 저장 실패:", error)
-      alert("동적 타입 저장에 실패했습니다. 다시 시도해주세요.")
+      console.error("Failed to save dynamic type:", error)
+      alert("Failed to save dynamic type. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -273,7 +280,7 @@ export function DynamicTypeManager({
     stableOnTypeUpdated,
   ])
 
-  // 취소
+  // Cancel
   const cancelEdit = useCallback(() => {
     resetForm()
   }, [resetForm])
@@ -314,21 +321,22 @@ export function DynamicTypeManager({
           >
             <Dialog.Header>
               <Dialog.Title fontSize="24px" fontWeight="bold" color="gray.800">
-                동적 타입 관리 - {robotId}
+                Dynamic Type Management - {getRobotName(robotId)}
               </Dialog.Title>
               <Dialog.CloseTrigger />
             </Dialog.Header>
 
             <Dialog.Body p={6} overflowY="auto" maxH="70vh">
               {!isEditing ? (
-                // 타입 목록 보기
+                // View type list
                 <VStack gap={6} align="stretch">
                   <HStack justify="space-between">
                     <Text fontSize="20px" fontWeight="600" color="gray.800">
-                      등록된 동적 타입들
+                      Registered Dynamic Types
                     </Text>
                     <Button size="sm" colorScheme="blue" onClick={addNewType}>
-                      <IoAdd style={{ marginRight: "8px" }} />새 타입 추가
+                      <IoAdd style={{ marginRight: "8px" }} />
+                      Add New Type
                     </Button>
                   </HStack>
 
@@ -339,18 +347,20 @@ export function DynamicTypeManager({
                   />
                 </VStack>
               ) : (
-                // 타입 편집 폼
+                // Type edit form
                 <VStack gap={6} align="stretch">
                   <HStack justify="space-between">
                     <Text fontSize="20px" fontWeight="600" color="gray.800">
-                      {editingConfig ? "동적 타입 수정" : "새 동적 타입 추가"}
+                      {editingConfig
+                        ? "Edit Dynamic Type"
+                        : "Add New Dynamic Type"}
                     </Text>
                     <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                      취소
+                      Cancel
                     </Button>
                   </HStack>
 
-                  {/* 빠른 템플릿 */}
+                  {/* Quick templates */}
                   <Box>
                     <Text
                       fontSize="xs"
@@ -358,7 +368,7 @@ export function DynamicTypeManager({
                       color="gray.600"
                       mb={2}
                     >
-                      빠른 템플릿
+                      Quick Templates
                     </Text>
                     <HStack gap={2} flexWrap="wrap">
                       {Object.entries(QUICK_TEMPLATES).map(
@@ -380,7 +390,7 @@ export function DynamicTypeManager({
                     </HStack>
                   </Box>
 
-                  {/* 타입 이름 */}
+                  {/* Type name */}
                   <Box>
                     <Text
                       fontSize="xs"
@@ -388,17 +398,17 @@ export function DynamicTypeManager({
                       color="gray.600"
                       mb={1}
                     >
-                      타입 이름 *
+                      Type Name *
                     </Text>
                     <Input
                       size="sm"
                       value={typeName}
                       onChange={(e) => setTypeName(e.target.value)}
-                      placeholder="예: sensor-data, position-data"
+                      placeholder="e.g., sensor-data, position-data"
                     />
                   </Box>
 
-                  {/* 설명 */}
+                  {/* Description */}
                   <Box>
                     <Text
                       fontSize="xs"
@@ -406,17 +416,17 @@ export function DynamicTypeManager({
                       color="gray.600"
                       mb={1}
                     >
-                      설명
+                      Description
                     </Text>
                     <Input
                       size="sm"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="타입에 대한 설명을 입력하세요"
+                      placeholder="Enter a description for the type"
                     />
                   </Box>
 
-                  {/* 채널 타입 */}
+                  {/* Channel type */}
                   <Box>
                     <Text
                       fontSize="xs"
@@ -424,7 +434,7 @@ export function DynamicTypeManager({
                       color="gray.600"
                       mb={1}
                     >
-                      채널 타입 *
+                      Channel Type *
                     </Text>
                     <select
                       value={channelType}
@@ -442,12 +452,12 @@ export function DynamicTypeManager({
                         backgroundColor: "white",
                       }}
                     >
-                      <option value="readonly">읽기 전용 (ReadOnly)</option>
-                      <option value="writeonly">쓰기 전용 (WriteOnly)</option>
+                      <option value="readonly">Read Only</option>
+                      <option value="writeonly">Write Only</option>
                     </select>
                   </Box>
 
-                  {/* 채널 라벨 */}
+                  {/* Channel label */}
                   <Box>
                     <Text
                       fontSize="xs"
@@ -455,7 +465,7 @@ export function DynamicTypeManager({
                       color="gray.600"
                       mb={1}
                     >
-                      채널 라벨 *
+                      Channel Label *
                     </Text>
                     <Input
                       size="sm"
@@ -465,8 +475,8 @@ export function DynamicTypeManager({
                       required
                     />
                     <Text fontSize="xs" color="gray.500" mt={1}>
-                      WebRTC 데이터 채널의 라벨입니다. 고유한 이름을
-                      입력해주세요.
+                      This is the label for the WebRTC data channel. Please
+                      enter a unique name.
                     </Text>
                   </Box>
 
@@ -503,13 +513,13 @@ export function DynamicTypeManager({
                         mt={1}
                       >
                         {isValid
-                          ? "✓ 유효한 JSON Schema입니다"
-                          : "✗ 유효하지 않은 JSON Schema입니다"}
+                          ? "✓ Valid JSON Schema"
+                          : "✗ Invalid JSON Schema"}
                       </Text>
                     )}
                   </Box>
 
-                  {/* 저장 버튼 */}
+                  {/* Save button */}
                   <Button
                     size="sm"
                     colorScheme="blue"
@@ -518,7 +528,11 @@ export function DynamicTypeManager({
                     disabled={!isValid || !typeName.trim()}
                     w="100%"
                   >
-                    {isLoading ? "저장 중..." : editingConfig ? "수정" : "등록"}
+                    {isLoading
+                      ? "Saving..."
+                      : editingConfig
+                        ? "Update"
+                        : "Register"}
                   </Button>
                 </VStack>
               )}
