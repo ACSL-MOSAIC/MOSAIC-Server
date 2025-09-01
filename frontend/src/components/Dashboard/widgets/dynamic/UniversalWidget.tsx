@@ -47,6 +47,7 @@ ChartJS.register(
 )
 
 interface UniversalWidgetProps {
+  robotId: string
   config: UniversalWidgetConfig
   connections?: { [key: string]: boolean }
   onUpdateConfig?: (newConfig: UniversalWidgetConfig) => void
@@ -284,9 +285,8 @@ const EnhancedGaugeVisualization: React.FC<{
     Math.min(gaugeConfig.max || 100, numericValue),
   )
   const percentage =
-    (normalizedValue - (gaugeConfig.min || 0)) /
-    ((gaugeConfig.max || 100) - (gaugeConfig.min || 0)) /
-    100
+    (normalizedValue - (gaugeConfig.min || 0)) / (gaugeConfig.max || 100) -
+    (gaugeConfig.min || 0)
 
   // 색상 결정
   const getGaugeColors = () => {
@@ -548,6 +548,7 @@ const VisualizationRenderer: React.FC<{
 }
 
 export function UniversalWidget({
+  robotId,
   config,
   connections,
   onUpdateConfig,
@@ -565,13 +566,10 @@ export function UniversalWidget({
   useEffect(() => {
     const newStores = new Map<string, any>()
 
-    console.log("UniversalWidget - 스토어 초기화 시작:", config.dataSources)
-
     // 모든 스토어 가져오기
     const robotStores = readOnlyStoreManager.getReadOnlyStores(
       config.dataSources[0]?.robotId || "",
     )
-    console.log("UniversalWidget - 로봇 스토어들:", robotStores)
 
     config.dataSources.forEach((dataSource) => {
       // 스토어 심볼에서 데이터 타입 추출하여 매칭
@@ -583,15 +581,9 @@ export function UniversalWidget({
         },
       )
 
-      console.log(
-        `UniversalWidget - 데이터 타입: ${dataSource.dataType}, 매칭된 스토어:`,
-        matchingStore,
-      )
-
       if (matchingStore) {
         const [_, store] = matchingStore
         newStores.set(dataSource.dataType, store)
-        console.log(`UniversalWidget - 스토어 추가됨: ${dataSource.dataType}`)
       } else {
         console.warn(
           `UniversalWidget - 스토어를 찾을 수 없음: ${dataSource.dataType}`,
@@ -599,7 +591,6 @@ export function UniversalWidget({
       }
     })
 
-    console.log("UniversalWidget - 최종 스토어 맵:", newStores)
     setStores(newStores)
 
     // 초기 데이터 설정
@@ -608,14 +599,12 @@ export function UniversalWidget({
       const lastData = store.getLast?.()
       if (lastData) {
         initialData.set(dataType, lastData)
-        console.log(`UniversalWidget - 초기 데이터 설정: ${dataType}`, lastData)
       }
     })
 
     if (initialData.size > 0) {
       setData(initialData)
       setIsConnected(true)
-      console.log("UniversalWidget - 초기 데이터로 연결 상태 설정됨")
     }
   }, [config.dataSources, readOnlyStoreManager])
 
@@ -625,15 +614,10 @@ export function UniversalWidget({
 
     const unsubscribers: (() => void)[] = []
 
-    console.log("UniversalWidget - 데이터 구독 시작, 스토어 개수:", stores.size)
-
     stores.forEach((store, dataType) => {
-      console.log(`UniversalWidget - ${dataType} 스토어 구독 시작`)
-
       // 스토어가 유효한지 확인
       if (store && typeof store.subscribe === "function") {
         const unsubscribe = store.subscribe((newData: any) => {
-          console.log(`UniversalWidget - ${dataType} 데이터 수신:`, newData)
           setData((prev) => new Map(prev).set(dataType, newData))
           setDataHistory((prev) => {
             const history = prev.get(dataType) || []
@@ -652,7 +636,6 @@ export function UniversalWidget({
     })
 
     return () => {
-      console.log("UniversalWidget - 구독 해제")
       unsubscribers.forEach((unsubscribe) => unsubscribe())
     }
   }, [stores])
@@ -674,6 +657,7 @@ export function UniversalWidget({
   if (!isRobotConnected) {
     return (
       <WidgetFrame
+        robot_id={robotId}
         title={config.title}
         isConnected={false}
         footerMessage="Robot not connected"
@@ -695,6 +679,7 @@ export function UniversalWidget({
   if (!isConnected && !areStoresConnected) {
     return (
       <WidgetFrame
+        robot_id={robotId}
         title={config.title}
         isConnected={false}
         footerMessage="Waiting for data..."
@@ -719,24 +704,9 @@ export function UniversalWidget({
 
   // 레이아웃 렌더링
   const renderVisualizations = () => {
-    console.log("UniversalWidget - 시각화 렌더링 시작")
-    console.log(
-      "UniversalWidget - config.visualizations:",
-      config.visualizations,
-    )
-    console.log("UniversalWidget - data:", data)
-    console.log("UniversalWidget - dataHistory:", dataHistory)
-    console.log("UniversalWidget - stores:", stores)
-    console.log("UniversalWidget - isConnected:", isConnected)
-    console.log("UniversalWidget - areStoresConnected:", areStoresConnected)
-
     const vizComponents = config.visualizations
       .map((viz) => {
         const dataSource = config.dataSources[viz.dataSourceIndex]
-        console.log(`UniversalWidget - 시각화 ${viz.id}:`, {
-          viz: JSON.stringify(viz, null, 2),
-          dataSource: JSON.stringify(dataSource, null, 2),
-        })
 
         if (!dataSource) {
           console.log(
@@ -747,12 +717,8 @@ export function UniversalWidget({
 
         const vizData = data.get(dataSource.dataType) || {}
         const vizDataHistory = dataHistory.get(dataSource.dataType) || []
-        console.log("UniversalWidget - 시각화 데이터:", {
-          vizData: JSON.stringify(vizData, null, 2),
-          vizDataHistoryLength: vizDataHistory.length,
-        })
 
-        const component = (
+        return (
           <VisualizationRenderer
             key={viz.id}
             config={viz}
@@ -760,16 +726,8 @@ export function UniversalWidget({
             dataHistory={vizDataHistory}
           />
         )
-
-        console.log("UniversalWidget - 생성된 컴포넌트:", component)
-        return component
       })
       .filter(Boolean)
-
-    console.log("UniversalWidget - 레이아웃 렌더링:", {
-      layout: config.layout,
-      vizComponentsCount: vizComponents.length,
-    })
 
     if (vizComponents.length === 1) {
       // 단일 컴포넌트는 바로 반환 (부모 영역을 꽉 채움)
@@ -807,12 +765,13 @@ export function UniversalWidget({
   return (
     <WidgetFrame
       title={config.title}
+      robot_id={robotId}
       isConnected={isConnected}
       footerMessage={`Connected to ${config.dataSources.length} data source(s)`}
       onRemove={onRemove}
     >
       {/* 설정 버튼만 남김 */}
-      <Box display="flex" justifyContent="flex-end" alignItems="center" mb={2}>
+      <Box display="flex" justifyContent="flex-end" alignItems="center">
         <IconButton
           aria-label="설정"
           size="sm"
@@ -822,9 +781,7 @@ export function UniversalWidget({
           <FiSettings />
         </IconButton>
       </Box>
-      <Box p={2} h="100%">
-        {renderVisualizations()}
-      </Box>
+      <Box p={2}>{renderVisualizations()}</Box>
       {/* 설정 모달 */}
       {isConfigOpen && (
         <UniversalWidgetConfigurator

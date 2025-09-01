@@ -1,5 +1,6 @@
 import type { ParsedTurtlesimPosition } from "@/dashboard/parser/turtlesim-position"
 import type { TurtlesimPositionStore } from "@/dashboard/store/data-channel-store/readonly/turtlesim-position.store"
+import { useRobotMapping } from "@/hooks/useRobotMapping.ts"
 import { useEffect, useRef, useState } from "react"
 import { WidgetFrame } from "./WidgetFrame"
 
@@ -22,6 +23,8 @@ export function TurtlesimPositionWidget({
   const [velocity, setVelocity] = useState({ linear: 0, angular: 0 })
   const [lastPosition, setLastPosition] =
     useState<ParsedTurtlesimPosition | null>(null)
+
+  const { getRobotName } = useRobotMapping()
 
   useEffect(() => {
     const unsubscribe = store.subscribe((data: ParsedTurtlesimPosition) => {
@@ -213,12 +216,12 @@ export function TurtlesimPositionWidget({
         ctx.lineWidth = 3
         ctx.stroke()
 
-        // 로봇 ID 표시
+        // 로봇 이름 표시
         ctx.fillStyle = "#2d3748"
         ctx.font =
           'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
         ctx.textAlign = "center"
-        ctx.fillText(robotId.slice(0, 8), canvasX, canvasY - 20)
+        ctx.fillText(getRobotName(robotId), canvasX, canvasY - 20)
       }
 
       animationRef.current = requestAnimationFrame(animate)

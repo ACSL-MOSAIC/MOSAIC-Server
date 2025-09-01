@@ -1,15 +1,21 @@
 // Media type store factory mapping (same pattern as data channels)
 export const MEDIA_CHANNEL_CONFIG = {
-  turtlesim_video: {
-    type: "turtlesim_video",
+  video_stream: {
+    type: "video_stream",
     channelType: "readonly" as const,
-    defaultLabel: "turtlesim_video",
+    defaultLabel: "video_stream",
+  },
+  video_stream_v2: {
+    type: "video_stream_v2",
+    channelType: "readonly" as const,
+    defaultLabel: "video_stream_v2",
   },
 } as const
 
 // Media type symbol mapping (dynamically generated)
 export const MEDIA_TYPE_SYMBOLS = {
-  turtlesim_video: Symbol("turtlesim_video"),
+  video_stream: Symbol("video_stream"),
+  video_stream_v2: Symbol("video_stream_v2"),
 } as const
 
 // Utility functions (same pattern as data channels)

@@ -1,10 +1,10 @@
 import {
   type ParsedPointCloud2,
   parsePointCloud2,
-} from "../../../parser/go2-ouster-pointcloud"
+} from "../../../parser/lidar-pointcloud.ts"
 import { ReadOnlyStore } from "./read-only-store"
 
-export class Go2OusterPointCloudStore extends ReadOnlyStore<
+export class LidarPointCloudStore extends ReadOnlyStore<
   ParsedPointCloud2,
   ArrayBuffer
 > {

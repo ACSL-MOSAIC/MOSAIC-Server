@@ -1,6 +1,5 @@
 import { MediaChannelConfigUtils } from "@/rtc/config/webrtc-media-channel-config.ts"
-import { TurtlesimVideoStore } from "./turtlesim-video.store"
-import type { VideoStore } from "./video-store"
+import { VideoStore } from "./video-store"
 
 export class VideoStoreManager {
   private static instance: VideoStoreManager
@@ -151,11 +150,10 @@ export class VideoStoreManager {
       string,
       (robotId: string, channelLabel: string) => VideoStore
     > = {
-      turtlesim_video: (robotId: string, channelLabel: string) =>
-        new TurtlesimVideoStore(robotId, channelLabel),
-      // Other media types can be added here
-      // 'go2_camera': (robotId: string, channelLabel: string) => new Go2CameraStore(robotId, channelLabel),
-      // 'thermal_camera': (robotId: string, channelLabel: string) => new ThermalCameraStore(robotId, channelLabel),
+      video_stream: (robotId: string, channelLabel: string) =>
+        new VideoStore(robotId, channelLabel),
+      video_stream_v2: (robotId: string, channelLabel: string) =>
+        new VideoStore(robotId, channelLabel),
     }
 
     const storeFactory = storeFactories[mediaType]

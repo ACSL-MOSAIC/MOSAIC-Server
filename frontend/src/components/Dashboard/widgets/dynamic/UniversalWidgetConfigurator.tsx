@@ -54,11 +54,11 @@ function getFieldPathsFromSample(
     const path = prefix ? `${prefix}.${key}` : key
     if (typeof value === "object" && value !== null) {
       if (Array.isArray(value)) {
-        // 배열이면 첫 번째 요소만 예시로
+        // For arrays, use only the first element as example
         if (value.length > 0 && typeof value[0] === "object") {
           paths = paths.concat(getFieldPathsFromSample(value[0], `${path}[0]`))
         } else {
-          // 배열의 타입 추론
+          // Infer array type
           const arrType = value.length > 0 ? typeof value[0] : "any"
           paths.push({ path: `${path}[0]`, type: arrType })
         }
@@ -102,10 +102,10 @@ export function UniversalWidgetConfigurator({
   const connectedStores =
     readOnlyStoreManager.getConnectedReadOnlyStores(robotId)
 
-  // 스토어 정보를 담은 배열 생성 (심볼 -> 데이터 타입 매핑)
+  // Create array containing store information (symbol -> data type mapping)
   const storeInfo = Array.from(robotStores.entries()).map(([symbol, store]) => {
     const symbolStr = symbol.toString()
-    // 심볼에서 데이터 타입 추출 (예: Symbol(go2_low_state) -> go2_low_state)
+    // Extract data type from symbol (e.g., Symbol(go2_low_state) -> go2_low_state)
     const dataType = symbolStr.replace(/^Symbol\((.+)\)$/, "$1")
     const isConnected = connectedStores.includes(store)
 
@@ -119,10 +119,10 @@ export function UniversalWidgetConfigurator({
     }
   })
 
-  // 연결된 스토어만 필터링 (선택사항)
+  // Filter only connected stores (optional)
   const availableStores = storeInfo.filter((info) => info.isConnected)
 
-  // 데이터 소스 추가
+  // Add data source
   const addDataSource = () => {
     if (availableStores.length === 0) return
 
@@ -137,7 +137,7 @@ export function UniversalWidgetConfigurator({
     }))
   }
 
-  // 데이터 소스 제거
+  // Remove data source
   const removeDataSource = (index: number) => {
     setConfig((prev) => ({
       ...prev,
@@ -148,7 +148,7 @@ export function UniversalWidgetConfigurator({
     }))
   }
 
-  // 데이터 소스 변경
+  // Update data source
   const updateDataSource = (index: number, dataType: string) => {
     setConfig((prev) => ({
       ...prev,
@@ -158,7 +158,7 @@ export function UniversalWidgetConfigurator({
     }))
   }
 
-  // 시각화 추가
+  // Add visualization
   const addVisualization = (dataSourceIndex: number) => {
     const dataSource = config.dataSources[dataSourceIndex]
     if (!dataSource) return
@@ -179,7 +179,7 @@ export function UniversalWidgetConfigurator({
     }))
   }
 
-  // 시각화 제거
+  // Remove visualization
   const removeVisualization = (visualizationId: string) => {
     setConfig((prev) => ({
       ...prev,
@@ -189,7 +189,7 @@ export function UniversalWidgetConfigurator({
     }))
   }
 
-  // 시각화 업데이트
+  // Update visualization
   const updateVisualization = (
     visualizationId: string,
     updates: Partial<VisualizationConfig>,
@@ -202,24 +202,24 @@ export function UniversalWidgetConfigurator({
     }))
   }
 
-  // 설정 저장
+  // Save configuration
   const handleSave = () => {
     if (config.title.trim() === "") {
-      alert("위젯 제목을 입력해주세요.")
+      alert("Please enter a widget title.")
       return
     }
 
     if (config.dataSources.length === 0) {
-      alert("최소 하나의 데이터 소스를 추가해주세요.")
+      alert("Please add at least one data source.")
       return
     }
 
     if (config.visualizations.length === 0) {
-      alert("최소 하나의 시각화를 추가해주세요.")
+      alert("Please add at least one visualization.")
       return
     }
 
-    // fieldPath 타입 정리
+    // Clean up fieldPath types
     const newConfig = {
       ...config,
       visualizations: config.visualizations.map((viz) => ({
@@ -241,17 +241,17 @@ export function UniversalWidgetConfigurator({
     onClose()
   }
 
-  // 필드 경로 자동 추출용 상태
+  // State for automatic field path extraction
   const [fieldPathOptions, setFieldPathOptions] = useState<
     { path: string; type: string }[]
   >([])
 
-  // 데이터 타입 변경 시 필드 경로 자동 추출
+  // Auto-extract field paths when data type changes
   useEffect(() => {
     if (config.dataSources.length === 0) return
     const dataSource = config.dataSources[config.dataSources.length - 1]
 
-    // 스토어 정보에서 해당 데이터 타입의 스토어 찾기
+    // Find store of corresponding data type from store information
     const selectedStoreInfo = availableStores.find(
       (info) => info.dataType === dataSource.dataType,
     )
@@ -264,7 +264,7 @@ export function UniversalWidgetConfigurator({
     }
   }, [config.dataSources, availableStores])
 
-  // 시각화 타입에 따라 필드 경로 옵션 필터링
+  // Filter field path options based on visualization type
   const getFilteredFieldPathOptions = (vizType: string) => {
     switch (vizType) {
       case "number":
@@ -280,7 +280,7 @@ export function UniversalWidgetConfigurator({
     }
   }
 
-  // yAxes, xAxis 기본값 보장
+  // Ensure default values for yAxes, xAxis
   const getYAxisArray = (
     chartConfig: ChartConfig | undefined,
     fallbackField: string,
@@ -298,7 +298,7 @@ export function UniversalWidgetConfigurator({
     return { fieldPath: "timestamp" }
   }
 
-  // chartConfig 업데이트 시 항상 xAxis, yAxes 기본값 보장
+  // Always ensure default values for xAxis, yAxes when updating chartConfig
   const updateChartConfig = (
     oldConfig: ChartConfig | undefined,
     updates: Partial<ChartConfig>,
@@ -333,12 +333,14 @@ export function UniversalWidgetConfigurator({
         <DialogCloseTrigger />
         <DialogHeader>
           <DialogTitle>
-            {initialConfig ? "범용 위젯 편집" : "범용 위젯 생성"}
+            {initialConfig
+              ? "Edit Universal Widget"
+              : "Create Universal Widget"}
           </DialogTitle>
         </DialogHeader>
         <DialogBody>
           <VStack gap={4} align="stretch">
-            {/* 기본 설정 */}
+            {/* Basic Settings */}
             <Fieldset.Root
               mb={4}
               style={{
@@ -348,25 +350,20 @@ export function UniversalWidgetConfigurator({
                 border: "1px solid #e2e8f0",
               }}
             >
-              <Fieldset.Legend>
-                <Text fontWeight="bold" fontSize="md">
-                  기본 설정
-                </Text>
-              </Fieldset.Legend>
               <Fieldset.Content>
                 <Field.Root>
-                  <Field.Label>위젯 제목</Field.Label>
+                  <Field.Label>Widget Title</Field.Label>
                   <Input
                     value={config.title}
                     onChange={(e) =>
                       setConfig((prev) => ({ ...prev, title: e.target.value }))
                     }
-                    placeholder="위젯 제목을 입력하세요"
+                    placeholder="Enter widget title"
                   />
                 </Field.Root>
 
                 <Field.Root mt={3}>
-                  <Field.Label>레이아웃</Field.Label>
+                  <Field.Label>Layout</Field.Label>
                   <select
                     value={config.layout}
                     onChange={(e) =>
@@ -382,15 +379,15 @@ export function UniversalWidgetConfigurator({
                       width: "100%",
                     }}
                   >
-                    <option value="grid">그리드</option>
-                    <option value="vertical">세로</option>
-                    <option value="horizontal">가로</option>
+                    <option value="grid">Grid</option>
+                    <option value="vertical">Vertical</option>
+                    <option value="horizontal">Horizontal</option>
                   </select>
                 </Field.Root>
               </Fieldset.Content>
             </Fieldset.Root>
             <Box as="hr" my={2} borderColor="#e2e8f0" />
-            {/* 데이터 소스 설정 */}
+            {/* Data Source Settings */}
             <Fieldset.Root
               mb={4}
               style={{
@@ -402,19 +399,19 @@ export function UniversalWidgetConfigurator({
             >
               <Fieldset.Legend>
                 <Text fontWeight="bold" fontSize="md">
-                  데이터 소스
+                  Data Sources
                 </Text>
               </Fieldset.Legend>
               <Fieldset.Content>
                 <HStack justify="space-between" mb={2}>
-                  <Text fontWeight="bold">데이터 소스</Text>
+                  <Text fontWeight="bold">Data Sources</Text>
                   <Button
                     size="sm"
                     onClick={addDataSource}
                     disabled={availableStores.length === 0}
                   >
                     <AddIcon />
-                    데이터 소스 추가
+                    Add Data Source
                   </Button>
                 </HStack>
 
@@ -427,9 +424,9 @@ export function UniversalWidgetConfigurator({
                     borderRadius="md"
                     border="1px solid #e2e8f0"
                   >
-                    <Text fontSize="sm">연결된 스토어가 없습니다.</Text>
+                    <Text fontSize="sm">No connected stores available.</Text>
                     <Text fontSize="xs" mt={1}>
-                      로봇과 연결 후 스토어를 사용할 수 있습니다.
+                      Stores will be available after connecting to a robot.
                     </Text>
                   </Box>
                 ) : (
@@ -451,10 +448,10 @@ export function UniversalWidgetConfigurator({
                         mb={2}
                       >
                         <Text fontSize="sm" fontWeight="bold">
-                          데이터 소스 {index + 1}
+                          Data Source {index + 1}
                         </Text>
                         <IconButton
-                          aria-label="데이터 소스 제거"
+                          aria-label="Remove Data Source"
                           size="xs"
                           variant="ghost"
                           onClick={() => removeDataSource(index)}
@@ -464,7 +461,7 @@ export function UniversalWidgetConfigurator({
                       </HStack>
 
                       <Field.Root>
-                        <Field.Label fontSize="sm">스토어 선택</Field.Label>
+                        <Field.Label fontSize="sm">Select Store</Field.Label>
                         <select
                           value={dataSource.dataType}
                           onChange={(e) =>
@@ -484,13 +481,13 @@ export function UniversalWidgetConfigurator({
                               value={storeInfo.dataType}
                             >
                               {storeInfo.storeName} ({storeInfo.dataType}) -{" "}
-                              {storeInfo.isConnected ? "연결됨" : "연결 안됨"}
+                              {storeInfo.isConnected ? "Connected" : "Disconnected"}
                             </option>
                           ))}
                         </select>
                       </Field.Root>
 
-                      {/* 선택된 스토어의 샘플 데이터 미리보기 */}
+                      {/* Sample data preview for selected store */}
                       {(() => {
                         const selectedStoreInfo = availableStores.find(
                           (info) => info.dataType === dataSource.dataType,
@@ -499,7 +496,7 @@ export function UniversalWidgetConfigurator({
                           return (
                             <Field.Root>
                               <Field.Label fontSize="sm">
-                                샘플 데이터
+                                Sample Data
                               </Field.Label>
                               <Box
                                 p={2}
@@ -530,7 +527,7 @@ export function UniversalWidgetConfigurator({
               </Fieldset.Content>
             </Fieldset.Root>
             <Box as="hr" my={2} borderColor="#e2e8f0" />
-            {/* 시각화 설정 */}
+            {/* Visualization Settings */}
             <Fieldset.Root
               mb={4}
               style={{
@@ -542,7 +539,7 @@ export function UniversalWidgetConfigurator({
             >
               <Fieldset.Legend>
                 <Text fontWeight="bold" fontSize="md">
-                  시각화
+                  Visualizations
                 </Text>
               </Fieldset.Legend>
               <Fieldset.Content>
@@ -550,14 +547,14 @@ export function UniversalWidgetConfigurator({
                   <Box key={dataSourceIndex} mb={4}>
                     <HStack justify="space-between" mb={2}>
                       <Text fontSize="sm" fontWeight="bold">
-                        {dataSource.dataType} 시각화
+                        {dataSource.dataType} Visualizations
                       </Text>
                       <Button
                         size="sm"
                         onClick={() => addVisualization(dataSourceIndex)}
                       >
                         <AddIcon />
-                        시각화 추가
+                        Add Visualization
                       </Button>
                     </HStack>
 
@@ -581,10 +578,10 @@ export function UniversalWidgetConfigurator({
                             mb={2}
                           >
                             <Text fontSize="sm" fontWeight="bold">
-                              시각화: {visualization.title}
+                              Visualization: {visualization.title}
                             </Text>
                             <IconButton
-                              aria-label="시각화 제거"
+                              aria-label="Remove Visualization"
                               size="xs"
                               variant="ghost"
                               onClick={() =>
@@ -597,7 +594,7 @@ export function UniversalWidgetConfigurator({
 
                           <VStack gap={2} align="stretch">
                             <Field.Root>
-                              <Field.Label>제목</Field.Label>
+                              <Field.Label>Title</Field.Label>
                               <Input
                                 size="sm"
                                 value={visualization.title}
@@ -670,7 +667,7 @@ export function UniversalWidgetConfigurator({
                             )}
 
                             <Field.Root>
-                              <Field.Label>데이터 필드 경로</Field.Label>
+                              <Field.Label>Data Field Path</Field.Label>
                               <Box
                                 display="flex"
                                 flexDirection="column"
@@ -709,7 +706,7 @@ export function UniversalWidgetConfigurator({
                                               },
                                             )
                                           }}
-                                          placeholder="필드 경로"
+                                          placeholder="Field path"
                                           flex="1"
                                         />
                                         {getFilteredFieldPathOptions(
@@ -732,7 +729,9 @@ export function UniversalWidgetConfigurator({
                                             }}
                                             style={{ minWidth: 120 }}
                                           >
-                                            <option value="">필드 선택</option>
+                                            <option value="">
+                                              Select field
+                                            </option>
                                             {getFilteredFieldPathOptions(
                                               visualization.type,
                                             ).map((opt) => (
@@ -792,7 +791,7 @@ export function UniversalWidgetConfigurator({
                                         })
                                       }}
                                     >
-                                      + 필드 추가
+                                      + Add Field
                                     </Button>
                                   </>
                                 ) : (
@@ -819,7 +818,7 @@ export function UniversalWidgetConfigurator({
                                           },
                                         })
                                       }
-                                      placeholder="예: motor_state[0].q, power_v"
+                                      placeholder="e.g.: motor_state[0].q, power_v"
                                       flex="1"
                                     />
                                     {getFilteredFieldPathOptions(
@@ -848,7 +847,7 @@ export function UniversalWidgetConfigurator({
                                         }
                                         style={{ minWidth: 120 }}
                                       >
-                                        <option value="">필드 선택</option>
+                                        <option value="">Select Field</option>
                                         {getFilteredFieldPathOptions(
                                           visualization.type,
                                         ).map((opt) => (
@@ -867,7 +866,7 @@ export function UniversalWidgetConfigurator({
                             </Field.Root>
 
                             <Field.Root>
-                              <Field.Label>라벨</Field.Label>
+                              <Field.Label>Label</Field.Label>
                               <Input
                                 size="sm"
                                 value={visualization.dataMapping.label || ""}
@@ -879,12 +878,12 @@ export function UniversalWidgetConfigurator({
                                     },
                                   })
                                 }
-                                placeholder="표시될 라벨"
+                                placeholder="Label to display"
                               />
                             </Field.Root>
 
                             <Field.Root>
-                              <Field.Label>단위</Field.Label>
+                              <Field.Label>Unit</Field.Label>
                               <Input
                                 size="sm"
                                 value={visualization.dataMapping.unit || ""}
@@ -896,11 +895,11 @@ export function UniversalWidgetConfigurator({
                                     },
                                   })
                                 }
-                                placeholder="예: V, A, rad/s"
+                                placeholder="e.g.: V, A, rad/s"
                               />
                             </Field.Root>
 
-                            {/* 차트 전용 설정 */}
+                            {/* Chart-specific settings */}
                             {(visualization.type === "lineChart" ||
                               visualization.type === "barChart" ||
                               visualization.type === "scatterChart" ||
@@ -1222,12 +1221,12 @@ export function UniversalWidgetConfigurator({
                               </>
                             )}
 
-                            {/* 게이지 전용 설정 */}
+                            {/* Gauge-specific settings */}
                             {visualization.type === "gauge" && (
                               <>
                                 <Field.Root>
                                   <Field.Label fontSize="sm">
-                                    최소값
+                                    Minimum Value
                                   </Field.Label>
                                   <Input
                                     size="sm"
@@ -1249,7 +1248,7 @@ export function UniversalWidgetConfigurator({
 
                                 <Field.Root>
                                   <Field.Label fontSize="sm">
-                                    최대값
+                                    Maximum Value
                                   </Field.Label>
                                   <Input
                                     size="sm"
@@ -1273,7 +1272,7 @@ export function UniversalWidgetConfigurator({
 
                                 <Field.Root>
                                   <Field.Label fontSize="sm">
-                                    게이지 크기
+                                    Gauge Size
                                   </Field.Label>
                                   <select
                                     value={
@@ -1296,9 +1295,9 @@ export function UniversalWidgetConfigurator({
                                       fontSize: "14px",
                                     }}
                                   >
-                                    <option value="small">작음</option>
-                                    <option value="medium">보통</option>
-                                    <option value="large">큼</option>
+                                    <option value="small">Small</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="large">Large</option>
                                   </select>
                                 </Field.Root>
                               </>
@@ -1315,11 +1314,11 @@ export function UniversalWidgetConfigurator({
         <DialogFooter gap={2}>
           <DialogActionTrigger asChild>
             <Button variant="subtle" colorPalette="gray" onClick={onClose}>
-              취소
+              Cancel
             </Button>
           </DialogActionTrigger>
           <Button variant="solid" colorPalette="blue" onClick={handleSave}>
-            저장
+            Save
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -7,7 +7,7 @@ export interface WidgetFrameProps {
   title: string
   robot_id?: string
   isConnected: boolean
-  children: React.ReactNode
+  children?: React.ReactNode
   footerInfo?: Array<{
     label: string
     value: string | React.ReactNode

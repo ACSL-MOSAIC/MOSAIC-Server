@@ -1,12 +1,12 @@
 import {
-  type ParsedTurtlesimRemoteControl,
-  parseTurtlesimRemoteControl,
-} from "../../../parser/turtlesim-remote-control"
+  type ParsedRemoteControl,
+  parseRemoteControl,
+} from "../../../parser/remote-control-pad.ts"
 import { WriteOnlyStore } from "./write-only-store"
 
-export class TurtlesimRemoteControlStore extends WriteOnlyStore<ParsedTurtlesimRemoteControl> {
+export class RemoteControlPadStore extends WriteOnlyStore<ParsedRemoteControl> {
   constructor(robotId: string, maxSize = 100) {
-    super(robotId, maxSize, parseTurtlesimRemoteControl)
+    super(robotId, maxSize, parseRemoteControl)
   }
 
   // Remote control command send method

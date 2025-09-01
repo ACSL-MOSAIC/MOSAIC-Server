@@ -1,26 +1,27 @@
+import { WidgetFrame } from "@/components/Dashboard/widgets/WidgetFrame.tsx"
 import { GO2_LOW_STATE_TYPE } from "@/dashboard/parser/go2-low-state.ts"
 import {
-  GO2_OUSTER_POINTCLOUD2_TYPE,
+  LIDAR_POINTCLOUD2_TYPE,
   type ParsedPointCloud2,
-} from "@/dashboard/parser/go2-ouster-pointcloud.ts"
+} from "@/dashboard/parser/lidar-pointcloud.ts"
+import { REMOTE_CONTROL_PAD_TYPE } from "@/dashboard/parser/remote-control-pad.ts"
 import { TURTLESIM_POSITION_TYPE } from "@/dashboard/parser/turtlesim-position.ts"
-import { TURTLESIM_REMOTE_CONTROL_TYPE } from "@/dashboard/parser/turtlesim-remote-control.ts"
 import { VIDEO_RECORDING_TYPE } from "@/dashboard/parser/video-recorder.ts"
 import { Go2LowStateStore } from "@/dashboard/store/data-channel-store/readonly/go2-low-state.store.ts"
-import { Go2OusterPointCloudStore } from "@/dashboard/store/data-channel-store/readonly/go2-ouster-pointcloud.store.ts"
+import { LidarPointCloudStore } from "@/dashboard/store/data-channel-store/readonly/lidar-point-cloud.store.ts"
 import { ReadOnlyStoreManager } from "@/dashboard/store/data-channel-store/readonly/read-only-store-manager.ts"
 import { TurtlesimPositionStore } from "@/dashboard/store/data-channel-store/readonly/turtlesim-position.store.ts"
-import { TurtlesimRemoteControlStore } from "@/dashboard/store/data-channel-store/writeonly/turtlesim-remote-control.store.ts"
+import { RemoteControlPadStore } from "@/dashboard/store/data-channel-store/writeonly/remote-control-pad.store.ts"
 import { VideoRecorderStore } from "@/dashboard/store/data-channel-store/writeonly/video-recorder.store.ts"
 import { WriteOnlyStoreManager } from "@/dashboard/store/data-channel-store/writeonly/write-only-store-manager.ts"
-import type { TurtlesimVideoStore } from "@/dashboard/store/media-channel-store/turtlesim-video.store.ts"
 import { VideoStoreManager } from "@/dashboard/store/media-channel-store/video-store-manager.ts"
+import type { VideoStore } from "@/dashboard/store/media-channel-store/video-store.ts"
 import { Go2LowStateWidget } from "./Go2LowStateWidget"
-import { Go2OusterPointCloudWidget } from "./Go2OusterPointCloudWidget"
+import { LiDARPointCloud22DWidget } from "./LiDARPointCloud22DWidget.tsx"
+import { RemoteControlPadWidget } from "./RemoteControlPadWidget.tsx"
 import { TurtlesimPositionWidget } from "./TurtlesimPositionWidget"
-import { TurtlesimRemoteControlWidget } from "./TurtlesimRemoteControlWidget"
-import { TurtlesimVideoWidget } from "./TurtlesimVideoWidget"
 import { VideoRecordingWidget } from "./VideoRecorderWidget"
+import { VideoStreamWidget } from "./VideoStreamWidget.tsx"
 import { UniversalWidget } from "./dynamic/UniversalWidget"
 import type { UniversalWidgetConfig } from "./dynamic/universal-widget-config"
 import type { WidgetProps } from "./types"
@@ -66,20 +67,20 @@ export function WidgetFactory({
       )
     }
 
-    case "go2_ouster_pointcloud": {
+    case "lidar_pointcloud": {
       // Dynamic store creation
       const pointCloudStore = readOnlyStoreManager.createStoreIfNotExists<
         ParsedPointCloud2,
         ArrayBuffer
       >(
         robotId,
-        GO2_OUSTER_POINTCLOUD2_TYPE,
-        (robotId) => new Go2OusterPointCloudStore(robotId),
+        LIDAR_POINTCLOUD2_TYPE,
+        (robotId) => new LidarPointCloudStore(robotId),
       )
       return (
-        <Go2OusterPointCloudWidget
+        <LiDARPointCloud22DWidget
           robotId={robotId}
-          store={pointCloudStore as Go2OusterPointCloudStore}
+          store={pointCloudStore as LidarPointCloudStore}
           dataType={dataType}
           onRemove={onRemove}
         />
@@ -103,32 +104,47 @@ export function WidgetFactory({
       )
     }
 
-    case "turtlesim_remote_control": {
+    case "remote_control_pad": {
       // Dynamic store creation
       const remoteControlStore = writeOnlyStoreManager.createStoreIfNotExists(
         robotId,
-        TURTLESIM_REMOTE_CONTROL_TYPE,
-        (robotId) => new TurtlesimRemoteControlStore(robotId),
+        REMOTE_CONTROL_PAD_TYPE,
+        (robotId) => new RemoteControlPadStore(robotId),
       )
       return (
-        <TurtlesimRemoteControlWidget
+        <RemoteControlPadWidget
           robotId={robotId}
-          store={remoteControlStore as TurtlesimRemoteControlStore}
+          store={remoteControlStore as RemoteControlPadStore}
           dataType={dataType}
           onRemove={onRemove}
         />
       )
     }
 
-    case "turtlesim_video": {
+    case "video_stream": {
       const videoStore = videoStoreManager.createVideoStoreByMediaTypeAuto(
         robotId,
-        "turtlesim_video",
+        "video_stream",
       )
       return (
-        <TurtlesimVideoWidget
+        <VideoStreamWidget
           robotId={robotId}
-          store={videoStore as TurtlesimVideoStore}
+          store={videoStore as VideoStore}
+          dataType={dataType}
+          onRemove={onRemove}
+        />
+      )
+    }
+
+    case "video_stream_v2": {
+      const videoStore = videoStoreManager.createVideoStoreByMediaTypeAuto(
+        robotId,
+        "video_stream_v2",
+      )
+      return (
+        <VideoStreamWidget
+          robotId={robotId}
+          store={videoStore as VideoStore}
           dataType={dataType}
           onRemove={onRemove}
         />
@@ -142,6 +158,7 @@ export function WidgetFactory({
       }
       return (
         <UniversalWidget
+          robotId={robotId}
           config={config}
           connections={connections}
           onUpdateConfig={onUpdateConfig}
@@ -168,7 +185,13 @@ export function WidgetFactory({
     }
 
     default:
-      console.log("Unknown widget type:", type)
-      return <div>Unknown widget type: {type}</div>
+      return (
+        <WidgetFrame
+          title={`Unknown: ${type}`}
+          robot_id={robotId}
+          isConnected={false}
+          onRemove={onRemove}
+        />
+      )
   }
 }

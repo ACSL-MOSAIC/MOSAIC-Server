@@ -35,7 +35,7 @@ export function AddWidgetModal({
   robots,
 }: AddWidgetModalProps) {
   const [selectedRobotId, setSelectedRobotId] = useState<string>("")
-  const [selectedType, setSelectedType] = useState<string>("go2_low_state")
+  const [selectedType, setSelectedType] = useState<string>("universal")
   const [showUniversalConfig, setShowUniversalConfig] = useState(false)
   const { getRobotName } = useRobotMapping()
 
@@ -48,13 +48,14 @@ export function AddWidgetModal({
 
   const widgetTypeCollection = createListCollection({
     items: [
-      { label: "Go2 Low State", value: "go2_low_state" },
-      { label: "Go2 Ouster PointCloud", value: "go2_ouster_pointcloud" },
-      { label: "Turtlesim Position", value: "turtlesim_position" },
-      { label: "Turtlesim Remote Control", value: "turtlesim_remote_control" },
-      { label: "Turtlesim Video", value: "turtlesim_video" },
       { label: "Universal Widget", value: "universal" },
+      { label: "Video Stream", value: "video_stream" },
+      { label: "Video Stream (Additional)", value: "video_stream_v2" },
       { label: "Video Recorder", value: "video_recorder" },
+      { label: "LiDAR PointCloud", value: "lidar_pointcloud" },
+      { label: "Remote Control Pad", value: "remote_control_pad" },
+      { label: "Turtlesim Position", value: "turtlesim_position" },
+      { label: "Go2 Low State", value: "go2_low_state" },
     ],
   })
 

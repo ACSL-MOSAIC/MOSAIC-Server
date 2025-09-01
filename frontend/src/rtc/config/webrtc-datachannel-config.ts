@@ -1,7 +1,7 @@
 import { GO2_LOW_STATE_TYPE } from "@/dashboard/parser/go2-low-state"
-import { GO2_OUSTER_POINTCLOUD2_TYPE } from "@/dashboard/parser/go2-ouster-pointcloud"
+import { LIDAR_POINTCLOUD2_TYPE } from "@/dashboard/parser/lidar-pointcloud.ts"
+import { REMOTE_CONTROL_PAD_TYPE } from "@/dashboard/parser/remote-control-pad.ts"
 import { TURTLESIM_POSITION_TYPE } from "@/dashboard/parser/turtlesim-position"
-import { TURTLESIM_REMOTE_CONTROL_TYPE } from "@/dashboard/parser/turtlesim-remote-control"
 import { VIDEO_RECORDING_TYPE } from "@/dashboard/parser/video-recorder.ts"
 
 // Store factory mapping by data type
@@ -18,40 +18,40 @@ export const DATA_CHANNEL_CONFIG = {
     defaultLabel: "go2_low_state_data_channel",
     description: "Go2 Robot State Data Channel",
   },
-  go2_ouster_pointcloud_1: {
-    type: "go2_ouster_pointcloud",
+  lidar_pointcloud_1: {
+    type: "lidar_pointcloud",
     channelType: "readonly" as const,
-    defaultLabel: "go2_ouster_pointcloud_1",
-    description: "Go2 Ouster Point Cloud Data Channel 1",
+    defaultLabel: "lidar_pointcloud_1",
+    description: "LiDAR Point Cloud Data Channel 1",
   },
-  go2_ouster_pointcloud_2: {
-    type: "go2_ouster_pointcloud",
+  lidar_pointcloud_2: {
+    type: "lidar_pointcloud",
     channelType: "readonly" as const,
-    defaultLabel: "go2_ouster_pointcloud_2",
-    description: "Go2 Ouster Point Cloud Data Channel 2",
+    defaultLabel: "lidar_pointcloud_2",
+    description: "LiDAR Point Cloud Data Channel 2",
   },
-  go2_ouster_pointcloud_3: {
-    type: "go2_ouster_pointcloud",
+  lidar_pointcloud_3: {
+    type: "lidar_pointcloud",
     channelType: "readonly" as const,
-    defaultLabel: "go2_ouster_pointcloud_3",
-    description: "Go2 Ouster Point Cloud Data Channel 3",
+    defaultLabel: "lidar_pointcloud_3",
+    description: "LiDAR Point Cloud Data Channel 3",
   },
-  go2_ouster_pointcloud_4: {
-    type: "go2_ouster_pointcloud",
+  lidar_pointcloud_4: {
+    type: "lidar_pointcloud",
     channelType: "readonly" as const,
-    defaultLabel: "go2_ouster_pointcloud_4",
-    description: "Go2 Ouster Point Cloud Data Channel 4",
+    defaultLabel: "lidar_pointcloud_4",
+    description: "LiDAR Point Cloud Data Channel 4",
   },
-  go2_ouster_pointcloud_5: {
-    type: "go2_ouster_pointcloud",
+  lidar_pointcloud_5: {
+    type: "lidar_pointcloud",
     channelType: "readonly" as const,
-    defaultLabel: "go2_ouster_pointcloud_5",
-    description: "Go2 Ouster Point Cloud Data Channel 5",
+    defaultLabel: "lidar_pointcloud_5",
+    description: "LiDAR Point Cloud Data Channel 5",
   },
-  turtlesim_remote_control: {
-    type: "turtlesim_remote_control",
+  remote_control_pad: {
+    type: "remote_control_pad",
     channelType: "writeonly" as const,
-    defaultLabel: "remote_control_channel",
+    defaultLabel: "remote_control_pad_channel",
     description: "Turtlesim Remote Control Command Data Channel",
   },
   video_recorder: {
@@ -77,39 +77,39 @@ export const DEFAULT_DATA_CHANNELS = [
     options: undefined,
   },
   {
-    label: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_1.defaultLabel,
-    dataType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_1.type,
-    channelType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_1.channelType,
+    label: DATA_CHANNEL_CONFIG.lidar_pointcloud_1.defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG.lidar_pointcloud_1.type,
+    channelType: DATA_CHANNEL_CONFIG.lidar_pointcloud_1.channelType,
     options: undefined,
   },
   {
-    label: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_2.defaultLabel,
-    dataType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_2.type,
-    channelType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_2.channelType,
+    label: DATA_CHANNEL_CONFIG.lidar_pointcloud_2.defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG.lidar_pointcloud_2.type,
+    channelType: DATA_CHANNEL_CONFIG.lidar_pointcloud_2.channelType,
     options: undefined,
   },
   {
-    label: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_3.defaultLabel,
-    dataType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_3.type,
-    channelType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_3.channelType,
+    label: DATA_CHANNEL_CONFIG.lidar_pointcloud_3.defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG.lidar_pointcloud_3.type,
+    channelType: DATA_CHANNEL_CONFIG.lidar_pointcloud_3.channelType,
     options: undefined,
   },
   {
-    label: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_4.defaultLabel,
-    dataType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_4.type,
-    channelType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_4.channelType,
+    label: DATA_CHANNEL_CONFIG.lidar_pointcloud_4.defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG.lidar_pointcloud_4.type,
+    channelType: DATA_CHANNEL_CONFIG.lidar_pointcloud_4.channelType,
     options: undefined,
   },
   {
-    label: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_5.defaultLabel,
-    dataType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_5.type,
-    channelType: DATA_CHANNEL_CONFIG.go2_ouster_pointcloud_5.channelType,
+    label: DATA_CHANNEL_CONFIG.lidar_pointcloud_5.defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG.lidar_pointcloud_5.type,
+    channelType: DATA_CHANNEL_CONFIG.lidar_pointcloud_5.channelType,
     options: undefined,
   },
   {
-    label: DATA_CHANNEL_CONFIG.turtlesim_remote_control.defaultLabel,
-    dataType: DATA_CHANNEL_CONFIG.turtlesim_remote_control.type,
-    channelType: DATA_CHANNEL_CONFIG.turtlesim_remote_control.channelType,
+    label: DATA_CHANNEL_CONFIG.remote_control_pad.defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG.remote_control_pad.type,
+    channelType: DATA_CHANNEL_CONFIG.remote_control_pad.channelType,
     options: undefined,
   },
   {
@@ -124,8 +124,8 @@ export const DEFAULT_DATA_CHANNELS = [
 export const DATA_TYPE_SYMBOLS = {
   turtlesim_position: TURTLESIM_POSITION_TYPE,
   go2_low_state: GO2_LOW_STATE_TYPE,
-  go2_ouster_pointcloud: GO2_OUSTER_POINTCLOUD2_TYPE,
-  turtlesim_remote_control: TURTLESIM_REMOTE_CONTROL_TYPE,
+  lidar_pointcloud: LIDAR_POINTCLOUD2_TYPE,
+  remote_control_pad: REMOTE_CONTROL_PAD_TYPE,
   video_recorder: VIDEO_RECORDING_TYPE,
 } as const
 
