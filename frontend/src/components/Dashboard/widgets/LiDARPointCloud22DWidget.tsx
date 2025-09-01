@@ -1,29 +1,28 @@
-import type { ParsedPointCloud2 } from "@/dashboard/parser/go2-ouster-pointcloud.ts"
-import type { Go2OusterPointCloudStore } from "@/dashboard/store/data-channel-store/readonly/go2-ouster-pointcloud.store.ts"
+import type { ParsedPointCloud2 } from "@/dashboard/parser/lidar-pointcloud.ts"
+import type { LidarPointCloudStore } from "@/dashboard/store/data-channel-store/readonly/lidar-point-cloud.store.ts"
 import { Box, Flex } from "@chakra-ui/react"
 import { useEffect, useRef, useState } from "react"
 import { WidgetFrame } from "./WidgetFrame"
 import type { WidgetProps } from "./types"
 
-export interface Go2OusterPointCloudWidgetProps extends WidgetProps {
-  store: Go2OusterPointCloudStore
+export interface LiDARPointCloud22DWidgetProps extends WidgetProps {
+  store: LidarPointCloudStore
 }
 
-export function Go2OusterPointCloudWidget({
+export function LiDARPointCloud22DWidget({
   robotId,
   store,
   dataType,
   onRemove,
-}: Go2OusterPointCloudWidgetProps) {
+}: LiDARPointCloud22DWidgetProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isConnected, setIsConnected] = useState(false)
-  const [pointCount, setPointCount] = useState(0)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
 
   useEffect(() => {
-    console.log("Go2OusterPointCloudWidget 마운트:", {
+    console.log("LiDARPointCloud22DWidget 마운트:", {
       robotId,
       dataType,
       store,
@@ -94,7 +93,6 @@ export function Go2OusterPointCloudWidget({
           intensityMap: new Array(data.width || 0).fill(0),
         }))
 
-        let processedPoints = 0
         let errorPoints = 0
 
         // 각 포인트의 데이터 처리
@@ -125,7 +123,7 @@ export function Go2OusterPointCloudWidget({
             // 이미지 좌표로 매핑 (채널별로 독립적으로 처리)
             const channel = Math.floor(i / (data.width || 1)) // 현재 채널
             const u = Math.floor(
-              ((azimuth + Math.PI) / (2 * Math.PI)) * (data.width || 0),
+              ((-azimuth + Math.PI) / (2 * Math.PI)) * (data.width || 0),
             )
 
             // 범위 체크
@@ -136,14 +134,10 @@ export function Go2OusterPointCloudWidget({
                 channelMaps[channel].intensityMap[u] = intensity
               }
             }
-
-            processedPoints++
           } catch (error) {
             errorPoints++
           }
         }
-
-        setPointCount(processedPoints)
 
         // 각 채널별 최대 거리 찾기
         const maxDistances = channelMaps.map(
@@ -243,15 +237,7 @@ export function Go2OusterPointCloudWidget({
   const footerInfo = [
     {
       label: "Points",
-      value: pointCount.toLocaleString(),
-    },
-    {
-      label: "Dimensions",
-      value: `${dimensions.width} × ${dimensions.height}`,
-    },
-    {
-      label: "Data Type",
-      value: (dataType || "unknown").toUpperCase(),
+      value: `${dimensions.width} × ${dimensions.height} = ${dimensions.width * dimensions.height}`,
     },
     ...(lastUpdate
       ? [
@@ -265,7 +251,7 @@ export function Go2OusterPointCloudWidget({
 
   return (
     <WidgetFrame
-      title="Go2 Ouster PointCloud"
+      title="LiDAR PointCloud to 2D"
       robot_id={robotId}
       isConnected={isConnected && store.getChannelInfo().state === "open"}
       footerInfo={footerInfo}
@@ -294,11 +280,56 @@ export function Go2OusterPointCloudWidget({
           height="100%"
           position="relative"
           display="flex"
+          flexDirection="column"
           justifyContent="center"
           alignItems="center"
           bg="black"
           borderRadius="md"
         >
+          {/* Angle indicators */}
+          <Box
+            position="relative"
+            width="100%"
+            height="20px"
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+            px={2}
+            mb={1}
+          >
+            <Box fontSize="10px" color="gray.300" position="absolute" left="2">
+              -180°
+            </Box>
+            <Box
+              fontSize="10px"
+              color="gray.300"
+              position="absolute"
+              left="25%"
+            >
+              -90°
+            </Box>
+            <Box
+              fontSize="10px"
+              color="gray.300"
+              position="absolute"
+              left="50%"
+              transform="translateX(-50%)"
+            >
+              0°
+            </Box>
+            <Box
+              fontSize="10px"
+              color="gray.300"
+              position="absolute"
+              right="25%"
+            >
+              90°
+            </Box>
+            <Box fontSize="10px" color="gray.300" position="absolute" right="2">
+              180°
+            </Box>
+          </Box>
+
           <canvas
             ref={canvasRef}
             style={{

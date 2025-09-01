@@ -10,14 +10,14 @@ import type React from "react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { WidgetFrame } from "./WidgetFrame"
 
-interface TurtlesimVideoWidgetProps {
+interface VideoStreamWidgetProps {
   robotId: string
   store: VideoStore
   dataType: string
   onRemove?: () => void
 }
 
-export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
+export const VideoStreamWidget: React.FC<VideoStreamWidgetProps> = ({
   robotId,
   store,
   onRemove,
@@ -200,19 +200,15 @@ export const TurtlesimVideoWidget: React.FC<TurtlesimVideoWidgetProps> = ({
                 : "Unknown",
           },
           {
-            label: "Status",
-            value: videoData.isActive ? "Active" : "Inactive",
-          },
-          {
             label: "Stream ID",
-            value: `${videoData.streamId.slice(0, 8)}...`,
+            value: videoData.streamId,
           },
         ]
       : []
 
   return (
     <WidgetFrame
-      title="Turtlesim Video"
+      title="Video Stream"
       robot_id={robotId}
       isConnected={isConnected}
       footerInfo={footerInfo}

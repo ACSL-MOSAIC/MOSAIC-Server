@@ -1,19 +1,17 @@
 import type { ParsedData } from "./parsed.type"
 
-export const TURTLESIM_REMOTE_CONTROL_TYPE = Symbol(
-  "TURTLESIM_REMOTE_CONTROL_TYPE",
-)
+export const REMOTE_CONTROL_PAD_TYPE = Symbol("REMOTE_CONTROL_PAD_TYPE")
 
-export type ParsedTurtlesimRemoteControl = ParsedData<TurtlesimRemoteControl>
+export type ParsedRemoteControl = ParsedData<RemoteControlPad>
 
-export interface TurtlesimRemoteControl {
+export interface RemoteControlPad {
   direction: "up" | "down" | "left" | "right"
   timestamp?: number
 }
 
-export const parseTurtlesimRemoteControl = (
+export const parseRemoteControl = (
   data: string,
-): ParsedTurtlesimRemoteControl | null => {
+): ParsedRemoteControl | null => {
   try {
     const json = JSON.parse(data)
 
@@ -22,7 +20,7 @@ export const parseTurtlesimRemoteControl = (
       !json.direction ||
       !["up", "down", "left", "right"].includes(json.direction)
     ) {
-      console.warn("Invalid turtlesim remote control data format:", json)
+      console.warn("Invalid remote control data format:", json)
       return null
     }
 
@@ -31,7 +29,7 @@ export const parseTurtlesimRemoteControl = (
       timestamp: json.timestamp || Date.now(),
     }
   } catch (error) {
-    console.error("Error parsing turtlesim remote control data:", error)
+    console.error("Error parsing remote control data:", error)
     return null
   }
 }

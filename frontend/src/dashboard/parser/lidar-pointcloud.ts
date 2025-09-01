@@ -132,15 +132,9 @@ export const parsePointCloud2FromDataChunk = (
     chunkData.receivedChunks.add(dataChunk.chunkIndex)
     chunkData.timestamp = Date.now()
 
-    // 청크 진행 상황 로그
-    const progress = (
-      (chunkData.receivedChunks.size / chunkData.totalChunks) *
-      100
-    ).toFixed(1)
     // 모든 chunk가 도착했는지 확인 (중복 제거된 실제 받은 청크 수로 확인)
     if (chunkData.receivedChunks.size === chunkData.totalChunks) {
       const completionTime = Date.now()
-      const reassemblyTime = completionTime - chunkData.startTime
 
       // chunk들을 순서대로 조합
       const combinedData = combineChunks(chunkData)
@@ -179,4 +173,4 @@ export const parsePointCloud2FromDataChunk = (
   }
 }
 
-export const GO2_OUSTER_POINTCLOUD2_TYPE = Symbol("go2_ouster_pointcloud2")
+export const LIDAR_POINTCLOUD2_TYPE = Symbol("lidar_pointcloud2")

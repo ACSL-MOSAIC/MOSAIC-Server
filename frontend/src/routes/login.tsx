@@ -1,9 +1,5 @@
-import { Button, Container, Image, Input, Text } from "@chakra-ui/react"
-import {
-  Link as RouterLink,
-  createFileRoute,
-  redirect,
-} from "@tanstack/react-router"
+import { Button, Container, Image, Input } from "@chakra-ui/react"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 import { useState } from "react"
 import { FiLock, FiMail } from "react-icons/fi"
 
@@ -132,9 +128,6 @@ function Login() {
         errors={errors}
         startElement={<FiLock />}
       />
-      <RouterLink to="/recover-password" className="main-link">
-        Forgot Password?
-      </RouterLink>
       <Button variant="solid" type="submit" loading={isSubmitting} size="md">
         Log In
       </Button>

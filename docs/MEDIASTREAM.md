@@ -33,10 +33,6 @@ classDiagram
         +incrementFpsCounter()
         +destroy()
     }
-    class TurtlesimVideoStore {
-        +updateFps()
-        +destroy()
-    }
     class VideoStoreManager {
         +initializeRobotVideoStores(robotId)
         +createVideoStoreByMediaTypeAuto(robotId, mediaType)
@@ -45,13 +41,11 @@ classDiagram
         +removeVideoStore(robotId, channelLabel)
         +getRobotVideoStores(robotId)
     }
-    VideoStore <|-- TurtlesimVideoStore
     VideoStoreManager --> VideoStore
 ```
 
 #### 1.3 Main Components
 - **VideoStore**: Delivers MediaStream, measures FPS, manages statistics
-- **TurtlesimVideoStore**: Extends VideoStore, handles specific video streams
 - **VideoStoreManager**: Singleton, manages stores by media type, auto-creates/cleans up
 
 ---

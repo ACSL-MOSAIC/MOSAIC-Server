@@ -1,9 +1,9 @@
 export type WidgetType =
   | "go2_low_state"
-  | "go2_ouster_pointcloud"
+  | "lidar_pointcloud"
   | "turtlesim_position"
-  | "turtlesim_remote_control"
-  | "turtlesim_video"
+  | "remote_control_pad"
+  | "video_stream"
   | "universal"
   | "video_recorder"
 

@@ -1,5 +1,5 @@
-import type { ParsedTurtlesimRemoteControl } from "@/dashboard/parser/turtlesim-remote-control"
-import type { TurtlesimRemoteControlStore } from "@/dashboard/store/data-channel-store/writeonly/turtlesim-remote-control.store"
+import type { ParsedRemoteControl } from "@/dashboard/parser/remote-control-pad.ts"
+import type { RemoteControlPadStore } from "@/dashboard/store/data-channel-store/writeonly/remote-control-pad.store.ts"
 import {
   Badge,
   Box,
@@ -12,9 +12,9 @@ import {
 import { useEffect, useState } from "react"
 import { WidgetFrame } from "./WidgetFrame"
 
-interface TurtlesimRemoteControlWidgetProps {
+interface RemoteControlPadWidgetProps {
   robotId: string
-  store: TurtlesimRemoteControlStore
+  store: RemoteControlPadStore
   dataType?: string
   onRemove?: () => void
 }
@@ -43,13 +43,14 @@ const DirectionIcon = ({ direction }: { direction: string }) => {
   )
 }
 
-export function TurtlesimRemoteControlWidget({
+export function RemoteControlPadWidget({
   robotId,
   store,
   onRemove,
-}: TurtlesimRemoteControlWidgetProps) {
-  const [lastCommand, setLastCommand] =
-    useState<ParsedTurtlesimRemoteControl | null>(null)
+}: RemoteControlPadWidgetProps) {
+  const [lastCommand, setLastCommand] = useState<ParsedRemoteControl | null>(
+    null,
+  )
   const [isConnected, setIsConnected] = useState(false)
   const [commandHistory, setCommandHistory] = useState<string[]>([])
 
@@ -57,7 +58,7 @@ export function TurtlesimRemoteControlWidget({
     // WebRTC 연결 상태 확인
     const checkConnectionStatus = () => {
       const dataChannel = store.getDataChannel()
-      console.log("TurtlesimRemoteControlWidget - 데이터 채널 상태 확인:", {
+      console.log("RemoteControlPadWidget - 데이터 채널 상태 확인:", {
         robotId,
         hasDataChannel: !!dataChannel,
         readyState: dataChannel?.readyState,
@@ -76,7 +77,7 @@ export function TurtlesimRemoteControlWidget({
 
     // 실시간 연결 상태 변경 리스너 등록
     const unsubscribeConnection = store.onConnectionStateChange((connected) => {
-      console.log("TurtlesimRemoteControlWidget - 연결 상태 변경:", {
+      console.log("RemoteControlPadWidget - 연결 상태 변경:", {
         connected,
         robotId,
       })
@@ -84,20 +85,18 @@ export function TurtlesimRemoteControlWidget({
     })
 
     // 명령 전송 후 상태 업데이트를 위한 구독
-    const unsubscribeData = store.subscribe(
-      (data: ParsedTurtlesimRemoteControl) => {
-        console.log("TurtlesimRemoteControlWidget - 데이터 수신:", data)
-        setLastCommand(data)
-        // 명령 히스토리에 추가 (최근 5개)
-        setCommandHistory((prev) => {
-          const newHistory = [...prev, data.direction]
-          return newHistory.slice(-5)
-        })
-      },
-    )
+    const unsubscribeData = store.subscribe((data: ParsedRemoteControl) => {
+      console.log("RemoteControlPadWidget - 데이터 수신:", data)
+      setLastCommand(data)
+      // 명령 히스토리에 추가 (최근 5개)
+      setCommandHistory((prev) => {
+        const newHistory = [...prev, data.direction]
+        return newHistory.slice(-5)
+      })
+    })
 
     return () => {
-      console.log(`TurtlesimRemoteControlWidget - cleanup for robot ${robotId}`)
+      console.log(`RemoteControlPadWidget - cleanup for robot ${robotId}`)
       unsubscribeConnection()
       unsubscribeData()
     }
@@ -111,17 +110,6 @@ export function TurtlesimRemoteControlWidget({
     if (!sent) {
       console.warn(`명령 전송 실패: ${direction}`)
     }
-  }
-
-  const getButtonColor = (direction: string) => {
-    if (!isConnected) return "gray"
-
-    // 마지막 명령이 이 방향이면 강조
-    if (lastCommand?.direction === direction) {
-      return "blue"
-    }
-
-    return "teal"
   }
 
   // Footer info
@@ -162,9 +150,36 @@ export function TurtlesimRemoteControlWidget({
       : []),
   ]
 
+  const DirectionButton = ({
+    direction,
+  }: { direction: "up" | "down" | "left" | "right" }) => {
+    return (
+      <Button
+        size="lg"
+        colorScheme="teal"
+        onClick={() => handleDirectionClick(direction)}
+        disabled={!isConnected}
+        borderRadius="md"
+        boxShadow="md"
+        _hover={{
+          transform: "translateY(2px)",
+          boxShadow: "lg",
+        }}
+        _active={{
+          transform: "translateY(0px)",
+          boxShadow: "sm",
+        }}
+        transition="all 0.2s"
+        minH="50px"
+      >
+        <DirectionIcon direction={direction} />
+      </Button>
+    )
+  }
+
   return (
     <WidgetFrame
-      title="Turtlesim Remote Control"
+      title="Remote Control Pad"
       robot_id={robotId}
       isConnected={isConnected}
       footerInfo={footerInfo}
@@ -197,101 +212,25 @@ export function TurtlesimRemoteControlWidget({
             <Box />
 
             {/* 위쪽 버튼 */}
-            <Button
-              size="lg"
-              colorScheme={getButtonColor("up")}
-              onClick={() => handleDirectionClick("up")}
-              disabled={!isConnected}
-              borderRadius="md"
-              boxShadow="md"
-              _hover={{
-                transform: "translateY(-2px)",
-                boxShadow: "lg",
-              }}
-              _active={{
-                transform: "translateY(0px)",
-                boxShadow: "sm",
-              }}
-              transition="all 0.2s"
-              minH="50px"
-            >
-              <DirectionIcon direction="up" />
-            </Button>
+            <DirectionButton direction="up" />
 
             {/* 빈 공간 */}
             <Box />
 
             {/* 왼쪽 버튼 */}
-            <Button
-              size="lg"
-              colorScheme={getButtonColor("left")}
-              onClick={() => handleDirectionClick("left")}
-              disabled={!isConnected}
-              borderRadius="md"
-              boxShadow="md"
-              _hover={{
-                transform: "translateX(-2px)",
-                boxShadow: "lg",
-              }}
-              _active={{
-                transform: "translateX(0px)",
-                boxShadow: "sm",
-              }}
-              transition="all 0.2s"
-              minH="50px"
-            >
-              <DirectionIcon direction="left" />
-            </Button>
+            <DirectionButton direction="left" />
 
             {/* 중앙 (빈 공간) */}
             <Box />
 
             {/* 오른쪽 버튼 */}
-            <Button
-              size="lg"
-              colorScheme={getButtonColor("right")}
-              onClick={() => handleDirectionClick("right")}
-              disabled={!isConnected}
-              borderRadius="md"
-              boxShadow="md"
-              _hover={{
-                transform: "translateX(2px)",
-                boxShadow: "lg",
-              }}
-              _active={{
-                transform: "translateX(0px)",
-                boxShadow: "sm",
-              }}
-              transition="all 0.2s"
-              minH="50px"
-            >
-              <DirectionIcon direction="right" />
-            </Button>
+            <DirectionButton direction="right" />
 
             {/* 빈 공간 */}
             <Box />
 
             {/* 아래쪽 버튼 */}
-            <Button
-              size="lg"
-              colorScheme={getButtonColor("down")}
-              onClick={() => handleDirectionClick("down")}
-              disabled={!isConnected}
-              borderRadius="md"
-              boxShadow="md"
-              _hover={{
-                transform: "translateY(2px)",
-                boxShadow: "lg",
-              }}
-              _active={{
-                transform: "translateY(0px)",
-                boxShadow: "sm",
-              }}
-              transition="all 0.2s"
-              minH="50px"
-            >
-              <DirectionIcon direction="down" />
-            </Button>
+            <DirectionButton direction="down" />
 
             {/* 빈 공간 */}
             <Box />

@@ -103,7 +103,7 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
     const dataChannelConfigs: DataChannelConfig[] = []
     const videoChannelConfigs: VideoChannelConfig[] = []
 
-    if (widgetConfig.type === "turtlesim_video") {
+    if (widgetConfig.type === "video_stream") {
       // turtlesim video is the only video type
       const videoChannelConfig: VideoChannelConfig = {
         label: widgetConfig.id,
@@ -136,14 +136,6 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
     try {
       if (rtcConnections.current[robotId]) {
         const connection = rtcConnections.current[robotId]
-        const connectionState = connection.getPeerConnection()?.connectionState
-        if (
-          connectionState === "connected" ||
-          connectionState === "connecting"
-        ) {
-          console.log(`Robot ${robotId} is already connected.`)
-          return
-        }
         console.log(`Reconnecting to robot ${robotId}...`)
         connection.disconnect()
         delete rtcConnections.current[robotId]
@@ -265,17 +257,17 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
       case "go2_low_state":
         dataType = "go2_low_state"
         break
-      case "go2_ouster_pointcloud":
-        dataType = "go2_ouster_pointcloud"
+      case "lidar_pointcloud":
+        dataType = "lidar_pointcloud"
         break
       case "turtlesim_position":
         dataType = "turtlesim_position"
         break
-      case "turtlesim_remote_control":
-        dataType = "turtlesim_remote_control"
+      case "remote_control_pad":
+        dataType = "remote_control_pad"
         break
-      case "turtlesim_video":
-        dataType = "turtlesim_video"
+      case "video_stream":
+        dataType = "video_stream"
         break
       case "universal":
         dataType = "universal"

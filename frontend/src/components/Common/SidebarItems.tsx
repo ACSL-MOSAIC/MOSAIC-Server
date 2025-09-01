@@ -1,5 +1,5 @@
 import { Box, Flex, Icon, IconButton, Text } from "@chakra-ui/react"
-import { useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { Link as RouterLink } from "@tanstack/react-router"
 import { FaBars, FaRobot } from "react-icons/fa"
 import { FaLink } from "react-icons/fa"
@@ -27,9 +27,9 @@ interface Item {
 }
 
 const SidebarItems = ({ onClose }: SidebarItemsProps) => {
-  const queryClient = useQueryClient()
-  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
-
+  const { data: currentUser } = useQuery<UserPublic>({
+    queryKey: ["currentUser"],
+  })
   const [fold, setFold] = useState(true)
 
   const finalItems: Item[] = currentUser?.is_superuser

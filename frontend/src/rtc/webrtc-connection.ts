@@ -4,10 +4,7 @@ import { VideoStoreManager } from "@/dashboard/store/media-channel-store/video-s
 import type { ChannelType } from "./config/webrtc-datachannel-config"
 import { MediaChannelConfigUtils } from "./config/webrtc-media-channel-config"
 import { MEDIA_CHANNEL_CONFIG } from "./config/webrtc-media-channel-config"
-import {
-  createOfferWithMediaChannels,
-  parseMetadataFromSdp,
-} from "./webrtc-sdp-utils"
+import { createOfferWithMediaChannels } from "./webrtc-sdp-utils"
 import { cleanupAllDataChannels, createDataChannel } from "./webrtc-utils"
 import { sendWebSocketMessage, setupWebSocketHandlers } from "./ws-adaptor"
 
@@ -50,7 +47,6 @@ export class WebRTCConnection {
   > = new Map() // Channel label -> data type and channel type mapping
   private videoChannels: Map<string, VideoChannelConfig> = new Map() // Video channel configuration
   private videoChannelDataTypes: Map<string, string> = new Map() // Video channel label -> data type mapping
-  private lastSdpMetadata: Map<string, any> = new Map() // Metadata parsed from SDP Answer
 
   constructor(config: WebRTCConnectionConfig) {
     this.config = config
@@ -64,14 +60,8 @@ export class WebRTCConnection {
       {
         onSdpAnswer: async (sdpAnswer) => {
           try {
-            // Parse metadata and msid from SDP Answer
-            const metadata = parseMetadataFromSdp(sdpAnswer)
-
-            // Store metadata
-            this.lastSdpMetadata = metadata
-
             // Setup ontrack handler (metadata-based)
-            this.setupVideoTrackHandler(metadata)
+            this.setupVideoTrackHandler()
 
             await this.setRemoteDescription(
               new RTCSessionDescription({
@@ -279,58 +269,59 @@ export class WebRTCConnection {
   }
 
   // Setup Video Track handler based on metadata
-  private setupVideoTrackHandler(metadata: Map<string, any>): void {
+  private setupVideoTrackHandler(): void {
     if (!this.peerConnection) {
       console.error("PeerConnection not initialized")
       return
     }
 
     this.peerConnection.ontrack = (event) => {
-      if (event.track.kind === "video") {
-        if (event.streams?.[0]) {
-          const stream = event.streams[0]
-
-          // Use media type extracted from MSID
-          const mediaType = metadata.get("mediaType")
-
-          if (!mediaType) {
-            console.warn("Media type not found in metadata")
-            return
-          }
-
-          // Check if media type is supported
-          if (MediaChannelConfigUtils.isSupportedMediaType(mediaType)) {
-            // Create and connect VideoStore
-            const videoStoreManager = VideoStoreManager.getInstance()
-            const videoStore =
-              videoStoreManager.createVideoStoreByMediaTypeAuto(
-                this.config.robotId,
-                mediaType,
-              )
-
-            if (videoStore) {
-              // Set simplified metadata (MSID-based)
-              videoStore.setMetadata({
-                mediaType,
-                source: "robot_stream",
-              })
-
-              videoStore.setMediaStream(stream)
-              console.log(
-                `Video Store connected: ${mediaType} for robot ${this.config.robotId}`,
-              )
-            } else {
-              console.warn(
-                `Video Store not found: ${mediaType} for robot ${this.config.robotId}`,
-              )
-            }
-          } else {
-            console.warn(`Unsupported media type: ${mediaType}`)
-          }
-        } else {
-          console.warn("Video track has no stream")
-        }
+      if (event.track.kind !== "video") {
+        return
       }
+
+      if (!event.streams?.[0]) {
+        console.warn("Video track has no stream")
+        return
+      }
+
+      const stream = event.streams[0]
+
+      // Use media type extracted from MSID
+      const mediaType = stream.id
+
+      if (!mediaType) {
+        console.warn("Media type not found in metadata")
+        return
+      }
+
+      // Check if media type is supported
+      if (!MediaChannelConfigUtils.isSupportedMediaType(mediaType)) {
+        console.warn(`Unsupported media type: ${mediaType}`)
+      }
+
+      // Create and connect VideoStore
+      const videoStoreManager = VideoStoreManager.getInstance()
+      const videoStore = videoStoreManager.createVideoStoreByMediaTypeAuto(
+        this.config.robotId,
+        mediaType,
+      )
+
+      if (!videoStore) {
+        console.warn(`Failed to create VideoStore for media type: ${mediaType}`)
+        return
+      }
+
+      // Set simplified metadata (MSID-based)
+      videoStore.setMetadata({
+        mediaType,
+        source: "robot_stream",
+      })
+
+      videoStore.setMediaStream(stream)
+      console.log(
+        `Video Store connected: ${mediaType} for robot ${this.config.robotId}`,
+      )
     }
   }
 
@@ -463,7 +454,6 @@ export class WebRTCConnection {
       this.peerConnection = null
     }
     this.pendingCandidates = []
-    this.lastSdpMetadata.clear()
     this.config.onConnectionStateChange?.(false)
 
     // Send Close Peer Connection msg to robot

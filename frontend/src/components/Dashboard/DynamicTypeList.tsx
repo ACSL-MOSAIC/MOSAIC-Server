@@ -1,4 +1,4 @@
-import React from "react"
+import { Button } from "@/components/ui/button.tsx"
 import { IoPencil, IoTrash } from "react-icons/io5"
 import type { DynamicTypeConfig } from "../../dashboard/dynamic/dynamic-type-config"
 
@@ -30,7 +30,7 @@ export function DynamicTypeList({
       >
         <span style={{ fontSize: "20px" }}>ℹ️</span>
         <span style={{ color: "#4a5568", fontSize: "16px" }}>
-          등록된 동적 타입이 없습니다. 새 타입을 추가해보세요!
+          No dynamic types registered. Try adding a new type!
         </span>
       </div>
     )
@@ -68,7 +68,7 @@ export function DynamicTypeList({
                 fontSize: "14px",
               }}
             >
-              이름
+              Name
             </th>
             <th
               style={{
@@ -79,7 +79,7 @@ export function DynamicTypeList({
                 fontSize: "14px",
               }}
             >
-              설명
+              Description
             </th>
             <th
               style={{
@@ -90,7 +90,7 @@ export function DynamicTypeList({
                 fontSize: "14px",
               }}
             >
-              채널 타입
+              Channel Type
             </th>
             <th
               style={{
@@ -101,7 +101,7 @@ export function DynamicTypeList({
                 fontSize: "14px",
               }}
             >
-              생성일
+              Created
             </th>
             <th
               style={{
@@ -112,7 +112,7 @@ export function DynamicTypeList({
                 fontSize: "14px",
               }}
             >
-              작업
+              Actions
             </th>
           </tr>
         </thead>
@@ -176,7 +176,7 @@ export function DynamicTypeList({
               </td>
               <td style={{ padding: "16px 12px" }}>
                 <div style={{ display: "flex", gap: "8px" }}>
-                  <button
+                  <Button
                     onClick={() => onEdit(config)}
                     style={{
                       padding: "8px",
@@ -189,7 +189,7 @@ export function DynamicTypeList({
                       alignItems: "center",
                       justifyContent: "center",
                     }}
-                    title="수정"
+                    title="Edit"
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = "#ebf8ff"
                     }}
@@ -198,8 +198,8 @@ export function DynamicTypeList({
                     }}
                   >
                     <IoPencil size={18} />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => onDelete(config.id)}
                     style={{
                       padding: "8px",
@@ -212,7 +212,7 @@ export function DynamicTypeList({
                       alignItems: "center",
                       justifyContent: "center",
                     }}
-                    title="삭제"
+                    title="Delete"
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = "#fed7d7"
                     }}
@@ -221,7 +221,7 @@ export function DynamicTypeList({
                     }}
                   >
                     <IoTrash size={18} />
-                  </button>
+                  </Button>
                 </div>
               </td>
             </tr>

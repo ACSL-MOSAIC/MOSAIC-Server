@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from "uuid"
 const createDefaultDashboardConfig = (): DashboardConfig => {
   const defaultTab = {
     id: uuidv4(),
-    name: "메인 대시보드",
+    name: "Default",
     widgets: [],
   }
 

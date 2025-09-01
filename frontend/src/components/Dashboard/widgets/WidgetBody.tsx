@@ -74,7 +74,7 @@ export function WidgetBody({
               <Text color="gray.600" fontWeight="medium">
                 {info.label}
               </Text>
-              {typeof info.value === 'string' ? (
+              {typeof info.value === "string" ? (
                 <Text color="gray.800" fontFamily="mono">
                   {info.value}
                 </Text>

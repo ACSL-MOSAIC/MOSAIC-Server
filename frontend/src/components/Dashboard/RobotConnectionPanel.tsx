@@ -180,7 +180,7 @@ function RobotConnectionPanel({
                   size="sm"
                   variant="ghost"
                   onClick={() => onOpenDynamicTypeModal(robot.robot_id)}
-                  aria-label="동적 타입 관리"
+                  aria-label="Dynamic Type Management"
                 >
                   <IoSettings />
                 </IconButton>

@@ -30,7 +30,7 @@ function ConnectPage() {
     <>
       <Container maxW="full" py={8}>
         <Heading size="lg" mb={1}>
-          로봇 대시보드
+          Robot Dashboard
         </Heading>
         <DashboardGrid
           onOpenDynamicTypeModal={(robotId: string) =>

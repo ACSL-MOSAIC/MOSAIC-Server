@@ -1,10 +1,10 @@
 import { DynamicTypeManager } from "@/dashboard/dynamic/dynamic-type-config"
 import { Go2LowStateStore } from "@/dashboard/store/data-channel-store/readonly/go2-low-state.store"
-import { Go2OusterPointCloudStore } from "@/dashboard/store/data-channel-store/readonly/go2-ouster-pointcloud.store"
+import { LidarPointCloudStore } from "@/dashboard/store/data-channel-store/readonly/lidar-point-cloud.store.ts"
 import { ReadOnlyStore } from "@/dashboard/store/data-channel-store/readonly/read-only-store"
 import { ReadOnlyStoreManager } from "@/dashboard/store/data-channel-store/readonly/read-only-store-manager"
 import { TurtlesimPositionStore } from "@/dashboard/store/data-channel-store/readonly/turtlesim-position.store"
-import { TurtlesimRemoteControlStore } from "@/dashboard/store/data-channel-store/writeonly/turtlesim-remote-control.store"
+import { RemoteControlPadStore } from "@/dashboard/store/data-channel-store/writeonly/remote-control-pad.store.ts"
 import { VideoRecorderStore } from "@/dashboard/store/data-channel-store/writeonly/video-recorder.store.ts"
 import { WriteOnlyStore } from "@/dashboard/store/data-channel-store/writeonly/write-only-store"
 import { WriteOnlyStoreManager } from "@/dashboard/store/data-channel-store/writeonly/write-only-store-manager"
@@ -101,11 +101,11 @@ export function createDataChannel(
             (robotId) => new Go2LowStateStore(robotId),
           )
           break
-        case "go2_ouster_pointcloud":
+        case "lidar_pointcloud":
           store = readOnlyStoreManager.createStoreIfNotExists(
             robotId,
             channelTypeSymbol,
-            (robotId) => new Go2OusterPointCloudStore(robotId),
+            (robotId) => new LidarPointCloudStore(robotId),
           )
           break
         default:
@@ -129,11 +129,11 @@ export function createDataChannel(
 
     case "writeonly":
       switch (dataType) {
-        case "turtlesim_remote_control":
+        case "remote_control_pad":
           store = writeOnlyStoreManager.createStoreIfNotExists(
             robotId,
             channelTypeSymbol,
-            (robotId) => new TurtlesimRemoteControlStore(robotId),
+            (robotId) => new RemoteControlPadStore(robotId),
           )
           break
         case "video_recorder":
