@@ -51,6 +51,7 @@ export function AddWidgetModal({
       { label: "Universal Widget", value: "universal" },
       { label: "Video Stream", value: "video_stream" },
       { label: "Video Stream (Additional)", value: "video_stream_v2" },
+      { label: "Video Object Detection", value: "video_object_detection" },
       { label: "Video Recorder", value: "video_recorder" },
       { label: "LiDAR PointCloud", value: "lidar_pointcloud" },
       { label: "Remote Control Pad", value: "remote_control_pad" },

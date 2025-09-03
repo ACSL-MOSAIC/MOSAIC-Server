@@ -1,13 +1,12 @@
+import type { VideoObjectDetectionWidgetConfig } from "@/components/Dashboard/widgets/VideoObjectDetectionWidget.tsx"
+import type { UniversalWidgetConfig } from "@/components/Dashboard/widgets/dynamic/universal-widget-config.ts"
+
 export interface WidgetProps {
   robotId: string
   dataType: string
   onRemove?: () => void
 }
 
-export type WidgetType =
-  | "go2_low_state"
-  | "go2_ouster_pointcloud"
-  | "turtlesim_position"
-  | "turtlesim_remote_control"
-  | "universal"
-  | "video_recorder"
+export type WidgetConfigs =
+  | UniversalWidgetConfig
+  | VideoObjectDetectionWidgetConfig

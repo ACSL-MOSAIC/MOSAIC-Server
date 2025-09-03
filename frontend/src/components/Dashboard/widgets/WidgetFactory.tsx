@@ -1,4 +1,9 @@
+import {
+  VideoObjectDetectionWidget,
+  type VideoObjectDetectionWidgetConfig,
+} from "@/components/Dashboard/widgets/VideoObjectDetectionWidget.tsx"
 import { WidgetFrame } from "@/components/Dashboard/widgets/WidgetFrame.tsx"
+import type { UniversalWidgetConfig } from "@/components/Dashboard/widgets/dynamic/universal-widget-config.ts"
 import { GO2_LOW_STATE_TYPE } from "@/dashboard/parser/go2-low-state.ts"
 import {
   LIDAR_POINTCLOUD2_TYPE,
@@ -23,16 +28,15 @@ import { TurtlesimPositionWidget } from "./TurtlesimPositionWidget"
 import { VideoRecordingWidget } from "./VideoRecorderWidget"
 import { VideoStreamWidget } from "./VideoStreamWidget.tsx"
 import { UniversalWidget } from "./dynamic/UniversalWidget"
-import type { UniversalWidgetConfig } from "./dynamic/universal-widget-config"
-import type { WidgetProps } from "./types"
+import type { WidgetConfigs, WidgetProps } from "./types"
 
 export interface WidgetFactoryProps extends WidgetProps {
   type: string
   connections?: { [key: string]: boolean }
-  config?: UniversalWidgetConfig // 범용 위젯 설정
+  config?: WidgetConfigs // 범용 위젯 설정
   widgetId?: string
   onRemove?: () => void
-  onUpdateConfig?: (newConfig: UniversalWidgetConfig) => void
+  onUpdateConfig?: (newConfig: WidgetConfigs) => void
 }
 
 export function WidgetFactory({
@@ -151,6 +155,17 @@ export function WidgetFactory({
       )
     }
 
+    case "video_object_detection": {
+      return (
+        <VideoObjectDetectionWidget
+          robotId={robotId}
+          config={config as VideoObjectDetectionWidgetConfig}
+          onUpdateConfig={onUpdateConfig}
+          onRemove={onRemove}
+        />
+      )
+    }
+
     case "universal": {
       if (!config) {
         console.error("Universal widget requires config")
@@ -159,7 +174,7 @@ export function WidgetFactory({
       return (
         <UniversalWidget
           robotId={robotId}
-          config={config}
+          config={config as UniversalWidgetConfig}
           connections={connections}
           onUpdateConfig={onUpdateConfig}
           onRemove={onRemove}

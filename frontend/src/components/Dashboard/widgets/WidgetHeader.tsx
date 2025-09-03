@@ -1,10 +1,19 @@
 import { useRobotMapping } from "@/hooks/useRobotMapping.ts"
-import { Badge, Button, Flex, HStack, Text, VStack } from "@chakra-ui/react"
+import {
+  Button,
+  Flex,
+  HStack,
+  IconButton,
+  Text,
+  VStack,
+} from "@chakra-ui/react"
+import { IoSettings } from "react-icons/io5"
 
 export interface WidgetHeaderProps {
   title: string
   robot_id?: string
   isConnected: boolean
+  onSettingClick?: () => void
   onRemove?: () => void
 }
 
@@ -12,6 +21,7 @@ export function WidgetHeader({
   title,
   robot_id,
   isConnected,
+  onSettingClick,
   onRemove,
 }: WidgetHeaderProps) {
   const { getRobotName } = useRobotMapping()
@@ -38,12 +48,6 @@ export function WidgetHeader({
             </Text>
           )}
         </VStack>
-
-        <HStack gap={2}>
-          <Badge colorPalette={isConnected ? "green" : "gray"} variant="subtle">
-            {isConnected ? "Connected" : "Disconnected"}
-          </Badge>
-        </HStack>
       </Flex>
 
       {onRemove && (
@@ -58,6 +62,19 @@ export function WidgetHeader({
         >
           Remove
         </Button>
+      )}
+      {onSettingClick && (
+        <IconButton
+          size="xs"
+          variant="outline"
+          colorScheme="teal"
+          onClick={(e) => {
+            e.stopPropagation()
+            onSettingClick()
+          }}
+        >
+          <IoSettings />
+        </IconButton>
       )}
     </HStack>
   )
