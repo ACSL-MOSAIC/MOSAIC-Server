@@ -5,6 +5,7 @@ interface ChunkData {
   messageId: string
   chunks: Map<number, Uint8Array>
   totalChunks: number
+  sentTimestamp: number | Long // 로봇이 point cloud 를 전송한 시각
   timestamp: number
   startTime: number // 첫 번째 청크 도착 시간
   receivedChunks: Set<number> // 실제로 받은 청크 인덱스 추적
@@ -119,6 +120,7 @@ export const parsePointCloud2FromDataChunk = (
         messageId: dataChunk.messageId,
         chunks: new Map(),
         totalChunks: dataChunk.totalChunks,
+        sentTimestamp: dataChunk.timestamp,
         timestamp: startTime,
         startTime: startTime,
         receivedChunks: new Set(),
@@ -141,6 +143,13 @@ export const parsePointCloud2FromDataChunk = (
 
       // PointCloud2 객체 생성
       const pointCloud = pointcloud.PointCloud2.decode(combinedData)
+
+      console.log(
+        "CLOUD POINTS DATA RECEIVED, SENT TIMESTAMP: ",
+        chunkData.sentTimestamp,
+        "RECEIVED TIMESTAMP: ",
+        completionTime,
+      )
 
       // 처리된 chunk 데이터 삭제
       chunkMap.delete(dataChunk.messageId)
