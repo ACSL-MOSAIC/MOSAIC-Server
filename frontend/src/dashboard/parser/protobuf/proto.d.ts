@@ -1,3 +1,5 @@
+// pbts -o proto.d.ts proto.js
+
 import type * as $protobuf from "protobufjs"
 import Long = require("long")
 /** Namespace chunking. */
@@ -12,6 +14,9 @@ export namespace chunking {
 
     /** DataChunk totalChunks */
     totalChunks?: number | null
+
+    /** DataChunk timestamp */
+    timestamp?: number | Long | null
 
     /** DataChunk payload */
     payload?: Uint8Array | null
@@ -33,6 +38,9 @@ export namespace chunking {
 
     /** DataChunk totalChunks. */
     public totalChunks: number
+
+    /** DataChunk timestamp. */
+    public timestamp: number | Long
 
     /** DataChunk payload. */
     public payload: Uint8Array

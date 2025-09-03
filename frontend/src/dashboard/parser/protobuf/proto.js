@@ -1,13 +1,15 @@
+// pbjs -t static-module -w es6 -o proto.js src/protobuf/data_chunk.proto src/protobuf/pointcloud2.proto
+
 /*eslint-disable block-scoped-var, id-length, no-control-regex, no-magic-numbers, no-prototype-builtins, no-redeclare, no-shadow, no-var, sort-vars*/
 import * as $protobuf from "protobufjs/minimal"
 
 // Common aliases
-const $Reader = $protobuf.Reader
-const $Writer = $protobuf.Writer
-const $util = $protobuf.util
+const $Reader = $protobuf.Reader,
+  $Writer = $protobuf.Writer,
+  $util = $protobuf.util
 
 // Exported root namespace
-const $root = $protobuf.roots.default || ($protobuf.roots.default = {})
+const $root = $protobuf.roots["default"] || ($protobuf.roots["default"] = {})
 
 export const chunking = ($root.chunking = (() => {
   /**
@@ -25,6 +27,7 @@ export const chunking = ($root.chunking = (() => {
      * @property {string|null} [messageId] DataChunk messageId
      * @property {number|null} [chunkIndex] DataChunk chunkIndex
      * @property {number|null} [totalChunks] DataChunk totalChunks
+     * @property {number|Long|null} [timestamp] DataChunk timestamp
      * @property {Uint8Array|null} [payload] DataChunk payload
      */
 
@@ -65,6 +68,16 @@ export const chunking = ($root.chunking = (() => {
      * @instance
      */
     DataChunk.prototype.totalChunks = 0
+
+    /**
+     * DataChunk timestamp.
+     * @member {number|Long} timestamp
+     * @memberof chunking.DataChunk
+     * @instance
+     */
+    DataChunk.prototype.timestamp = $util.Long
+      ? $util.Long.fromBits(0, 0, false)
+      : 0
 
     /**
      * DataChunk payload.
@@ -113,10 +126,15 @@ export const chunking = ($root.chunking = (() => {
       )
         writer.uint32(/* id 3, wireType 0 =*/ 24).uint32(message.totalChunks)
       if (
+        message.timestamp != null &&
+        Object.hasOwnProperty.call(message, "timestamp")
+      )
+        writer.uint32(/* id 4, wireType 0 =*/ 32).int64(message.timestamp)
+      if (
         message.payload != null &&
         Object.hasOwnProperty.call(message, "payload")
       )
-        writer.uint32(/* id 4, wireType 2 =*/ 34).bytes(message.payload)
+        writer.uint32(/* id 5, wireType 2 =*/ 42).bytes(message.payload)
       return writer
     }
 
@@ -146,8 +164,8 @@ export const chunking = ($root.chunking = (() => {
      */
     DataChunk.decode = function decode(reader, length, error) {
       if (!(reader instanceof $Reader)) reader = $Reader.create(reader)
-      const end = length === undefined ? reader.len : reader.pos + length
-      const message = new $root.chunking.DataChunk()
+      const end = length === undefined ? reader.len : reader.pos + length,
+        message = new $root.chunking.DataChunk()
       while (reader.pos < end) {
         const tag = reader.uint32()
         if (tag === error) break
@@ -165,6 +183,10 @@ export const chunking = ($root.chunking = (() => {
             break
           }
           case 4: {
+            message.timestamp = reader.int64()
+            break
+          }
+          case 5: {
             message.payload = reader.bytes()
             break
           }
@@ -211,6 +233,16 @@ export const chunking = ($root.chunking = (() => {
       if (message.totalChunks != null && message.hasOwnProperty("totalChunks"))
         if (!$util.isInteger(message.totalChunks))
           return "totalChunks: integer expected"
+      if (message.timestamp != null && message.hasOwnProperty("timestamp"))
+        if (
+          !$util.isInteger(message.timestamp) &&
+          !(
+            message.timestamp &&
+            $util.isInteger(message.timestamp.low) &&
+            $util.isInteger(message.timestamp.high)
+          )
+        )
+          return "timestamp: integer|Long expected"
       if (message.payload != null && message.hasOwnProperty("payload"))
         if (
           !(
@@ -238,6 +270,20 @@ export const chunking = ($root.chunking = (() => {
         message.chunkIndex = object.chunkIndex >>> 0
       if (object.totalChunks != null)
         message.totalChunks = object.totalChunks >>> 0
+      if (object.timestamp != null)
+        if ($util.Long)
+          (message.timestamp = $util.Long.fromValue(
+            object.timestamp,
+          )).unsigned = false
+        else if (typeof object.timestamp === "string")
+          message.timestamp = Number.parseInt(object.timestamp, 10)
+        else if (typeof object.timestamp === "number")
+          message.timestamp = object.timestamp
+        else if (typeof object.timestamp === "object")
+          message.timestamp = new $util.LongBits(
+            object.timestamp.low >>> 0,
+            object.timestamp.high >>> 0,
+          ).toNumber()
       if (object.payload != null)
         if (typeof object.payload === "string")
           $util.base64.decode(
@@ -267,6 +313,15 @@ export const chunking = ($root.chunking = (() => {
         object.messageId = ""
         object.chunkIndex = 0
         object.totalChunks = 0
+        if ($util.Long) {
+          const long = new $util.Long(0, 0, false)
+          object.timestamp =
+            options.longs === String
+              ? long.toString()
+              : options.longs === Number
+                ? long.toNumber()
+                : long
+        } else object.timestamp = options.longs === String ? "0" : 0
         if (options.bytes === String) object.payload = ""
         else {
           object.payload = []
@@ -280,6 +335,22 @@ export const chunking = ($root.chunking = (() => {
         object.chunkIndex = message.chunkIndex
       if (message.totalChunks != null && message.hasOwnProperty("totalChunks"))
         object.totalChunks = message.totalChunks
+      if (message.timestamp != null && message.hasOwnProperty("timestamp"))
+        if (typeof message.timestamp === "number")
+          object.timestamp =
+            options.longs === String
+              ? String(message.timestamp)
+              : message.timestamp
+        else
+          object.timestamp =
+            options.longs === String
+              ? $util.Long.prototype.toString.call(message.timestamp)
+              : options.longs === Number
+                ? new $util.LongBits(
+                    message.timestamp.low >>> 0,
+                    message.timestamp.high >>> 0,
+                  ).toNumber()
+                : message.timestamp
       if (message.payload != null && message.hasOwnProperty("payload"))
         object.payload =
           options.bytes === String
@@ -313,7 +384,7 @@ export const chunking = ($root.chunking = (() => {
       if (typeUrlPrefix === undefined) {
         typeUrlPrefix = "type.googleapis.com"
       }
-      return `${typeUrlPrefix}/chunking.DataChunk`
+      return typeUrlPrefix + "/chunking.DataChunk"
     }
 
     return DataChunk
@@ -453,8 +524,8 @@ export const pointcloud = ($root.pointcloud = (() => {
      */
     PointField.decode = function decode(reader, length, error) {
       if (!(reader instanceof $Reader)) reader = $Reader.create(reader)
-      const end = length === undefined ? reader.len : reader.pos + length
-      const message = new $root.pointcloud.PointField()
+      const end = length === undefined ? reader.len : reader.pos + length,
+        message = new $root.pointcloud.PointField()
       while (reader.pos < end) {
         const tag = reader.uint32()
         if (tag === error) break
@@ -591,7 +662,7 @@ export const pointcloud = ($root.pointcloud = (() => {
       if (typeUrlPrefix === undefined) {
         typeUrlPrefix = "type.googleapis.com"
       }
-      return `${typeUrlPrefix}/pointcloud.PointField`
+      return typeUrlPrefix + "/pointcloud.PointField"
     }
 
     return PointField
@@ -738,7 +809,7 @@ export const pointcloud = ($root.pointcloud = (() => {
         writer.uint32(/* id 2, wireType 0 =*/ 16).uint32(message.height)
       if (message.width != null && Object.hasOwnProperty.call(message, "width"))
         writer.uint32(/* id 3, wireType 0 =*/ 24).uint32(message.width)
-      if (message.fields?.length)
+      if (message.fields != null && message.fields.length)
         for (let i = 0; i < message.fields.length; ++i)
           $root.pointcloud.PointField.encode(
             message.fields[i],
@@ -795,8 +866,8 @@ export const pointcloud = ($root.pointcloud = (() => {
      */
     PointCloud2.decode = function decode(reader, length, error) {
       if (!(reader instanceof $Reader)) reader = $Reader.create(reader)
-      const end = length === undefined ? reader.len : reader.pos + length
-      const message = new $root.pointcloud.PointCloud2()
+      const end = length === undefined ? reader.len : reader.pos + length,
+        message = new $root.pointcloud.PointCloud2()
       while (reader.pos < end) {
         const tag = reader.uint32()
         if (tag === error) break
@@ -817,7 +888,7 @@ export const pointcloud = ($root.pointcloud = (() => {
             break
           }
           case 4: {
-            if (!message.fields?.length) message.fields = []
+            if (!(message.fields && message.fields.length)) message.fields = []
             message.fields.push(
               $root.pointcloud.PointField.decode(reader, reader.uint32()),
             )
@@ -879,7 +950,7 @@ export const pointcloud = ($root.pointcloud = (() => {
         return "object expected"
       if (message.header != null && message.hasOwnProperty("header")) {
         const error = $root.pointcloud.PointCloud2.Header.verify(message.header)
-        if (error) return `header.${error}`
+        if (error) return "header." + error
       }
       if (message.height != null && message.hasOwnProperty("height"))
         if (!$util.isInteger(message.height)) return "height: integer expected"
@@ -889,7 +960,7 @@ export const pointcloud = ($root.pointcloud = (() => {
         if (!Array.isArray(message.fields)) return "fields: array expected"
         for (let i = 0; i < message.fields.length; ++i) {
           const error = $root.pointcloud.PointField.verify(message.fields[i])
-          if (error) return `fields.${error}`
+          if (error) return "fields." + error
         }
       }
       if (message.isBigendian != null && message.hasOwnProperty("isBigendian"))
@@ -1000,7 +1071,7 @@ export const pointcloud = ($root.pointcloud = (() => {
         object.height = message.height
       if (message.width != null && message.hasOwnProperty("width"))
         object.width = message.width
-      if (message.fields?.length) {
+      if (message.fields && message.fields.length) {
         object.fields = []
         for (let j = 0; j < message.fields.length; ++j)
           object.fields[j] = $root.pointcloud.PointField.toObject(
@@ -1049,7 +1120,7 @@ export const pointcloud = ($root.pointcloud = (() => {
       if (typeUrlPrefix === undefined) {
         typeUrlPrefix = "type.googleapis.com"
       }
-      return `${typeUrlPrefix}/pointcloud.PointCloud2`
+      return typeUrlPrefix + "/pointcloud.PointCloud2"
     }
 
     PointCloud2.Header = (() => {
@@ -1153,8 +1224,8 @@ export const pointcloud = ($root.pointcloud = (() => {
        */
       Header.decode = function decode(reader, length, error) {
         if (!(reader instanceof $Reader)) reader = $Reader.create(reader)
-        const end = length === undefined ? reader.len : reader.pos + length
-        const message = new $root.pointcloud.PointCloud2.Header()
+        const end = length === undefined ? reader.len : reader.pos + length,
+          message = new $root.pointcloud.PointCloud2.Header()
         while (reader.pos < end) {
           const tag = reader.uint32()
           if (tag === error) break
@@ -1243,7 +1314,7 @@ export const pointcloud = ($root.pointcloud = (() => {
         }
         if (message.stamp != null && message.hasOwnProperty("stamp"))
           object.stamp =
-            options.json && !Number.isFinite(message.stamp)
+            options.json && !isFinite(message.stamp)
               ? String(message.stamp)
               : message.stamp
         if (message.frameId != null && message.hasOwnProperty("frameId"))
@@ -1274,7 +1345,7 @@ export const pointcloud = ($root.pointcloud = (() => {
         if (typeUrlPrefix === undefined) {
           typeUrlPrefix = "type.googleapis.com"
         }
-        return `${typeUrlPrefix}/pointcloud.PointCloud2.Header`
+        return typeUrlPrefix + "/pointcloud.PointCloud2.Header"
       }
 
       return Header
