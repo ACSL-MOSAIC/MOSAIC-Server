@@ -7,6 +7,7 @@ export interface WidgetFrameProps {
   title: string
   robot_id?: string
   isConnected: boolean
+  onSettingClick?: () => void
   children?: React.ReactNode
   footerInfo?: Array<{
     label: string
@@ -22,6 +23,7 @@ export function WidgetFrame({
   title,
   robot_id,
   isConnected,
+  onSettingClick,
   children,
   footerInfo = [],
   footerMessage,
@@ -36,6 +38,7 @@ export function WidgetFrame({
         title={title}
         robot_id={robot_id}
         isConnected={isConnected}
+        onSettingClick={onSettingClick}
         onRemove={onRemove}
       />
 
