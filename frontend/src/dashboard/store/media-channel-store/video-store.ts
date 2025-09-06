@@ -13,8 +13,13 @@ export interface VideoData {
 
 export interface StreamStats {
   fps: number
+  fpsDatas: number[]
   width: number
   height: number
+  jitter: number
+  jitterDatas: number[]
+  rtt: number
+  rttDatas: number[]
 }
 
 export function getInitialVideoData(): VideoData {
@@ -31,8 +36,13 @@ export function getInitialVideoData(): VideoData {
 export function getInitialStreamStats(): StreamStats {
   return {
     fps: 0,
+    fpsDatas: [],
     width: 0,
     height: 0,
+    jitter: 0,
+    jitterDatas: [],
+    rtt: 0,
+    rttDatas: [],
   }
 }
 
@@ -45,14 +55,27 @@ export class VideoStore {
   protected streamStatsSubscribers: Set<StreamStatsSubscriber> = new Set()
   protected isActive = false
   protected streamStats: StreamStats = getInitialStreamStats()
-  protected fpsCounter = 0
-  protected fpsInterval: number | null = null
-  protected lastFpsUpdate: number = Date.now()
   protected metadata: { mediaType?: string; source?: string } = {}
+
+  protected pc: RTCPeerConnection | null = null
+  protected mediaStreamTrack: MediaStreamTrack | null = null
+  protected statsReportInterval: NodeJS.Timeout | null = null
 
   constructor(robotId: string, channelLabel: string) {
     this.robotId = robotId
     this.channelLabel = channelLabel
+  }
+
+  setPeerConnection(pc: RTCPeerConnection | null): void {
+    if (pc !== null) {
+      this.pc = pc
+    }
+  }
+
+  setMediaStreamTrack(track: MediaStreamTrack | null): void {
+    if (track !== null) {
+      this.mediaStreamTrack = track
+    }
   }
 
   // Metadata setter (simplified metadata)
@@ -88,7 +111,7 @@ export class VideoStore {
     // Connect stream to video element
     if (this.videoElement) {
       this.videoElement.srcObject = stream
-      this.startFpsMonitoring()
+      this.startStatsReporting()
     }
 
     // Notify subscribers immediately
@@ -101,7 +124,7 @@ export class VideoStore {
 
     if (this.mediaStream) {
       this.videoElement.srcObject = this.mediaStream
-      this.startFpsMonitoring()
+      this.startStatsReporting()
     }
   }
 
@@ -125,46 +148,49 @@ export class VideoStore {
     return this.isActive
   }
 
-  // Start FPS monitoring
-  protected startFpsMonitoring(): void {
-    if (this.fpsInterval) {
-      clearInterval(this.fpsInterval)
-    }
+  protected startStatsReporting(): void {
+    this.stopStatsReporting()
 
-    this.fpsCounter = 0
-    this.fpsInterval = window.setInterval(() => {
-      this.updateFps()
+    this.statsReportInterval = setInterval(async () => {
+      await this.statsReporting()
     }, 1000)
   }
 
-  // Stop FPS monitoring
-  protected stopFpsMonitoring(): void {
-    if (this.fpsInterval) {
-      clearInterval(this.fpsInterval)
-      this.fpsInterval = null
+  protected stopStatsReporting(): void {
+    if (this.statsReportInterval) {
+      clearInterval(this.statsReportInterval)
+      this.statsReportInterval = null
     }
   }
 
-  // Update FPS (can be overridden by child classes)
-  protected updateFps(): void {
-    if (!this.videoElement || !this.mediaStream) return
-
-    const currentTime = Date.now()
-    const elapsedTime = currentTime - this.lastFpsUpdate
-    const fps = Math.round((this.fpsCounter * 1000) / elapsedTime)
-
-    this.lastFpsUpdate = currentTime
-    this.fpsCounter = 0
-
-    // Update stream statistics
-    this.streamStats = {
-      ...this.streamStats,
-      fps: fps,
-      width: this.videoElement.videoWidth || 640,
-      height: this.videoElement.videoHeight || 480,
+  protected async statsReporting(): Promise<void> {
+    if (this.pc === null || this.pc === undefined) {
+      return
     }
 
-    // Notify subscribers
+    const stats = await this.pc.getStats(this.mediaStreamTrack)
+
+    stats.forEach((report) => {
+      if (report.type === "inbound-rtp" && report.kind === "video") {
+        const fps = report.framesPerSecond || 0
+        const width = report.frameWidth || 0
+        const height = report.frameHeight || 0
+        const jitter = report.jitter || 0
+
+        this.streamStats.fps = fps
+        this.streamStats.fpsDatas.push(fps)
+        this.streamStats.width = width
+        this.streamStats.height = height
+        this.streamStats.jitter = jitter
+        this.streamStats.jitterDatas.push(jitter)
+      }
+
+      if (report.type === "remote-outbound-rtp") {
+        this.streamStats.rtt = report.timestamp - report.remoteTimestamp
+        this.streamStats.rttDatas.push(this.streamStats.rtt)
+      }
+    })
+
     this.notifyStreamStatsSubscribers()
   }
 
@@ -211,7 +237,16 @@ export class VideoStore {
 
   // Cleanup
   destroy(): void {
-    this.stopFpsMonitoring()
+    this.stopStatsReporting()
+
+    console.log(
+      "Robot: ",
+      this.robotId,
+      "Channel: ",
+      this.channelLabel,
+      "Stats: ",
+      this.streamStats,
+    )
 
     this.isActive = false
     this.notifySubscribers()
@@ -252,20 +287,8 @@ export class VideoStore {
     return this.streamStats
   }
 
-  public getFpsCounter(): number {
-    return this.fpsCounter
-  }
-
-  public setFpsCounter(value: number): void {
-    this.fpsCounter = value
-  }
-
   public setStreamStats(stats: StreamStats): void {
     this.streamStats = stats
     this.notifyStreamStatsSubscribers()
-  }
-
-  public incrementFpsCounter(): void {
-    this.fpsCounter++
   }
 }

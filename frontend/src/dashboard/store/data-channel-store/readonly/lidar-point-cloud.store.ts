@@ -14,7 +14,8 @@ export class LidarPointCloudStore extends ReadOnlyStore<
   ArrayBuffer
 > {
   // FPS 측정을 위한 변수들
-  public fps: number = 0
+  public fps = 0
+  private fpsDatas: number[] = []
   private frameTimestamps: number[] = []
   private readonly MAX_FRAME_HISTORY = 10
   private lastFpsLogTime = 0
@@ -27,8 +28,10 @@ export class LidarPointCloudStore extends ReadOnlyStore<
   }
 
   constructor(robotId: string) {
-    const parser = (buffer: ArrayBuffer) => this.parsePointCloud2WithFpsAndDelayLog(buffer)
+    const parser = (buffer: ArrayBuffer) =>
+      this.parsePointCloud2WithFpsAndDelayLog(buffer)
     super(robotId, 100, parser)
+    this.robotId = robotId
   }
 
   // FPS 계산 함수
@@ -47,15 +50,22 @@ export class LidarPointCloudStore extends ReadOnlyStore<
     const now = Date.now()
     if (now - this.lastFpsLogTime >= this.FPS_LOG_INTERVAL) {
       this.fps = this.calculateFPS()
+      this.fpsDatas.push(this.fps)
       console.log(
-        `📊 PointCloud FPS: ${this.fps.toFixed(1)} (based on last ${Math.min(this.frameTimestamps.length, this.MAX_FRAME_HISTORY)} frames)`,
+        "RobotID: ",
+        this.robotId,
+        "PointCloud Delay (ms):",
+        this.delayMeasurements,
+        "FPS:",
+        this.fpsDatas,
       )
-      console.log("Delay measurements (ms):", this.delayMeasurements)
       this.lastFpsLogTime = now
     }
   }
 
-  parsePointCloud2WithFpsAndDelayLog(buffer: ArrayBuffer): ParsedPointCloud2 | null {
+  parsePointCloud2WithFpsAndDelayLog(
+    buffer: ArrayBuffer,
+  ): ParsedPointCloud2 | null {
     const result = parsePointCloud2(buffer, this.delayMeasurements)
 
     if (result) {

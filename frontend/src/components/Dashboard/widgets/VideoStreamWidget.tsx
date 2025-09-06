@@ -7,7 +7,7 @@ import {
 } from "@/dashboard/store/media-channel-store/video-store"
 import { Box, Flex, IconButton } from "@chakra-ui/react"
 import type React from "react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { WidgetFrame } from "./WidgetFrame"
 
 interface VideoStreamWidgetProps {
@@ -33,19 +33,6 @@ export const VideoStreamWidget: React.FC<VideoStreamWidgetProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
-
-  // 비디오 프레임 콜백 (더 정확한 FPS 측정)
-  const videoFrameCallback = useCallback(() => {
-    if (!videoRef.current || !store) return
-
-    // 비디오 프레임이 실제로 렌더링될 때 FPS 카운터 증가
-    store.incrementFpsCounter()
-
-    // 다음 비디오 프레임 요청
-    if (videoRef.current.requestVideoFrameCallback) {
-      videoRef.current.requestVideoFrameCallback(videoFrameCallback)
-    }
-  }, [store])
 
   const configureVideo = () => {
     // 비디오 엘리먼트 설정
@@ -136,10 +123,6 @@ export const VideoStreamWidget: React.FC<VideoStreamWidgetProps> = ({
       setIsConnected(store.isStreamActive())
     }
 
-    // 비디오 프레임 콜백 시작 (더 정확한 FPS 측정)
-    if (videoRef.current?.requestVideoFrameCallback) {
-      videoRef.current.requestVideoFrameCallback(videoFrameCallback)
-    }
     const closing = configureVideo()
 
     return () => {
@@ -147,7 +130,7 @@ export const VideoStreamWidget: React.FC<VideoStreamWidgetProps> = ({
       unsubscribe()
       unscribeStreamStats()
     }
-  }, [store, videoRef.current, videoFrameCallback])
+  }, [store, videoRef.current])
 
   const handlePlayPause = () => {
     if (videoRef.current) {
@@ -189,8 +172,8 @@ export const VideoStreamWidget: React.FC<VideoStreamWidgetProps> = ({
     videoData && streamStats
       ? [
           {
-            label: "FPS",
-            value: `${streamStats.fps} fps`,
+            label: "Status",
+            value: `FPS: ${streamStats.fps} fps, Jitter: ${streamStats.jitter} ms, RTT: ${streamStats.rtt.toFixed(1)} ms`,
           },
           {
             label: "Resolution",

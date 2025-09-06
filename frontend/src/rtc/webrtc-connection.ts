@@ -318,6 +318,9 @@ export class WebRTCConnection {
         source: "robot_stream",
       })
 
+      videoStore.setPeerConnection(this.peerConnection)
+      videoStore.setMediaStreamTrack(event.track)
+
       videoStore.setMediaStream(stream)
       console.log(
         `Video Store connected: ${mediaType} for robot ${this.config.robotId}`,
