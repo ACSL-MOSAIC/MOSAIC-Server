@@ -1,5 +1,6 @@
 import type { ParsedData } from "./parsed.type"
 import { chunking, pointcloud } from "./protobuf/proto"
+import {DelayMeasurement} from "@/dashboard/store/data-channel-store/readonly/lidar-point-cloud.store.ts";
 
 export interface LiDARPoint {
   x: number | null
@@ -38,11 +39,6 @@ const chunkMap: Map<string, ChunkData> = new Map()
 const CHUNK_TIMEOUT = 5000 // 5초
 const MAX_CONCURRENT_MESSAGES = 3 // 최대 2개의 메시지 동시 처리
 
-// FPS 측정을 위한 전역 변수들
-const frameTimestamps: number[] = []
-const MAX_FRAME_HISTORY = 10 // 최근 10개 프레임으로 FPS 계산
-let lastFpsLogTime = 0
-const FPS_LOG_INTERVAL = 1000 // 1초마다 FPS 로그 출력
 
 // 주기적으로 오래된 chunk 데이터 정리
 setInterval(() => {
@@ -54,28 +50,6 @@ setInterval(() => {
   }
 }, CHUNK_TIMEOUT)
 
-// FPS 계산 함수
-const calculateFPS = (): number => {
-  if (frameTimestamps.length < 2) return 0
-
-  const recentFrames = frameTimestamps.slice(-MAX_FRAME_HISTORY)
-  const totalTime = recentFrames[recentFrames.length - 1] - recentFrames[0]
-  const frameCount = recentFrames.length - 1
-
-  return totalTime > 0 ? (frameCount / totalTime) * 1000 : 0
-}
-
-// FPS 로그 출력 함수
-const logFPS = (): void => {
-  const now = Date.now()
-  if (now - lastFpsLogTime >= FPS_LOG_INTERVAL) {
-    const fps = calculateFPS()
-    console.log(
-      `📊 PointCloud FPS: ${fps.toFixed(1)} (based on last ${Math.min(frameTimestamps.length, MAX_FRAME_HISTORY)} frames)`,
-    )
-    lastFpsLogTime = now
-  }
-}
 
 const combineChunks = (chunkData: ChunkData): Uint8Array => {
   const totalSize = Array.from(chunkData.chunks.values()).reduce(
@@ -110,10 +84,11 @@ export type ParsedPointCloud2 = ParsedData<LiDARPoints>
 
 export const parsePointCloud2 = (
   buffer: ArrayBuffer,
+  delayMeasurements: DelayMeasurement,
 ): ParsedPointCloud2 | null => {
   try {
     const dataChunk = chunking.DataChunk.decode(new Uint8Array(buffer))
-    return parsePointCloud2FromDataChunk(dataChunk)
+    return parsePointCloud2FromDataChunk(dataChunk, delayMeasurements)
   } catch (error) {
     console.error("❌ Error decoding data chunk:", error)
     return null
@@ -122,6 +97,7 @@ export const parsePointCloud2 = (
 
 export const parsePointCloud2FromDataChunk = (
   dataChunk: chunking.DataChunk,
+  delayMeasurements: DelayMeasurement,
 ): ParsedPointCloud2 | null => {
   try {
     // 새로운 메시지 ID인 경우 초기화 (최대 2개까지만 유지)
@@ -169,21 +145,16 @@ export const parsePointCloud2FromDataChunk = (
     // PointCloud2 객체 생성
     const pointCloud = pointcloud.PointCloud2.decode(combinedData)
 
-    console.log(
-      "CLOUD POINTS DATA RECEIVED, SENT TIMESTAMP: ",
-      chunkData.sentTimestamp,
-      "RECEIVED TIMESTAMP: ",
-      completionTime,
-    )
+    const sentMs = typeof chunkData.sentTimestamp === 'number' 
+      ? chunkData.sentTimestamp / 1000
+      : Number(chunkData.sentTimestamp) / 1000
+    const delayMs = completionTime - sentMs
+
+    delayMeasurements.delayDatas.push(delayMs)
+    delayMeasurements.numDatas += 1
 
     // 처리된 chunk 데이터 삭제
     chunkMap.delete(dataChunk.messageId)
-
-    // FPS 측정을 위한 타임스탬프 추가
-    frameTimestamps.push(completionTime)
-    if (frameTimestamps.length > MAX_FRAME_HISTORY) {
-      frameTimestamps.shift()
-    }
 
     // PointCloud2 객체를 LiDARPoints 형식으로 변환
     const lidarPoints: LiDARPoints = {
@@ -201,34 +172,57 @@ export const parsePointCloud2FromDataChunk = (
       datas: [],
     }
 
-    const binaryData = atob(pointCloud.data as unknown as string)
-    const pointData = new Uint8Array(binaryData.length)
-    for (let i = 0; i < binaryData.length; i++) {
-      pointData[i] = binaryData.charCodeAt(i)
+    // 필드 매핑 생성: 필요한 필드들의 offset 정보를 찾음
+    const requiredFields = ['x', 'y', 'z', 'intensity']
+    const fieldMapping: Record<string, { offset: number; datatype: number }> = {}
+    
+    for (const field of pointCloud.fields) {
+      if (field.name && requiredFields.includes(field.name) && field.offset != null && field.datatype != null) {
+        fieldMapping[field.name] = {
+          offset: field.offset,
+          datatype: field.datatype
+        }
+      }
+    }
+    
+    // 필수 필드 존재 여부 확인
+    for (const requiredField of requiredFields) {
+      if (!fieldMapping[requiredField]) {
+        throw new Error(`Required field '${requiredField}' not found in pointCloud.fields`)
+      }
     }
 
     const numPoints = pointCloud.width * pointCloud.height
     for (let i = 0; i < numPoints; i++) {
-      const offset = i * pointCloud.pointStep
+      const pointOffset = i * pointCloud.pointStep
 
-      const singlePointBuffer = pointData.slice(
-        offset,
-        offset + pointCloud.pointStep,
-      ).buffer
-
-      // TODO pointCloud.data 가 아니라 singlePointBuffer 를 사용
-      // TODO pointCloud.fields 정보에 따라 동적으로 파싱
+      // 동적 필드 파싱
       const x = new Float32Array(
-        pointCloud.data.slice(offset, offset + 4).buffer,
+        pointCloud.data.slice(
+          pointOffset + fieldMapping.x.offset,
+          pointOffset + fieldMapping.x.offset + 4
+        ).buffer,
       )[0]
+      
       const y = new Float32Array(
-        pointCloud.data.slice(offset + 4, offset + 8).buffer,
+        pointCloud.data.slice(
+          pointOffset + fieldMapping.y.offset,
+          pointOffset + fieldMapping.y.offset + 4
+        ).buffer,
       )[0]
+      
       const z = new Float32Array(
-        pointCloud.data.slice(offset + 8, offset + 12).buffer,
+        pointCloud.data.slice(
+          pointOffset + fieldMapping.z.offset,
+          pointOffset + fieldMapping.z.offset + 4
+        ).buffer,
       )[0]
+      
       const intensity = new Float32Array(
-        pointCloud.data.slice(offset + 16, offset + 20).buffer,
+        pointCloud.data.slice(
+          pointOffset + fieldMapping.intensity.offset,
+          pointOffset + fieldMapping.intensity.offset + 4
+        ).buffer,
       )[0]
 
       lidarPoints.datas.push({
@@ -239,15 +233,10 @@ export const parsePointCloud2FromDataChunk = (
       })
     }
 
-    const parsedPointCloud: ParsedPointCloud2 = {
+    return {
       ...lidarPoints,
       timestamp: completionTime,
     }
-
-    // FPS 로그 출력 (1초마다)
-    logFPS()
-
-    return parsedPointCloud
   } catch (error) {
     console.error("Error parsing data chunk:", error)
     return null

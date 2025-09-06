@@ -1,25 +1,26 @@
-import type { ParsedPointCloud2 } from "@/dashboard/parser/lidar-pointcloud.ts"
-import type { LidarPointCloudStore } from "@/dashboard/store/data-channel-store/readonly/lidar-point-cloud.store.ts"
-import { Box, Flex } from "@chakra-ui/react"
-import { useEffect, useRef, useState } from "react"
-import { WidgetFrame } from "./WidgetFrame"
-import type { WidgetProps } from "./types"
+import type {ParsedPointCloud2} from "@/dashboard/parser/lidar-pointcloud.ts"
+import type {LidarPointCloudStore} from "@/dashboard/store/data-channel-store/readonly/lidar-point-cloud.store.ts"
+import {Box, Flex} from "@chakra-ui/react"
+import {useEffect, useRef, useState} from "react"
+import {WidgetFrame} from "./WidgetFrame"
+import type {WidgetProps} from "./types"
 
 export interface LiDARPointCloud22DWidgetProps extends WidgetProps {
   store: LidarPointCloudStore
 }
 
 export function LiDARPointCloud22DWidget({
-  robotId,
-  store,
-  dataType,
-  onRemove,
-}: LiDARPointCloud22DWidgetProps) {
+                                           robotId,
+                                           store,
+                                           dataType,
+                                           onRemove,
+                                         }: LiDARPointCloud22DWidgetProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
+  const [dimensions, setDimensions] = useState({width: 0, height: 0})
+  const [fps, setFps] = useState(0)
 
   useEffect(() => {
     console.log("LiDARPointCloud22DWidget 마운트:", {
@@ -29,7 +30,7 @@ export function LiDARPointCloud22DWidget({
     })
 
     if (!store) {
-      console.error("PointCloud2 스토어가 없습니다:", { robotId, dataType })
+      console.error("PointCloud2 스토어가 없습니다:", {robotId, dataType})
       setError("PointCloud2 스토어를 찾을 수 없습니다.")
       return
     }
@@ -57,7 +58,8 @@ export function LiDARPointCloud22DWidget({
           return
         }
 
-        setDimensions({ width: data.width, height: data.height })
+        setDimensions({width: data.width, height: data.height})
+        setFps(store.fps)
 
         drawPoint(data)
       } catch (error) {
@@ -98,7 +100,7 @@ export function LiDARPointCloud22DWidget({
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     // 각 채널별로 독립적인 깊이 맵과 intensity 맵 초기화
-    const channelMaps = Array.from({ length: data.height || 0 }, () => ({
+    const channelMaps = Array.from({length: data.height || 0}, () => ({
       depthMap: new Array(data.width || 0).fill(Number.POSITIVE_INFINITY),
       intensityMap: new Array(data.width || 0).fill(0),
     }))
@@ -163,7 +165,7 @@ export function LiDARPointCloud22DWidget({
           1,
         )
 
-        const { r, g, b } = normalizedDepthAndIntensityToRGB(
+        const {r, g, b} = normalizedDepthAndIntensityToRGB(
           normalizedDepth,
           normalizedIntensity,
         )
@@ -226,7 +228,7 @@ export function LiDARPointCloud22DWidget({
     g = Math.floor(g * brightness)
     b = Math.floor(b * brightness)
 
-    return { r, g, b }
+    return {r, g, b}
   }
 
   // Footer info
@@ -237,11 +239,15 @@ export function LiDARPointCloud22DWidget({
     },
     ...(lastUpdate
       ? [
-          {
-            label: "Last Update",
-            value: lastUpdate.toLocaleTimeString(),
-          },
-        ]
+        {
+          label: "Last Update",
+          value: lastUpdate.toLocaleTimeString(),
+        },
+        {
+          label: "FPS",
+          value: fps.toFixed(1),
+        }
+      ]
       : []),
   ]
 
