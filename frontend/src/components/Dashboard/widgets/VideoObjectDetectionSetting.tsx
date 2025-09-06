@@ -77,7 +77,7 @@ export const VideoObjectDetectionSetting: React.FC<{
             </Field.Root>
 
             <Field.Root mt={3}>
-              <Field.Label>Segmentation Model</Field.Label>
+              <Field.Label>Object Detection Model</Field.Label>
               <select
                 value={newConfig.tf_model}
                 onChange={(e) =>
