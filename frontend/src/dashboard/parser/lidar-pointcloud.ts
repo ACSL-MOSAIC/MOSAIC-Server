@@ -1,6 +1,28 @@
 import type { ParsedData } from "./parsed.type"
 import { chunking, pointcloud } from "./protobuf/proto"
 
+export interface LiDARPoint {
+  x: number | null
+  y: number | null
+  z: number | null
+  intensity: number | null
+}
+
+export interface LiDARPoints {
+  header: {
+    stamp: number | null
+    frameId: string | null
+    messageId: string
+  }
+  height: number
+  width: number
+  isBigendian: boolean
+  pointStep: number
+  rowStep: number
+  isDense: boolean
+  datas: LiDARPoint[]
+}
+
 interface ChunkData {
   messageId: string
   chunks: Map<number, Uint8Array>
@@ -84,7 +106,7 @@ const combineChunks = (chunkData: ChunkData): Uint8Array => {
   return combinedData
 }
 
-export type ParsedPointCloud2 = ParsedData<pointcloud.IPointCloud2>
+export type ParsedPointCloud2 = ParsedData<LiDARPoints>
 
 export const parsePointCloud2 = (
   buffer: ArrayBuffer,
@@ -135,47 +157,97 @@ export const parsePointCloud2FromDataChunk = (
     chunkData.timestamp = Date.now()
 
     // 모든 chunk가 도착했는지 확인 (중복 제거된 실제 받은 청크 수로 확인)
-    if (chunkData.receivedChunks.size === chunkData.totalChunks) {
-      const completionTime = Date.now()
-
-      // chunk들을 순서대로 조합
-      const combinedData = combineChunks(chunkData)
-
-      // PointCloud2 객체 생성
-      const pointCloud = pointcloud.PointCloud2.decode(combinedData)
-
-      console.log(
-        "CLOUD POINTS DATA RECEIVED, SENT TIMESTAMP: ",
-        chunkData.sentTimestamp,
-        "RECEIVED TIMESTAMP: ",
-        completionTime,
-      )
-
-      // 처리된 chunk 데이터 삭제
-      chunkMap.delete(dataChunk.messageId)
-
-      // FPS 측정을 위한 타임스탬프 추가
-      frameTimestamps.push(completionTime)
-      if (frameTimestamps.length > MAX_FRAME_HISTORY) {
-        frameTimestamps.shift()
-      }
-
-      // PointCloud2 객체를 ParsedPointCloud2로 변환
-      const parsedPointCloud: ParsedPointCloud2 = {
-        ...pointCloud.toJSON(),
-        timestamp: completionTime,
-      } as any
-
-      // 메시지 ID 추가 (타입 안전성을 위해 any 사용)
-      ;(parsedPointCloud as any).messageId = dataChunk.messageId
-
-      // FPS 로그 출력 (1초마다)
-      logFPS()
-
-      return parsedPointCloud
+    if (chunkData.receivedChunks.size !== chunkData.totalChunks) {
+      return null
     }
 
-    return null
+    const completionTime = Date.now()
+
+    // chunk들을 순서대로 조합
+    const combinedData = combineChunks(chunkData)
+
+    // PointCloud2 객체 생성
+    const pointCloud = pointcloud.PointCloud2.decode(combinedData)
+
+    console.log(
+      "CLOUD POINTS DATA RECEIVED, SENT TIMESTAMP: ",
+      chunkData.sentTimestamp,
+      "RECEIVED TIMESTAMP: ",
+      completionTime,
+    )
+
+    // 처리된 chunk 데이터 삭제
+    chunkMap.delete(dataChunk.messageId)
+
+    // FPS 측정을 위한 타임스탬프 추가
+    frameTimestamps.push(completionTime)
+    if (frameTimestamps.length > MAX_FRAME_HISTORY) {
+      frameTimestamps.shift()
+    }
+
+    // PointCloud2 객체를 LiDARPoints 형식으로 변환
+    const lidarPoints: LiDARPoints = {
+      header: {
+        stamp: pointCloud.header?.stamp || null,
+        frameId: pointCloud.header?.frameId || null,
+        messageId: dataChunk.messageId,
+      },
+      height: pointCloud.height,
+      width: pointCloud.width,
+      isBigendian: pointCloud.isBigendian,
+      pointStep: pointCloud.pointStep,
+      rowStep: pointCloud.rowStep,
+      isDense: pointCloud.isDense,
+      datas: [],
+    }
+
+    const binaryData = atob(pointCloud.data as unknown as string)
+    const pointData = new Uint8Array(binaryData.length)
+    for (let i = 0; i < binaryData.length; i++) {
+      pointData[i] = binaryData.charCodeAt(i)
+    }
+
+    const numPoints = pointCloud.width * pointCloud.height
+    for (let i = 0; i < numPoints; i++) {
+      const offset = i * pointCloud.pointStep
+
+      const singlePointBuffer = pointData.slice(
+        offset,
+        offset + pointCloud.pointStep,
+      ).buffer
+
+      // TODO pointCloud.data 가 아니라 singlePointBuffer 를 사용
+      // TODO pointCloud.fields 정보에 따라 동적으로 파싱
+      const x = new Float32Array(
+        pointCloud.data.slice(offset, offset + 4).buffer,
+      )[0]
+      const y = new Float32Array(
+        pointCloud.data.slice(offset + 4, offset + 8).buffer,
+      )[0]
+      const z = new Float32Array(
+        pointCloud.data.slice(offset + 8, offset + 12).buffer,
+      )[0]
+      const intensity = new Float32Array(
+        pointCloud.data.slice(offset + 16, offset + 20).buffer,
+      )[0]
+
+      lidarPoints.datas.push({
+        x: Number.isNaN(x) ? null : x,
+        y: Number.isNaN(y) ? null : y,
+        z: Number.isNaN(z) ? null : z,
+        intensity: Number.isNaN(intensity) ? null : intensity,
+      })
+    }
+
+    const parsedPointCloud: ParsedPointCloud2 = {
+      ...lidarPoints,
+      timestamp: completionTime,
+    }
+
+    // FPS 로그 출력 (1초마다)
+    logFPS()
+
+    return parsedPointCloud
   } catch (error) {
     console.error("Error parsing data chunk:", error)
     return null
