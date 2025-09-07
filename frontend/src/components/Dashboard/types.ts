@@ -4,6 +4,8 @@ export type WidgetType =
   | "turtlesim_position"
   | "remote_control_pad"
   | "video_stream"
+  | "video_object_detection"
+  | "video_segmentation"
   | "universal"
   | "video_recorder"
 

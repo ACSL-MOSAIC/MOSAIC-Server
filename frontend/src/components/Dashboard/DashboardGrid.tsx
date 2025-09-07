@@ -252,32 +252,7 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
     if (!dashboardConfig) return
 
     // Set appropriate data type based on widget type
-    let dataType: string
-    switch (type) {
-      case "go2_low_state":
-        dataType = "go2_low_state"
-        break
-      case "lidar_pointcloud":
-        dataType = "lidar_pointcloud"
-        break
-      case "turtlesim_position":
-        dataType = "turtlesim_position"
-        break
-      case "remote_control_pad":
-        dataType = "remote_control_pad"
-        break
-      case "video_stream":
-        dataType = "video_stream"
-        break
-      case "universal":
-        dataType = "universal"
-        break
-      case "video_recorder":
-        dataType = "video_recorder"
-        break
-      default:
-        dataType = "go2_low_state"
-    }
+    const dataType = type
 
     const newWidget: WidgetConfig = {
       id: uuidv4(),

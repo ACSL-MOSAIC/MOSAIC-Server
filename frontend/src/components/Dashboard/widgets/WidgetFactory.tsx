@@ -2,6 +2,10 @@ import {
   VideoObjectDetectionWidget,
   type VideoObjectDetectionWidgetConfig,
 } from "@/components/Dashboard/widgets/VideoObjectDetectionWidget.tsx"
+import {
+  VideoSegmentationWidget,
+  type VideoSegmentationWidgetConfig,
+} from "@/components/Dashboard/widgets/VideoSegmentationWidget.tsx"
 import { WidgetFrame } from "@/components/Dashboard/widgets/WidgetFrame.tsx"
 import type { UniversalWidgetConfig } from "@/components/Dashboard/widgets/dynamic/universal-widget-config.ts"
 import { GO2_LOW_STATE_TYPE } from "@/dashboard/parser/go2-low-state.ts"
@@ -160,6 +164,17 @@ export function WidgetFactory({
         <VideoObjectDetectionWidget
           robotId={robotId}
           config={config as VideoObjectDetectionWidgetConfig}
+          onUpdateConfig={onUpdateConfig}
+          onRemove={onRemove}
+        />
+      )
+    }
+
+    case "video_segmentation": {
+      return (
+        <VideoSegmentationWidget
+          robotId={robotId}
+          config={config as VideoSegmentationWidgetConfig}
           onUpdateConfig={onUpdateConfig}
           onRemove={onRemove}
         />

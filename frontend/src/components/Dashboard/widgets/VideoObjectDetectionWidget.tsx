@@ -146,16 +146,60 @@ export const VideoObjectDetectionWidget: React.FC<
       const canvas = canvasRef.current
       const video = videoRef.current
 
-      canvas.width = video.videoWidth || video.offsetWidth
-      canvas.height = video.videoHeight || video.offsetHeight
-      canvas.style.width = `${video.offsetWidth}px`
-      canvas.style.height = `${video.offsetHeight}px`
+      // video의 실제 비디오 크기
+      const videoWidth = video.videoWidth
+      const videoHeight = video.videoHeight
+
+      // video element의 display 크기
+      const elementWidth = video.offsetWidth
+      const elementHeight = video.offsetHeight
+
+      // object-fit: contain으로 인한 실제 표시 영역 계산
+      const videoAspectRatio = videoWidth / videoHeight
+      const elementAspectRatio = elementWidth / elementHeight
+
+      let displayWidth: number
+      let displayHeight: number
+      let offsetX: number
+      let offsetY: number
+
+      if (videoAspectRatio > elementAspectRatio) {
+        // 비디오가 더 넓음 - 가로가 꽉 참
+        displayWidth = elementWidth
+        displayHeight = elementWidth / videoAspectRatio
+        offsetX = 0
+        offsetY = (elementHeight - displayHeight) / 2
+      } else {
+        // 비디오가 더 높음 - 세로가 꽉 참
+        displayWidth = elementHeight * videoAspectRatio
+        displayHeight = elementHeight
+        offsetX = (elementWidth - displayWidth) / 2
+        offsetY = 0
+      }
+
+      // 캔버스 크기를 실제 비디오 해상도로 설정
+      canvas.width = videoWidth
+      canvas.height = videoHeight
+
+      // 캔버스 스타일을 실제 표시 영역에 맞게 설정
+      canvas.style.width = `${displayWidth}px`
+      canvas.style.height = `${displayHeight}px`
+      canvas.style.position = "absolute"
+      canvas.style.top = `${offsetY + 12}px`
+      canvas.style.left = `${offsetX + 12}px`
     }
   }, [])
+
+  const nextFrame = () => {
+    animationFrameRef.current = requestAnimationFrame(() => {
+      setTimeout(detectObjects, 100)
+    })
+  }
 
   // 객체 탐지
   const detectObjects = useCallback(async () => {
     if (!isDetecting || !model || !videoRef.current || !canvasRef.current) {
+      nextFrame()
       return
     }
 
@@ -166,14 +210,9 @@ export const VideoObjectDetectionWidget: React.FC<
 
       if (!ctx || video.readyState !== 4) {
         // 다음 프레임에서 재시도
-        animationFrameRef.current = requestAnimationFrame(() => {
-          setTimeout(detectObjects, 100)
-        })
+        nextFrame()
         return
       }
-
-      // 캔버스 클리어
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       // 객체 탐지 수행
       const predictions = await model.detect(video)
@@ -188,18 +227,21 @@ export const VideoObjectDetectionWidget: React.FC<
         }))
 
       setDetections(filteredDetections)
+
+      // 캔버스 클리어
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      setupCanvas()
+
       drawDetections(ctx, filteredDetections)
     } catch (err) {
       console.error("Detection error:", err)
     }
 
     // 다음 프레임 스케줄링 (10FPS)
-    if (isDetecting) {
-      animationFrameRef.current = requestAnimationFrame(() => {
-        setTimeout(detectObjects, 100)
-      })
+    if (isDetecting && isPlaying) {
+      nextFrame()
     }
-  }, [isDetecting, model])
+  }, [isDetecting, isPlaying, model])
 
   // 탐지 결과 그리기
   const drawDetections = (
@@ -247,8 +289,7 @@ export const VideoObjectDetectionWidget: React.FC<
 
   // 탐지 자동 시작
   useEffect(() => {
-    console.log("Current state:", { model, isConnected, isPlaying })
-    if (model && isConnected && isPlaying) {
+    if (model && isConnected) {
       setIsDetecting(true)
       // detectObjects 호출을 다음 렌더링 사이클로 지연
       const timer = setTimeout(detectObjects, 0)
@@ -265,7 +306,7 @@ export const VideoObjectDetectionWidget: React.FC<
       ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
     }
     setDetections([])
-  }, [model, isConnected, isPlaying, detectObjects])
+  }, [model, isConnected, detectObjects])
 
   const configureVideo = () => {
     if (!store) {

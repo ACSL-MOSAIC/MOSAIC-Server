@@ -61,12 +61,34 @@ export function AddWidgetModal({
     ],
   })
 
+  const defaultWidgetConfig = createListCollection({
+    items: [
+      {
+        label: "video_object_detection",
+        value: {
+          stream_id: "video_stream",
+          tf_model: "coco-ssd",
+        },
+      },
+      {
+        label: "video_segmentation",
+        value: {
+          stream_id: "video_stream",
+          tf_model: "deeplab",
+        },
+      },
+    ],
+  })
+
   const handleAdd = () => {
     if (selectedRobotId) {
       if (selectedType === "universal") {
         setShowUniversalConfig(true)
       } else {
-        onAdd(selectedRobotId, selectedType as WidgetType)
+        const defaultConfig = defaultWidgetConfig.items.find(
+          (item) => item.label === selectedType,
+        )?.value
+        onAdd(selectedRobotId, selectedType as WidgetType, defaultConfig)
         onClose()
       }
     }
