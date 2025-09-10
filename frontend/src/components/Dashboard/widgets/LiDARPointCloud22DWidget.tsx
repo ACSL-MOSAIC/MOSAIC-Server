@@ -1,25 +1,25 @@
-import type {ParsedPointCloud2} from "@/dashboard/parser/lidar-pointcloud.ts"
-import type {LidarPointCloudStore} from "@/dashboard/store/data-channel-store/readonly/lidar-point-cloud.store.ts"
-import {Box, Flex} from "@chakra-ui/react"
-import {useEffect, useRef, useState} from "react"
-import {WidgetFrame} from "./WidgetFrame"
-import type {WidgetProps} from "./types"
+import type { ParsedPointCloud2 } from "@/dashboard/parser/lidar-pointcloud.ts"
+import type { LidarPointCloudStore } from "@/dashboard/store/data-channel-store/readonly/lidar-point-cloud.store.ts"
+import { Box, Flex } from "@chakra-ui/react"
+import { useEffect, useRef, useState } from "react"
+import { WidgetFrame } from "./WidgetFrame"
+import type { WidgetProps } from "./types"
 
 export interface LiDARPointCloud22DWidgetProps extends WidgetProps {
   store: LidarPointCloudStore
 }
 
 export function LiDARPointCloud22DWidget({
-                                           robotId,
-                                           store,
-                                           dataType,
-                                           onRemove,
-                                         }: LiDARPointCloud22DWidgetProps) {
+  robotId,
+  store,
+  dataType,
+  onRemove,
+}: LiDARPointCloud22DWidgetProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [dimensions, setDimensions] = useState({width: 0, height: 0})
+  const [pointCount, setPointCount] = useState(0)
   const [fps, setFps] = useState(0)
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export function LiDARPointCloud22DWidget({
     })
 
     if (!store) {
-      console.error("PointCloud2 스토어가 없습니다:", {robotId, dataType})
+      console.error("PointCloud2 스토어가 없습니다:", { robotId, dataType })
       setError("PointCloud2 스토어를 찾을 수 없습니다.")
       return
     }
@@ -53,12 +53,12 @@ export function LiDARPointCloud22DWidget({
 
         const pointStep = data.pointStep
 
-        if (!data.width || !data.height || !pointStep) {
-          setError("잘못된 포인트 클라우드 차원입니다.")
+        if (!pointStep || !data.datas || data.datas.length === 0) {
+          setError("잘못된 포인트 클라우드 데이터입니다.")
           return
         }
 
-        setDimensions({width: data.width, height: data.height})
+        setPointCount(data.datas.length)
         setFps(store.fps)
 
         drawPoint(data)
@@ -88,166 +88,182 @@ export function LiDARPointCloud22DWidget({
       return
     }
 
-    // 캔버스 크기 설정 (가로 2배, 세로 4배로 확대)
-    const scaleX = 2
-    const scaleY = 4
-    const channelGap = 16 // 채널 간 여백
-    canvas.width = data.width * scaleX
-    canvas.height = data.height * scaleY + (data.height - 1) * channelGap
+    // 현재 캔버스의 표시 크기를 가져와서 설정
+    // const rect = canvas.getBoundingClientRect()
+    // const canvasWidth = Math.floor(rect.width)
+    // const canvasHeight = Math.floor(rect.height)
+    // canvas.width = canvasWidth
+    // canvas.height = canvasHeight
+
+    const canvasWidth = canvas.width
+    const canvasHeight = canvas.height
 
     // 배경을 검은색으로 설정
     ctx.fillStyle = "black"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-    // 각 채널별로 독립적인 깊이 맵과 intensity 맵 초기화
-    const channelMaps = Array.from({length: data.height || 0}, () => ({
-      depthMap: new Array(data.width || 0).fill(Number.POSITIVE_INFINITY),
-      intensityMap: new Array(data.width || 0).fill(0),
-    }))
+    // 2D 투영을 위한 깊이 맵과 높이 맵 초기화
+    const depthMap = new Array(canvasWidth * canvasHeight).fill(
+      Number.POSITIVE_INFINITY,
+    )
+    const heightMap = new Array(canvasWidth * canvasHeight).fill(0)
+
+    let maxDistance = 0
+    let minHeight = Number.POSITIVE_INFINITY
+    let maxHeight = Number.NEGATIVE_INFINITY
 
     for (let i = 0; i < data.datas.length; i++) {
       const pointData = data.datas[i]
       const x = pointData.x
       const y = pointData.y
       const z = pointData.z
-      const intensity = pointData.intensity
-      if (x === null || y === null || z === null || intensity === null) {
+      if (x === null || y === null || z === null) {
         continue
       }
 
       // 거리 계산
       const distance = Math.sqrt(x * x + y * y + z * z)
-      // 구면 좌표계로 변환
-      const azimuth = Math.atan2(y, x) // -pi ~ pi
+      if (distance === 0) continue
 
-      // 이미지 좌표로 매핑 (채널별로 독립적으로 처리)
-      const channel = Math.floor(i / (data.width || 1)) // 현재 채널
-      const u = Math.floor(
-        ((-azimuth + Math.PI) / (2 * Math.PI)) * (data.width || 0),
+      // 구면 좌표계로 변환
+      const azimuth = Math.atan2(y, x) // -pi ~ pi 라디안
+      const elevation = Math.asin(z / distance) // -pi/2 ~ pi/2 라디안
+
+      // 2D 이미지 좌표로 매핑
+      // azimuth: -180° ~ +180° → 0 ~ canvasWidth
+      const u = Math.floor(((azimuth + Math.PI) / (2 * Math.PI)) * canvasWidth)
+      // elevation: -45° ~ +45° → canvasHeight ~ 0 (상하 반전)
+      const v = Math.floor(
+        ((-elevation + Math.PI / 4) / (Math.PI / 2)) * canvasHeight,
       )
 
       // 범위 체크
-      if (u >= 0 && u < (data.width || 0) && channelMaps[channel]) {
+      if (u >= 0 && u < canvasWidth && v >= 0 && v < canvasHeight) {
+        const pixelIndex = v * canvasWidth + u
         // 같은 픽셀에 여러 포인트가 매핑될 경우 가장 가까운 거리 사용
-        if (distance < channelMaps[channel].depthMap[u]) {
-          channelMaps[channel].depthMap[u] = distance
-          channelMaps[channel].intensityMap[u] = intensity
+        if (distance < depthMap[pixelIndex]) {
+          depthMap[pixelIndex] = distance
+          heightMap[pixelIndex] = z
+          maxDistance = Math.max(maxDistance, distance)
+          minHeight = Math.min(minHeight, z)
+          maxHeight = Math.max(maxHeight, z)
         }
       }
     }
 
-    // 각 채널별 최대 거리 찾기
-    const maxDistances = channelMaps.map(
-      (channelMap) =>
-        Math.max(
-          ...channelMap.depthMap.filter((d) => d !== Number.POSITIVE_INFINITY),
-        ) || 1,
-    )
+    // maxDistance가 0인 경우 기본값 설정
+    if (maxDistance === 0) maxDistance = 1
+    // 높이 범위가 0인 경우 기본값 설정
+    const heightRange = maxHeight - minHeight
+    if (heightRange === 0) {
+      minHeight = -1
+      maxHeight = 1
+    }
 
     // 이미지 데이터 생성
     const imageData = ctx.createImageData(canvas.width, canvas.height)
 
-    // 깊이 맵과 intensity 맵을 이미지로 변환
-    for (let channel = 0; channel < data.height; channel++) {
-      const maxDistance = maxDistances[channel]
-      const channelMap = channelMaps[channel]
+    // 깊이 맵과 높이 맵을 이미지로 변환
+    for (let pixelIndex = 0; pixelIndex < depthMap.length; pixelIndex++) {
+      // 깊이 정규화
+      const normalizedDepth =
+        depthMap[pixelIndex] === Number.POSITIVE_INFINITY
+          ? 0
+          : depthMap[pixelIndex] / maxDistance
+      // 높이 정규화
+      const normalizedHeight =
+        depthMap[pixelIndex] === Number.POSITIVE_INFINITY
+          ? 0
+          : (heightMap[pixelIndex] - minHeight) / (maxHeight - minHeight)
 
-      if (!channelMap) continue
+      const { r, g, b } = depthAndHeightToRGB(normalizedDepth, normalizedHeight)
 
-      for (let u = 0; u < data.width; u++) {
-        // 깊이와 intensity 정규화
-        const normalizedDepth =
-          channelMap.depthMap[u] === Number.POSITIVE_INFINITY
-            ? 0
-            : channelMap.depthMap[u] / maxDistance
-        const normalizedIntensity = Math.min(
-          Math.max(channelMap.intensityMap[u] / 255, 0),
-          1,
-        )
-
-        const {r, g, b} = normalizedDepthAndIntensityToRGB(
-          normalizedDepth,
-          normalizedIntensity,
-        )
-
-        // 이미지 데이터에 컬러맵 값 설정 (확대 배율 적용)
-        const yOffset = channel * (scaleY + channelGap)
-        for (let sy = 0; sy < scaleY; sy++) {
-          for (let sx = 0; sx < scaleX; sx++) {
-            const pixelIndex =
-              ((yOffset + sy) * canvas.width + (u * scaleX + sx)) * 4
-            imageData.data[pixelIndex] = r // R
-            imageData.data[pixelIndex + 1] = g // G
-            imageData.data[pixelIndex + 2] = b // B
-            imageData.data[pixelIndex + 3] = 255 // A
-          }
-        }
-      }
+      // 이미지 데이터에 컬러맵 값 설정
+      const imageIndex = pixelIndex * 4
+      imageData.data[imageIndex] = r // R
+      imageData.data[imageIndex + 1] = g // G
+      imageData.data[imageIndex + 2] = b // B
+      imageData.data[imageIndex + 3] = 255 // A
     }
 
     // 이미지 데이터를 캔버스에 그리기
     ctx.putImageData(imageData, 0, 0)
+    setPointCount(data.datas.length)
     setLastUpdate(new Date())
   }
 
-  const normalizedDepthAndIntensityToRGB = (
+  const depthAndHeightToRGB = (
     depth: number,
-    intensity: number,
+    height: number,
   ): { r: number; g: number; b: number } => {
-    // 컬러맵 적용 (깊이와 intensity를 혼합)
+    // 빈 부분 (거리 정보가 없는 부분)
+    if (depth === 0) {
+      return { r: 0, g: 0, b: 0 } // 검은색
+    }
+
+    // HSV 색공간을 사용하여 자연스러운 색상 매핑
+    // Hue: 거리에 따라 변경 (가까운 거리: 빨간색(0°) -> 먼 거리: 파란색(240°))
+    const hue = (1 - depth) * 240 // 0° (빨강) ~ 240° (파랑)
+    
+    // Saturation: 높이에 따라 변경 (낮은 높이: 채도 낮음, 높은 높이: 채도 높음)
+    const saturation = 0.5 + height * 0.5 // 0.5 ~ 1.0
+    
+    // Value: 거리와 높이 조합으로 밝기 조절
+    const value = 0.6 + (1 - depth) * 0.3 + height * 0.1 // 0.6 ~ 1.0
+    
+    // HSV to RGB 변환
+    const { r, g, b } = hsvToRgb(hue / 360, saturation, value)
+    
+    return { r: Math.floor(r * 255), g: Math.floor(g * 255), b: Math.floor(b * 255) }
+  }
+
+  const hsvToRgb = (h: number, s: number, v: number): { r: number; g: number; b: number } => {
+    const c = v * s
+    const x = c * (1 - Math.abs(((h * 6) % 2) - 1))
+    const m = v - c
+    
     let r = 0
     let g = 0
     let b = 0
-
-    // 깊이에 따른 색상 (파란색 -> 청록색 -> 노란색 -> 빨간색)
-    if (depth < 0.25) {
-      const t = depth * 4
-      r = 0
-      g = t * 255
-      b = 255
-    } else if (depth < 0.5) {
-      const t = (depth - 0.25) * 4
-      r = t * 255
-      g = 255
-      b = (1 - t) * 255
-    } else if (depth < 0.75) {
-      const t = (depth - 0.5) * 4
-      r = 255
-      g = (1 - t * 0.5) * 255
-      b = 0
+    
+    if (h < 1/6) {
+      r = c; g = x; b = 0
+    } else if (h < 2/6) {
+      r = x; g = c; b = 0
+    } else if (h < 3/6) {
+      r = 0; g = c; b = x
+    } else if (h < 4/6) {
+      r = 0; g = x; b = c
+    } else if (h < 5/6) {
+      r = x; g = 0; b = c
     } else {
-      const t = (depth - 0.75) * 4
-      r = 255
-      g = (0.5 - t * 0.5) * 255
-      b = 0
+      r = c; g = 0; b = x
     }
-
-    // intensity로 밝기 조절
-    const brightness = 0.5 + intensity * 0.5
-    r = Math.floor(r * brightness)
-    g = Math.floor(g * brightness)
-    b = Math.floor(b * brightness)
-
-    return {r, g, b}
+    
+    return {
+      r: r + m,
+      g: g + m,
+      b: b + m
+    }
   }
 
   // Footer info
   const footerInfo = [
     {
       label: "Points",
-      value: `${dimensions.width} × ${dimensions.height} = ${dimensions.width * dimensions.height}`,
+      value: pointCount.toLocaleString(),
     },
     ...(lastUpdate
       ? [
-        {
-          label: "Last Update",
-          value: lastUpdate.toLocaleTimeString(),
-        },
-        {
-          label: "FPS",
-          value: fps.toFixed(1),
-        }
-      ]
+          {
+            label: "Last Update",
+            value: lastUpdate.toLocaleTimeString(),
+          },
+          {
+            label: "FPS",
+            value: fps.toFixed(1),
+          },
+        ]
       : []),
   ]
 
@@ -335,8 +351,8 @@ export function LiDARPointCloud22DWidget({
           <canvas
             ref={canvasRef}
             style={{
-              maxWidth: "100%",
-              maxHeight: "100%",
+              width: "100%",
+              height: "100%",
               objectFit: "contain",
               borderRadius: "6px",
             }}
