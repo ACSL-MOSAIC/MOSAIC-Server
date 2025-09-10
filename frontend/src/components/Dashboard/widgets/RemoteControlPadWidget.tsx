@@ -103,7 +103,7 @@ export function RemoteControlPadWidget({
   }, [store, robotId])
 
   const handleDirectionClick = (
-    direction: "up" | "down" | "left" | "right",
+    direction: "up" | "down" | "left" | "right" | "stop",
   ) => {
     const sent = store.sendCommand(direction)
 
@@ -152,7 +152,7 @@ export function RemoteControlPadWidget({
 
   const DirectionButton = ({
     direction,
-  }: { direction: "up" | "down" | "left" | "right" }) => {
+  }: { direction: "up" | "down" | "left" | "right" | "stop" }) => {
     return (
       <Button
         size="lg"
@@ -220,8 +220,8 @@ export function RemoteControlPadWidget({
             {/* 왼쪽 버튼 */}
             <DirectionButton direction="left" />
 
-            {/* 중앙 (빈 공간) */}
-            <Box />
+            {/* 중앙 */}
+            <DirectionButton direction="stop" />
 
             {/* 오른쪽 버튼 */}
             <DirectionButton direction="right" />
