@@ -120,34 +120,21 @@ export function LiDARPointCloud22DWidget({
       const z = pointData.z
       const intensity = pointData.intensity || 0
 
-      // console.log(x, y, z, intensity)
-
       if (x === null || y === null || z === null) {
         continue
       }
 
-      // 거리 계산 (XY 평면에서의 거리)
       const distance = Math.sqrt(x * x + y * y)
       if (distance === 0) continue
-
-      // 방위각 계산: 정면(+X축)을 기준으로 시계방향
-      const azimuth = Math.atan2(y, x) // -π ~ π
-
-      // 2D 이미지 좌표로 매핑
-      // azimuth: -π(-180°) ~ π(+180°) → 0 ~ canvasWidth
-      const u = Math.floor(((azimuth + Math.PI) / (2 * Math.PI)) * canvasWidth)
 
       // 높이: 전체 높이 범위를 캔버스 높이에 매핑 (위쪽이 높은 높이)
       // 일단 임시로 매핑하고, 나중에 전체 범위를 알면 다시 매핑
 
-      // 범위 체크 및 데이터 수집
-      if (u >= 0 && u < canvasWidth) {
-        maxDistance = Math.max(maxDistance, distance)
-        minHeight = Math.min(minHeight, z)
-        maxHeight = Math.max(maxHeight, z)
-        minIntensity = Math.min(minIntensity, intensity)
-        maxIntensity = Math.max(maxIntensity, intensity)
-      }
+      maxDistance = Math.max(maxDistance, distance)
+      minHeight = Math.min(minHeight, z)
+      maxHeight = Math.max(maxHeight, z)
+      minIntensity = Math.min(minIntensity, intensity)
+      maxIntensity = Math.max(maxIntensity, intensity)
     }
 
     // 기본값 설정

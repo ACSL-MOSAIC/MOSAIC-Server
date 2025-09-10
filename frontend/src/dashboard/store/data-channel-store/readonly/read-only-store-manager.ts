@@ -1,5 +1,4 @@
 import type { BaseStoreManager } from "../../base-store-manager"
-import { DataStore } from "../../store"
 import type { ReadOnlyStore } from "./read-only-store"
 
 export class ReadOnlyStoreManager implements BaseStoreManager {
@@ -25,7 +24,7 @@ export class ReadOnlyStoreManager implements BaseStoreManager {
     // Initialize data type channel tracking
     this.dataTypeChannels.set(robotId, new Map())
 
-    console.log(`Robot ${robotId} read-only store container initialized`)
+    // console.log(`Robot ${robotId} read-only store container initialized`)
   }
 
   public cleanupRobotStores(robotId: string) {
@@ -39,7 +38,7 @@ export class ReadOnlyStoreManager implements BaseStoreManager {
 
     this.stores.delete(robotId)
     this.dataTypeChannels.delete(robotId)
-    console.log(`Robot ${robotId} read-only stores cleanup completed`)
+    // console.log(`Robot ${robotId} read-only stores cleanup completed`)
   }
 
   public getStore<T, I = string>(
@@ -59,9 +58,9 @@ export class ReadOnlyStoreManager implements BaseStoreManager {
     if (!robotStores) {
       robotStores = new Map<symbol, ReadOnlyStore<any, any>>()
       this.stores.set(robotId, robotStores)
-      console.log(
-        `Robot ${robotId} read-only store container dynamically created`,
-      )
+      // console.log(
+      //   `Robot ${robotId} read-only store container dynamically created`,
+      // )
     }
 
     let store = robotStores.get(storeType) as ReadOnlyStore<T, I>
@@ -69,9 +68,9 @@ export class ReadOnlyStoreManager implements BaseStoreManager {
     if (!store) {
       store = storeFactory(robotId)
       robotStores.set(storeType, store)
-      console.log(
-        `Read-only store created: ${String(storeType)} for robot ${robotId}`,
-      )
+      // console.log(
+      //   `Read-only store created: ${String(storeType)} for robot ${robotId}`,
+      // )
     }
 
     return store
@@ -97,9 +96,9 @@ export class ReadOnlyStoreManager implements BaseStoreManager {
 
     if (!channels.includes(channelLabel)) {
       channels.push(channelLabel)
-      console.log(
-        `Read-only channel registered: ${channelLabel} -> ${dataType} for robot ${robotId}`,
-      )
+      // console.log(
+      //   `Read-only channel registered: ${channelLabel} -> ${dataType} for robot ${robotId}`,
+      // )
     }
   }
 

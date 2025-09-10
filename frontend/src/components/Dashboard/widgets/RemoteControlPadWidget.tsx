@@ -96,7 +96,7 @@ export function RemoteControlPadWidget({
     })
 
     return () => {
-      console.log(`RemoteControlPadWidget - cleanup for robot ${robotId}`)
+      // console.log(`RemoteControlPadWidget - cleanup for robot ${robotId}`)
       unsubscribeConnection()
       unsubscribeData()
     }

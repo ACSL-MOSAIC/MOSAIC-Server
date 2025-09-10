@@ -25,9 +25,9 @@ export class VideoStoreManager {
       this.stores.set(robotId, new Map())
       this.dataTypeChannels.set(robotId, new Map())
       this.mediaTypeStoreTypes.set(robotId, new Map())
-      console.log(
-        `VideoStoreManager: Robot ${robotId} video stores initialized`,
-      )
+      // console.log(
+      //   `VideoStoreManager: Robot ${robotId} video stores initialized`,
+      // )
     }
   }
 
@@ -46,7 +46,7 @@ export class VideoStoreManager {
     this.dataTypeChannels.delete(robotId)
     this.mediaTypeStoreTypes.delete(robotId)
 
-    console.log(`VideoStoreManager: Robot ${robotId} video stores cleaned up`)
+    // console.log(`VideoStoreManager: Robot ${robotId} video stores cleaned up`)
   }
 
   // Create store if it doesn't exist, otherwise return existing store
@@ -65,9 +65,9 @@ export class VideoStoreManager {
     if (!store) {
       store = storeFactory(robotId)
       robotStores.set(storeType, store)
-      console.log(
-        `VideoStoreManager: New VideoStore created: ${String(storeType)} for robot ${robotId}`,
-      )
+      // console.log(
+      //   `VideoStoreManager: New VideoStore created: ${String(storeType)} for robot ${robotId}`,
+      // )
     }
 
     return store
@@ -104,9 +104,9 @@ export class VideoStoreManager {
     // Register channel
     this.registerChannelForDataType(robotId, mediaType, channelLabel)
 
-    console.log(
-      `VideoStoreManager: VideoStore created for media type ${mediaType}`,
-    )
+    // console.log(
+    //   `VideoStoreManager: VideoStore created for media type ${mediaType}`,
+    // )
     return store
   }
 
@@ -164,9 +164,9 @@ export class VideoStoreManager {
       return null
     }
 
-    console.log(
-      `VideoStoreManager: Creating new VideoStore: ${mediaType} for robot ${robotId}`,
-    )
+    // console.log(
+    //   `VideoStoreManager: Creating new VideoStore: ${mediaType} for robot ${robotId}`,
+    // )
     return this.createVideoStoreByMediaType(
       robotId,
       mediaType,
@@ -213,9 +213,9 @@ export class VideoStoreManager {
 
     if (!channels.includes(channelLabel)) {
       channels.push(channelLabel)
-      console.log(
-        `VideoStoreManager: Video channel registered: ${channelLabel} -> ${dataType} for robot ${robotId}`,
-      )
+      // console.log(
+      //   `VideoStoreManager: Video channel registered: ${channelLabel} -> ${dataType} for robot ${robotId}`,
+      // )
     }
   }
 

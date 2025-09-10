@@ -34,7 +34,7 @@ export interface ChunkData {
   receivedChunks: Set<number> // 실제로 받은 청크 인덱스 추적
 }
 
-const MAX_CONCURRENT_MESSAGES = 50 // 최대 2개의 메시지 동시 처리
+const MAX_CONCURRENT_MESSAGES = 15 // 최대 2개의 메시지 동시 처리
 
 const combineChunks = (chunkData: ChunkData): Uint8Array => {
   const totalSize = Array.from(chunkData.chunks.values()).reduce(
@@ -201,72 +201,31 @@ export const parsePointCloud2FromDataChunk = (
     }
 
     const numPoints = pointCloud.width * pointCloud.height
+    // DataView를 한 번만 생성
+    const dataView = new DataView(
+      pointCloud.data.buffer,
+      pointCloud.data.byteOffset,
+    )
+
     for (let i = 0; i < numPoints; i++) {
       const pointOffset = i * pointCloud.pointStep
 
-      // 동적 필드 파싱
-      const x = new Float32Array(
-        pointCloud.data.slice(
-          pointOffset + fieldMapping.x.offset,
-          pointOffset + fieldMapping.x.offset + 4,
-        ).buffer,
-      )[0]
+      // 직접 메모리에서 읽기 (메모리 할당 없음)
+      const x = dataView.getFloat32(pointOffset + fieldMapping.x.offset, true) // little-endian
+      const y = dataView.getFloat32(pointOffset + fieldMapping.y.offset, true)
+      const z = dataView.getFloat32(pointOffset + fieldMapping.z.offset, true)
+      const intensity = dataView.getFloat32(
+        pointOffset + fieldMapping.intensity.offset,
+        true,
+      )
 
-      const y = new Float32Array(
-        pointCloud.data.slice(
-          pointOffset + fieldMapping.y.offset,
-          pointOffset + fieldMapping.y.offset + 4,
-        ).buffer,
-      )[0]
+      const point = { x, y, z, intensity }
 
-      const z = new Float32Array(
-        pointCloud.data.slice(
-          pointOffset + fieldMapping.z.offset,
-          pointOffset + fieldMapping.z.offset + 4,
-        ).buffer,
-      )[0]
-
-      const intensity = new Float32Array(
-        pointCloud.data.slice(
-          pointOffset + fieldMapping.intensity.offset,
-          pointOffset + fieldMapping.intensity.offset + 4,
-        ).buffer,
-      )[0]
-
-      const point = {
-        x,
-        y,
-        z,
-        intensity,
-      }
-      if (
-        Number.isNaN(point.x) ||
-        Number.POSITIVE_INFINITY === point.x ||
-        Number.NEGATIVE_INFINITY === point.x
-      ) {
-        point.x = 0
-      }
-      if (
-        Number.isNaN(point.y) ||
-        Number.POSITIVE_INFINITY === point.y ||
-        Number.NEGATIVE_INFINITY === point.y
-      ) {
-        point.y = 0
-      }
-      if (
-        Number.isNaN(point.z) ||
-        Number.POSITIVE_INFINITY === point.z ||
-        Number.NEGATIVE_INFINITY === point.z
-      ) {
-        point.z = 0
-      }
-      if (
-        Number.isNaN(point.intensity) ||
-        Number.POSITIVE_INFINITY === point.intensity ||
-        Number.NEGATIVE_INFINITY === point.intensity
-      ) {
-        point.intensity = 0
-      }
+      // 유효성 검사 (기존과 동일)
+      if (!Number.isFinite(point.x)) point.x = 0
+      if (!Number.isFinite(point.y)) point.y = 0
+      if (!Number.isFinite(point.z)) point.z = 0
+      if (!Number.isFinite(point.intensity)) point.intensity = 0
 
       lidarPoints.datas.push(point)
     }

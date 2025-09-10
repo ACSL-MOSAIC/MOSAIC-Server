@@ -35,7 +35,7 @@ export class LidarPointCloudStore extends ReadOnlyStore<
   constructor(robotId: string) {
     const parser = (buffer: ArrayBuffer) =>
       this.parsePointCloud2WithFpsAndDelayLog(buffer)
-    super(robotId, 100, parser)
+    super(robotId, 0, parser)
     this.robotId = robotId
 
     // 주기적으로 오래된 chunk 데이터 정리
