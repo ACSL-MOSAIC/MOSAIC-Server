@@ -95,7 +95,7 @@ export const parsePointCloud2FromDataChunk = (
           (a, b) => a[1].timestamp - b[1].timestamp,
         )[0][0]
         chunkMap.delete(oldestMessageId)
-        console.log("Removed oldest message!")
+        // console.log("Removed oldest message!")
       }
 
       const startTime = Date.now()
@@ -151,9 +151,9 @@ export const parsePointCloud2FromDataChunk = (
 
     for (const messageId of messagesToDelete) {
       chunkMap.delete(messageId)
-      if (messageId !== dataChunk.messageId) {
-        console.log(`Deleted older incomplete message: ${messageId}`)
-      }
+      // if (messageId !== dataChunk.messageId) {
+      // console.log(`Deleted older incomplete message: ${messageId}`)
+      // }
     }
 
     // PointCloud2 객체를 LiDARPoints 형식으로 변환

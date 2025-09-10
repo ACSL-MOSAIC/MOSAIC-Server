@@ -28,10 +28,7 @@ function ConnectPage() {
 
   return (
     <>
-      <Container maxW="full" py={8}>
-        <Heading size="lg" mb={1}>
-          Robot Dashboard
-        </Heading>
+      <Container maxW="full" py={4}>
         <DashboardGrid
           onOpenDynamicTypeModal={(robotId: string) =>
             setDynamicTypeModalState({ isOpen: true, robotId })

@@ -49,11 +49,14 @@ export class LidarPointCloudStore extends ReadOnlyStore<
     }, CHUNK_TIMEOUT)
   }
 
-  subscribe(callback: (data: ParsedPointCloud2) => void): () => void {
-    return () => {
-      this.logStats()
-      super.subscribe(callback)
-    }
+  public cleanupDataChannel() {
+    super.cleanupDataChannel()
+    this.logStats()
+
+    this.chunkMap.clear()
+    this.frameTimestamps = []
+    this.fpsDatas = []
+    this.delayMeasurements = { delayDatas: [], numDatas: 0 }
   }
 
   // FPS 계산 함수
@@ -68,7 +71,7 @@ export class LidarPointCloudStore extends ReadOnlyStore<
   }
 
   // FPS 로그 출력 함수
-  public logFPS(): void {
+  logFPS(): void {
     const now = Date.now()
     if (now - this.lastFpsLogTime >= this.FPS_LOG_INTERVAL) {
       this.fps = this.calculateFPS()
@@ -77,7 +80,7 @@ export class LidarPointCloudStore extends ReadOnlyStore<
     }
   }
 
-  public logStats(): void {
+  logStats(): void {
     console.log(
       "RobotID: ",
       this.robotId,

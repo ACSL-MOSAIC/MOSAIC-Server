@@ -65,7 +65,7 @@ export class DynamicTypeManager {
     const key = `${robotId}__${typeName}`
     if (!this.dynamicSymbols.has(key)) {
       this.dynamicSymbols.set(key, Symbol(`dynamic_${robotId}_${typeName}`))
-      console.log(`DynamicTypeManager: 새로운 동적 Symbol 생성 - ${key}`)
+      // console.log(`DynamicTypeManager: 새로운 동적 Symbol 생성 - ${key}`)
     }
     return this.dynamicSymbols.get(key)!
   }
@@ -208,9 +208,9 @@ export class DynamicTypeManager {
 
     // 타입 등록 시 자동으로 스토어 생성
     try {
-      console.log(
-        `DynamicTypeManager: 동적 타입 등록 시 스토어 자동 생성 - ${config.name}`,
-      )
+      // console.log(
+      //   `DynamicTypeManager: 동적 타입 등록 시 스토어 자동 생성 - ${config.name}`,
+      // )
       this.createDynamicStore(id, config.robotId)
     } catch (error) {
       console.error(
@@ -242,7 +242,7 @@ export class DynamicTypeManager {
         ordered: true,
       })
 
-      console.log(`DynamicTypeManager: 동적 채널 생성됨 - ${channelLabel}`)
+      // console.log(`DynamicTypeManager: 동적 채널 생성됨 - ${channelLabel}`)
 
       // 채널 설정 후 스토어 생성
       this.createDynamicStore(configId, robotId)
@@ -265,9 +265,9 @@ export class DynamicTypeManager {
     const configs = this.getConfigsByRobotId(robotId)
     const channels: RTCDataChannel[] = []
 
-    console.log(
-      `DynamicTypeManager: 로봇 ${robotId}의 ${configs.length}개 동적 채널 생성 시작`,
-    )
+    // console.log(
+    //   `DynamicTypeManager: 로봇 ${robotId}의 ${configs.length}개 동적 채널 생성 시작`,
+    // )
 
     configs.forEach((config) => {
       const channel = this.createDynamicChannel(
@@ -329,7 +329,6 @@ export class DynamicTypeManager {
       return existingStore
     }
 
-    const interfaceName = this.generateInterfaceName(config.name)
     const parser = this.createDynamicParser(configId)
 
     if (config.channelType === "readonly") {

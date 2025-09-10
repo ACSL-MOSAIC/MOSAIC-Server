@@ -77,10 +77,10 @@ export function RemoteControlPadWidget({
 
     // 실시간 연결 상태 변경 리스너 등록
     const unsubscribeConnection = store.onConnectionStateChange((connected) => {
-      console.log("RemoteControlPadWidget - 연결 상태 변경:", {
-        connected,
-        robotId,
-      })
+      // console.log("RemoteControlPadWidget - 연결 상태 변경:", {
+      //   connected,
+      //   robotId,
+      // })
       setIsConnected(connected)
     })
 

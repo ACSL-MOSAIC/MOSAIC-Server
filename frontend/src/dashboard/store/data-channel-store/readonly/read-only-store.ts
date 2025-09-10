@@ -7,10 +7,10 @@ export abstract class ReadOnlyStore<T, I = string> extends DataStore<T, I> {
   // 다중 채널 추가
   public addDataChannel(channel: RTCDataChannel): void {
     this.dataChannels.set(channel.label, channel)
-    console.log(
-      `ReadOnlyStore[${this.robotId}] data channel added:`,
-      channel.label,
-    )
+    // console.log(
+    //   `ReadOnlyStore[${this.robotId}] data channel added:`,
+    //   channel.label,
+    // )
   }
 
   // 채널 제거
@@ -55,7 +55,7 @@ export abstract class ReadOnlyStore<T, I = string> extends DataStore<T, I> {
   // Clean up data channels
   public cleanupDataChannel(): void {
     this.dataChannels.clear()
-    console.log(`ReadOnlyStore[${this.robotId}] all data channels cleaned up`)
+    // console.log(`ReadOnlyStore[${this.robotId}] all data channels cleaned up`)
   }
 
   // Get data channel state information
