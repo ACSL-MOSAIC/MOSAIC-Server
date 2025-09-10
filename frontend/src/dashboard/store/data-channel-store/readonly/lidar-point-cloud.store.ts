@@ -1,4 +1,5 @@
 import {
+  type ChunkData,
   type ParsedPointCloud2,
   parsePointCloud2,
 } from "../../../parser/lidar-pointcloud.ts"
@@ -8,6 +9,8 @@ export interface DelayMeasurement {
   delayDatas: number[]
   numDatas: number
 }
+
+const CHUNK_TIMEOUT = 5000 // 5초
 
 export class LidarPointCloudStore extends ReadOnlyStore<
   ParsedPointCloud2,
@@ -21,6 +24,8 @@ export class LidarPointCloudStore extends ReadOnlyStore<
   private lastFpsLogTime = 0
   private readonly FPS_LOG_INTERVAL = 1000
 
+  private chunkMap: Map<string, ChunkData> = new Map()
+
   // Delay 측정을 위한 변수들
   private delayMeasurements: DelayMeasurement = {
     delayDatas: [],
@@ -32,6 +37,23 @@ export class LidarPointCloudStore extends ReadOnlyStore<
       this.parsePointCloud2WithFpsAndDelayLog(buffer)
     super(robotId, 100, parser)
     this.robotId = robotId
+
+    // 주기적으로 오래된 chunk 데이터 정리
+    setInterval(() => {
+      const now = Date.now()
+      for (const [messageId, chunkData] of this.chunkMap.entries()) {
+        if (now - chunkData.timestamp > CHUNK_TIMEOUT) {
+          this.chunkMap.delete(messageId)
+        }
+      }
+    }, CHUNK_TIMEOUT)
+  }
+
+  subscribe(callback: (data: ParsedPointCloud2) => void): () => void {
+    return () => {
+      this.logStats()
+      super.subscribe(callback)
+    }
   }
 
   // FPS 계산 함수
@@ -46,27 +68,34 @@ export class LidarPointCloudStore extends ReadOnlyStore<
   }
 
   // FPS 로그 출력 함수
-  private logFPS(): void {
+  public logFPS(): void {
     const now = Date.now()
     if (now - this.lastFpsLogTime >= this.FPS_LOG_INTERVAL) {
       this.fps = this.calculateFPS()
       this.fpsDatas.push(this.fps)
-      console.log(
-        "RobotID: ",
-        this.robotId,
-        "PointCloud Delay (ms):",
-        this.delayMeasurements,
-        "FPS:",
-        this.fpsDatas,
-      )
       this.lastFpsLogTime = now
     }
+  }
+
+  public logStats(): void {
+    console.log(
+      "RobotID: ",
+      this.robotId,
+      "PointCloud Delay (ms):",
+      this.delayMeasurements,
+      "FPS:",
+      this.fpsDatas,
+    )
   }
 
   parsePointCloud2WithFpsAndDelayLog(
     buffer: ArrayBuffer,
   ): ParsedPointCloud2 | null {
-    const result = parsePointCloud2(buffer, this.delayMeasurements)
+    const result = parsePointCloud2(
+      buffer,
+      this.delayMeasurements,
+      this.chunkMap,
+    )
 
     if (result) {
       // FPS 측정을 위한 타임스탬프 추가
@@ -75,7 +104,7 @@ export class LidarPointCloudStore extends ReadOnlyStore<
         this.frameTimestamps.shift()
       }
 
-      // FPS 로그 출력 (1초마다)
+      // FPS 로그 계산
       this.logFPS()
     }
 

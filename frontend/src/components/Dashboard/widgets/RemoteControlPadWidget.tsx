@@ -58,12 +58,12 @@ export function RemoteControlPadWidget({
     // WebRTC 연결 상태 확인
     const checkConnectionStatus = () => {
       const dataChannel = store.getDataChannel()
-      console.log("RemoteControlPadWidget - 데이터 채널 상태 확인:", {
-        robotId,
-        hasDataChannel: !!dataChannel,
-        readyState: dataChannel?.readyState,
-        label: dataChannel?.label,
-      })
+      // console.log("RemoteControlPadWidget - 데이터 채널 상태 확인:", {
+      //   robotId,
+      //   hasDataChannel: !!dataChannel,
+      //   readyState: dataChannel?.readyState,
+      //   label: dataChannel?.label,
+      // })
 
       if (dataChannel && dataChannel.readyState === "open") {
         setIsConnected(true)
