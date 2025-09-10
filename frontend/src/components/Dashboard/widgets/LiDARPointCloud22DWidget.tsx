@@ -232,28 +232,40 @@ export function LiDARPointCloud22DWidget({
     height: number,
     intensity: number,
   ): { r: number; g: number; b: number } => {
-    // Depth 기반 색상 + Intensity 변화 매핑:
-    // depth가 주요 색상을 결정하고, intensity는 미세한 변화만 적용
-    // intensity가 0이어도 depth 기반 색상은 확실히 보이도록 함
+    // 높이차 중심 색상 매핑:
+    // 1. 높이(height)를 주요 색상(Hue)으로 사용 - 지형/물체 높이 구분
+    // 2. 거리(depth)로 색상에 보조적 변화 추가
+    // 3. 강도(intensity)로 밝기와 채도 조절
 
-    // 기본 Hue: 거리에 따라 무지개 색상 (확실한 색상 보장)
-    // 0 (가장 가까움) -> 0° (빨강)
-    // 1 (가장 멀음) -> 240° (파랑)
-    const baseHue = depth * 240 // 0° ~ 240° (빨강 -> 파랑)
+    // 기본 Hue: 높이에 따라 무지개 색상 (가장 중요한 요소)
+    // 0 (가장 낮음) -> 240° (파랑 - 바닥/낮은 곳)
+    // 1 (가장 높음) -> 0° (빨강 - 높은 곳/장애물)
+    const baseHue = (1 - height) * 240 // 높을수록 빨강, 낮을수록 파랑
 
-    // Intensity로 색상에 아주 미세한 변화만 추가 (±15도로 줄임)
-    const intensityOffset = (intensity - 0.5) * 30 // -15° ~ +15°
-    const hue = (baseHue + intensityOffset + 360) % 360
+    // 거리로 색상에 보조적 변화 추가 (±20도 범위)
+    const adjustedDepth = Math.sqrt(depth) // 거리 분포 보정
+    const depthOffset = (adjustedDepth - 0.5) * 40 // -20° ~ +20°
 
-    // Saturation: intensity가 0이어도 충분한 채도 보장
-    const saturation = 0.7 + intensity * 0.3 // 0.7 ~ 1.0 (기본 채도를 높게)
+    // Intensity로 추가 미세 조정 (±10도 범위)
+    const intensityOffset = (intensity - 0.5) * 20 // -10° ~ +10°
 
-    // Value: intensity가 0이어도 충분히 밝게, 거리 기반으로 주요 밝기 결정
-    const depthBrightness = 0.6 + (1 - depth) * 0.3 // 거리 기반 기본 밝기 (0.6 ~ 0.9)
-    const intensityBoost = intensity * 0.1 // intensity로 최대 0.1만 추가
-    const heightBoost = height * 0.05 // 높이로 최대 0.05만 추가
+    const hue = (baseHue + depthOffset + intensityOffset + 360) % 360
 
-    const value = Math.min(depthBrightness + intensityBoost + heightBoost, 1.0)
+    // Saturation: 높이차가 클수록 더 선명하게, intensity로 추가 보정
+    const baseSaturation = 0.6 + height * 0.3 // 높을수록 더 선명
+    const intensitySaturation = intensity * 0.1 // intensity로 미세 조정
+    const saturation = Math.min(baseSaturation + intensitySaturation, 1.0)
+
+    // Value: 높이와 거리 조합으로 밝기 조절
+    // 높은 곳 + 가까운 거리일수록 더 밝게
+    const heightBrightness = 0.5 + height * 0.3 // 높이 기반 밝기 (0.5 ~ 0.8)
+    const depthBrightness = (1 - adjustedDepth) * 0.2 // 거리 기반 밝기 (0 ~ 0.2)
+    const intensityBoost = intensity * 0.1 // intensity 보정 (0 ~ 0.1)
+
+    const value = Math.min(
+      heightBrightness + depthBrightness + intensityBoost,
+      1.0,
+    )
 
     // HSV to RGB 변환
     const { r, g, b } = hsvToRgb(hue / 360, saturation, value)
