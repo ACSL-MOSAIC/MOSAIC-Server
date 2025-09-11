@@ -1,5 +1,4 @@
 import type { BaseStoreManager } from "../../base-store-manager"
-import { DataStore } from "../../store"
 import type { WriteOnlyStore } from "./write-only-store"
 
 export class WriteOnlyStoreManager implements BaseStoreManager {
@@ -35,7 +34,7 @@ export class WriteOnlyStoreManager implements BaseStoreManager {
     // Initialize data type channel tracking
     this.dataTypeChannels.set(robotId, new Map())
 
-    console.log(`Robot ${robotId} write-only store container initialized`)
+    // console.log(`Robot ${robotId} write-only store container initialized`)
   }
 
   public cleanupRobotStores(robotId: string) {
@@ -49,7 +48,7 @@ export class WriteOnlyStoreManager implements BaseStoreManager {
 
     this.stores.delete(robotId)
     this.dataTypeChannels.delete(robotId)
-    console.log(`Robot ${robotId} write-only stores cleanup completed`)
+    // console.log(`Robot ${robotId} write-only stores cleanup completed`)
   }
 
   public getStore<T, I = string>(
@@ -69,9 +68,9 @@ export class WriteOnlyStoreManager implements BaseStoreManager {
     if (!robotStores) {
       robotStores = new Map<symbol, WriteOnlyStore<any, any>>()
       this.stores.set(robotId, robotStores)
-      console.log(
-        `Robot ${robotId} write-only store container dynamically created`,
-      )
+      // console.log(
+      //   `Robot ${robotId} write-only store container dynamically created`,
+      // )
     }
 
     let store = robotStores.get(storeType) as WriteOnlyStore<T, I>
@@ -83,9 +82,9 @@ export class WriteOnlyStoreManager implements BaseStoreManager {
       // Register connection state change listener
       this.setupStoreConnectionListener(robotId, storeType, store)
 
-      console.log(
-        `Write-only store created: ${String(storeType)} for robot ${robotId}`,
-      )
+      // console.log(
+      //   `Write-only store created: ${String(storeType)} for robot ${robotId}`,
+      // )
     }
 
     return store
@@ -98,10 +97,10 @@ export class WriteOnlyStoreManager implements BaseStoreManager {
     store: WriteOnlyStore<any, any>,
   ): void {
     store.onConnectionStateChange((connected, state) => {
-      console.log(
-        `WriteOnlyStoreManager: ${robotId}'s ${String(storeType)} connection state changed:`,
-        { connected, state },
-      )
+      // console.log(
+      //   `WriteOnlyStoreManager: ${robotId}'s ${String(storeType)} connection state changed:`,
+      //   { connected, state },
+      // )
 
       // Notify registered callbacks
       const callbacks = this.connectionStateCallbacks.get(robotId) || []
@@ -174,9 +173,9 @@ export class WriteOnlyStoreManager implements BaseStoreManager {
 
     if (!channels.includes(channelLabel)) {
       channels.push(channelLabel)
-      console.log(
-        `Write-only channel registered: ${channelLabel} -> ${dataType} for robot ${robotId}`,
-      )
+      // console.log(
+      //   `Write-only channel registered: ${channelLabel} -> ${dataType} for robot ${robotId}`,
+      // )
     }
   }
 
@@ -216,9 +215,9 @@ export class WriteOnlyStoreManager implements BaseStoreManager {
 
     if (!store) {
       store = this.createStoreIfNotExists(robotId, storeType, storeFactory)
-      console.log(
-        `Write-only store forced creation: ${String(storeType)} for robot ${robotId}`,
-      )
+      // console.log(
+      //   `Write-only store forced creation: ${String(storeType)} for robot ${robotId}`,
+      // )
     }
 
     return store

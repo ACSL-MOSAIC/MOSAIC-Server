@@ -242,18 +242,18 @@ export class WebRTCConnection {
     channelType: "readonly" | "writeonly",
   ) {
     // DataChannel state change event handlers
-    dataChannel.onopen = () => {
-      console.log(
-        `DataChannel ${dataChannel.label} opened, state:`,
-        dataChannel.readyState,
-      )
-    }
+    // dataChannel.onopen = () => {
+    //   console.log(
+    //     `DataChannel ${dataChannel.label} opened, state:`,
+    //     dataChannel.readyState,
+    //   )
+    // }
 
     dataChannel.onclose = () => {
-      console.log(
-        `DataChannel ${dataChannel.label} closed, state:`,
-        dataChannel.readyState,
-      )
+      // console.log(
+      //   `DataChannel ${dataChannel.label} closed, state:`,
+      //   dataChannel.readyState,
+      // )
       this.dataChannels.delete(dataChannel.label)
       this.channelDataTypes.delete(dataChannel.label)
     }
@@ -322,9 +322,9 @@ export class WebRTCConnection {
       videoStore.setMediaStreamTrack(event.track)
 
       videoStore.setMediaStream(stream)
-      console.log(
-        `Video Store connected: ${mediaType} for robot ${this.config.robotId}`,
-      )
+      // console.log(
+      //   `Video Store connected: ${mediaType} for robot ${this.config.robotId}`,
+      // )
     }
   }
 
@@ -355,25 +355,25 @@ export class WebRTCConnection {
       this.peerConnection.oniceconnectionstatechange = () => {
         const isConnected =
           this.peerConnection?.iceConnectionState === "connected"
-        console.log(
-          "Connection state:",
-          isConnected ? "connected" : "disconnected",
-        )
+        // console.log(
+        //   "Connection state:",
+        //   isConnected ? "connected" : "disconnected",
+        // )
         this.config.onConnectionStateChange?.(isConnected)
       }
 
       this.peerConnection.onsignalingstatechange = () => {
-        console.log(
-          "Signaling state changed:",
-          this.peerConnection?.signalingState,
-        )
+        // console.log(
+        //   "Signaling state changed:",
+        //   this.peerConnection?.signalingState,
+        // )
       }
 
       this.peerConnection.onconnectionstatechange = () => {
-        console.log(
-          "Connection state changed:",
-          this.peerConnection?.connectionState,
-        )
+        // console.log(
+        //   "Connection state changed:",
+        //   this.peerConnection?.connectionState,
+        // )
       }
 
       this.peerConnection.ondatachannel = (event) => {

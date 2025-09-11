@@ -58,12 +58,12 @@ export function RemoteControlPadWidget({
     // WebRTC 연결 상태 확인
     const checkConnectionStatus = () => {
       const dataChannel = store.getDataChannel()
-      console.log("RemoteControlPadWidget - 데이터 채널 상태 확인:", {
-        robotId,
-        hasDataChannel: !!dataChannel,
-        readyState: dataChannel?.readyState,
-        label: dataChannel?.label,
-      })
+      // console.log("RemoteControlPadWidget - 데이터 채널 상태 확인:", {
+      //   robotId,
+      //   hasDataChannel: !!dataChannel,
+      //   readyState: dataChannel?.readyState,
+      //   label: dataChannel?.label,
+      // })
 
       if (dataChannel && dataChannel.readyState === "open") {
         setIsConnected(true)
@@ -77,10 +77,10 @@ export function RemoteControlPadWidget({
 
     // 실시간 연결 상태 변경 리스너 등록
     const unsubscribeConnection = store.onConnectionStateChange((connected) => {
-      console.log("RemoteControlPadWidget - 연결 상태 변경:", {
-        connected,
-        robotId,
-      })
+      // console.log("RemoteControlPadWidget - 연결 상태 변경:", {
+      //   connected,
+      //   robotId,
+      // })
       setIsConnected(connected)
     })
 
@@ -96,14 +96,14 @@ export function RemoteControlPadWidget({
     })
 
     return () => {
-      console.log(`RemoteControlPadWidget - cleanup for robot ${robotId}`)
+      // console.log(`RemoteControlPadWidget - cleanup for robot ${robotId}`)
       unsubscribeConnection()
       unsubscribeData()
     }
   }, [store, robotId])
 
   const handleDirectionClick = (
-    direction: "up" | "down" | "left" | "right",
+    direction: "up" | "down" | "left" | "right" | "stop",
   ) => {
     const sent = store.sendCommand(direction)
 
@@ -152,7 +152,7 @@ export function RemoteControlPadWidget({
 
   const DirectionButton = ({
     direction,
-  }: { direction: "up" | "down" | "left" | "right" }) => {
+  }: { direction: "up" | "down" | "left" | "right" | "stop" }) => {
     return (
       <Button
         size="lg"
@@ -220,8 +220,8 @@ export function RemoteControlPadWidget({
             {/* 왼쪽 버튼 */}
             <DirectionButton direction="left" />
 
-            {/* 중앙 (빈 공간) */}
-            <Box />
+            {/* 중앙 */}
+            <DirectionButton direction="stop" />
 
             {/* 오른쪽 버튼 */}
             <DirectionButton direction="right" />

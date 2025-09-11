@@ -85,7 +85,7 @@ export function VideoRecordingWidget({
     })
 
     return () => {
-      console.log(`VideoRecordingWidget - cleanup for robot ${robotId}`)
+      // console.log(`VideoRecordingWidget - cleanup for robot ${robotId}`)
       unsubscribeConnection()
     }
   }, [store, robotId])

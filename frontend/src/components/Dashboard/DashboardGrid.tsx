@@ -136,7 +136,6 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
     try {
       if (rtcConnections.current[robotId]) {
         const connection = rtcConnections.current[robotId]
-        console.log(`Reconnecting to robot ${robotId}...`)
         connection.disconnect()
         delete rtcConnections.current[robotId]
       }
@@ -158,8 +157,6 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
           videoChannelConfigs.push(...vcConfigs)
         })
 
-      console.log("DataChannel Configs:", dataChannelConfigs)
-
       const connection = new WebRTCConnection({
         robotId,
         ws,
@@ -171,7 +168,6 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
 
       await connection.startConnection()
       rtcConnections.current[robotId] = connection
-      console.log(`Robot ${robotId} connection completed`)
     } catch (error) {
       console.error(`Robot ${robotId} connection failed:`, error)
       throw error
@@ -351,7 +347,7 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
   }
 
   return (
-    <Box p={4} marginTop="16px">
+    <Box p={4}>
       {/* Robot connection management panel */}
       <RobotConnectionPanel
         connections={connections}

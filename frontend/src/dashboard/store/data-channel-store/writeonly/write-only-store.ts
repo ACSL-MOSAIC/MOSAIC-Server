@@ -11,12 +11,12 @@ export abstract class WriteOnlyStore<T, I = string> extends DataStore<T, I> {
   // Set data channel
   public setDataChannel(channel: RTCDataChannel): void {
     this.dataChannel = channel
-    console.log(
-      `WriteOnlyStore[${this.robotId}] data channel set:`,
-      channel.label,
-      "state:",
-      channel.readyState,
-    )
+    // console.log(
+    //   `WriteOnlyStore[${this.robotId}] data channel set:`,
+    //   channel.label,
+    //   "state:",
+    //   channel.readyState,
+    // )
 
     // Setup DataChannel state change event listeners
     this.setupDataChannelEventListeners(channel)
@@ -25,22 +25,22 @@ export abstract class WriteOnlyStore<T, I = string> extends DataStore<T, I> {
   // Setup DataChannel event listeners
   private setupDataChannelEventListeners(channel: RTCDataChannel): void {
     channel.onopen = () => {
-      console.log(
-        `WriteOnlyStore[${this.robotId}] data channel opened:`,
-        channel.label,
-        "state:",
-        channel.readyState,
-      )
+      // console.log(
+      //   `WriteOnlyStore[${this.robotId}] data channel opened:`,
+      //   channel.label,
+      //   "state:",
+      //   channel.readyState,
+      // )
       this.notifyConnectionStateChange(true, channel.readyState)
     }
 
     channel.onclose = () => {
-      console.log(
-        `WriteOnlyStore[${this.robotId}] data channel closed:`,
-        channel.label,
-        "state:",
-        channel.readyState,
-      )
+      // console.log(
+      //   `WriteOnlyStore[${this.robotId}] data channel closed:`,
+      //   channel.label,
+      //   "state:",
+      //   channel.readyState,
+      // )
       this.notifyConnectionStateChange(false, channel.readyState)
     }
 
@@ -109,7 +109,7 @@ export abstract class WriteOnlyStore<T, I = string> extends DataStore<T, I> {
 
       this.dataChannel = null
       this.connectionStateListeners = []
-      console.log(`WriteOnlyStore[${this.robotId}] data channel cleaned up`)
+      // console.log(`WriteOnlyStore[${this.robotId}] data channel cleaned up`)
     }
   }
 
@@ -169,7 +169,7 @@ export abstract class WriteOnlyStore<T, I = string> extends DataStore<T, I> {
     if (this.dataChannel) {
       try {
         this.dataChannel.send(data)
-        console.log(`WriteOnlyStore[${this.robotId}] force data send: ${data}`)
+        // console.log(`WriteOnlyStore[${this.robotId}] force data send: ${data}`)
       } catch (error) {
         console.error(
           `WriteOnlyStore[${this.robotId}] data send failed:`,
