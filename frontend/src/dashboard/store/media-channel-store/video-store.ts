@@ -190,7 +190,7 @@ export class VideoStore {
         this.streamStats.rttDatas.push(this.streamStats.rtt)
       } else {
         console.log("Remote outbound rtp report not found.")
-        console.log("Full stats!!", stats)
+        console.log("Full stats!!", { ...report })
         if (report.type === "candidate-pair" && report.selected) {
           this.streamStats.rtt = report.currentRoundTripTime * 1000
           this.streamStats.rttDatas.push(this.streamStats.rtt)
