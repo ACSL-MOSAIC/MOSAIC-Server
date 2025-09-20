@@ -6,5 +6,6 @@ message DataChunk {
     string message_id = 1;
     uint32 chunk_index = 2;
     uint32 total_chunks = 3;
-    bytes payload = 4;
+    int64 timestamp = 4;
+    bytes payload = 5;
 }

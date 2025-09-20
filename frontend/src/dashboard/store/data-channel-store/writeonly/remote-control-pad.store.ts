@@ -10,7 +10,9 @@ export class RemoteControlPadStore extends WriteOnlyStore<ParsedRemoteControl> {
   }
 
   // Remote control command send method
-  public sendCommand(direction: "up" | "down" | "left" | "right"): boolean {
+  public sendCommand(
+    direction: "up" | "down" | "left" | "right" | "stop",
+  ): boolean {
     const command = {
       direction: direction,
       timestamp: Date.now(),

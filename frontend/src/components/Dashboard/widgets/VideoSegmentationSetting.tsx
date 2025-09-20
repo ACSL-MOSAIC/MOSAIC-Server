@@ -11,18 +11,18 @@ import {
   DialogRoot,
   DialogTitle,
 } from "../../ui/dialog"
-import type { VideoObjectDetectionWidgetConfig } from "./VideoObjectDetectionWidget"
+import type { VideoSegmentationWidgetConfig } from "./VideoSegmentationWidget"
 
-export const VideoObjectDetectionSetting: React.FC<{
+export const VideoSegmentationSetting: React.FC<{
   isOpen: boolean
-  config: VideoObjectDetectionWidgetConfig
-  onUpdateConfig?: (newConfig: VideoObjectDetectionWidgetConfig) => void
+  config: VideoSegmentationWidgetConfig
+  onUpdateConfig?: (newConfig: VideoSegmentationWidgetConfig) => void
   onClose: () => void
 }> = ({ isOpen, config, onUpdateConfig, onClose }) => {
-  const [newConfig, setConfig] = useState<VideoObjectDetectionWidgetConfig>(
+  const [newConfig, setConfig] = useState<VideoSegmentationWidgetConfig>(
     config || {
       stream_id: "video_stream",
-      tf_model: "coco-ssd",
+      tf_model: "deeplab",
     },
   )
 
@@ -53,7 +53,7 @@ export const VideoObjectDetectionSetting: React.FC<{
       >
         <DialogCloseTrigger />
         <DialogHeader>
-          <DialogTitle>Video Object Detection Widget Settings</DialogTitle>
+          <DialogTitle>Video Segmentation Widget Settings</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <Fieldset.Root
@@ -77,7 +77,7 @@ export const VideoObjectDetectionSetting: React.FC<{
             </Field.Root>
 
             <Field.Root mt={3}>
-              <Field.Label>Object Detection Model</Field.Label>
+              <Field.Label>Segmentation Model</Field.Label>
               <select
                 value={newConfig.tf_model}
                 onChange={(e) =>
@@ -93,7 +93,7 @@ export const VideoObjectDetectionSetting: React.FC<{
                   width: "100%",
                 }}
               >
-                <option value="coco-ssd">COCO-SSD</option>
+                <option value="deeplab">DeepLab</option>
               </select>
             </Field.Root>
           </Fieldset.Root>

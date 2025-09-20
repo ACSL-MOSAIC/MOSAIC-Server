@@ -24,14 +24,14 @@ export function createDataChannel(
   const readOnlyStoreManager = ReadOnlyStoreManager.getInstance()
   const writeOnlyStoreManager = WriteOnlyStoreManager.getInstance()
 
-  console.log(
-    `DataChannel ${dataChannel.label} setup started, current state:`,
-    dataChannel.readyState,
-    "dataType:",
-    dataType,
-    "channelType:",
-    channelType,
-  )
+  // console.log(
+  //   `DataChannel ${dataChannel.label} setup started, current state:`,
+  //   dataChannel.readyState,
+  //   "dataType:",
+  //   dataType,
+  //   "channelType:",
+  //   channelType,
+  // )
 
   // Check if data type is supported (including base types for pointcloud)
   const dynamicTypeManager = DynamicTypeManager.getInstance()
@@ -111,7 +111,7 @@ export function createDataChannel(
         default:
           // 동적 타입 처리
           if (isDynamicType) {
-            console.log(`webrtc-utils: 동적 타입 스토어 찾기 - ${dataType}`)
+            // console.log(`webrtc-utils: 동적 타입 스토어 찾기 - ${dataType}`)
             store = dynamicTypeManager.getDynamicStoreFromManager(
               robotId,
               dataType,
@@ -146,7 +146,7 @@ export function createDataChannel(
         default:
           // 동적 타입 처리
           if (isDynamicType) {
-            console.log(`webrtc-utils: 동적 타입 스토어 찾기 - ${dataType}`)
+            // console.log(`webrtc-utils: 동적 타입 스토어 찾기 - ${dataType}`)
             store = dynamicTypeManager.getDynamicStoreFromManager(
               robotId,
               dataType,
@@ -168,25 +168,25 @@ export function createDataChannel(
     if (store instanceof ReadOnlyStore) {
       // ReadOnlyStore는 다중 채널 지원
       store.addDataChannel(dataChannel)
-      console.log(
-        `Data channel setup completed for ${store.constructor.name}:`,
-        {
-          robotId,
-          channelLabel: dataChannel.label,
-          channelState: dataChannel.readyState,
-        },
-      )
+      // console.log(
+      //   `Data channel setup completed for ${store.constructor.name}:`,
+      //   {
+      //     robotId,
+      //     channelLabel: dataChannel.label,
+      //     channelState: dataChannel.readyState,
+      //   },
+      // )
     } else if (store instanceof WriteOnlyStore) {
       // WriteOnlyStore는 기존 방식 유지
       store.setDataChannel(dataChannel)
-      console.log(
-        `Data channel setup completed for ${store.constructor.name}:`,
-        {
-          robotId,
-          channelLabel: dataChannel.label,
-          channelState: dataChannel.readyState,
-        },
-      )
+      // console.log(
+      //   `Data channel setup completed for ${store.constructor.name}:`,
+      //   {
+      //     robotId,
+      //     channelLabel: dataChannel.label,
+      //     channelState: dataChannel.readyState,
+      //   },
+      // )
     }
   } else {
     console.warn(

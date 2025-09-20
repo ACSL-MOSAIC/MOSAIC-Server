@@ -1,12 +1,11 @@
 import { Box, Flex, Icon, IconButton, Text } from "@chakra-ui/react"
-import { useQuery } from "@tanstack/react-query"
 import { Link as RouterLink } from "@tanstack/react-router"
 import { FaBars, FaRobot } from "react-icons/fa"
 import { FaLink } from "react-icons/fa"
 import { FiHome, FiSettings, FiUsers } from "react-icons/fi"
 import type { IconType } from "react-icons/lib"
 
-import type { UserPublic } from "@/client"
+import useAuth from "@/hooks/useAuth.ts"
 import { useState } from "react"
 
 const items = [
@@ -27,12 +26,10 @@ interface Item {
 }
 
 const SidebarItems = ({ onClose }: SidebarItemsProps) => {
-  const { data: currentUser } = useQuery<UserPublic>({
-    queryKey: ["currentUser"],
-  })
+  const { user } = useAuth()
   const [fold, setFold] = useState(true)
 
-  const finalItems: Item[] = currentUser?.is_superuser
+  const finalItems: Item[] = user?.is_superuser
     ? [...items, { icon: FiUsers, title: "Admin", path: "/admin" }]
     : items
 

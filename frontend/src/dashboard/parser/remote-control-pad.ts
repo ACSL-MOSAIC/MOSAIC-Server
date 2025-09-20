@@ -5,7 +5,7 @@ export const REMOTE_CONTROL_PAD_TYPE = Symbol("REMOTE_CONTROL_PAD_TYPE")
 export type ParsedRemoteControl = ParsedData<RemoteControlPad>
 
 export interface RemoteControlPad {
-  direction: "up" | "down" | "left" | "right"
+  direction: "up" | "down" | "left" | "right" | "stop"
   timestamp?: number
 }
 
@@ -18,7 +18,7 @@ export const parseRemoteControl = (
     // 필수 필드 검증
     if (
       !json.direction ||
-      !["up", "down", "left", "right"].includes(json.direction)
+      !["up", "down", "left", "right", "stop"].includes(json.direction)
     ) {
       console.warn("Invalid remote control data format:", json)
       return null

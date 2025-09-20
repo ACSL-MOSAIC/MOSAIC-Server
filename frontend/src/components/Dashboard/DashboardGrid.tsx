@@ -136,7 +136,6 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
     try {
       if (rtcConnections.current[robotId]) {
         const connection = rtcConnections.current[robotId]
-        console.log(`Reconnecting to robot ${robotId}...`)
         connection.disconnect()
         delete rtcConnections.current[robotId]
       }
@@ -158,8 +157,6 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
           videoChannelConfigs.push(...vcConfigs)
         })
 
-      console.log("DataChannel Configs:", dataChannelConfigs)
-
       const connection = new WebRTCConnection({
         robotId,
         ws,
@@ -171,7 +168,6 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
 
       await connection.startConnection()
       rtcConnections.current[robotId] = connection
-      console.log(`Robot ${robotId} connection completed`)
     } catch (error) {
       console.error(`Robot ${robotId} connection failed:`, error)
       throw error
@@ -252,32 +248,7 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
     if (!dashboardConfig) return
 
     // Set appropriate data type based on widget type
-    let dataType: string
-    switch (type) {
-      case "go2_low_state":
-        dataType = "go2_low_state"
-        break
-      case "lidar_pointcloud":
-        dataType = "lidar_pointcloud"
-        break
-      case "turtlesim_position":
-        dataType = "turtlesim_position"
-        break
-      case "remote_control_pad":
-        dataType = "remote_control_pad"
-        break
-      case "video_stream":
-        dataType = "video_stream"
-        break
-      case "universal":
-        dataType = "universal"
-        break
-      case "video_recorder":
-        dataType = "video_recorder"
-        break
-      default:
-        dataType = "go2_low_state"
-    }
+    const dataType = type
 
     const newWidget: WidgetConfig = {
       id: uuidv4(),
@@ -376,7 +347,7 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
   }
 
   return (
-    <Box p={4} marginTop="16px">
+    <Box p={4}>
       {/* Robot connection management panel */}
       <RobotConnectionPanel
         connections={connections}

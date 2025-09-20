@@ -146,15 +146,15 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     if (isConnectingRef.current || !user?.id) return
 
     isConnectingRef.current = true
-    console.log("WebSocket 연결 시도...")
+    // console.log("WebSocket 연결 시도...")
 
     const environment = import.meta.env.VITE_ENVIRONMENT
     const productionWsURL = "wss://api.acslgcs.com"
     const localWsURL = "ws://localhost:8000"
     const wsURL = environment === "production" ? productionWsURL : localWsURL
 
-    console.log("environment", environment)
-    console.log("wsURL", wsURL)
+    // console.log("environment", environment)
+    // console.log("wsURL", wsURL)
 
     const websocket = new WebSocket(`${wsURL}/ws/user?user_id=${user.id}`)
 
@@ -233,7 +233,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       }
       ws.send(JSON.stringify(messageWithUserId))
     } else {
-      console.error("WebSocket이 연결되어 있지 않습니다.")
+      // console.error("WebSocket이 연결되어 있지 않습니다.")
     }
   }
 
