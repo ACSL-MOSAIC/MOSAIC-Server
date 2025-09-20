@@ -8,7 +8,7 @@ import { Field } from "@/components/ui/field"
 import { InputGroup } from "@/components/ui/input-group"
 import { PasswordInput } from "@/components/ui/password-input"
 import useAuth, { isLoggedIn } from "@/hooks/useAuth"
-import Logo from "/assets/images/experiment.svg"
+import Logo from "/assets/images/acsl-logo.svg"
 import { emailPattern } from "../utils"
 
 export const Route = createFileRoute("/login")({

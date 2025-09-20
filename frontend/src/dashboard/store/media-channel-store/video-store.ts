@@ -178,22 +178,22 @@ export class VideoStore {
         const jitter = report.jitter || 0
 
         this.streamStats.fps = fps
-        this.streamStats.fpsDatas.push(fps)
+        // this.streamStats.fpsDatas.push(fps)
         this.streamStats.width = width
         this.streamStats.height = height
         this.streamStats.jitter = jitter
-        this.streamStats.jitterDatas.push(jitter)
+        // this.streamStats.jitterDatas.push(jitter)
       }
 
-      if (report.type === "remote-outbound-rtp") {
-        this.streamStats.rtt = report.timestamp - report.remoteTimestamp
-        this.streamStats.rttDatas.push(this.streamStats.rtt)
-      } else {
-        if (report.type === "candidate-pair" && report.state === "succeeded") {
-          this.streamStats.rtt = report.currentRoundTripTime * 1000
-          this.streamStats.rttDatas.push(this.streamStats.rtt)
-        }
-      }
+      // if (report.type === "remote-outbound-rtp") {
+      //   this.streamStats.rtt = report.timestamp - report.remoteTimestamp
+      //   this.streamStats.rttDatas.push(this.streamStats.rtt)
+      // } else {
+      //   if (report.type === "candidate-pair" && report.state === "succeeded") {
+      //     this.streamStats.rtt = report.currentRoundTripTime * 1000
+      //     this.streamStats.rttDatas.push(this.streamStats.rtt)
+      //   }
+      // }
     })
 
     this.notifyStreamStatsSubscribers()

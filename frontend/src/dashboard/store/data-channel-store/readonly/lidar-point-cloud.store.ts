@@ -75,7 +75,7 @@ export class LidarPointCloudStore extends ReadOnlyStore<
     const now = Date.now()
     if (now - this.lastFpsLogTime >= this.FPS_LOG_INTERVAL) {
       this.fps = this.calculateFPS()
-      this.fpsDatas.push(this.fps)
+      // this.fpsDatas.push(this.fps)
       this.lastFpsLogTime = now
     }
   }

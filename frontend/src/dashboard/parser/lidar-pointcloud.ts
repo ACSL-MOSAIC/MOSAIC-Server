@@ -130,13 +130,13 @@ export const parsePointCloud2FromDataChunk = (
     // PointCloud2 객체 생성
     const pointCloud = pointcloud.PointCloud2.decode(combinedData)
 
-    const sentMs =
-      typeof chunkData.sentTimestamp === "number"
-        ? chunkData.sentTimestamp / 1000
-        : Number(chunkData.sentTimestamp) / 1000
-    const delayMs = completionTime - sentMs
+    // const sentMs =
+    //   typeof chunkData.sentTimestamp === "number"
+    //     ? chunkData.sentTimestamp / 1000
+    //     : Number(chunkData.sentTimestamp) / 1000
+    // const delayMs = completionTime - sentMs
 
-    delayMeasurements.delayDatas.push(delayMs)
+    // delayMeasurements.delayDatas.push(delayMs)
     delayMeasurements.numDatas += 1
 
     // 완성된 메시지 및 그보다 오래된 모든 미완성 메시지들 삭제
