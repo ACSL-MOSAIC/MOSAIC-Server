@@ -6,33 +6,37 @@ import {
   VideoSegmentationWidget,
   type VideoSegmentationWidgetConfig,
 } from "@/components/Dashboard/widgets/VideoSegmentationWidget.tsx"
-import { WidgetFrame } from "@/components/Dashboard/widgets/WidgetFrame.tsx"
-import type { UniversalWidgetConfig } from "@/components/Dashboard/widgets/dynamic/universal-widget-config.ts"
-import { GO2_LOW_STATE_TYPE } from "@/dashboard/parser/go2-low-state.ts"
+import {WidgetFrame} from "@/components/Dashboard/widgets/WidgetFrame.tsx"
+import type {UniversalWidgetConfig} from "@/components/Dashboard/widgets/dynamic/universal-widget-config.ts"
+import {GO2_LOW_STATE_TYPE} from "@/dashboard/parser/go2-low-state.ts"
 import {
   LIDAR_POINTCLOUD2_TYPE,
   type ParsedPointCloud2,
 } from "@/dashboard/parser/lidar-pointcloud.ts"
-import { REMOTE_CONTROL_PAD_TYPE } from "@/dashboard/parser/remote-control-pad.ts"
-import { TURTLESIM_POSITION_TYPE } from "@/dashboard/parser/turtlesim-position.ts"
-import { VIDEO_RECORDING_TYPE } from "@/dashboard/parser/video-recorder.ts"
-import { Go2LowStateStore } from "@/dashboard/store/data-channel-store/readonly/go2-low-state.store.ts"
-import { LidarPointCloudStore } from "@/dashboard/store/data-channel-store/readonly/lidar-point-cloud.store.ts"
-import { ReadOnlyStoreManager } from "@/dashboard/store/data-channel-store/readonly/read-only-store-manager.ts"
-import { TurtlesimPositionStore } from "@/dashboard/store/data-channel-store/readonly/turtlesim-position.store.ts"
-import { RemoteControlPadStore } from "@/dashboard/store/data-channel-store/writeonly/remote-control-pad.store.ts"
-import { VideoRecorderStore } from "@/dashboard/store/data-channel-store/writeonly/video-recorder.store.ts"
-import { WriteOnlyStoreManager } from "@/dashboard/store/data-channel-store/writeonly/write-only-store-manager.ts"
-import { VideoStoreManager } from "@/dashboard/store/media-channel-store/video-store-manager.ts"
-import type { VideoStore } from "@/dashboard/store/media-channel-store/video-store.ts"
-import { Go2LowStateWidget } from "./Go2LowStateWidget"
-import { LiDARPointCloud22DWidget } from "./LiDARPointCloud22DWidget.tsx"
-import { RemoteControlPadWidget } from "./RemoteControlPadWidget.tsx"
-import { TurtlesimPositionWidget } from "./TurtlesimPositionWidget"
-import { VideoRecordingWidget } from "./VideoRecorderWidget"
-import { VideoStreamWidget } from "./VideoStreamWidget.tsx"
-import { UniversalWidget } from "./dynamic/UniversalWidget"
-import type { WidgetConfigs, WidgetProps } from "./types"
+import {REMOTE_CONTROL_PAD_TYPE} from "@/dashboard/parser/remote-control-pad.ts"
+import {TURTLESIM_POSITION_TYPE} from "@/dashboard/parser/turtlesim-position.ts"
+import {VIDEO_RECORDING_TYPE} from "@/dashboard/parser/video-recorder.ts"
+import {Go2LowStateStore} from "@/dashboard/store/data-channel-store/readonly/go2-low-state.store.ts"
+import {LidarPointCloudStore} from "@/dashboard/store/data-channel-store/readonly/lidar-point-cloud.store.ts"
+import {ReadOnlyStoreManager} from "@/dashboard/store/data-channel-store/readonly/read-only-store-manager.ts"
+import {TurtlesimPositionStore} from "@/dashboard/store/data-channel-store/readonly/turtlesim-position.store.ts"
+import {RemoteControlPadStore} from "@/dashboard/store/data-channel-store/writeonly/remote-control-pad.store.ts"
+import {VideoRecorderStore} from "@/dashboard/store/data-channel-store/writeonly/video-recorder.store.ts"
+import {WriteOnlyStoreManager} from "@/dashboard/store/data-channel-store/writeonly/write-only-store-manager.ts"
+import {VideoStoreManager} from "@/dashboard/store/media-channel-store/video-store-manager.ts"
+import type {VideoStore} from "@/dashboard/store/media-channel-store/video-store.ts"
+import {Go2LowStateWidget} from "./Go2LowStateWidget"
+import {LiDARPointCloud22DWidget} from "./LiDARPointCloud22DWidget.tsx"
+import {RemoteControlPadWidget} from "./RemoteControlPadWidget.tsx"
+import {TurtlesimPositionWidget} from "./TurtlesimPositionWidget"
+import {VideoRecordingWidget} from "./VideoRecorderWidget"
+import {VideoStreamWidget} from "./VideoStreamWidget.tsx"
+import {UniversalWidget} from "./dynamic/UniversalWidget"
+import type {WidgetConfigs, WidgetProps} from "./types"
+import {
+  OsmGpsMapWidget,
+  type OsmGpsMapWidgetConfig,
+} from "@/components/Dashboard/widgets/OsmGpsMapWidget.tsx"
 
 export interface WidgetFactoryProps extends WidgetProps {
   type: string
@@ -44,18 +48,35 @@ export interface WidgetFactoryProps extends WidgetProps {
 }
 
 export function WidgetFactory({
-  type,
-  robotId,
-  dataType,
-  connections,
-  config,
-  widgetId,
-  onRemove,
-  onUpdateConfig,
-}: WidgetFactoryProps) {
+                                type,
+                                robotId,
+                                dataType,
+                                connections,
+                                config,
+                                widgetId,
+                                onRemove,
+                                onUpdateConfig,
+                              }: WidgetFactoryProps) {
   const readOnlyStoreManager = ReadOnlyStoreManager.getInstance()
   const writeOnlyStoreManager = WriteOnlyStoreManager.getInstance()
   const videoStoreManager = VideoStoreManager.getInstance()
+
+  // oss_gps_map 은 특정 robot 에 묶여있지 않기 때문에 따로 처리합니다.
+  switch (type) {
+    case "oss_gps_map": {
+      return (
+        <OsmGpsMapWidget
+          config={config as OsmGpsMapWidgetConfig}
+          onUpdateConfig={onUpdateConfig}
+          onRemove={onRemove}
+        />
+      )
+    }
+  }
+
+  if (!robotId) {
+    return
+  }
 
   switch (type) {
     case "go2_low_state": {

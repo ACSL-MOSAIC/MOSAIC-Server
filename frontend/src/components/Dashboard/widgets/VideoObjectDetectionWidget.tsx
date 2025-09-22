@@ -1,18 +1,18 @@
-import { VideoObjectDetectionSetting } from "@/components/Dashboard/widgets/VideoObjectDetectionSetting.tsx"
+import {VideoObjectDetectionSetting} from "@/components/Dashboard/widgets/VideoObjectDetectionSetting.tsx"
 import {
   type StreamStats,
   type VideoData,
   getInitialStreamStats,
   getInitialVideoData,
 } from "@/dashboard/store/media-channel-store/video-store"
-import { VideoStoreManager } from "@/dashboard/store/media-channel-store/video-store-manager.ts"
-import { Box, Flex, IconButton } from "@chakra-ui/react"
+import {VideoStoreManager} from "@/dashboard/store/media-channel-store/video-store-manager.ts"
+import {Box, Flex, IconButton} from "@chakra-ui/react"
 import * as cocoSsd from "@tensorflow-models/coco-ssd"
 import * as tf from "@tensorflow/tfjs"
 import type React from "react"
-import { useCallback } from "react"
-import { useEffect, useRef, useState } from "react"
-import { WidgetFrame } from "./WidgetFrame"
+import {useCallback} from "react"
+import {useEffect, useRef, useState} from "react"
+import {WidgetFrame} from "./WidgetFrame"
 
 interface Detection {
   class: string
@@ -39,14 +39,14 @@ interface ErrorWidgetProps extends VideoObjectDetectionWidgetProps {
 }
 
 const ErrorWidget: React.FC<ErrorWidgetProps> = ({
-  robotId,
-  config,
-  onUpdateConfig,
-  openSetting,
-  setOpenSetting,
-  onRemove,
-  message,
-}) => (
+                                                   robotId,
+                                                   config,
+                                                   onUpdateConfig,
+                                                   openSetting,
+                                                   setOpenSetting,
+                                                   onRemove,
+                                                   message,
+                                                 }) => (
   <>
     <WidgetFrame
       title="Video Object Detection"
@@ -87,7 +87,7 @@ const ErrorWidget: React.FC<ErrorWidgetProps> = ({
 
 export const VideoObjectDetectionWidget: React.FC<
   VideoObjectDetectionWidgetProps
-> = ({ robotId, config, onUpdateConfig, onRemove }) => {
+> = ({robotId, config, onUpdateConfig, onRemove}) => {
   const videoStoreManager = VideoStoreManager.getInstance()
 
   const [openSetting, setOpenSetting] = useState(false)
@@ -310,7 +310,8 @@ export const VideoObjectDetectionWidget: React.FC<
 
   const configureVideo = () => {
     if (!store) {
-      return () => {}
+      return () => {
+      }
     }
 
     // 비디오 엘리먼트 설정
@@ -453,19 +454,19 @@ export const VideoObjectDetectionWidget: React.FC<
   const footerInfo =
     videoData && streamStats
       ? [
-          {
-            label: "FPS",
-            value: `${streamStats.fps} fps`,
-          },
-          {
-            label: "Stream ID",
-            value: videoData.streamId,
-          },
-          {
-            label: "Model",
-            value: config.tf_model,
-          },
-        ]
+        {
+          label: "FPS",
+          value: `${streamStats.fps} fps`,
+        },
+        {
+          label: "Stream ID",
+          value: videoData.streamId,
+        },
+        {
+          label: "Model",
+          value: config.tf_model,
+        },
+      ]
       : []
 
   const getStatusMessage = () => {
@@ -538,7 +539,7 @@ export const VideoObjectDetectionWidget: React.FC<
               bg="linear-gradient(to top, rgba(0,0,0,0.7), transparent)"
               p={3}
               opacity={0}
-              _hover={{ opacity: 1 }}
+              _hover={{opacity: 1}}
               transition="opacity 0.2s"
             >
               <Flex justify="center" align="center" gap={2}>
