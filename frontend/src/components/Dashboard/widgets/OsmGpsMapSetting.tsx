@@ -69,7 +69,7 @@ export const OsmGpsMapSetting: React.FC<{
       >
         <DialogCloseTrigger/>
         <DialogHeader>
-          <DialogTitle>Video Object Detection Widget Settings</DialogTitle>
+          <DialogTitle>GPS Map Widget Settings</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <Fieldset.Root
