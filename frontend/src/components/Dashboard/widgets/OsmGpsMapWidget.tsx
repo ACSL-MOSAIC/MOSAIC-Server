@@ -18,6 +18,7 @@ interface OsmGpsMapWidgetProps {
   onUpdateConfig?: (newConfig: OsmGpsMapWidgetConfig) => void
   setOpenSetting?: (openSetting: boolean) => void
   onRemove?: () => void
+  connections?: { [key: string]: boolean }
 }
 
 export interface OsmGpsMapWidgetConfig {
@@ -33,6 +34,7 @@ export function OsmGpsMapWidget({
                                   config,
                                   onUpdateConfig,
                                   onRemove,
+                                  connections,
                                 }: OsmGpsMapWidgetProps) {
   const readOnlyStoreManager = ReadOnlyStoreManager.getInstance()
   const {getRobotName} = useRobotMapping()
@@ -53,6 +55,12 @@ export function OsmGpsMapWidget({
     )
     storeList.push(gpsCoordinateStore as GPSCoordinateStore)
   })
+
+  const activeRobotGpsCoordinates = robotGpsCoordinates.filter(
+    ({robotId}) => {
+      return connections ? connections[robotId] : false
+    },
+  )
 
   const onCoordinateUpdate = (robotId: string, coord: ParsedGPSCoordinate) => {
     // 내부 state 에 좌표 저장
@@ -82,7 +90,7 @@ export function OsmGpsMapWidget({
     }
   }, [storeList])
 
-  // 1초에 한번씩 모든 로봇의 마커를 재렌더링
+  // 모든 로봇의 마커를 재렌더링
   const drawRobotMarker = () => {
     if (!mapRef.current) return
     const map = mapRef.current
@@ -95,11 +103,15 @@ export function OsmGpsMapWidget({
     })
 
     // Draw markers for each robot
-    robotGpsCoordinates.forEach(({robotId, coordinate}) => {
+    activeRobotGpsCoordinates.forEach(({robotId, coordinate}) => {
       if (coordinate.latitude && coordinate.longitude) {
-        const marker = L.marker([coordinate.latitude, coordinate.longitude])
+        const name = getRobotName(robotId)
+        console.log("Draw marker for robot:", name, coordinate)
+        const marker = L.marker([coordinate.latitude, coordinate.longitude], {
+          title: name,
+        })
 
-        marker.addTo(map).bindPopup(`Robot ID: ${robotId}`)
+        marker.addTo(map).bindTooltip(name)
       }
     })
   }
@@ -108,14 +120,13 @@ export function OsmGpsMapWidget({
     if (!mapRef.current) return
     const map = mapRef.current
 
-    const robot = robotGpsCoordinates.find((r) => r.robotId === robotId)
+    const robot = activeRobotGpsCoordinates.find((r) => r.robotId === robotId)
     if (robot?.coordinate.latitude && robot?.coordinate.longitude) {
       map.flyTo([robot.coordinate.latitude, robot.coordinate.longitude], 15)
     }
   }
 
   useEffect(() => {
-    // start Interval => Draw robot markers
     if (isReady) {
       drawRobotMarker()
     }
@@ -189,10 +200,10 @@ export function OsmGpsMapWidget({
             >
               Robots
             </div>
-            {robotGpsCoordinates.length === 0 ? (
+            {activeRobotGpsCoordinates.length === 0 ? (
               <div style={{fontSize: "11px", color: "#666"}}>No robots</div>
             ) : (
-              robotGpsCoordinates.map(({robotId, coordinate}) => (
+              activeRobotGpsCoordinates.map(({robotId, coordinate}) => (
                 // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
                 <div
                   key={robotId}

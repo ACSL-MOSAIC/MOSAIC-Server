@@ -1,4 +1,4 @@
-import { DataStore } from "../../store"
+import {DataStore} from "../../store"
 
 export abstract class ReadOnlyStore<T, I = string> extends DataStore<T, I> {
   // 다중 채널 지원

@@ -3,7 +3,7 @@ import {LIDAR_POINTCLOUD2_TYPE} from "@/dashboard/parser/lidar-pointcloud.ts"
 import {REMOTE_CONTROL_PAD_TYPE} from "@/dashboard/parser/remote-control-pad.ts"
 import {TURTLESIM_POSITION_TYPE} from "@/dashboard/parser/turtlesim-position"
 import {VIDEO_RECORDING_TYPE} from "@/dashboard/parser/video-recorder.ts"
-import {GPS_COORDINATE_TYPE} from "@/dashboard/parser/gps-coordinate.ts";
+import {GPS_COORDINATE_TYPE} from "@/dashboard/parser/gps-coordinate.ts"
 
 // Store factory mapping by data type
 export const DATA_CHANNEL_CONFIG = {
@@ -61,12 +61,12 @@ export const DATA_CHANNEL_CONFIG = {
     defaultLabel: "video_recorder_channel",
     description: "Video Recorder Command Data Channel",
   },
-  oss_gps_map: {
-    type: "oss_gps_map",
+  osm_gps_map: {
+    type: "osm_gps_map",
     channelType: "readonly" as const,
     defaultLabel: "gps_coordinate_channel",
     description: "GPS Coordinate Data Channel",
-  }
+  },
 } as const
 
 // Default data channel configuration
@@ -126,11 +126,11 @@ export const DEFAULT_DATA_CHANNELS = [
     options: undefined,
   },
   {
-    label: DATA_CHANNEL_CONFIG.oss_gps_map.defaultLabel,
-    dataType: DATA_CHANNEL_CONFIG.oss_gps_map.type,
-    channelType: DATA_CHANNEL_CONFIG.oss_gps_map.channelType,
+    label: DATA_CHANNEL_CONFIG.osm_gps_map.defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG.osm_gps_map.type,
+    channelType: DATA_CHANNEL_CONFIG.osm_gps_map.channelType,
     options: undefined,
-  }
+  },
 ] as const
 
 // Symbol mapping by data type
@@ -140,7 +140,7 @@ export const DATA_TYPE_SYMBOLS = {
   lidar_pointcloud: LIDAR_POINTCLOUD2_TYPE,
   remote_control_pad: REMOTE_CONTROL_PAD_TYPE,
   video_recorder: VIDEO_RECORDING_TYPE,
-  oss_gps_map: GPS_COORDINATE_TYPE,
+  osm_gps_map: GPS_COORDINATE_TYPE,
 } as const
 
 // Utility functions

@@ -1,12 +1,12 @@
-import type { WebSocketContextType } from "@/contexts/WebSocketContext"
-import { DynamicTypeManager } from "@/dashboard/dynamic/dynamic-type-config"
-import { VideoStoreManager } from "@/dashboard/store/media-channel-store/video-store-manager"
-import type { ChannelType } from "./config/webrtc-datachannel-config"
-import { MediaChannelConfigUtils } from "./config/webrtc-media-channel-config"
-import { MEDIA_CHANNEL_CONFIG } from "./config/webrtc-media-channel-config"
-import { createOfferWithMediaChannels } from "./webrtc-sdp-utils"
-import { cleanupAllDataChannels, createDataChannel } from "./webrtc-utils"
-import { sendWebSocketMessage, setupWebSocketHandlers } from "./ws-adaptor"
+import type {WebSocketContextType} from "@/contexts/WebSocketContext"
+import {DynamicTypeManager} from "@/dashboard/dynamic/dynamic-type-config"
+import {VideoStoreManager} from "@/dashboard/store/media-channel-store/video-store-manager"
+import type {ChannelType} from "./config/webrtc-datachannel-config"
+import {MediaChannelConfigUtils} from "./config/webrtc-media-channel-config"
+import {MEDIA_CHANNEL_CONFIG} from "./config/webrtc-media-channel-config"
+import {createOfferWithMediaChannels} from "./webrtc-sdp-utils"
+import {cleanupAllDataChannels, createDataChannel} from "./webrtc-utils"
+import {sendWebSocketMessage, setupWebSocketHandlers} from "./ws-adaptor"
 
 export interface DataChannelConfig {
   label: string
@@ -54,7 +54,7 @@ export class WebRTCConnection {
   }
 
   private setupWebSocketHandlers() {
-    const { unsubscribe } = setupWebSocketHandlers(
+    const {unsubscribe} = setupWebSocketHandlers(
       this.config.ws,
       this.config.robotId,
       {

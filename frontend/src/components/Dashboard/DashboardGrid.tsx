@@ -147,7 +147,10 @@ export function DashboardGrid({onOpenDynamicTypeModal}: DashboardGridProps) {
       const videoChannelConfigs: VideoChannelConfig[] = []
 
       activeTab?.widgets
-        .filter((wc) => wc.robotId === robotId || wc.config?.robotIdList?.includes(robotId))
+        .filter(
+          (wc) =>
+            wc.robotId === robotId || wc.config?.robotIdList?.includes(robotId),
+        )
         .forEach((widgetConfig) => {
           const {
             dataChannelConfigs: dcConfigs,

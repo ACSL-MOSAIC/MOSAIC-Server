@@ -28,7 +28,7 @@ export const parseGPSCoordinate = (
     return {
       latitude: json.latitude,
       longitude: json.longitude,
-      timestamp: json.timestamp
+      timestamp: json.timestamp,
     }
   } catch (error) {
     console.error("Error parsing GPS Coordinate data:", error)

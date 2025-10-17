@@ -63,12 +63,13 @@ export function WidgetFactory({
 
   // oss_gps_map 은 특정 robot 에 묶여있지 않기 때문에 따로 처리합니다.
   switch (type) {
-    case "oss_gps_map": {
+    case "osm_gps_map": {
       return (
         <OsmGpsMapWidget
           config={config as OsmGpsMapWidgetConfig}
           onUpdateConfig={onUpdateConfig}
           onRemove={onRemove}
+          connections={connections}
         />
       )
     }
