@@ -4,10 +4,12 @@ export type WidgetType =
   | "turtlesim_position"
   | "remote_control_pad"
   | "video_stream"
+  | "video_stream_v2"
   | "video_object_detection"
   | "video_segmentation"
   | "universal"
   | "video_recorder"
+  | "oss_gps_map"
 
 export interface WidgetPosition {
   x: number
@@ -20,7 +22,7 @@ export interface WidgetConfig {
   id: string
   type: WidgetType
   position: WidgetPosition
-  robotId: string
+  robotId?: string
   dataType: string
   config?: any // Universal widget config
 }

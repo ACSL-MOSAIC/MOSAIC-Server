@@ -8,8 +8,8 @@ import {
   DialogRoot,
   DialogTitle,
 } from "@/components/ui/dialog"
-import type { RobotInfo } from "@/contexts/WebSocketContext.tsx"
-import { useRobotMapping } from "@/hooks/useRobotMapping"
+import type {RobotInfo} from "@/contexts/WebSocketContext.tsx"
+import {useRobotMapping} from "@/hooks/useRobotMapping"
 import {
   Button,
   Portal,
@@ -17,27 +17,27 @@ import {
   Stack,
   createListCollection,
 } from "@chakra-ui/react"
-import { useState } from "react"
-import type { WidgetType } from "./types"
-import { UniversalWidgetConfigurator } from "./widgets/dynamic/UniversalWidgetConfigurator"
+import {useState} from "react"
+import type {WidgetType} from "./types"
+import {UniversalWidgetConfigurator} from "./widgets/dynamic/UniversalWidgetConfigurator"
 
 interface AddWidgetModalProps {
   isOpen: boolean
   onClose: () => void
-  onAdd: (robotId: string, type: WidgetType, config?: any) => void
+  onAdd: (type: WidgetType, robotId?: string, config?: any) => void
   robots: RobotInfo[]
 }
 
 export function AddWidgetModal({
-  isOpen,
-  onClose,
-  onAdd,
-  robots,
-}: AddWidgetModalProps) {
+                                 isOpen,
+                                 onClose,
+                                 onAdd,
+                                 robots,
+                               }: AddWidgetModalProps) {
   const [selectedRobotId, setSelectedRobotId] = useState<string>("")
-  const [selectedType, setSelectedType] = useState<string>("universal")
+  const [selectedType, setSelectedType] = useState<WidgetType>("universal")
   const [showUniversalConfig, setShowUniversalConfig] = useState(false)
-  const { getRobotName } = useRobotMapping()
+  const {getRobotName} = useRobotMapping()
 
   const robotCollection = createListCollection({
     items: robots.map((robotInfo) => ({
@@ -46,18 +46,22 @@ export function AddWidgetModal({
     })),
   })
 
-  const widgetTypeCollection = createListCollection({
+  const widgetTypeCollection = createListCollection<{
+    label: string
+    value: WidgetType
+  }>({
     items: [
-      { label: "Universal Widget", value: "universal" },
-      { label: "Video Stream", value: "video_stream" },
-      { label: "Video Stream (Additional)", value: "video_stream_v2" },
-      { label: "Video Object Detection", value: "video_object_detection" },
-      { label: "Video Segmentation", value: "video_segmentation" },
-      { label: "Video Recorder", value: "video_recorder" },
-      { label: "LiDAR PointCloud", value: "lidar_pointcloud" },
-      { label: "Remote Control Pad", value: "remote_control_pad" },
-      { label: "Turtlesim Position", value: "turtlesim_position" },
-      { label: "Go2 Low State", value: "go2_low_state" },
+      {label: "Universal Widget", value: "universal"},
+      {label: "Video Stream", value: "video_stream"},
+      {label: "Video Stream (Additional)", value: "video_stream_v2"},
+      {label: "Video Object Detection", value: "video_object_detection"},
+      {label: "Video Segmentation", value: "video_segmentation"},
+      {label: "Video Recorder", value: "video_recorder"},
+      {label: "LiDAR PointCloud", value: "lidar_pointcloud"},
+      {label: "Remote Control Pad", value: "remote_control_pad"},
+      {label: "Turtlesim Position", value: "turtlesim_position"},
+      {label: "Go2 Low State", value: "go2_low_state"},
+      {label: "Gps Map", value: "oss_gps_map"},
     ],
   })
 
@@ -77,27 +81,41 @@ export function AddWidgetModal({
           tf_model: "deeplab",
         },
       },
+      {
+        label: "oss_gps_map",
+        value: {
+          robotIdList: []
+        },
+      },
     ],
   })
 
+  const addWidget = (widgetType: WidgetType, robotId: string, config?: any) => {
+    const defaultConfig = defaultWidgetConfig.items.find(
+      (item) => item.label === widgetType,
+    )?.value
+    onAdd(widgetType, robotId, config || defaultConfig)
+    onClose()
+  }
+
   const handleAdd = () => {
+    if (selectedType === "oss_gps_map") {
+      // oss gps map widget 은 robot id 가 필요하지 않음
+      addWidget(selectedType, selectedRobotId)
+    }
+
     if (selectedRobotId) {
       if (selectedType === "universal") {
         setShowUniversalConfig(true)
       } else {
-        const defaultConfig = defaultWidgetConfig.items.find(
-          (item) => item.label === selectedType,
-        )?.value
-        onAdd(selectedRobotId, selectedType as WidgetType, defaultConfig)
-        onClose()
+        addWidget(selectedType, selectedRobotId)
       }
     }
   }
 
   const handleUniversalConfigComplete = (config: any) => {
-    onAdd(selectedRobotId, "universal" as WidgetType, config)
+    addWidget("universal", selectedRobotId, config)
     setShowUniversalConfig(false)
-    onClose()
   }
 
   // Universal Widget 설정 모달이 열려있으면 해당 모달을 렌더링
@@ -114,10 +132,10 @@ export function AddWidgetModal({
 
   return (
     <DialogRoot
-      size={{ base: "xs", md: "md" }}
+      size={{base: "xs", md: "md"}}
       placement="center"
       open={isOpen}
-      onOpenChange={({ open }) => !open && onClose()}
+      onOpenChange={({open}) => !open && onClose()}
     >
       <DialogContent
         style={{
@@ -126,7 +144,7 @@ export function AddWidgetModal({
           zIndex: 1000,
         }}
       >
-        <DialogCloseTrigger />
+        <DialogCloseTrigger/>
         <DialogHeader>
           <DialogTitle>Add Widget</DialogTitle>
         </DialogHeader>
@@ -138,18 +156,18 @@ export function AddWidgetModal({
               onValueChange={(details) => setSelectedRobotId(details.value[0])}
               size="md"
             >
-              <Select.HiddenSelect />
+              <Select.HiddenSelect/>
               <Select.Label>Select Robot</Select.Label>
               <Select.Control>
                 <Select.Trigger>
-                  <Select.ValueText placeholder="Select a robot" />
+                  <Select.ValueText placeholder="Select a robot"/>
                 </Select.Trigger>
                 <Select.IndicatorGroup>
-                  <Select.Indicator />
+                  <Select.Indicator/>
                 </Select.IndicatorGroup>
               </Select.Control>
               <Portal>
-                <Select.Positioner style={{ zIndex: 9999 }}>
+                <Select.Positioner style={{zIndex: 9999}}>
                   <Select.Content
                     style={{
                       position: "relative",
@@ -160,7 +178,7 @@ export function AddWidgetModal({
                     {robotCollection.items.map((robot) => (
                       <Select.Item item={robot} key={robot.value}>
                         {robot.label}
-                        <Select.ItemIndicator />
+                        <Select.ItemIndicator/>
                       </Select.Item>
                     ))}
                   </Select.Content>
@@ -171,21 +189,23 @@ export function AddWidgetModal({
             <Select.Root
               collection={widgetTypeCollection}
               value={[selectedType]}
-              onValueChange={(details) => setSelectedType(details.value[0])}
+              onValueChange={(details) =>
+                setSelectedType(details.value[0] as WidgetType)
+              }
               size="md"
             >
-              <Select.HiddenSelect />
+              <Select.HiddenSelect/>
               <Select.Label>Widget Type</Select.Label>
               <Select.Control>
                 <Select.Trigger>
-                  <Select.ValueText placeholder="Select widget type" />
+                  <Select.ValueText placeholder="Select widget type"/>
                 </Select.Trigger>
                 <Select.IndicatorGroup>
-                  <Select.Indicator />
+                  <Select.Indicator/>
                 </Select.IndicatorGroup>
               </Select.Control>
               <Portal>
-                <Select.Positioner style={{ zIndex: 9999 }}>
+                <Select.Positioner style={{zIndex: 9999}}>
                   <Select.Content
                     style={{
                       position: "relative",
@@ -196,7 +216,7 @@ export function AddWidgetModal({
                     {widgetTypeCollection.items.map((type) => (
                       <Select.Item item={type} key={type.value}>
                         {type.label}
-                        <Select.ItemIndicator />
+                        <Select.ItemIndicator/>
                       </Select.Item>
                     ))}
                   </Select.Content>
@@ -215,7 +235,7 @@ export function AddWidgetModal({
             variant="solid"
             colorPalette="blue"
             onClick={handleAdd}
-            disabled={!selectedRobotId}
+            disabled={!selectedType}
           >
             Add
           </Button>

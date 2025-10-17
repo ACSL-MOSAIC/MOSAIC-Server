@@ -1,25 +1,25 @@
-import { useWebSocket } from "@/contexts/WebSocketContext"
+import {useWebSocket} from "@/contexts/WebSocketContext"
 import {
   type DataChannelConfig,
   type VideoChannelConfig,
   WebRTCConnection,
 } from "@/rtc/webrtc-connection"
-import { Box } from "@chakra-ui/react"
-import React, { useState, useEffect, useRef } from "react"
-import { Responsive, WidthProvider } from "react-grid-layout"
-import { v4 as uuidv4 } from "uuid"
-import { TabManager } from "./TabManager"
-import type { DashboardConfig, WidgetConfig, WidgetType } from "./types"
-import { WidgetFactory } from "./widgets/WidgetFactory"
+import {Box} from "@chakra-ui/react"
+import React, {useState, useEffect, useRef} from "react"
+import {Responsive, WidthProvider} from "react-grid-layout"
+import {v4 as uuidv4} from "uuid"
+import {TabManager} from "./TabManager"
+import type {DashboardConfig, WidgetConfig, WidgetType} from "./types"
+import {WidgetFactory} from "./widgets/WidgetFactory"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
-import { toaster } from "@/components/ui/toaster"
+import {toaster} from "@/components/ui/toaster"
 import {
   useDashboardConfigMutation,
   useDashboardConfigQuery,
 } from "@/hooks/useDashboardConfig"
-import { DEFAULT_DATA_CHANNELS } from "@/rtc/config/webrtc-datachannel-config.ts"
-import { useQueryClient } from "@tanstack/react-query"
+import {DEFAULT_DATA_CHANNELS} from "@/rtc/config/webrtc-datachannel-config.ts"
+import {useQueryClient} from "@tanstack/react-query"
 import RobotConnectionPanel from "./RobotConnectionPanel"
 import {
   addTab,
@@ -35,9 +35,9 @@ interface DashboardGridProps {
   onOpenDynamicTypeModal: (robotId: string) => void
 }
 
-export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
-  const { data: dashboardConfig } = useDashboardConfigQuery()
-  const { mutate: saveDashboardConfig } = useDashboardConfigMutation()
+export function DashboardGrid({onOpenDynamicTypeModal}: DashboardGridProps) {
+  const {data: dashboardConfig} = useDashboardConfigQuery()
+  const {mutate: saveDashboardConfig} = useDashboardConfigMutation()
   const queryClient = useQueryClient()
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [connections, setConnections] = useState<{ [key: string]: boolean }>({})
@@ -147,7 +147,10 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
       const videoChannelConfigs: VideoChannelConfig[] = []
 
       activeTab?.widgets
-        .filter((wc) => wc.robotId === robotId)
+        .filter(
+          (wc) =>
+            wc.robotId === robotId || wc.config?.robotIdList?.includes(robotId),
+        )
         .forEach((widgetConfig) => {
           const {
             dataChannelConfigs: dcConfigs,
@@ -241,8 +244,8 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
   }
 
   const handleAddWidget = (
-    selectedRobotId: string,
     type: WidgetType,
+    selectedRobotId?: string,
     config?: any,
   ) => {
     if (!dashboardConfig) return
@@ -253,7 +256,7 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
     const newWidget: WidgetConfig = {
       id: uuidv4(),
       type,
-      position: { x: 0, y: 0, w: 4, h: 4 },
+      position: {x: 0, y: 0, w: 4, h: 4},
       robotId: selectedRobotId,
       dataType,
       config,
@@ -319,11 +322,11 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
       return {
         ...tab,
         widgets: tab.widgets.map((w) =>
-          w.id === widgetId ? { ...w, config: newConfig } : w,
+          w.id === widgetId ? {...w, config: newConfig} : w,
         ),
       }
     })
-    updateConfig({ ...dashboardConfig, tabs: newTabs })
+    updateConfig({...dashboardConfig, tabs: newTabs})
   }
 
   // Disconnect all connections on component unmount
@@ -390,8 +393,8 @@ export function DashboardGrid({ onOpenDynamicTypeModal }: DashboardGridProps) {
             maxH: 15,
           })),
         }}
-        breakpoints={{ lg: 1500, md: 1245, sm: 960, xs: 600, xxs: 0 }}
-        cols={{ lg: 15, md: 12, sm: 8, xs: 6, xxs: 3 }}
+        breakpoints={{lg: 1500, md: 1245, sm: 960, xs: 600, xxs: 0}}
+        cols={{lg: 15, md: 12, sm: 8, xs: 6, xxs: 3}}
         rowHeight={100}
         width={1500}
         onLayoutChange={handleLayoutChange}

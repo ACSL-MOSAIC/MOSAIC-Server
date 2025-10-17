@@ -1,15 +1,16 @@
-import { DynamicTypeManager } from "@/dashboard/dynamic/dynamic-type-config"
-import { Go2LowStateStore } from "@/dashboard/store/data-channel-store/readonly/go2-low-state.store"
-import { LidarPointCloudStore } from "@/dashboard/store/data-channel-store/readonly/lidar-point-cloud.store.ts"
-import { ReadOnlyStore } from "@/dashboard/store/data-channel-store/readonly/read-only-store"
-import { ReadOnlyStoreManager } from "@/dashboard/store/data-channel-store/readonly/read-only-store-manager"
-import { TurtlesimPositionStore } from "@/dashboard/store/data-channel-store/readonly/turtlesim-position.store"
-import { RemoteControlPadStore } from "@/dashboard/store/data-channel-store/writeonly/remote-control-pad.store.ts"
-import { VideoRecorderStore } from "@/dashboard/store/data-channel-store/writeonly/video-recorder.store.ts"
-import { WriteOnlyStore } from "@/dashboard/store/data-channel-store/writeonly/write-only-store"
-import { WriteOnlyStoreManager } from "@/dashboard/store/data-channel-store/writeonly/write-only-store-manager"
-import type { DataStore } from "@/dashboard/store/store"
-import { DataChannelConfigUtils } from "./config/webrtc-datachannel-config"
+import {DynamicTypeManager} from "@/dashboard/dynamic/dynamic-type-config"
+import {Go2LowStateStore} from "@/dashboard/store/data-channel-store/readonly/go2-low-state.store"
+import {LidarPointCloudStore} from "@/dashboard/store/data-channel-store/readonly/lidar-point-cloud.store.ts"
+import {ReadOnlyStore} from "@/dashboard/store/data-channel-store/readonly/read-only-store"
+import {ReadOnlyStoreManager} from "@/dashboard/store/data-channel-store/readonly/read-only-store-manager"
+import {TurtlesimPositionStore} from "@/dashboard/store/data-channel-store/readonly/turtlesim-position.store"
+import {RemoteControlPadStore} from "@/dashboard/store/data-channel-store/writeonly/remote-control-pad.store.ts"
+import {VideoRecorderStore} from "@/dashboard/store/data-channel-store/writeonly/video-recorder.store.ts"
+import {WriteOnlyStore} from "@/dashboard/store/data-channel-store/writeonly/write-only-store"
+import {WriteOnlyStoreManager} from "@/dashboard/store/data-channel-store/writeonly/write-only-store-manager"
+import type {DataStore} from "@/dashboard/store/store"
+import {DataChannelConfigUtils} from "./config/webrtc-datachannel-config"
+import {GPSCoordinateStore} from "@/dashboard/store/data-channel-store/readonly/gps-coordinate.store.ts";
 
 /**
  * Setup data channel for robot
@@ -106,6 +107,13 @@ export function createDataChannel(
             robotId,
             channelTypeSymbol,
             (robotId) => new LidarPointCloudStore(robotId),
+          )
+          break
+        case "oss_gps_map":
+          store = readOnlyStoreManager.createStoreIfNotExists(
+            robotId,
+            channelTypeSymbol,
+            (robotId) => new GPSCoordinateStore(robotId),
           )
           break
         default:

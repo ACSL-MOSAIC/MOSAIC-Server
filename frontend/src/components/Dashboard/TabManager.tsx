@@ -8,7 +8,7 @@ import {
   DialogRoot,
   DialogTitle,
 } from "@/components/ui/dialog"
-import type { RobotInfo } from "@/contexts/WebSocketContext.tsx"
+import type {RobotInfo} from "@/contexts/WebSocketContext.tsx"
 import {
   Box,
   Button,
@@ -18,10 +18,10 @@ import {
   Text,
   useDisclosure,
 } from "@chakra-ui/react"
-import { useState } from "react"
-import { FiEdit2, FiGrid, FiPlus, FiX } from "react-icons/fi"
-import { AddWidgetModal } from "./AddWidgetModal"
-import type { WidgetType } from "./types"
+import {useState} from "react"
+import {FiEdit2, FiGrid, FiPlus, FiX} from "react-icons/fi"
+import {AddWidgetModal} from "./AddWidgetModal"
+import type {WidgetType} from "./types"
 
 interface TabManagerProps {
   onAddTab: (tabName: string) => void
@@ -30,25 +30,25 @@ interface TabManagerProps {
   tabs: Array<{ id: string; name: string }>
   activeTabId: string
   onTabChange: (tabId: string) => void
-  onAddWidget: (robotId: string, type: WidgetType, config?: any) => void
+  onAddWidget: (type: WidgetType, robotId?: string, config?: any) => void
   onSaveChanges: () => void
   hasUnsavedChanges: boolean
   robots: RobotInfo[]
 }
 
 export function TabManager({
-  onAddTab,
-  onRemoveTab,
-  onRenameTab,
-  tabs,
-  activeTabId,
-  onTabChange,
-  onAddWidget,
-  onSaveChanges,
-  hasUnsavedChanges,
-  robots,
-}: TabManagerProps) {
-  const { open, onOpen, onClose } = useDisclosure()
+                             onAddTab,
+                             onRemoveTab,
+                             onRenameTab,
+                             tabs,
+                             activeTabId,
+                             onTabChange,
+                             onAddWidget,
+                             onSaveChanges,
+                             hasUnsavedChanges,
+                             robots,
+                           }: TabManagerProps) {
+  const {open, onOpen, onClose} = useDisclosure()
   const {
     open: widgetModalOpen,
     onOpen: onWidgetModalOpen,
@@ -172,7 +172,7 @@ export function TabManager({
               }}
               title="Add Widget"
             >
-              <FiGrid size={14} />
+              <FiGrid size={14}/>
               Add Widget
             </Button>
 
@@ -192,7 +192,7 @@ export function TabManager({
                   color: "gray.700",
                 }}
               >
-                <FiEdit2 size={14} />
+                <FiEdit2 size={14}/>
                 Edit Tab Name
               </Button>
             )}
@@ -208,7 +208,7 @@ export function TabManager({
                   color: "red.500",
                 }}
               >
-                <FiX size={14} />
+                <FiX size={14}/>
                 Delete Tab
               </Button>
             )}
@@ -222,7 +222,7 @@ export function TabManager({
                 bg: "blue.50",
               }}
             >
-              <FiPlus size={14} />
+              <FiPlus size={14}/>
               Add Tab
             </Button>
 
@@ -238,7 +238,7 @@ export function TabManager({
       </Box>
 
       {/* Add tab dialog */}
-      <DialogRoot open={open} onOpenChange={({ open }) => !open && onClose()}>
+      <DialogRoot open={open} onOpenChange={({open}) => !open && onClose()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Tab</DialogTitle>
