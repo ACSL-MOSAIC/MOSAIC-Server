@@ -2,7 +2,7 @@ import type {
   Go2ImuStateData,
   ParsedGo2LowState,
 } from "@/dashboard/parser/go2-low-state.ts"
-import type { Go2LowStateStore } from "@/dashboard/store/data-channel-store/readonly/go2-low-state.store.ts"
+import type {Go2LowStateStore} from "@/dashboard/store/data-channel-store/readonly/go2-low-state.store.ts"
 import {
   Box,
   Flex,
@@ -22,7 +22,7 @@ import {
   Box as ThreeBox,
   Grid as ThreeGrid,
 } from "@react-three/drei"
-import { Canvas } from "@react-three/fiber"
+import {Canvas} from "@react-three/fiber"
 import {
   CategoryScale,
   Chart as ChartJS,
@@ -33,11 +33,11 @@ import {
   Title,
   Tooltip,
 } from "chart.js"
-import { useEffect, useState } from "react"
-import { Line } from "react-chartjs-2"
+import {useEffect, useState} from "react"
+import {Line} from "react-chartjs-2"
 import * as THREE from "three"
-import { WidgetFrame } from "./WidgetFrame"
-import type { WidgetProps } from "./types"
+import {WidgetFrame} from "../WidgetFrame"
+import type {WidgetProps} from "../types"
 
 ChartJS.register(
   CategoryScale,
@@ -56,7 +56,7 @@ export interface Go2LowStateWidgetProps extends WidgetProps {
 const MAX_DATA_POINTS = 100
 
 // IMU 시각화 컴포넌트
-function IMUVisualizer({ imuState }: { imuState: Go2ImuStateData }) {
+function IMUVisualizer({imuState}: { imuState: Go2ImuStateData }) {
   const threeQuaternion = new THREE.Quaternion(
     imuState.quaternion[1], // x
     imuState.quaternion[2], // y
@@ -75,11 +75,11 @@ function IMUVisualizer({ imuState }: { imuState: Go2ImuStateData }) {
   }, [imuState.quaternion])
 
   return (
-    <Canvas camera={{ position: [3, 3, 3], fov: 50 }}>
-      <color attach="background" args={["#f0f0f0"]} />
-      <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} intensity={1} />
-      <pointLight position={[-10, -10, -10]} intensity={0.5} />
+    <Canvas camera={{position: [3, 3, 3], fov: 50}}>
+      <color attach="background" args={["#f0f0f0"]}/>
+      <ambientLight intensity={0.5}/>
+      <pointLight position={[10, 10, 10]} intensity={1}/>
+      <pointLight position={[-10, -10, -10]} intensity={0.5}/>
 
       {/* 좌표계 그리드 */}
       <ThreeGrid
@@ -158,26 +158,26 @@ function IMUVisualizer({ imuState }: { imuState: Go2ImuStateData }) {
 }
 
 export function Go2LowStateWidget({
-  robotId,
-  store,
-  dataType,
-  onRemove,
-}: Go2LowStateWidgetProps) {
+                                    robotId,
+                                    store,
+                                    dataType,
+                                    onRemove,
+                                  }: Go2LowStateWidgetProps) {
   const [data, setData] = useState<ParsedGo2LowState | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [motorHistory, setMotorHistory] = useState<{
     labels: string[]
     values: number[][][]
-  }>({ labels: [], values: Array(12).fill([[], [], [], []]) })
+  }>({labels: [], values: Array(12).fill([[], [], [], []])})
   // values: [모터][Q, DQ, Torque, DDQ][시간]
   const [footForceHistory, setFootForceHistory] = useState<{
     labels: string[]
     values: number[][]
-  }>({ labels: [], values: Array(4).fill([]) })
+  }>({labels: [], values: Array(4).fill([])})
   const [powerHistory, setPowerHistory] = useState<{
     labels: string[]
     values: number[][]
-  }>({ labels: [], values: [[], []] })
+  }>({labels: [], values: [[], []]})
 
   useEffect(() => {
     const unsubscribe = store.subscribe((newData) => {
@@ -201,7 +201,7 @@ export function Go2LowStateWidget({
             -MAX_DATA_POINTS,
           ),
         ])
-        return { labels: newLabels, values: newValues }
+        return {labels: newLabels, values: newValues}
       })
       // FootForce
       setFootForceHistory((prev) => {
@@ -209,7 +209,7 @@ export function Go2LowStateWidget({
         const newValues = prev.values.map((arr, i) =>
           [...arr, newData.foot_force[i] ?? 0].slice(-MAX_DATA_POINTS),
         )
-        return { labels: newLabels, values: newValues }
+        return {labels: newLabels, values: newValues}
       })
       // Power
       setPowerHistory((prev) => {
@@ -218,7 +218,7 @@ export function Go2LowStateWidget({
           [...prev.values[0], newData.power_v].slice(-MAX_DATA_POINTS),
           [...prev.values[1], newData.power_a].slice(-MAX_DATA_POINTS),
         ]
-        return { labels: newLabels, values: newValues }
+        return {labels: newLabels, values: newValues}
       })
     })
     return () => unsubscribe()
@@ -292,9 +292,9 @@ export function Go2LowStateWidget({
             options={{
               responsive: true,
               maintainAspectRatio: false,
-              animation: { duration: 0 },
-              scales: { y: { beginAtZero: true } },
-              plugins: { legend: { display: false } },
+              animation: {duration: 0},
+              scales: {y: {beginAtZero: true}},
+              plugins: {legend: {display: false}},
             }}
             height={150}
           />
@@ -362,9 +362,9 @@ export function Go2LowStateWidget({
     >
       <TabsRoot
         defaultValue="motor"
-        style={{ display: "flex", flexDirection: "column", height: "100%" }}
+        style={{display: "flex", flexDirection: "column", height: "100%"}}
       >
-        <TabsList style={{ flexShrink: 0 }}>
+        <TabsList style={{flexShrink: 0}}>
           <TabsTrigger value="motor">Motor Charts</TabsTrigger>
           <TabsTrigger value="footforce">FootForce Charts</TabsTrigger>
           <TabsTrigger value="power">Power Charts</TabsTrigger>
@@ -373,7 +373,7 @@ export function Go2LowStateWidget({
         </TabsList>
 
         {/* 탭 1: 모터 차트 (2열 6행 그리드) */}
-        <TabsContent value="motor" style={{ flex: 1, overflow: "auto" }}>
+        <TabsContent value="motor" style={{flex: 1, overflow: "auto"}}>
           <Box width="100%" height="100%">
             <Grid templateColumns="repeat(2, 1fr)" gap={4}>
               {motorCharts}
@@ -382,39 +382,39 @@ export function Go2LowStateWidget({
         </TabsContent>
 
         {/* 탭 2: FootForce 차트 */}
-        <TabsContent value="footforce" style={{ flex: 1, overflow: "auto" }}>
+        <TabsContent value="footforce" style={{flex: 1, overflow: "auto"}}>
           <Box width="100%" height="100%">
             <Line
               data={footForceChartData}
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
-                animation: { duration: 0 },
-                scales: { y: { beginAtZero: true } },
+                animation: {duration: 0},
+                scales: {y: {beginAtZero: true}},
               }}
             />
           </Box>
         </TabsContent>
 
         {/* 탭 3: Power 차트 */}
-        <TabsContent value="power" style={{ flex: 1, overflow: "auto" }}>
+        <TabsContent value="power" style={{flex: 1, overflow: "auto"}}>
           <Box width="100%" height="100%">
             <Line
               data={powerChartData}
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
-                animation: { duration: 0 },
-                scales: { y: { beginAtZero: true } },
+                animation: {duration: 0},
+                scales: {y: {beginAtZero: true}},
               }}
             />
           </Box>
         </TabsContent>
 
         {/* 탭 4: IMU State */}
-        <TabsContent value="imu" style={{ flex: 1, overflow: "auto" }}>
+        <TabsContent value="imu" style={{flex: 1, overflow: "auto"}}>
           <Box width="100%" height="100%" position="relative">
-            {data && <IMUVisualizer imuState={data.imu_state} />}
+            {data && <IMUVisualizer imuState={data.imu_state}/>}
             <Box
               position="absolute"
               bottom={4}
@@ -472,7 +472,7 @@ export function Go2LowStateWidget({
         </TabsContent>
 
         {/* 탭 5: 상세 정보 */}
-        <TabsContent value="details" style={{ flex: 1, overflow: "auto" }}>
+        <TabsContent value="details" style={{flex: 1, overflow: "auto"}}>
           <Box height="100%">
             <Flex direction="column" gap={4}>
               <Text fontSize="lg" fontWeight="bold">

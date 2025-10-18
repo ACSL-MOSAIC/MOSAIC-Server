@@ -1,20 +1,20 @@
-import type { ParsedPointCloud2 } from "@/dashboard/parser/lidar-pointcloud.ts"
-import type { LidarPointCloudStore } from "@/dashboard/store/data-channel-store/readonly/lidar-point-cloud.store.ts"
-import { Box, Flex } from "@chakra-ui/react"
-import { useEffect, useRef, useState } from "react"
-import { WidgetFrame } from "./WidgetFrame"
-import type { WidgetProps } from "./types"
+import type {ParsedPointCloud2} from "@/dashboard/parser/lidar-pointcloud.ts"
+import type {LidarPointCloudStore} from "@/dashboard/store/data-channel-store/readonly/lidar-point-cloud.store.ts"
+import {Box, Flex} from "@chakra-ui/react"
+import {useEffect, useRef, useState} from "react"
+import {WidgetFrame} from "../WidgetFrame"
+import type {WidgetProps} from "../types"
 
 export interface LiDARPointCloud22DWidgetProps extends WidgetProps {
   store: LidarPointCloudStore
 }
 
 export function LiDARPointCloud22DWidget({
-  robotId,
-  store,
-  dataType,
-  onRemove,
-}: LiDARPointCloud22DWidgetProps) {
+                                           robotId,
+                                           store,
+                                           dataType,
+                                           onRemove,
+                                         }: LiDARPointCloud22DWidgetProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
@@ -30,7 +30,7 @@ export function LiDARPointCloud22DWidget({
     // })
 
     if (!store) {
-      console.error("PointCloud2 스토어가 없습니다:", { robotId, dataType })
+      console.error("PointCloud2 스토어가 없습니다:", {robotId, dataType})
       setError("PointCloud2 스토어를 찾을 수 없습니다.")
       return
     }
@@ -221,7 +221,7 @@ export function LiDARPointCloud22DWidget({
           (intensityMap[pixelIndex] - minIntensity) /
           (maxIntensity - minIntensity)
 
-        const { r, g, b } = createDistinctiveColor(
+        const {r, g, b} = createDistinctiveColor(
           normalizedDepth,
           normalizedHeight,
           normalizedIntensity,
@@ -283,7 +283,7 @@ export function LiDARPointCloud22DWidget({
     )
 
     // HSV to RGB 변환
-    const { r, g, b } = hsvToRgb(hue / 360, saturation, value)
+    const {r, g, b} = hsvToRgb(hue / 360, saturation, value)
 
     return {
       r: Math.floor(r * 255),
@@ -346,15 +346,15 @@ export function LiDARPointCloud22DWidget({
     },
     ...(lastUpdate
       ? [
-          {
-            label: "Last Update",
-            value: lastUpdate.toLocaleTimeString(),
-          },
-          {
-            label: "FPS",
-            value: fps.toFixed(1),
-          },
-        ]
+        {
+          label: "Last Update",
+          value: lastUpdate.toLocaleTimeString(),
+        },
+        {
+          label: "FPS",
+          value: fps.toFixed(1),
+        },
+      ]
       : []),
   ]
 

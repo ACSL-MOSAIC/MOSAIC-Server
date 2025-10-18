@@ -1,52 +1,57 @@
 import {
+  VideoObjectDetectionSetting
+} from "@/components/Dashboard/widgets/video-object-detection/VideoObjectDetectionSetting.tsx"
+import {
   type StreamStats,
   type VideoData,
   getInitialStreamStats,
   getInitialVideoData,
 } from "@/dashboard/store/media-channel-store/video-store"
-import { VideoStoreManager } from "@/dashboard/store/media-channel-store/video-store-manager.ts"
-import { Box, Flex, IconButton } from "@chakra-ui/react"
-import * as deepLab from "@tensorflow-models/deeplab"
-import type { DeepLabOutput } from "@tensorflow-models/deeplab/dist/types"
+import {VideoStoreManager} from "@/dashboard/store/media-channel-store/video-store-manager.ts"
+import {Box, Flex, IconButton} from "@chakra-ui/react"
+import * as cocoSsd from "@tensorflow-models/coco-ssd"
 import * as tf from "@tensorflow/tfjs"
 import type React from "react"
-import { useCallback } from "react"
-import { useEffect, useRef, useState } from "react"
-import { VideoSegmentationSetting } from "./VideoSegmentationSetting"
-import { WidgetFrame } from "./WidgetFrame"
+import {useCallback} from "react"
+import {useEffect, useRef, useState} from "react"
+import {WidgetFrame} from "../WidgetFrame"
 
-const deeplabModelBase = "pascal"
+interface Detection {
+  class: string
+  score: number
+  bbox: [number, number, number, number]
+}
 
-export interface VideoSegmentationWidgetConfig {
+export interface VideoObjectDetectionWidgetConfig {
   stream_id: string
   tf_model: string
 }
 
-interface VideoSegmentationWidgetProps {
+interface VideoObjectDetectionWidgetProps {
   robotId: string
-  config: VideoSegmentationWidgetConfig
-  onUpdateConfig?: (newConfig: VideoSegmentationWidgetConfig) => void
+  config: VideoObjectDetectionWidgetConfig
+  onUpdateConfig?: (newConfig: VideoObjectDetectionWidgetConfig) => void
   setOpenSetting?: (openSetting: boolean) => void
   onRemove?: () => void
 }
 
-interface ErrorWidgetProps extends VideoSegmentationWidgetProps {
+interface ErrorWidgetProps extends VideoObjectDetectionWidgetProps {
   openSetting: boolean
   message: string
 }
 
 const ErrorWidget: React.FC<ErrorWidgetProps> = ({
-  robotId,
-  config,
-  onUpdateConfig,
-  openSetting,
-  setOpenSetting,
-  onRemove,
-  message,
-}) => (
+                                                   robotId,
+                                                   config,
+                                                   onUpdateConfig,
+                                                   openSetting,
+                                                   setOpenSetting,
+                                                   onRemove,
+                                                   message,
+                                                 }) => (
   <>
     <WidgetFrame
-      title="Video Segmentation"
+      title="Video Object Detection"
       robot_id={robotId}
       isConnected={false}
       footerMessage={message}
@@ -70,7 +75,7 @@ const ErrorWidget: React.FC<ErrorWidgetProps> = ({
       </Flex>
     </WidgetFrame>
     {openSetting && (
-      <VideoSegmentationSetting
+      <VideoObjectDetectionSetting
         isOpen={openSetting}
         config={config}
         onUpdateConfig={onUpdateConfig}
@@ -82,9 +87,9 @@ const ErrorWidget: React.FC<ErrorWidgetProps> = ({
   </>
 )
 
-export const VideoSegmentationWidget: React.FC<
-  VideoSegmentationWidgetProps
-> = ({ robotId, config, onUpdateConfig, onRemove }) => {
+export const VideoObjectDetectionWidget: React.FC<
+  VideoObjectDetectionWidgetProps
+> = ({robotId, config, onUpdateConfig, onRemove}) => {
   const videoStoreManager = VideoStoreManager.getInstance()
 
   const [openSetting, setOpenSetting] = useState(false)
@@ -100,10 +105,11 @@ export const VideoSegmentationWidget: React.FC<
   const [error, setError] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
 
-  // Segmentation 관련 상태
-  const [model, setModel] = useState<deepLab.SemanticSegmentation | null>(null)
+  // Object Detection 관련 상태
+  const [model, setModel] = useState<any>(null)
   const [isModelLoading, setIsModelLoading] = useState(true)
-  const [isSegmenting, setIsSegmenting] = useState(false)
+  const [isDetecting, setIsDetecting] = useState(false)
+  const [detections, setDetections] = useState<Detection[]>([])
   const animationFrameRef = useRef<number | null>(null)
 
   const store = videoStoreManager.createVideoStoreByMediaTypeAuto(
@@ -119,15 +125,13 @@ export const VideoSegmentationWidget: React.FC<
 
         // TensorFlow.js 백엔드 초기화
         await tf.ready()
+        console.log("✅ TensorFlow.js ready")
 
-        // DeepLab v3 모델 로드
-        const loadedModel = await deepLab.load({
-          base: deeplabModelBase,
-          quantizationBytes: 2,
-        })
+        // COCO-SSD 모델 로드
+        const loadedModel = await cocoSsd.load()
         setModel(loadedModel)
         setIsModelLoading(false)
-        console.log("✅ DeepLab model loaded successfully")
+        console.log("✅ COCO-SSD model loaded successfully")
       } catch (err) {
         console.error("❌ TensorFlow initialization failed:", err)
         setError("Failed to initialize TensorFlow.js or load model")
@@ -190,12 +194,13 @@ export const VideoSegmentationWidget: React.FC<
 
   const nextFrame = () => {
     animationFrameRef.current = requestAnimationFrame(() => {
-      setTimeout(segmentObjects, 100)
+      setTimeout(detectObjects, 100)
     })
   }
 
-  const segmentObjects = useCallback(async () => {
-    if (!isSegmenting || !model || !videoRef.current || !canvasRef.current) {
+  // 객체 탐지
+  const detectObjects = useCallback(async () => {
+    if (!isDetecting || !model || !videoRef.current || !canvasRef.current) {
       nextFrame()
       return
     }
@@ -203,101 +208,96 @@ export const VideoSegmentationWidget: React.FC<
     try {
       const video = videoRef.current
       const canvas = canvasRef.current
-      const tempCanvas = document.createElement("canvas")
-      const canvasCtx = canvas.getContext("2d")
-      const tempCanvasCtx = tempCanvas.getContext("2d")
+      const ctx = canvas.getContext("2d")
 
-      if (!canvasCtx || !tempCanvasCtx || video.readyState !== 4) {
+      if (!ctx || video.readyState !== 4) {
+        // 다음 프레임에서 재시도
         nextFrame()
         return
       }
 
-      const segmentations = await model.segment(video)
+      // 객체 탐지 수행
+      const predictions = await model.detect(video)
 
-      canvasCtx.clearRect(0, 0, canvas.width, canvas.height)
+      // 탐지 결과 필터링 및 변환 (타입 안전성 확보)
+      const filteredDetections: Detection[] = predictions
+        .filter((prediction: cocoSsd.DetectedObject) => prediction.score > 0.5)
+        .map((prediction: cocoSsd.DetectedObject) => ({
+          class: prediction.class,
+          score: prediction.score,
+          bbox: prediction.bbox,
+        }))
+
+      setDetections(filteredDetections)
+
+      // 캔버스 클리어
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
       setupCanvas()
 
-      drawSegmentations(
-        canvas,
-        canvasCtx,
-        tempCanvas,
-        tempCanvasCtx,
-        segmentations,
-      )
+      drawDetections(ctx, filteredDetections)
     } catch (err) {
       console.error("Detection error:", err)
     }
 
     // 다음 프레임 스케줄링 (10FPS)
-    if (isSegmenting && isPlaying) {
+    if (isDetecting && isPlaying) {
       nextFrame()
     }
-  }, [isSegmenting, isPlaying, model])
+  }, [isDetecting, isPlaying, model])
 
   // 탐지 결과 그리기
-  const drawSegmentations = (
-    canvas: HTMLCanvasElement,
-    canvasCtx: CanvasRenderingContext2D,
-    tempCanvas: HTMLCanvasElement,
-    tempCanvasCtx: CanvasRenderingContext2D,
-    { width, height, segmentationMap }: DeepLabOutput,
+  const drawDetections = (
+    ctx: CanvasRenderingContext2D,
+    detections: Detection[],
   ) => {
-    tempCanvas.width = width
-    tempCanvas.height = height
+    ctx.strokeStyle = "#00ff00"
+    ctx.lineWidth = 3
+    ctx.font = "35px Arial"
+    ctx.fillStyle = "#00ff00"
+    ctx.shadowColor = "rgba(0, 0, 0, 0.5)"
+    ctx.shadowOffsetX = 1
+    ctx.shadowOffsetY = 1
 
-    const imageData = tempCanvasCtx.createImageData(width, height)
-    const data = imageData.data
+    detections.forEach((detection) => {
+      const [x, y, width, height] = detection.bbox
 
-    // RGBA 형태의 segmentationMap을 4씩 건너뛰며 처리
-    for (let i = 0; i < segmentationMap.length; i += 4) {
-      const r = segmentationMap[i] // Red
-      const g = segmentationMap[i + 1] // Green
-      const b = segmentationMap[i + 2] // Blue
-      // const a = segmentationMap[i + 3] // Alpha
+      // 바운딩 박스 그리기
+      ctx.strokeRect(x, y, width, height)
 
-      const pixelIndex = i // 이미 4배수이므로 그대로 사용
+      // 라벨과 신뢰도 그리기
+      const label = `${detection.class} ${(detection.score * 100).toFixed(1)}%`
+      const textWidth = ctx.measureText(label).width
+      const textHeight = 35
 
-      // 배경이 아닌 경우 (검은색이 아닌 경우)
-      if (r !== 0 || g !== 0 || b !== 0) {
-        data[pixelIndex] = r
-        data[pixelIndex + 1] = g
-        data[pixelIndex + 2] = b
-        data[pixelIndex + 3] = 130 // 반투명
-      } else {
-        // 배경은 투명하게
-        data[pixelIndex] = 0
-        data[pixelIndex + 1] = 0
-        data[pixelIndex + 2] = 0
-        data[pixelIndex + 3] = 0
-      }
-    }
+      const padding = 5
+      const backgroundHeight = textHeight + padding * 2
 
-    // 임시 캔버스에 그리기
-    tempCanvasCtx.putImageData(imageData, 0, 0)
+      // 배경 사각형
+      ctx.fillStyle = "rgba(0, 255, 0, 0.8)"
+      ctx.fillRect(
+        x,
+        y - backgroundHeight,
+        textWidth + padding * 2,
+        backgroundHeight,
+      )
 
-    // 비디오 캔버스 크기에 맞게 스케일링해서 그리기
-    canvasCtx.drawImage(
-      tempCanvas,
-      0,
-      0,
-      width,
-      height,
-      0,
-      0,
-      canvas.width,
-      canvas.height,
-    )
+      // 텍스트
+      ctx.fillStyle = "#000000"
+      ctx.shadowColor = "transparent"
+      ctx.fillText(label, x + padding, y - padding)
+      ctx.shadowColor = "rgba(0, 0, 0, 0.5)"
+    })
   }
 
   // 탐지 자동 시작
   useEffect(() => {
     if (model && isConnected) {
-      setIsSegmenting(true)
-      // segmentObjects 호출을 다음 렌더링 사이클로 지연
-      const timer = setTimeout(segmentObjects, 0)
+      setIsDetecting(true)
+      // detectObjects 호출을 다음 렌더링 사이클로 지연
+      const timer = setTimeout(detectObjects, 0)
       return () => clearTimeout(timer)
     }
-    setIsSegmenting(false)
+    setIsDetecting(false)
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current)
       animationFrameRef.current = null
@@ -307,11 +307,13 @@ export const VideoSegmentationWidget: React.FC<
       const ctx = canvasRef.current.getContext("2d")
       ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
     }
-  }, [model, isConnected, segmentObjects])
+    setDetections([])
+  }, [model, isConnected, detectObjects])
 
   const configureVideo = () => {
     if (!store) {
-      return () => {}
+      return () => {
+      }
     }
 
     // 비디오 엘리먼트 설정
@@ -454,32 +456,32 @@ export const VideoSegmentationWidget: React.FC<
   const footerInfo =
     videoData && streamStats
       ? [
-          {
-            label: "FPS",
-            value: `${streamStats.fps} fps`,
-          },
-          {
-            label: "Stream ID",
-            value: videoData.streamId,
-          },
-          {
-            label: "Model",
-            value: config.tf_model,
-          },
-        ]
+        {
+          label: "FPS",
+          value: `${streamStats.fps} fps`,
+        },
+        {
+          label: "Stream ID",
+          value: videoData.streamId,
+        },
+        {
+          label: "Model",
+          value: config.tf_model,
+        },
+      ]
       : []
 
   const getStatusMessage = () => {
     if (isModelLoading) return "Loading AI model..."
     if (!isConnected) return "Waiting for stream..."
-    if (isSegmenting) return "Segmenting objects..."
+    if (isDetecting) return `Detecting objects... (${detections.length} found)`
     return "Video stream active"
   }
 
   return (
     <>
       <WidgetFrame
-        title="Video Segmentation"
+        title="Video Object Detection"
         robot_id={robotId}
         isConnected={isConnected}
         footerInfo={footerInfo}
@@ -518,10 +520,13 @@ export const VideoSegmentationWidget: React.FC<
               autoPlay
             />
 
-            {/* Segmentation Canvas Overlay */}
+            {/* Object Detection Canvas Overlay */}
             <canvas
               ref={canvasRef}
               style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
                 pointerEvents: "none",
                 borderRadius: "8px",
               }}
@@ -536,7 +541,7 @@ export const VideoSegmentationWidget: React.FC<
               bg="linear-gradient(to top, rgba(0,0,0,0.7), transparent)"
               p={3}
               opacity={0}
-              _hover={{ opacity: 1 }}
+              _hover={{opacity: 1}}
               transition="opacity 0.2s"
             >
               <Flex justify="center" align="center" gap={2}>
@@ -576,7 +581,7 @@ export const VideoSegmentationWidget: React.FC<
         )}
       </WidgetFrame>
       {openSetting && (
-        <VideoSegmentationSetting
+        <VideoObjectDetectionSetting
           isOpen={openSetting}
           config={config}
           onUpdateConfig={onUpdateConfig}

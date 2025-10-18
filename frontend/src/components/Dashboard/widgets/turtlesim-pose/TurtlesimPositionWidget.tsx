@@ -1,8 +1,8 @@
-import type { ParsedTurtlesimPosition } from "@/dashboard/parser/turtlesim-position"
-import type { TurtlesimPositionStore } from "@/dashboard/store/data-channel-store/readonly/turtlesim-position.store"
-import { useRobotMapping } from "@/hooks/useRobotMapping.ts"
-import { useEffect, useRef, useState } from "react"
-import { WidgetFrame } from "./WidgetFrame"
+import type {ParsedTurtlesimPosition} from "@/dashboard/parser/turtlesim-position"
+import type {TurtlesimPositionStore} from "@/dashboard/store/data-channel-store/readonly/turtlesim-position.store"
+import {useRobotMapping} from "@/hooks/useRobotMapping.ts"
+import {useEffect, useRef, useState} from "react"
+import {WidgetFrame} from "../WidgetFrame"
 
 interface TurtlesimPositionWidgetProps {
   robotId: string
@@ -12,19 +12,19 @@ interface TurtlesimPositionWidgetProps {
 }
 
 export function TurtlesimPositionWidget({
-  robotId,
-  store,
-  onRemove,
-}: TurtlesimPositionWidgetProps) {
+                                          robotId,
+                                          store,
+                                          onRemove,
+                                        }: TurtlesimPositionWidgetProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>()
   const [position, setPosition] = useState<ParsedTurtlesimPosition | null>(null)
   const [isConnected, setIsConnected] = useState(false)
-  const [velocity, setVelocity] = useState({ linear: 0, angular: 0 })
+  const [velocity, setVelocity] = useState({linear: 0, angular: 0})
   const [lastPosition, setLastPosition] =
     useState<ParsedTurtlesimPosition | null>(null)
 
-  const { getRobotName } = useRobotMapping()
+  const {getRobotName} = useRobotMapping()
 
   useEffect(() => {
     const unsubscribe = store.subscribe((data: ParsedTurtlesimPosition) => {
@@ -35,7 +35,7 @@ export function TurtlesimPositionWidget({
           const dy = data.y - lastPosition.y
           const linearVel = Math.sqrt(dx * dx + dy * dy) / dt
           const angularVel = (data.theta - lastPosition.theta) / dt
-          setVelocity({ linear: linearVel, angular: angularVel })
+          setVelocity({linear: linearVel, angular: angularVel})
         }
       }
       setLastPosition(position)
@@ -69,11 +69,11 @@ export function TurtlesimPositionWidget({
       // 컨텍스트 스케일 조정
       ctx.scale(dpr, dpr)
 
-      return { width: rect.width, height: rect.height }
+      return {width: rect.width, height: rect.height}
     }
 
     // 초기 크기 설정
-    const { width: canvasWidth, height: canvasHeight } = setCanvasSize()
+    const {width: canvasWidth, height: canvasHeight} = setCanvasSize()
     const centerX = canvasWidth / 2
     const centerY = canvasHeight / 2
 
@@ -240,37 +240,37 @@ export function TurtlesimPositionWidget({
   // Footer info for connected state
   const footerInfo = position
     ? [
-        {
-          label: "Position",
-          value: `X: ${position.x.toFixed(2)} | Y: ${position.y.toFixed(2)}`,
-        },
-        {
-          label: "Orientation",
-          value: `θ: ${((position.theta * 180) / Math.PI).toFixed(1)}°`,
-        },
-        {
-          label: "Velocity",
-          value: `Linear: ${velocity.linear.toFixed(2)} m/s | Angular: ${velocity.angular.toFixed(2)} rad/s`,
-        },
-        {
-          label: "Last Update",
-          value: new Date(position.timestamp).toLocaleTimeString(),
-        },
-      ]
+      {
+        label: "Position",
+        value: `X: ${position.x.toFixed(2)} | Y: ${position.y.toFixed(2)}`,
+      },
+      {
+        label: "Orientation",
+        value: `θ: ${((position.theta * 180) / Math.PI).toFixed(1)}°`,
+      },
+      {
+        label: "Velocity",
+        value: `Linear: ${velocity.linear.toFixed(2)} m/s | Angular: ${velocity.angular.toFixed(2)} rad/s`,
+      },
+      {
+        label: "Last Update",
+        value: new Date(position.timestamp).toLocaleTimeString(),
+      },
+    ]
     : [
-        {
-          label: "Position",
-          value: "--",
-        },
-        {
-          label: "Orientation",
-          value: "--",
-        },
-        {
-          label: "Velocity",
-          value: "--",
-        },
-      ]
+      {
+        label: "Position",
+        value: "--",
+      },
+      {
+        label: "Orientation",
+        value: "--",
+      },
+      {
+        label: "Velocity",
+        value: "--",
+      },
+    ]
 
   return (
     <WidgetFrame

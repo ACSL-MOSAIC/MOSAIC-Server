@@ -5,10 +5,10 @@ import {
   getInitialStreamStats,
   getInitialVideoData,
 } from "@/dashboard/store/media-channel-store/video-store"
-import { Box, Flex, IconButton } from "@chakra-ui/react"
+import {Box, Flex, IconButton} from "@chakra-ui/react"
 import type React from "react"
-import { useEffect, useRef, useState } from "react"
-import { WidgetFrame } from "./WidgetFrame"
+import {useEffect, useRef, useState} from "react"
+import {WidgetFrame} from "../WidgetFrame"
 
 interface VideoStreamWidgetProps {
   robotId: string
@@ -18,10 +18,10 @@ interface VideoStreamWidgetProps {
 }
 
 export const VideoStreamWidget: React.FC<VideoStreamWidgetProps> = ({
-  robotId,
-  store,
-  onRemove,
-}) => {
+                                                                      robotId,
+                                                                      store,
+                                                                      onRemove,
+                                                                    }) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [videoData, setVideoData] = useState<VideoData | null>(
     getInitialVideoData(),
@@ -171,22 +171,22 @@ export const VideoStreamWidget: React.FC<VideoStreamWidgetProps> = ({
   const footerInfo =
     videoData && streamStats
       ? [
-          {
-            label: "Status",
-            value: `FPS: ${streamStats.fps} fps, Jitter: ${streamStats.jitter} ms, RTT: ${streamStats.rtt.toFixed(1)} ms`,
-          },
-          {
-            label: "Resolution",
-            value:
-              streamStats.width && streamStats.height
-                ? `${streamStats.width}x${streamStats.height}`
-                : "Unknown",
-          },
-          {
-            label: "Stream ID",
-            value: videoData.streamId,
-          },
-        ]
+        {
+          label: "Status",
+          value: `FPS: ${streamStats.fps} fps, Jitter: ${streamStats.jitter} ms, RTT: ${streamStats.rtt.toFixed(1)} ms`,
+        },
+        {
+          label: "Resolution",
+          value:
+            streamStats.width && streamStats.height
+              ? `${streamStats.width}x${streamStats.height}`
+              : "Unknown",
+        },
+        {
+          label: "Stream ID",
+          value: videoData.streamId,
+        },
+      ]
       : []
 
   return (
@@ -238,7 +238,7 @@ export const VideoStreamWidget: React.FC<VideoStreamWidgetProps> = ({
             bg="linear-gradient(to top, rgba(0,0,0,0.7), transparent)"
             p={3}
             opacity={0}
-            _hover={{ opacity: 1 }}
+            _hover={{opacity: 1}}
             transition="opacity 0.2s"
           >
             <Flex justify="center" align="center" gap={2}>

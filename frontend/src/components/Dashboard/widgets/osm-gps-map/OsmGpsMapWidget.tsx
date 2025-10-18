@@ -1,9 +1,9 @@
 import {useEffect, useRef, useState} from "react"
-import {WidgetFrame} from "./WidgetFrame"
+import {WidgetFrame} from "../WidgetFrame"
 import {MapContainer, TileLayer} from "react-leaflet"
 import type {Map as LeafletMap} from "leaflet"
 import "leaflet/dist/leaflet.css"
-import {OsmGpsMapSetting} from "@/components/Dashboard/widgets/OsmGpsMapSetting.tsx"
+import {OsmGpsMapSetting} from "@/components/Dashboard/widgets/osm-gps-map/OsmGpsMapSetting.tsx"
 import {ReadOnlyStoreManager} from "@/dashboard/store/data-channel-store/readonly/read-only-store-manager.ts"
 import {
   GPS_COORDINATE_TYPE,

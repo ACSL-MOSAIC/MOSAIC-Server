@@ -1,11 +1,11 @@
 import {
   VideoObjectDetectionWidget,
   type VideoObjectDetectionWidgetConfig,
-} from "@/components/Dashboard/widgets/VideoObjectDetectionWidget.tsx"
+} from "@/components/Dashboard/widgets/video-object-detection/VideoObjectDetectionWidget.tsx"
 import {
   VideoSegmentationWidget,
   type VideoSegmentationWidgetConfig,
-} from "@/components/Dashboard/widgets/VideoSegmentationWidget.tsx"
+} from "@/components/Dashboard/widgets/video-segmentation/VideoSegmentationWidget.tsx"
 import {WidgetFrame} from "@/components/Dashboard/widgets/WidgetFrame.tsx"
 import type {UniversalWidgetConfig} from "@/components/Dashboard/widgets/dynamic/universal-widget-config.ts"
 import {GO2_LOW_STATE_TYPE} from "@/dashboard/parser/go2-low-state.ts"
@@ -25,18 +25,22 @@ import {VideoRecorderStore} from "@/dashboard/store/data-channel-store/writeonly
 import {WriteOnlyStoreManager} from "@/dashboard/store/data-channel-store/writeonly/write-only-store-manager.ts"
 import {VideoStoreManager} from "@/dashboard/store/media-channel-store/video-store-manager.ts"
 import type {VideoStore} from "@/dashboard/store/media-channel-store/video-store.ts"
-import {Go2LowStateWidget} from "./Go2LowStateWidget"
-import {LiDARPointCloud22DWidget} from "./LiDARPointCloud22DWidget.tsx"
-import {RemoteControlPadWidget} from "./RemoteControlPadWidget.tsx"
-import {TurtlesimPositionWidget} from "./TurtlesimPositionWidget"
-import {VideoRecordingWidget} from "./VideoRecorderWidget"
-import {VideoStreamWidget} from "./VideoStreamWidget.tsx"
+import {Go2LowStateWidget} from "./go2-low-state/Go2LowStateWidget.tsx"
+import {LiDARPointCloud22DWidget} from "./lidar-point-cloud2-2d/LiDARPointCloud22DWidget.tsx"
+import {RemoteControlPadWidget} from "./remote-control-pad/RemoteControlPadWidget.tsx"
+import {TurtlesimPositionWidget} from "./turtlesim-pose/TurtlesimPositionWidget.tsx"
+import {VideoRecordingWidget} from "./video-recorder/VideoRecorderWidget.tsx"
+import {VideoStreamWidget} from "./video-stream/VideoStreamWidget.tsx"
 import {UniversalWidget} from "./dynamic/UniversalWidget"
 import type {WidgetConfigs, WidgetProps} from "./types"
 import {
   OsmGpsMapWidget,
   type OsmGpsMapWidgetConfig,
-} from "@/components/Dashboard/widgets/OsmGpsMapWidget.tsx"
+} from "@/components/Dashboard/widgets/osm-gps-map/OsmGpsMapWidget.tsx"
+import {
+  Ros2DMapPoseWidget,
+  type Ros2DMapPoseWidgetConfig,
+} from "@/components/Dashboard/widgets/ros-2d-map-pose/Ros2DMapPoseWidget.tsx"
 
 export interface WidgetFactoryProps extends WidgetProps {
   type: string
@@ -61,12 +65,22 @@ export function WidgetFactory({
   const writeOnlyStoreManager = WriteOnlyStoreManager.getInstance()
   const videoStoreManager = VideoStoreManager.getInstance()
 
-  // oss_gps_map 은 특정 robot 에 묶여있지 않기 때문에 따로 처리합니다.
+  // 아래 위젯들은 특정 robot 에 묶여있지 않기 때문에 따로 처리합니다.
   switch (type) {
     case "osm_gps_map": {
       return (
         <OsmGpsMapWidget
           config={config as OsmGpsMapWidgetConfig}
+          onUpdateConfig={onUpdateConfig}
+          onRemove={onRemove}
+          connections={connections}
+        />
+      )
+    }
+    case "ros_2d_map_pose": {
+      return (
+        <Ros2DMapPoseWidget
+          config={config as Ros2DMapPoseWidgetConfig}
           onUpdateConfig={onUpdateConfig}
           onRemove={onRemove}
           connections={connections}

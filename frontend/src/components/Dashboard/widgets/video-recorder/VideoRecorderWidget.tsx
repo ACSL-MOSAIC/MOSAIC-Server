@@ -1,13 +1,13 @@
-import type { VideoRecorderStore } from "@/dashboard/store/data-channel-store/writeonly/video-recorder.store.ts"
-import { HStack, IconButton, VStack } from "@chakra-ui/react"
-import { useEffect, useState } from "react"
+import type {VideoRecorderStore} from "@/dashboard/store/data-channel-store/writeonly/video-recorder.store.ts"
+import {HStack, IconButton, VStack} from "@chakra-ui/react"
+import {useEffect, useState} from "react"
 import {
   MdFiberManualRecord,
   MdPause,
   MdPlayArrow,
   MdStop,
 } from "react-icons/md"
-import { WidgetFrame } from "./WidgetFrame"
+import {WidgetFrame} from "../WidgetFrame"
 
 enum RecordingState {
   NotRecording = "NotRecording",
@@ -23,10 +23,10 @@ interface VideoRecorderWidgetProps {
 }
 
 const BaseIconButton = ({
-  children,
-  onClick,
-  disabled,
-}: {
+                          children,
+                          onClick,
+                          disabled,
+                        }: {
   children?: React.ReactNode
   onClick?: () => void
   disabled?: boolean
@@ -55,10 +55,10 @@ const BaseIconButton = ({
 }
 
 export function VideoRecordingWidget({
-  robotId,
-  store,
-  onRemove,
-}: VideoRecorderWidgetProps) {
+                                       robotId,
+                                       store,
+                                       onRemove,
+                                     }: VideoRecorderWidgetProps) {
   const [isConnected, setIsConnected] = useState(false)
   const [recordingState, setRecordingState] = useState<RecordingState>(
     RecordingState.NotRecording,
@@ -148,7 +148,7 @@ export function VideoRecordingWidget({
   }
 
   const footerInfo = [
-    { label: "Recording Status", value: recordingStatusMap[recordingState] },
+    {label: "Recording Status", value: recordingStatusMap[recordingState]},
   ]
 
   return (
@@ -172,7 +172,7 @@ export function VideoRecordingWidget({
               recordingState !== RecordingState.NotRecording || !isConnected
             }
           >
-            <MdFiberManualRecord />
+            <MdFiberManualRecord/>
           </BaseIconButton>
           {/* 녹화 중지 버튼 */}
           <BaseIconButton
@@ -181,7 +181,7 @@ export function VideoRecordingWidget({
               recordingState === RecordingState.NotRecording || !isConnected
             }
           >
-            <MdStop />
+            <MdStop/>
           </BaseIconButton>
           {/* 녹화 일시 정지 버튼 */}
           <BaseIconButton
@@ -190,14 +190,14 @@ export function VideoRecordingWidget({
               recordingState !== RecordingState.Recording || !isConnected
             }
           >
-            <MdPause />
+            <MdPause/>
           </BaseIconButton>
           {/* 녹화 재개 버튼 */}
           <BaseIconButton
             onClick={handleRecordResume}
             disabled={recordingState !== RecordingState.Paused || !isConnected}
           >
-            <MdPlayArrow />
+            <MdPlayArrow/>
           </BaseIconButton>
         </HStack>
       </VStack>

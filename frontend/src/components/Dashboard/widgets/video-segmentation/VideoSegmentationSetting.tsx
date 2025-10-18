@@ -1,6 +1,6 @@
-import { Button, Field, Fieldset, Input } from "@chakra-ui/react"
+import {Button, Field, Fieldset, Input} from "@chakra-ui/react"
 import type React from "react"
-import { useState } from "react"
+import {useState} from "react"
 import {
   DialogActionTrigger,
   DialogBody,
@@ -10,15 +10,15 @@ import {
   DialogHeader,
   DialogRoot,
   DialogTitle,
-} from "../../ui/dialog"
-import type { VideoSegmentationWidgetConfig } from "./VideoSegmentationWidget"
+} from "../../../ui/dialog"
+import type {VideoSegmentationWidgetConfig} from "./VideoSegmentationWidget"
 
 export const VideoSegmentationSetting: React.FC<{
   isOpen: boolean
   config: VideoSegmentationWidgetConfig
   onUpdateConfig?: (newConfig: VideoSegmentationWidgetConfig) => void
   onClose: () => void
-}> = ({ isOpen, config, onUpdateConfig, onClose }) => {
+}> = ({isOpen, config, onUpdateConfig, onClose}) => {
   const [newConfig, setConfig] = useState<VideoSegmentationWidgetConfig>(
     config || {
       stream_id: "video_stream",
@@ -39,10 +39,10 @@ export const VideoSegmentationSetting: React.FC<{
   // 설정 UI 구현 (예: 모달, 폼 등)
   return (
     <DialogRoot
-      size={{ base: "xs", md: "lg" }}
+      size={{base: "xs", md: "lg"}}
       placement="center"
       open={isOpen}
-      onOpenChange={({ open }) => !open && onClose()}
+      onOpenChange={({open}) => !open && onClose()}
     >
       <DialogContent
         style={{
@@ -51,7 +51,7 @@ export const VideoSegmentationSetting: React.FC<{
           zIndex: 1000,
         }}
       >
-        <DialogCloseTrigger />
+        <DialogCloseTrigger/>
         <DialogHeader>
           <DialogTitle>Video Segmentation Widget Settings</DialogTitle>
         </DialogHeader>
@@ -70,7 +70,7 @@ export const VideoSegmentationSetting: React.FC<{
               <Input
                 value={newConfig.stream_id}
                 onChange={(e) =>
-                  setConfig((prev) => ({ ...prev, stream_id: e.target.value }))
+                  setConfig((prev) => ({...prev, stream_id: e.target.value}))
                 }
                 placeholder="Enter Stream ID"
               />

@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogRoot,
   DialogTitle,
-} from "../../ui/dialog"
+} from "../../../ui/dialog"
 import type {OsmGpsMapWidgetConfig} from "./OsmGpsMapWidget"
 import {useWebSocket} from "@/contexts/WebSocketContext.tsx"
 import {useRobotMapping} from "@/hooks/useRobotMapping.ts"

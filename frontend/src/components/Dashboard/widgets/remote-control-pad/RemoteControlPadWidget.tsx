@@ -1,5 +1,5 @@
-import type { ParsedRemoteControl } from "@/dashboard/parser/remote-control-pad.ts"
-import type { RemoteControlPadStore } from "@/dashboard/store/data-channel-store/writeonly/remote-control-pad.store.ts"
+import type {ParsedRemoteControl} from "@/dashboard/parser/remote-control-pad.ts"
+import type {RemoteControlPadStore} from "@/dashboard/store/data-channel-store/writeonly/remote-control-pad.store.ts"
 import {
   Badge,
   Box,
@@ -9,8 +9,8 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react"
-import { useEffect, useState } from "react"
-import { WidgetFrame } from "./WidgetFrame"
+import {useEffect, useState} from "react"
+import {WidgetFrame} from "../WidgetFrame"
 
 interface RemoteControlPadWidgetProps {
   robotId: string
@@ -20,7 +20,7 @@ interface RemoteControlPadWidgetProps {
 }
 
 // 방향 아이콘 컴포넌트
-const DirectionIcon = ({ direction }: { direction: string }) => {
+const DirectionIcon = ({direction}: { direction: string }) => {
   const getIcon = () => {
     switch (direction) {
       case "up":
@@ -44,10 +44,10 @@ const DirectionIcon = ({ direction }: { direction: string }) => {
 }
 
 export function RemoteControlPadWidget({
-  robotId,
-  store,
-  onRemove,
-}: RemoteControlPadWidgetProps) {
+                                         robotId,
+                                         store,
+                                         onRemove,
+                                       }: RemoteControlPadWidgetProps) {
   const [lastCommand, setLastCommand] = useState<ParsedRemoteControl | null>(
     null,
   )
@@ -116,43 +116,43 @@ export function RemoteControlPadWidget({
   const footerInfo = [
     ...(lastCommand
       ? [
-          {
-            label: "Last Command",
-            value: lastCommand.direction.toUpperCase(),
-          },
-          {
-            label: "Sent Time",
-            value: new Date(lastCommand.timestamp).toLocaleTimeString(),
-          },
-        ]
+        {
+          label: "Last Command",
+          value: lastCommand.direction.toUpperCase(),
+        },
+        {
+          label: "Sent Time",
+          value: new Date(lastCommand.timestamp).toLocaleTimeString(),
+        },
+      ]
       : []),
     ...(commandHistory.length > 0
       ? [
-          {
-            label: "History",
-            value: (
-              <HStack gap={1}>
-                {commandHistory.map((cmd, index) => (
-                  <Badge
-                    key={index}
-                    colorScheme="blue"
-                    variant="subtle"
-                    fontSize="xs"
-                    px={1}
-                  >
-                    {cmd.toUpperCase()}
-                  </Badge>
-                ))}
-              </HStack>
-            ),
-          },
-        ]
+        {
+          label: "History",
+          value: (
+            <HStack gap={1}>
+              {commandHistory.map((cmd, index) => (
+                <Badge
+                  key={index}
+                  colorScheme="blue"
+                  variant="subtle"
+                  fontSize="xs"
+                  px={1}
+                >
+                  {cmd.toUpperCase()}
+                </Badge>
+              ))}
+            </HStack>
+          ),
+        },
+      ]
       : []),
   ]
 
   const DirectionButton = ({
-    direction,
-  }: { direction: "up" | "down" | "left" | "right" | "stop" }) => {
+                             direction,
+                           }: { direction: "up" | "down" | "left" | "right" | "stop" }) => {
     return (
       <Button
         size="lg"
@@ -172,7 +172,7 @@ export function RemoteControlPadWidget({
         transition="all 0.2s"
         minH="50px"
       >
-        <DirectionIcon direction={direction} />
+        <DirectionIcon direction={direction}/>
       </Button>
     )
   }
@@ -209,31 +209,31 @@ export function RemoteControlPadWidget({
         >
           <Grid templateColumns="repeat(3, 1fr)" gap={2} maxW="180px" mx="auto">
             {/* 빈 공간 */}
-            <Box />
+            <Box/>
 
             {/* 위쪽 버튼 */}
-            <DirectionButton direction="up" />
+            <DirectionButton direction="up"/>
 
             {/* 빈 공간 */}
-            <Box />
+            <Box/>
 
             {/* 왼쪽 버튼 */}
-            <DirectionButton direction="left" />
+            <DirectionButton direction="left"/>
 
             {/* 중앙 */}
-            <DirectionButton direction="stop" />
+            <DirectionButton direction="stop"/>
 
             {/* 오른쪽 버튼 */}
-            <DirectionButton direction="right" />
+            <DirectionButton direction="right"/>
 
             {/* 빈 공간 */}
-            <Box />
+            <Box/>
 
             {/* 아래쪽 버튼 */}
-            <DirectionButton direction="down" />
+            <DirectionButton direction="down"/>
 
             {/* 빈 공간 */}
-            <Box />
+            <Box/>
           </Grid>
         </Box>
       </VStack>
