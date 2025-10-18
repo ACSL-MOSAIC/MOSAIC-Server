@@ -1,6 +1,6 @@
 import type {ParsedData} from "./parsed.type"
 
-export const GPS_COORDINATE_TYPE = Symbol("oss_gps_map")
+export const GPS_COORDINATE_TYPE = Symbol("osm_gps_map")
 
 export type ParsedGPSCoordinate = ParsedData<GPSCoordinate>
 

@@ -4,7 +4,7 @@ import {REMOTE_CONTROL_PAD_TYPE} from "@/dashboard/parser/remote-control-pad.ts"
 import {TURTLESIM_POSITION_TYPE} from "@/dashboard/parser/turtlesim-position"
 import {VIDEO_RECORDING_TYPE} from "@/dashboard/parser/video-recorder.ts"
 import {GPS_COORDINATE_TYPE} from "@/dashboard/parser/gps-coordinate.ts"
-import {ROS_2D_POSE_TYPE} from "@/dashboard/parser/ros-2d-pose.ts"
+import {ROS_2D_POSE_TYPE} from "@/dashboard/parser/ros2-d-pose-with-covariance.ts"
 
 // Store factory mapping by data type
 export const DATA_CHANNEL_CONFIG = {
