@@ -3,7 +3,7 @@ import {
   type VideoRecordingCommandType,
   parseVideoRecordingCommand,
 } from "@/dashboard/parser/video-recorder.ts"
-import { WriteOnlyStore } from "./write-only-store"
+import {WriteOnlyStore} from "./write-only-store"
 
 export class VideoRecorderStore extends WriteOnlyStore<ParsedVideoRecordingCommand> {
   constructor(robotId: string, maxSize = 10) {

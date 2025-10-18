@@ -1,4 +1,4 @@
-import type { DataStore } from "./store"
+import type {DataStore} from "./store"
 
 /**
  * Base interface for store managers

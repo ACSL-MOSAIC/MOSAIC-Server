@@ -1,4 +1,4 @@
-import { DataStore } from "../../store"
+import {DataStore} from "../../store"
 
 export abstract class WriteOnlyStore<T, I = string> extends DataStore<T, I> {
   protected dataChannel: RTCDataChannel | null = null

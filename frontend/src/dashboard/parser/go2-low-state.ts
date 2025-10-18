@@ -1,4 +1,4 @@
-import type { ParsedData } from "./parsed.type"
+import type {ParsedData} from "./parsed.type"
 
 export type ParsedGo2LowState = ParsedData<Go2LowState>
 

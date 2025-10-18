@@ -1,4 +1,4 @@
-import type { ParsedData } from "./parsed.type"
+import type {ParsedData} from "./parsed.type"
 
 export const REMOTE_CONTROL_PAD_TYPE = Symbol("REMOTE_CONTROL_PAD_TYPE")
 

@@ -1,4 +1,4 @@
-import type { ParsedData } from "./parsed.type"
+import type {ParsedData} from "./parsed.type"
 
 export const TURTLESIM_POSITION_TYPE = Symbol("turtlesim_position")
 

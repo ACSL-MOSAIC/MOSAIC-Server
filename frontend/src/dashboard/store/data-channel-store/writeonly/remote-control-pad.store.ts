@@ -2,7 +2,7 @@ import {
   type ParsedRemoteControl,
   parseRemoteControl,
 } from "../../../parser/remote-control-pad.ts"
-import { WriteOnlyStore } from "./write-only-store"
+import {WriteOnlyStore} from "./write-only-store"
 
 export class RemoteControlPadStore extends WriteOnlyStore<ParsedRemoteControl> {
   constructor(robotId: string, maxSize = 100) {
