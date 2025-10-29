@@ -67,7 +67,7 @@ export class DashboardService {
   public static readDashboard(): CancelablePromise<DashboardReadDashboardResponse> {
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/",
+      url: "/api/v1/dashboard",
     })
   }
 
@@ -84,7 +84,7 @@ export class DashboardService {
   ): CancelablePromise<DashboardUpsertDashboardResponse> {
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/",
+      url: "/api/v1/dashboard",
       body: data.requestBody,
       mediaType: "application/json",
       errors: {
