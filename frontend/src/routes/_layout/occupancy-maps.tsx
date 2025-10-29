@@ -4,8 +4,8 @@ import {
   Container,
   EmptyState,
   Flex,
-  Heading,
   HStack,
+  Heading,
   Table,
   VStack,
 } from "@chakra-ui/react"

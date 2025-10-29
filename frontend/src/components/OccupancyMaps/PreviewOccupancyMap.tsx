@@ -17,8 +17,8 @@ import {
 } from "@/client/service/occupancy-map.api.ts"
 import type { OccupancyMapPublic } from "@/client/service/occupancy-map.dto.ts"
 import { loadPgmMap } from "@/components/Dashboard/widgets/ros-2d-map-pose/load-pgm-map.ts"
-import { loadYamlMap } from "@/components/Dashboard/widgets/ros-2d-map-pose/load-yaml-map.ts"
 import type { PgmMapData } from "@/components/Dashboard/widgets/ros-2d-map-pose/load-pgm-map.ts"
+import { loadYamlMap } from "@/components/Dashboard/widgets/ros-2d-map-pose/load-yaml-map.ts"
 import type { YamlMapData } from "@/components/Dashboard/widgets/ros-2d-map-pose/load-yaml-map.ts"
 import {
   DialogActionTrigger,

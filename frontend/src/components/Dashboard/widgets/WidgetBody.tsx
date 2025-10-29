@@ -83,13 +83,12 @@ export function WidgetBody({
               )}
             </HStack>
           ))}
-
-          {footerMessage && (
-            <Text fontSize="xs" color="gray.500" textAlign="center">
-              {footerMessage}
-            </Text>
-          )}
         </VStack>
+      )}
+      {footerMessage && (
+        <Text fontSize="xs" color="gray.500" textAlign="center">
+          {footerMessage}
+        </Text>
       )}
     </>
   )

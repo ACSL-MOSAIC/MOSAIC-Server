@@ -28,6 +28,24 @@ async def get_occupancy_maps(
     return occupancy_map_repo.get_by_owner(current_user.id, skip, limit)
 
 
+@router.get("/{id}", response_model=OccupancyMapPublic)
+async def get_occupancy_map(
+    session: SessionDep, current_user: CurrentUser, id: UUID
+) -> OccupancyMapPublic:
+    """
+    Get occupancy map by ID
+    """
+    occupancy_map_repo = OccupancyMapRepository(session)
+    occupancy_map = occupancy_map_repo.get_by_id(id)
+
+    if occupancy_map is None:
+        raise HTTPException(status_code=404, detail="occupancy map does not exist")
+    if occupancy_map.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="unauthorized")
+
+    return occupancy_map
+
+
 @router.post("/", response_model=OccupancyMapPublic)
 async def create_occupancy_map(
     session: SessionDep,

@@ -30,6 +30,27 @@ export const readOccupancyMapsApi = (
 }
 
 /**
+ * Get occupancy map by ID.
+ * @param id
+ * @returns OccupancyMapPublic Successful Response
+ * @throws ApiError
+ */
+export const readOccupancyMapApi = (
+  id: string,
+): CancelablePromise<OccupancyMapPublic> => {
+  return __request(OpenAPI, {
+    method: "GET",
+    url: "/api/v1/occupancy_map/{id}",
+    path: {
+      id: id,
+    },
+    errors: {
+      422: "Validation Error",
+    },
+  })
+}
+
+/**
  * Create new occupancy map with file uploads.
  * @param name
  * @param pgmFile

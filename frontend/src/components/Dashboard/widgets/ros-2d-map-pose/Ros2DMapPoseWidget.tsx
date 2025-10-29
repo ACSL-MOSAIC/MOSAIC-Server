@@ -1,21 +1,27 @@
-import {useCallback, useEffect, useRef, useState} from "react"
-import {WidgetFrame} from "../WidgetFrame"
-import {ReadOnlyStoreManager} from "@/dashboard/store/data-channel-store/readonly/read-only-store-manager.ts"
-import {useRobotMapping} from "@/hooks/useRobotMapping.ts"
-import {Ros2DMapPoseSetting} from "./Ros2DMapPoseSetting"
-import {Ros2DPoseStore} from "@/dashboard/store/data-channel-store/readonly/ros-2d-pose.store"
+import {
+  getOccupancyMapPgmApi,
+  getOccupancyMapYamlApi,
+  readOccupancyMapApi,
+} from "@/client/service/occupancy-map.api.ts"
+import {
+  type PgmMapData,
+  loadPgmMap,
+} from "@/components/Dashboard/widgets/ros-2d-map-pose/load-pgm-map.ts"
+import {
+  type YamlMapData,
+  loadYamlMap,
+} from "@/components/Dashboard/widgets/ros-2d-map-pose/load-yaml-map.ts"
 import {
   type ParsedRos2DPose,
   ROS_2D_POSE_TYPE,
 } from "@/dashboard/parser/ros2-d-pose-with-covariance.ts"
-import {
-  loadYamlMap,
-  type YamlMapData,
-} from "@/components/Dashboard/widgets/ros-2d-map-pose/load-yaml-map.ts"
-import {
-  loadPgmMap,
-  type PgmMapData,
-} from "@/components/Dashboard/widgets/ros-2d-map-pose/load-pgm-map.ts"
+import { ReadOnlyStoreManager } from "@/dashboard/store/data-channel-store/readonly/read-only-store-manager.ts"
+import { Ros2DPoseStore } from "@/dashboard/store/data-channel-store/readonly/ros-2d-pose.store"
+import { useRobotMapping } from "@/hooks/useRobotMapping.ts"
+import { Box, Text } from "@chakra-ui/react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { WidgetFrame } from "../WidgetFrame"
+import { Ros2DMapPoseSetting } from "./Ros2DMapPoseSetting"
 
 interface Ros2DMapPoseWidgetProps {
   config: Ros2DMapPoseWidgetConfig
@@ -27,6 +33,7 @@ interface Ros2DMapPoseWidgetProps {
 
 export interface Ros2DMapPoseWidgetConfig {
   robotIdList: string[]
+  occupancyMapId?: string
 }
 
 interface RobotRos2DPose {
@@ -35,22 +42,21 @@ interface RobotRos2DPose {
 }
 
 export function Ros2DMapPoseWidget({
-                                     config,
-                                     onUpdateConfig,
-                                     onRemove,
-                                     connections,
-                                   }: Ros2DMapPoseWidgetProps) {
+  config,
+  onUpdateConfig,
+  onRemove,
+  connections,
+}: Ros2DMapPoseWidgetProps) {
   const readOnlyStoreManager = ReadOnlyStoreManager.getInstance()
-  const {getRobotName} = useRobotMapping()
+  const { getRobotName } = useRobotMapping()
 
-  // TODO: canvas 로 변경 필요
-  // PGM 뷰어 컴포넌트 사용 고려
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [openSetting, setOpenSetting] = useState(false)
   const [storeList] = useState<Ros2DPoseStore[]>([])
   const [robotRos2DPoses, setRobotRos2DPoses] = useState<RobotRos2DPose[]>([])
   const [pgmMapData, setPgmMapData] = useState<PgmMapData | null>(null)
   const [yamlMapData, setYamlMapData] = useState<YamlMapData | null>(null)
+  const [occupancyMapName, setOccupancyMapName] = useState<string>("")
 
   config.robotIdList.forEach((robotId) => {
     const ros2DPoseStore = readOnlyStoreManager.createStoreIfNotExists(
@@ -61,29 +67,45 @@ export function Ros2DMapPoseWidget({
     storeList.push(ros2DPoseStore as Ros2DPoseStore)
   })
 
-  const onInputPgmFile = useCallback(
-    async (event: React.FormEvent<HTMLInputElement>) => {
-      const file = event.currentTarget.files?.[0]
-      if (!file) return
+  const loadOccupancyMapFromApi = useCallback(
+    async (occupancyMapId: string) => {
+      try {
+        const [pgmBlob, yamlBlob, mapInfo] = await Promise.all([
+          getOccupancyMapPgmApi(occupancyMapId),
+          getOccupancyMapYamlApi(occupancyMapId),
+          readOccupancyMapApi(occupancyMapId),
+        ])
 
-      const parsedPgmMapData = await loadPgmMap(file)
-      console.log(parsedPgmMapData)
-      setPgmMapData(parsedPgmMapData)
+        // Convert Blob to File
+        const pgmFile = new File([pgmBlob], "map.pgm", {
+          type: "application/octet-stream",
+        })
+        const yamlFile = new File([yamlBlob], "map.yaml", {
+          type: "application/x-yaml",
+        })
+
+        // Parse files
+        const [parsedPgmData, parsedYamlData] = await Promise.all([
+          loadPgmMap(pgmFile),
+          loadYamlMap(yamlFile),
+        ])
+
+        setOccupancyMapName(mapInfo.name)
+        setPgmMapData(parsedPgmData)
+        setYamlMapData(parsedYamlData)
+      } catch (error) {
+        console.error("Failed to load occupancy map:", error)
+      }
     },
     [],
   )
 
-  const onInputYamlFile = useCallback(
-    async (event: React.FormEvent<HTMLInputElement>) => {
-      const file = event.currentTarget.files?.[0]
-      if (!file) return
-
-      const parsedYamlMapData = await loadYamlMap(file)
-      console.log(parsedYamlMapData)
-      setYamlMapData(parsedYamlMapData)
-    },
-    [],
-  )
+  // Load occupancy map when config.occupancyMapId changes
+  useEffect(() => {
+    if (config.occupancyMapId) {
+      loadOccupancyMapFromApi(config.occupancyMapId)
+    }
+  }, [config.occupancyMapId, loadOccupancyMapFromApi])
 
   const onPoseUpdate = (robotId: string, pose: ParsedRos2DPose) => {
     // 내부 state 에 좌표 저장
@@ -96,7 +118,7 @@ export function Ros2DMapPoseWidget({
         return updated
       }
       // 새로운 로봇의 좌표 추가
-      return [...prev, {robotId, pose: pose}]
+      return [...prev, { robotId, pose: pose }]
     })
   }
 
@@ -142,7 +164,7 @@ export function Ros2DMapPoseWidget({
   const drawMap = () => {
     const canvasInfo = setCanvasSize()
     if (!canvasInfo) return
-    const {canvas, ctx, canvasWidth, canvasHeight} = canvasInfo
+    const { canvas, ctx, canvasWidth, canvasHeight } = canvasInfo
 
     // Clear canvas
     ctx.clearRect(0, 0, canvasWidth, canvasHeight)
@@ -331,11 +353,11 @@ export function Ros2DMapPoseWidget({
       mapDrawnHeight,
     } = canvasInfo
 
-    const activeRobotRos2DPoses = robotRos2DPoses.filter(({robotId}) => {
+    const activeRobotRos2DPoses = robotRos2DPoses.filter(({ robotId }) => {
       return connections ? connections[robotId] : false
     })
 
-    for (const {robotId, pose} of activeRobotRos2DPoses) {
+    for (const { robotId, pose } of activeRobotRos2DPoses) {
       drawSingleRobotMarker(
         ctx,
         robotId,
@@ -360,7 +382,7 @@ export function Ros2DMapPoseWidget({
     resizeObserver.observe(canvas)
 
     return () => resizeObserver.disconnect()
-  }, [])
+  }, [pgmMapData])
 
   useEffect(() => {
     drawRobotMarkers()
@@ -376,18 +398,32 @@ export function Ros2DMapPoseWidget({
           setOpenSetting?.(true)
         }}
         onRemove={onRemove}
+        footerInfo={
+          occupancyMapName
+            ? [{ label: "Map", value: occupancyMapName }]
+            : undefined
+        }
       >
-        <div style={{width: "100%", gap: "16px"}}>
-          <div>
-            <p>PGM Map File</p>
-            <input type="file" accept=".pgm" onInput={onInputPgmFile}/>
-          </div>
-          <div>
-            <p>YAML File</p>
-            <input type="file" accept=".yaml" onInput={onInputYamlFile}/>
-          </div>
-        </div>
-        <div style={{position: "relative", height: "100%", width: "100%"}}>
+        {!config.occupancyMapId && (
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            height="100%"
+            width="100%"
+            bg="gray.50"
+            borderRadius="8px"
+            border="1px dashed"
+            borderColor="gray.300"
+          >
+            <Text color="gray.500" fontSize="sm" textAlign="center" px={4}>
+              No occupancy map selected.
+              <br />
+              Please select a map in the widget settings.
+            </Text>
+          </Box>
+        )}
+        <div style={{ position: "relative", height: "100%", width: "100%" }}>
           <canvas
             ref={canvasRef}
             style={{
@@ -397,7 +433,6 @@ export function Ros2DMapPoseWidget({
               cursor: "crosshair",
             }}
           />
-          {canvasRef.current?.width} x {canvasRef.current?.height}
         </div>
       </WidgetFrame>
       {openSetting && (

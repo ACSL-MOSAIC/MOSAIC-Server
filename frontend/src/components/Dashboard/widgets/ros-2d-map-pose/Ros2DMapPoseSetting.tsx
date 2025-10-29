@@ -6,7 +6,7 @@ import {
   Listbox,
 } from "@chakra-ui/react"
 import type React from "react"
-import {useState} from "react"
+import { useEffect, useState } from "react"
 import {
   DialogActionTrigger,
   DialogBody,
@@ -17,9 +17,10 @@ import {
   DialogRoot,
   DialogTitle,
 } from "../../../ui/dialog"
-import {useWebSocket} from "@/contexts/WebSocketContext.tsx"
-import {useRobotMapping} from "@/hooks/useRobotMapping.ts"
-import type {Ros2DMapPoseWidgetConfig} from "./Ros2DMapPoseWidget"
+import { useWebSocket } from "@/contexts/WebSocketContext.tsx"
+import { useRobotMapping } from "@/hooks/useRobotMapping.ts"
+import { readOccupancyMapsApi } from "@/client/service/occupancy-map.api.ts"
+import type { Ros2DMapPoseWidgetConfig } from "./Ros2DMapPoseWidget"
 
 export const Ros2DMapPoseSetting: React.FC<{
   isOpen: boolean
@@ -33,6 +34,31 @@ export const Ros2DMapPoseSetting: React.FC<{
   const [selectedRobot, setSelectedRobot] = useState<string[]>(
     config?.robotIdList || [],
   )
+  const [selectedOccupancyMap, setSelectedOccupancyMap] = useState<string[]>(
+    config?.occupancyMapId ? [config.occupancyMapId] : [],
+  )
+  const [occupancyMaps, setOccupancyMaps] = useState<
+    Array<{ label: string; value: string }>
+  >([])
+
+  useEffect(() => {
+    const fetchOccupancyMaps = async () => {
+      try {
+        const response = await readOccupancyMapsApi(0, 100)
+        const maps = response.data.map((map) => ({
+          label: map.name,
+          value: map.id,
+        }))
+        setOccupancyMaps(maps)
+      } catch (error) {
+        console.error("Failed to fetch occupancy maps:", error)
+      }
+    }
+
+    if (isOpen) {
+      fetchOccupancyMaps()
+    }
+  }, [isOpen])
 
   const robotList = createListCollection({
     items: robots.map((r) => {
@@ -43,12 +69,17 @@ export const Ros2DMapPoseSetting: React.FC<{
     }),
   })
 
+  const occupancyMapList = createListCollection({
+    items: occupancyMaps,
+  })
+
   // Save configuration
   const handleSave = () => {
-    config.robotIdList = selectedRobot
-    onUpdateConfig?.({
+    const newConfig: Ros2DMapPoseWidgetConfig = {
       robotIdList: selectedRobot,
-    })
+      occupancyMapId: selectedOccupancyMap[0] || undefined,
+    }
+    onUpdateConfig?.(newConfig)
     onClose()
   }
 
@@ -81,7 +112,7 @@ export const Ros2DMapPoseSetting: React.FC<{
               border: "1px solid #e2e8f0",
             }}
           >
-            <Field.Root>
+            <Field.Root mb={4}>
               <Field.Label>Target Robot ID</Field.Label>
               <Listbox.Root
                 collection={robotList}
@@ -94,6 +125,26 @@ export const Ros2DMapPoseSetting: React.FC<{
                   {robotList.items.map((robot) => (
                     <Listbox.Item item={robot} key={robot.value}>
                       <Listbox.ItemText>{robot.label}</Listbox.ItemText>
+                      <Listbox.ItemIndicator/>
+                    </Listbox.Item>
+                  ))}
+                </Listbox.Content>
+              </Listbox.Root>
+            </Field.Root>
+
+            <Field.Root>
+              <Field.Label>Occupancy Map</Field.Label>
+              <Listbox.Root
+                collection={occupancyMapList}
+                value={selectedOccupancyMap}
+                onValueChange={(maps) => setSelectedOccupancyMap(maps.value)}
+                selectionMode="single"
+                maxW="320px"
+              >
+                <Listbox.Content>
+                  {occupancyMapList.items.map((map) => (
+                    <Listbox.Item item={map} key={map.value}>
+                      <Listbox.ItemText>{map.label}</Listbox.ItemText>
                       <Listbox.ItemIndicator/>
                     </Listbox.Item>
                   ))}
