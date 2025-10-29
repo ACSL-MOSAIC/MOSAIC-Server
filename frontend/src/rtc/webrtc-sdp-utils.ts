@@ -4,11 +4,12 @@ export async function createOfferWithMediaChannels(
   activeMediaChannels: string[],
 ): Promise<RTCSessionDescriptionInit> {
   // Add video transceivers based on configured media channels
-  activeMediaChannels.forEach((mediaType, index) => {
+  let index = 0
+  for (index = 0; index < activeMediaChannels.length; index++) {
     peerConnection.addTransceiver("video", {
       direction: "recvonly",
     })
-  })
+  }
 
   // Create offer
   const offer = await peerConnection.createOffer()

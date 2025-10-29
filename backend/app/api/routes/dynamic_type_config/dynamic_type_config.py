@@ -10,7 +10,7 @@ from app.schemas.dynamic_type_config import (
     DynamicTypeConfigPublic,
 )
 
-router = APIRouter(tags=["dynamic-type-config"])
+router = APIRouter(prefix="/dynamic-type-config", tags=["dynamic-type-config"])
 
 
 @router.get("/", response_model=DynamicTypeConfigPublic)

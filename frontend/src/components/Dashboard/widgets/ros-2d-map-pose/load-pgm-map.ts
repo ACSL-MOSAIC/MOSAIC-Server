@@ -1,4 +1,4 @@
-import {PNMDecoder, type TupleType} from "@imgdrop/pnm"
+import { PNMDecoder, type TupleType } from "@imgdrop/pnm"
 
 export type PgmMapData = {
   width: number
@@ -16,8 +16,6 @@ export const loadPgmMap = async (pgmFile: File): Promise<PgmMapData | null> => {
       return arrayBuffer
     })
     pnmDecoder.decode()
-
-    console.log(pnmDecoder)
 
     return {
       width: pnmDecoder.width,
