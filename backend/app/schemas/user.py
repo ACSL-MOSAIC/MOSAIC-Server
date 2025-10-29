@@ -45,6 +45,7 @@ class User(UserBase, table=True):
     hashed_password: str
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
     robots: list["Robot"] = Relationship(back_populates="owner", cascade_delete=True)
+    occupancyMaps: list["OccupancyMap"] = Relationship(back_populates="owner", cascade_delete=True)
 
 
 # Properties to return via API, id is always required
