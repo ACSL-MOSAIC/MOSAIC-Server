@@ -11,7 +11,9 @@ import { useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
 import { FaExchangeAlt } from "react-icons/fa"
 
-import { type ApiError, type RobotPublic, RobotsService } from "@/client"
+import type { ApiError } from "@/client"
+import { updateRobotApi } from "@/client/service/robot.api.ts"
+import type { RobotPublic } from "@/client/service/robot.dto.ts"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 import {
@@ -54,8 +56,7 @@ const EditRobot = ({ robot }: EditRobotProps) => {
   })
 
   const mutation = useMutation({
-    mutationFn: (data: RobotUpdateForm) =>
-      RobotsService.updateRobot({ id: robot.id, requestBody: data }),
+    mutationFn: (data: RobotUpdateForm) => updateRobotApi(robot.id, data),
     onSuccess: () => {
       showSuccessToast("Robot updated successfully.")
       reset()

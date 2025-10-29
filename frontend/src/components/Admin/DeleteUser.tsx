@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { FiTrash2 } from "react-icons/fi"
 
-import { UsersService } from "@/client"
+import { deleteUserApi } from "@/client/service/user.api.ts"
 import {
   DialogActionTrigger,
   DialogBody,
@@ -26,12 +26,8 @@ const DeleteUser = ({ id }: { id: string }) => {
     formState: { isSubmitting },
   } = useForm()
 
-  const deleteUser = async (id: string) => {
-    await UsersService.deleteUser({ userId: id })
-  }
-
   const mutation = useMutation({
-    mutationFn: deleteUser,
+    mutationFn: deleteUserApi,
     onSuccess: () => {
       showSuccessToast("The user was deleted successfully")
       setIsOpen(false)

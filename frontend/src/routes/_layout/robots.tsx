@@ -13,7 +13,7 @@ import { useState } from "react"
 import { FiCopy, FiSearch } from "react-icons/fi"
 import { z } from "zod"
 
-import { RobotsService } from "@/client"
+import { readRobotsApi } from "@/client/service/robot.api.ts"
 import { RobotActionsMenu } from "@/components/Common/RobotActionsMenu"
 import PendingRobots from "@/components/Pending/PendingRobots"
 import AddRobot from "@/components/Robots/AddRobot"
@@ -33,11 +33,7 @@ const PER_PAGE = 5
 
 function getRobotsQueryOptions({ page }: { page: number }) {
   return {
-    queryFn: () =>
-      RobotsService.readRobots({
-        skip: (page - 1) * PER_PAGE,
-        limit: PER_PAGE,
-      }),
+    queryFn: () => readRobotsApi(PER_PAGE, (page - 1) * PER_PAGE),
     queryKey: ["robots", { page }],
   }
 }

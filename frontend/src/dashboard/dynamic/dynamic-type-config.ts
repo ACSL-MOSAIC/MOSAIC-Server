@@ -1,10 +1,13 @@
-import {DynamicTypeConfigService} from "../../client"
-import type {ParsedData} from "../parser/parsed.type"
-import {ReadOnlyStore} from "../store/data-channel-store/readonly/read-only-store"
-import {ReadOnlyStoreManager} from "../store/data-channel-store/readonly/read-only-store-manager"
-import {WriteOnlyStore} from "../store/data-channel-store/writeonly/write-only-store"
-import {WriteOnlyStoreManager} from "../store/data-channel-store/writeonly/write-only-store-manager"
-import type {DataStore} from "../store/store"
+import {
+  readDynamicTypeConfigApi,
+  upsertDynamicTypeConfigApi,
+} from "@/client/service/dynamic-type-config.api.ts"
+import type { ParsedData } from "../parser/parsed.type"
+import { ReadOnlyStore } from "../store/data-channel-store/readonly/read-only-store"
+import { ReadOnlyStoreManager } from "../store/data-channel-store/readonly/read-only-store-manager"
+import { WriteOnlyStore } from "../store/data-channel-store/writeonly/write-only-store"
+import { WriteOnlyStoreManager } from "../store/data-channel-store/writeonly/write-only-store-manager"
+import type { DataStore } from "../store/store"
 
 // JSON Schema 타입 정의
 export interface JsonSchema {
@@ -403,11 +406,7 @@ export class DynamicTypeManager {
   private async saveConfigsToAPI(): Promise<void> {
     try {
       const configsArray = Array.from(this.configs.values())
-      await DynamicTypeConfigService.upsertDynamicTypeConfig({
-        requestBody: {
-          configuration: configsArray as any[],
-        },
-      })
+      await upsertDynamicTypeConfigApi({ configuration: configsArray as any[] })
       console.log("DynamicTypeManager: 설정이 API를 통해 저장되었습니다.")
     } catch (error) {
       console.error("Failed to save dynamic type configs to API:", error)
@@ -420,7 +419,7 @@ export class DynamicTypeManager {
 
     this.isLoading = true
     try {
-      const response = await DynamicTypeConfigService.readDynamicTypeConfig()
+      const response = await readDynamicTypeConfigApi()
       const configsArray: any[] = response.configuration || []
 
       this.configs.clear()
@@ -554,7 +553,7 @@ export class DynamicTypeManager {
       const allConfigs = this.getConfigsByRobotId(robotId)
       console.log(
         "DynamicTypeManager: 해당 로봇의 모든 설정:",
-        allConfigs.map((c) => ({name: c.name, channelLabel: c.channelLabel})),
+        allConfigs.map((c) => ({ name: c.name, channelLabel: c.channelLabel })),
       )
       return undefined
     }
@@ -625,8 +624,7 @@ export class DynamicTypeManager {
 }
 
 // 동적 ReadOnlyStore 구현체
-class DynamicReadOnlyStore extends ReadOnlyStore<any, string> {
-}
+class DynamicReadOnlyStore extends ReadOnlyStore<any, string> {}
 
 // 동적 WriteOnlyStore 구현체
 class DynamicWriteOnlyStore extends WriteOnlyStore<any, string> {

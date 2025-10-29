@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
 import { firstSuperuser, firstSuperuserPassword } from "./config.ts"
-import { createUser } from "./utils/privateApi.ts"
+import { createUserApi } from "./utils/privateApi.ts"
 import { randomEmail, randomPassword } from "./utils/random.ts"
 import { logInUser, logOutUser } from "./utils/user.ts"
 
@@ -31,7 +31,7 @@ test.describe("Edit user full name and email successfully", () => {
     const updatedName = "Test User 2"
     const password = randomPassword()
 
-    await createUser({ email, password })
+    await createUserApi({ email, password })
 
     // Log in the user
     await logInUser(page, email, password)
@@ -53,7 +53,7 @@ test.describe("Edit user full name and email successfully", () => {
     const updatedEmail = randomEmail()
     const password = randomPassword()
 
-    await createUser({ email, password })
+    await createUserApi({ email, password })
 
     // Log in the user
     await logInUser(page, email, password)
@@ -78,7 +78,7 @@ test.describe("Edit user with invalid data", () => {
     const password = randomPassword()
     const invalidEmail = ""
 
-    await createUser({ email, password })
+    await createUserApi({ email, password })
 
     // Log in the user
     await logInUser(page, email, password)
@@ -96,7 +96,7 @@ test.describe("Edit user with invalid data", () => {
     const password = randomPassword()
     const updatedName = "Test User"
 
-    const user = await createUser({ email, password })
+    const user = await createUserApi({ email, password })
 
     // Log in the user
     await logInUser(page, email, password)
@@ -118,7 +118,7 @@ test.describe("Edit user with invalid data", () => {
     const password = randomPassword()
     const updatedEmail = randomEmail()
 
-    await createUser({ email, password })
+    await createUserApi({ email, password })
 
     // Log in the user
     await logInUser(page, email, password)
@@ -144,7 +144,7 @@ test.describe("Change password successfully", () => {
     const password = randomPassword()
     const NewPassword = randomPassword()
 
-    await createUser({ email, password })
+    await createUserApi({ email, password })
 
     // Log in the user
     await logInUser(page, email, password)
@@ -172,7 +172,7 @@ test.describe("Change password with invalid data", () => {
     const password = randomPassword()
     const weakPassword = "weak"
 
-    await createUser({ email, password })
+    await createUserApi({ email, password })
 
     // Log in the user
     await logInUser(page, email, password)
@@ -195,7 +195,7 @@ test.describe("Change password with invalid data", () => {
     const newPassword = randomPassword()
     const confirmPassword = randomPassword()
 
-    await createUser({ email, password })
+    await createUserApi({ email, password })
 
     // Log in the user
     await logInUser(page, email, password)
@@ -213,7 +213,7 @@ test.describe("Change password with invalid data", () => {
     const email = randomEmail()
     const password = randomPassword()
 
-    await createUser({ email, password })
+    await createUserApi({ email, password })
 
     // Log in the user
     await logInUser(page, email, password)

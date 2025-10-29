@@ -13,8 +13,9 @@ import {
 } from "@chakra-ui/react"
 import { FaPlus, FaRandom } from "react-icons/fa"
 
-import { type RobotCreate, RobotsService } from "@/client"
 import type { ApiError } from "@/client/core/ApiError"
+import { createRobotApi } from "@/client/service/robot.api.ts"
+import type { RobotCreate } from "@/client/service/robot.dto.ts"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 import {
@@ -55,8 +56,7 @@ const AddRobot = () => {
   }
 
   const mutation = useMutation({
-    mutationFn: (data: RobotCreate) =>
-      RobotsService.createRobot({ requestBody: data }),
+    mutationFn: (data: RobotCreate) => createRobotApi(data),
     onSuccess: () => {
       showSuccessToast("Robot created successfully.")
       reset()
