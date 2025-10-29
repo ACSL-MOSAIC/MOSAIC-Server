@@ -4,7 +4,6 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, delete, func, select
 
-from app import crud
 from app.api.deps import (
     CurrentUser,
     SessionDep,
@@ -12,7 +11,8 @@ from app.api.deps import (
 )
 from app.api.dto import Message
 from app.core.config import settings
-from app.core.security import get_password_hash, verify_password
+from app.core.security import verify_password
+from app.repositories.user_repository import UserRepository
 from app.schemas.item import Item
 from app.schemas.user import (
     UpdatePassword,
@@ -54,14 +54,15 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
     """
     Create new user.
     """
-    user = crud.get_user_by_email(session=session, email=str(user_in.email))
+    user_repository = UserRepository(session)
+    user = user_repository.get_user_by_email(str(user_in.email))
     if user:
         raise HTTPException(
             status_code=400,
             detail="The user with this email already exists in the system.",
         )
 
-    user = crud.create_user(session=session, user_create=user_in)
+    user = user_repository.create(user_in)
     if settings.emails_enabled and user_in.email:
         email_data = generate_new_account_email(
             email_to=str(user_in.email),
@@ -83,21 +84,15 @@ def update_user_me(
     """
     Update own user.
     """
+    user_repository = UserRepository(session)
 
     if user_in.email:
-        existing_user = crud.get_user_by_email(
-            session=session, email=str(user_in.email)
-        )
+        existing_user = user_repository.get_user_by_email(email=str(user_in.email))
         if existing_user and existing_user.id != current_user.id:
             raise HTTPException(
                 status_code=409, detail="User with this email already exists"
             )
-    user_data = user_in.model_dump(exclude_unset=True)
-    current_user.sqlmodel_update(user_data)
-    session.add(current_user)
-    session.commit()
-    session.refresh(current_user)
-    return current_user
+    return user_repository.update(current_user, obj_in=user_in)
 
 
 @router.patch("/me/password", response_model=Message)
@@ -113,10 +108,9 @@ def update_password_me(
         raise HTTPException(
             status_code=400, detail="New password cannot be the same as the current one"
         )
-    hashed_password = get_password_hash(body.new_password)
-    current_user.hashed_password = hashed_password
-    session.add(current_user)
-    session.commit()
+
+    user_repository = UserRepository(session)
+    user_repository.update_password(current_user, obj_in=body)
     return Message(message="Password updated successfully")
 
 
@@ -147,14 +141,15 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
     """
     Create new user without the need to be logged in.
     """
-    user = crud.get_user_by_email(session=session, email=str(user_in.email))
+    user_repository = UserRepository(session)
+    user = user_repository.get_user_by_email(str(user_in.email))
     if user:
         raise HTTPException(
             status_code=400,
             detail="The user with this email already exists in the system",
         )
     user_create = UserCreate.model_validate(user_in)
-    user = crud.create_user(session=session, user_create=user_create)
+    user = user_repository.create(user_create)
     return user
 
 
@@ -191,6 +186,7 @@ def update_user(
     Update a user.
     """
 
+    user_repository = UserRepository(session)
     db_user = session.get(User, user_id)
     if not db_user:
         raise HTTPException(
@@ -198,15 +194,13 @@ def update_user(
             detail="The user with this id does not exist in the system",
         )
     if user_in.email:
-        existing_user = crud.get_user_by_email(
-            session=session, email=str(user_in.email)
-        )
+        existing_user = user_repository.get_user_by_email(str(user_in.email))
         if existing_user and existing_user.id != user_id:
             raise HTTPException(
                 status_code=409, detail="User with this email already exists"
             )
 
-    db_user = crud.update_user(session=session, db_obj=db_user, obj_in=user_in)
+    db_user = user_repository.update(db_obj=db_user, obj_in=user_in)
     return db_user
 
 
