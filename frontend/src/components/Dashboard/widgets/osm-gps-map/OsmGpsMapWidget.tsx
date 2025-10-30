@@ -12,6 +12,18 @@ import {
 import {GPSCoordinateStore} from "@/dashboard/store/data-channel-store/readonly/gps-coordinate.store.ts"
 import L from "leaflet"
 import {useRobotMapping} from "@/hooks/useRobotMapping.ts"
+import markerIcon from "/assets/images/marker-icon.png"
+import markerIcon2x from "/assets/images/marker-icon-2x.png"
+import markerShadow from "/assets/images/marker-shadow.png"
+
+// Fix Leaflet default marker icon issue with Vite
+// biome-ignore lint/performance/noDelete: <explanation>
+delete (L.Icon.Default.prototype as any)._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+})
 
 interface OsmGpsMapWidgetProps {
   config: OsmGpsMapWidgetConfig
