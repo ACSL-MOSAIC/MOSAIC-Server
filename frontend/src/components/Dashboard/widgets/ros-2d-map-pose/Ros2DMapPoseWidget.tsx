@@ -15,13 +15,13 @@ import {
   type ParsedRos2DPose,
   ROS_2D_POSE_TYPE,
 } from "@/dashboard/parser/ros2-d-pose-with-covariance.ts"
-import { ReadOnlyStoreManager } from "@/dashboard/store/data-channel-store/readonly/read-only-store-manager.ts"
-import { Ros2DPoseStore } from "@/dashboard/store/data-channel-store/readonly/ros-2d-pose.store"
-import { useRobotMapping } from "@/hooks/useRobotMapping.ts"
-import { Box, Text } from "@chakra-ui/react"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { WidgetFrame } from "../WidgetFrame"
-import { Ros2DMapPoseSetting } from "./Ros2DMapPoseSetting"
+import {ReadOnlyStoreManager} from "@/dashboard/store/data-channel-store/readonly/read-only-store-manager.ts"
+import {Ros2DPoseStore} from "@/dashboard/store/data-channel-store/readonly/ros-2d-pose.store"
+import {useRobotMapping} from "@/hooks/useRobotMapping.ts"
+import {Box, Text} from "@chakra-ui/react"
+import {useCallback, useEffect, useRef, useState} from "react"
+import {WidgetFrame} from "../WidgetFrame"
+import {Ros2DMapPoseSetting} from "./Ros2DMapPoseSetting"
 
 interface Ros2DMapPoseWidgetProps {
   config: Ros2DMapPoseWidgetConfig
@@ -42,30 +42,45 @@ interface RobotRos2DPose {
 }
 
 export function Ros2DMapPoseWidget({
-  config,
-  onUpdateConfig,
-  onRemove,
-  connections,
-}: Ros2DMapPoseWidgetProps) {
+                                     config,
+                                     onUpdateConfig,
+                                     onRemove,
+                                     connections,
+                                   }: Ros2DMapPoseWidgetProps) {
   const readOnlyStoreManager = ReadOnlyStoreManager.getInstance()
-  const { getRobotName } = useRobotMapping()
+  const {getRobotName} = useRobotMapping()
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [openSetting, setOpenSetting] = useState(false)
-  const [storeList] = useState<Ros2DPoseStore[]>([])
+  const [storeList, setStoreList] = useState<Ros2DPoseStore[]>([])
   const [robotRos2DPoses, setRobotRos2DPoses] = useState<RobotRos2DPose[]>([])
   const [pgmMapData, setPgmMapData] = useState<PgmMapData | null>(null)
   const [yamlMapData, setYamlMapData] = useState<YamlMapData | null>(null)
   const [occupancyMapName, setOccupancyMapName] = useState<string>("")
 
-  config.robotIdList.forEach((robotId) => {
-    const ros2DPoseStore = readOnlyStoreManager.createStoreIfNotExists(
-      robotId,
-      ROS_2D_POSE_TYPE,
-      (robotId) => new Ros2DPoseStore(robotId),
-    )
-    storeList.push(ros2DPoseStore as Ros2DPoseStore)
-  })
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useEffect(() => {
+    setStoreList([])
+    config.robotIdList.forEach((robotId) => {
+      const ros2DPoseStore = readOnlyStoreManager.createStoreIfNotExists(
+        robotId,
+        ROS_2D_POSE_TYPE,
+        (robotId) => new Ros2DPoseStore(robotId),
+      )
+      storeList.push(ros2DPoseStore as Ros2DPoseStore)
+    })
+
+    const unsubscribeList: (() => void)[] = []
+    storeList.forEach((store) => {
+      const unsubscribe = store.subscribe((coord) => {
+        onPoseUpdate(store.robotId, coord)
+      })
+      unsubscribeList.push(unsubscribe)
+    })
+    return () => {
+      unsubscribeList.forEach((unsubscribe) => unsubscribe())
+    }
+  }, [config.robotIdList])
 
   const loadOccupancyMapFromApi = useCallback(
     async (occupancyMapId: string) => {
@@ -118,22 +133,9 @@ export function Ros2DMapPoseWidget({
         return updated
       }
       // 새로운 로봇의 좌표 추가
-      return [...prev, { robotId, pose: pose }]
+      return [...prev, {robotId, pose: pose}]
     })
   }
-
-  useEffect(() => {
-    const unsubscribeList: (() => void)[] = []
-    storeList.forEach((store) => {
-      const unsubscribe = store.subscribe((coord) => {
-        onPoseUpdate(store.robotId, coord)
-      })
-      unsubscribeList.push(unsubscribe)
-    })
-    return () => {
-      unsubscribeList.forEach((unsubscribe) => unsubscribe())
-    }
-  }, [storeList])
 
   // 캔버스 크기 설정 함수
   const setCanvasSize = () => {
@@ -164,7 +166,7 @@ export function Ros2DMapPoseWidget({
   const drawMap = () => {
     const canvasInfo = setCanvasSize()
     if (!canvasInfo) return
-    const { canvas, ctx, canvasWidth, canvasHeight } = canvasInfo
+    const {canvas, ctx, canvasWidth, canvasHeight} = canvasInfo
 
     // Clear canvas
     ctx.clearRect(0, 0, canvasWidth, canvasHeight)
@@ -353,11 +355,11 @@ export function Ros2DMapPoseWidget({
       mapDrawnHeight,
     } = canvasInfo
 
-    const activeRobotRos2DPoses = robotRos2DPoses.filter(({ robotId }) => {
+    const activeRobotRos2DPoses = robotRos2DPoses.filter(({robotId}) => {
       return connections ? connections[robotId] : false
     })
 
-    for (const { robotId, pose } of activeRobotRos2DPoses) {
+    for (const {robotId, pose} of activeRobotRos2DPoses) {
       drawSingleRobotMarker(
         ctx,
         robotId,
@@ -400,7 +402,7 @@ export function Ros2DMapPoseWidget({
         onRemove={onRemove}
         footerInfo={
           occupancyMapName
-            ? [{ label: "Map", value: occupancyMapName }]
+            ? [{label: "Map", value: occupancyMapName}]
             : undefined
         }
       >
@@ -418,12 +420,12 @@ export function Ros2DMapPoseWidget({
           >
             <Text color="gray.500" fontSize="sm" textAlign="center" px={4}>
               No occupancy map selected.
-              <br />
+              <br/>
               Please select a map in the widget settings.
             </Text>
           </Box>
         )}
-        <div style={{ position: "relative", height: "100%", width: "100%" }}>
+        <div style={{position: "relative", height: "100%", width: "100%"}}>
           <canvas
             ref={canvasRef}
             style={{
