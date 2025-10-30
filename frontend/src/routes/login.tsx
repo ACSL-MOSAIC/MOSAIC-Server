@@ -3,7 +3,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router"
 import { useState } from "react"
 import { FiLock, FiMail } from "react-icons/fi"
 
-import type { Body_users_login_access_token as AccessToken } from "@/client"
+import type { Body_users_login_access_token as AccessToken } from "@/client/service/user.dto.ts"
 import { Field } from "@/components/ui/field"
 import { InputGroup } from "@/components/ui/input-group"
 import { PasswordInput } from "@/components/ui/password-input"

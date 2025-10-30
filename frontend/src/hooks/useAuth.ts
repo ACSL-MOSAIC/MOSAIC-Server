@@ -2,14 +2,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 
-import {
-  type Body_users_login_access_token as AccessToken,
-  type ApiError,
-  type UserPublic,
-  type UserRegister,
-  UsersService,
-} from "@/client"
+import type { ApiError } from "@/client"
 import { OpenAPI } from "@/client/core/OpenAPI"
+import {
+  disconnectExistingSessionApi,
+  loginAccessTokenApi,
+  readUserMeApi,
+  registerUserApi,
+} from "@/client/service/user.api.ts"
+import type {
+  Body_users_login_access_token as AccessToken,
+  UserPublic,
+} from "@/client/service/user.dto.ts"
 import { handleError } from "@/utils"
 
 const isLoggedIn = () => {
@@ -25,14 +29,12 @@ const useAuth = () => {
   const queryClient = useQueryClient()
   const { data: user } = useQuery<UserPublic | null, Error>({
     queryKey: ["currentUser"],
-    queryFn: UsersService.readUserMe,
+    queryFn: readUserMeApi,
     enabled: isLoggedIn(),
   })
 
   const signUpMutation = useMutation({
-    mutationFn: (data: UserRegister) =>
-      UsersService.registerUser({ requestBody: data }),
-
+    mutationFn: registerUserApi,
     onSuccess: () => {
       navigate({ to: "/login" })
     },
@@ -45,9 +47,7 @@ const useAuth = () => {
   })
 
   const login = async (data: AccessToken) => {
-    const response = await UsersService.loginAccessToken({
-      formData: data,
-    })
+    const response = await loginAccessTokenApi(data)
 
     if (response.existing_connection && response.user_id) {
       setExistingConnection({ userId: response.user_id })
@@ -75,10 +75,7 @@ const useAuth = () => {
 
   const disconnectMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const response = await UsersService.disconnectExistingSession({
-        requestBody: { user_id: userId },
-      })
-      return response
+      return disconnectExistingSessionApi({ user_id: userId })
     },
     onSuccess: () => {
       setExistingConnection(null)

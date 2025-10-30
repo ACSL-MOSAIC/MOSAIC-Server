@@ -80,7 +80,7 @@ export class VideoStore {
 
   // Metadata setter (simplified metadata)
   setMetadata(metadata: { mediaType?: string; source?: string }): void {
-    this.metadata = { ...this.metadata, ...metadata }
+    this.metadata = {...this.metadata, ...metadata}
   }
 
   // Metadata getter (simplified metadata)

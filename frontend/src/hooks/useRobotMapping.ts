@@ -1,4 +1,4 @@
-import { RobotsService } from "@/client"
+import { readRobotsApi } from "@/client/service/robot.api.ts"
 import { useQuery } from "@tanstack/react-query"
 
 export function useRobotMapping() {
@@ -8,7 +8,7 @@ export function useRobotMapping() {
     error,
   } = useQuery({
     queryKey: ["robots"],
-    queryFn: () => RobotsService.readRobots({ limit: 1000 }), // 충분히 큰 limit
+    queryFn: () => readRobotsApi(1000),
     staleTime: 5 * 60 * 1000, // 5분간 캐시
   })
 

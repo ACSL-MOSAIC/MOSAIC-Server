@@ -30,5 +30,12 @@ from .user import (
     UserUpdate,  # noqa
     UserUpdateMe,  # noqa
 )
+from .occupancy_map import (
+    OccupancyMap,  # noqa
+    OccupancyMapCreate,  # noqa
+    OccupancyMapUpdate,  # noqa
+    OccupancyMapPublic,  # noqa
+    OccupancyMapsPublic,  # noqa
+)
 
 # 모든 모델을 여기서 import하여 SQLModel.metadata에 등록

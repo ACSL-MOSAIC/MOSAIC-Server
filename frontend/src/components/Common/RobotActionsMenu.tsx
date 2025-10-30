@@ -2,7 +2,7 @@ import { IconButton } from "@chakra-ui/react"
 import { BsThreeDotsVertical } from "react-icons/bs"
 import { MenuContent, MenuRoot, MenuTrigger } from "../ui/menu"
 
-import type { RobotPublic } from "@/client"
+import type { RobotPublic } from "@/client/service/robot.dto.ts"
 import DeleteRobot from "../Robots/DeleteRobot"
 import EditRobot from "../Robots/EditRobot"
 

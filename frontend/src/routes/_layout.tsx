@@ -30,5 +30,3 @@ function Layout() {
     </WebSocketProvider>
   )
 }
-
-export default Layout

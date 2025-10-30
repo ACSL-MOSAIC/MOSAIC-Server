@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { FiTrash2 } from "react-icons/fi"
 
-import { RobotsService } from "@/client"
+import { deleteRobotApi } from "@/client/service/robot.api.ts"
 import {
   DialogActionTrigger,
   DialogBody,
@@ -26,12 +26,8 @@ const DeleteRobot = ({ id }: { id: string }) => {
     formState: { isSubmitting },
   } = useForm()
 
-  const deleteRobot = async (id: string) => {
-    await RobotsService.deleteRobot({ id: id })
-  }
-
   const mutation = useMutation({
-    mutationFn: deleteRobot,
+    mutationFn: deleteRobotApi,
     onSuccess: () => {
       showSuccessToast("The robot was deleted successfully")
       setIsOpen(false)

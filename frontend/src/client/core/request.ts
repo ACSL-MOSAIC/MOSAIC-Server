@@ -76,6 +76,7 @@ const getUrl = (config: OpenAPIConfig, options: ApiRequestOptions): string => {
   const path = options.url
     .replace("{api-version}", config.VERSION)
     .replace(/{(.*?)}/g, (substring: string, group: string) => {
+      // biome-ignore lint/suspicious/noPrototypeBuiltins: <explanation>
       if (options.path?.hasOwnProperty(group)) {
         return encoder(String(options.path[group]))
       }
@@ -150,6 +151,7 @@ export const getHeaders = async <T>(
     .filter(([, value]) => value !== undefined && value !== null)
     .reduce(
       (headers, [key, value]) => ({
+        // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
         ...headers,
         [key]: String(value),
       }),
@@ -210,6 +212,7 @@ export const sendRequest = async <T>(
     signal: controller.signal,
     url,
     withCredentials: config.WITH_CREDENTIALS,
+    responseType: options.responseType,
   }
 
   onCancel(() => controller.abort())

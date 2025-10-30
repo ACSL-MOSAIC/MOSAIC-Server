@@ -1,4 +1,7 @@
-import { DynamicTypeConfigService } from "../../client"
+import {
+  readDynamicTypeConfigApi,
+  upsertDynamicTypeConfigApi,
+} from "@/client/service/dynamic-type-config.api.ts"
 import type { ParsedData } from "../parser/parsed.type"
 import { ReadOnlyStore } from "../store/data-channel-store/readonly/read-only-store"
 import { ReadOnlyStoreManager } from "../store/data-channel-store/readonly/read-only-store-manager"
@@ -20,6 +23,7 @@ export interface JsonSchema {
   minItems?: number
   maxItems?: number
   additionalProperties?: boolean | JsonSchema
+
   [key: string]: any
 }
 
@@ -402,11 +406,7 @@ export class DynamicTypeManager {
   private async saveConfigsToAPI(): Promise<void> {
     try {
       const configsArray = Array.from(this.configs.values())
-      await DynamicTypeConfigService.upsertDynamicTypeConfig({
-        requestBody: {
-          configuration: configsArray as any[],
-        },
-      })
+      await upsertDynamicTypeConfigApi({ configuration: configsArray as any[] })
       console.log("DynamicTypeManager: 설정이 API를 통해 저장되었습니다.")
     } catch (error) {
       console.error("Failed to save dynamic type configs to API:", error)
@@ -419,7 +419,7 @@ export class DynamicTypeManager {
 
     this.isLoading = true
     try {
-      const response = await DynamicTypeConfigService.readDynamicTypeConfig()
+      const response = await readDynamicTypeConfigApi()
       const configsArray: any[] = response.configuration || []
 
       this.configs.clear()

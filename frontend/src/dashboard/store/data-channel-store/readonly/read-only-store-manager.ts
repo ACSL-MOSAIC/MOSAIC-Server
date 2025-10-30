@@ -1,5 +1,5 @@
-import type { BaseStoreManager } from "../../base-store-manager"
-import type { ReadOnlyStore } from "./read-only-store"
+import type {BaseStoreManager} from "../../base-store-manager"
+import type {ReadOnlyStore} from "./read-only-store"
 
 export class ReadOnlyStoreManager implements BaseStoreManager {
   private static instance: ReadOnlyStoreManager
@@ -8,7 +8,8 @@ export class ReadOnlyStoreManager implements BaseStoreManager {
   // robotId -> dataType -> channelLabels[] (N:1 relationship tracking)
   private dataTypeChannels: Map<string, Map<string, string[]>> = new Map()
 
-  private constructor() {}
+  private constructor() {
+  }
 
   public static getInstance(): ReadOnlyStoreManager {
     if (!ReadOnlyStoreManager.instance) {

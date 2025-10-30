@@ -9,7 +9,8 @@ export type WidgetType =
   | "video_segmentation"
   | "universal"
   | "video_recorder"
-  | "oss_gps_map"
+  | "osm_gps_map"
+  | "ros_2d_map_pose"
 
 export interface WidgetPosition {
   x: number

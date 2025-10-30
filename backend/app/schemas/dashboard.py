@@ -23,8 +23,8 @@ class DashboardUpdate(DashboardBase):
 class Dashboard(DashboardBase, table=True):
     dashboard_id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(index=True)  # FK 없이 단순 인덱스
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
 
 
 # Properties to return via API

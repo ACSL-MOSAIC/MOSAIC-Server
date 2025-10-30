@@ -1,6 +1,6 @@
-import type { DelayMeasurement } from "@/dashboard/store/data-channel-store/readonly/lidar-point-cloud.store.ts"
-import type { ParsedData } from "./parsed.type"
-import { chunking, pointcloud } from "./protobuf/proto"
+import type {DelayMeasurement} from "@/dashboard/store/data-channel-store/readonly/lidar-point-cloud.store.ts"
+import type {ParsedData} from "./parsed.type"
+import {chunking, pointcloud} from "./protobuf/proto"
 
 export interface LiDARPoint {
   x: number | null
@@ -219,7 +219,7 @@ export const parsePointCloud2FromDataChunk = (
         true,
       )
 
-      const point = { x, y, z, intensity }
+      const point = {x, y, z, intensity}
 
       // 유효성 검사 (기존과 동일)
       if (!Number.isFinite(point.x)) point.x = 0

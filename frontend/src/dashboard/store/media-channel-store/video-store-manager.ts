@@ -1,5 +1,5 @@
-import { MediaChannelConfigUtils } from "@/rtc/config/webrtc-media-channel-config.ts"
-import { VideoStore } from "./video-store"
+import {MediaChannelConfigUtils} from "@/rtc/config/webrtc-media-channel-config.ts"
+import {VideoStore} from "./video-store"
 
 export class VideoStoreManager {
   private static instance: VideoStoreManager
@@ -10,7 +10,8 @@ export class VideoStoreManager {
   // robotId -> mediaType -> storeType (media type to store type mapping)
   private mediaTypeStoreTypes: Map<string, Map<string, symbol>> = new Map()
 
-  private constructor() {}
+  private constructor() {
+  }
 
   public static getInstance(): VideoStoreManager {
     if (!VideoStoreManager.instance) {

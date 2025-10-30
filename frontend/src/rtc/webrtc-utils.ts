@@ -10,7 +10,8 @@ import {WriteOnlyStore} from "@/dashboard/store/data-channel-store/writeonly/wri
 import {WriteOnlyStoreManager} from "@/dashboard/store/data-channel-store/writeonly/write-only-store-manager"
 import type {DataStore} from "@/dashboard/store/store"
 import {DataChannelConfigUtils} from "./config/webrtc-datachannel-config"
-import {GPSCoordinateStore} from "@/dashboard/store/data-channel-store/readonly/gps-coordinate.store.ts";
+import {GPSCoordinateStore} from "@/dashboard/store/data-channel-store/readonly/gps-coordinate.store.ts"
+import {Ros2DPoseStore} from "@/dashboard/store/data-channel-store/readonly/ros-2d-pose.store.ts"
 
 /**
  * Setup data channel for robot
@@ -109,11 +110,18 @@ export function createDataChannel(
             (robotId) => new LidarPointCloudStore(robotId),
           )
           break
-        case "oss_gps_map":
+        case "osm_gps_map":
           store = readOnlyStoreManager.createStoreIfNotExists(
             robotId,
             channelTypeSymbol,
             (robotId) => new GPSCoordinateStore(robotId),
+          )
+          break
+        case "ros_2d_map_pose":
+          store = readOnlyStoreManager.createStoreIfNotExists(
+            robotId,
+            channelTypeSymbol,
+            (robotId) => new Ros2DPoseStore(robotId),
           )
           break
         default:

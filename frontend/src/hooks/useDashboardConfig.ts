@@ -1,4 +1,7 @@
-import { DashboardService } from "@/client/sdk.gen"
+import {
+  readDashboardApi,
+  upsertDashboardApi,
+} from "@/client/service/dashboard.api.ts"
 import type { DashboardConfig } from "@/components/Dashboard/types"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { v4 as uuidv4 } from "uuid"
@@ -24,7 +27,7 @@ export function useDashboardConfigQuery() {
     queryKey: ["dashboardConfig"],
     queryFn: async () => {
       try {
-        const res = await DashboardService.readDashboard()
+        const res = await readDashboardApi()
         return res.dashboard_config as unknown as DashboardConfig
       } catch (error: any) {
         // 404 에러인 경우 기본 설정 반환
@@ -42,9 +45,7 @@ export function useDashboardConfigMutation() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (config: DashboardConfig) => {
-      await DashboardService.upsertDashboard({
-        requestBody: { dashboard_config: config as any },
-      })
+      await upsertDashboardApi({ dashboard_config: config as any })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dashboardConfig"] })

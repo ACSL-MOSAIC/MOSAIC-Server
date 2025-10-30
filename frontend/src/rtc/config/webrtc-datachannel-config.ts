@@ -4,6 +4,7 @@ import {REMOTE_CONTROL_PAD_TYPE} from "@/dashboard/parser/remote-control-pad.ts"
 import {TURTLESIM_POSITION_TYPE} from "@/dashboard/parser/turtlesim-position"
 import {VIDEO_RECORDING_TYPE} from "@/dashboard/parser/video-recorder.ts"
 import {GPS_COORDINATE_TYPE} from "@/dashboard/parser/gps-coordinate.ts"
+import {ROS_2D_POSE_TYPE} from "@/dashboard/parser/ros2-d-pose-with-covariance.ts"
 
 // Store factory mapping by data type
 export const DATA_CHANNEL_CONFIG = {
@@ -66,6 +67,12 @@ export const DATA_CHANNEL_CONFIG = {
     channelType: "readonly" as const,
     defaultLabel: "gps_coordinate_channel",
     description: "GPS Coordinate Data Channel",
+  },
+  ros_2d_map_pose: {
+    type: "ros_2d_map_pose",
+    channelType: "readonly" as const,
+    defaultLabel: "2d_map_pose_channel",
+    description: "2D Map Pose Data Channel",
   },
 } as const
 
@@ -131,6 +138,12 @@ export const DEFAULT_DATA_CHANNELS = [
     channelType: DATA_CHANNEL_CONFIG.osm_gps_map.channelType,
     options: undefined,
   },
+  {
+    label: DATA_CHANNEL_CONFIG.ros_2d_map_pose.defaultLabel,
+    dataType: DATA_CHANNEL_CONFIG.ros_2d_map_pose.type,
+    channelType: DATA_CHANNEL_CONFIG.ros_2d_map_pose.channelType,
+    options: undefined,
+  },
 ] as const
 
 // Symbol mapping by data type
@@ -141,6 +154,7 @@ export const DATA_TYPE_SYMBOLS = {
   remote_control_pad: REMOTE_CONTROL_PAD_TYPE,
   video_recorder: VIDEO_RECORDING_TYPE,
   osm_gps_map: GPS_COORDINATE_TYPE,
+  ros_2d_map_pose: ROS_2D_POSE_TYPE,
 } as const
 
 // Utility functions

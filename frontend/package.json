@@ -7,13 +7,13 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "lint": "biome check --apply-unsafe --no-errors-on-unmatched --files-ignore-unknown=true ./",
-    "preview": "vite preview",
-    "generate-client": "openapi-ts"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.20.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@imgdrop/pnm": "^1.0.2",
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.15.19",
     "@tanstack/react-query": "^5.84.1",
@@ -45,11 +45,11 @@
     "react-leaflet": "4.2.1",
     "react-syntax-highlighter": "^15.6.1",
     "three": "^0.177.0",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "yaml": "^2.8.1"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@hey-api/openapi-ts": "^0.57.1",
     "@playwright/test": "^1.52.0",
     "@tanstack/router-devtools": "1.19.1",
     "@tanstack/router-vite-plugin": "1.19.0",

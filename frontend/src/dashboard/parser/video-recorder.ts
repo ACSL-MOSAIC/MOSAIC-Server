@@ -1,4 +1,4 @@
-import type { ParsedData } from "./parsed.type"
+import type {ParsedData} from "./parsed.type"
 
 export const VIDEO_RECORDING_TYPE = Symbol("VIDEO_RECORDING_TYPE")
 

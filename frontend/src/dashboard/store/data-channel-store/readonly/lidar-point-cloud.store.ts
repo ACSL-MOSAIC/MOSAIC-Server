@@ -3,7 +3,7 @@ import {
   type ParsedPointCloud2,
   parsePointCloud2,
 } from "../../../parser/lidar-pointcloud.ts"
-import { ReadOnlyStore } from "./read-only-store"
+import {ReadOnlyStore} from "./read-only-store"
 
 export interface DelayMeasurement {
   delayDatas: number[]
@@ -56,7 +56,7 @@ export class LidarPointCloudStore extends ReadOnlyStore<
     this.chunkMap.clear()
     this.frameTimestamps = []
     this.fpsDatas = []
-    this.delayMeasurements = { delayDatas: [], numDatas: 0 }
+    this.delayMeasurements = {delayDatas: [], numDatas: 0}
   }
 
   // FPS 계산 함수

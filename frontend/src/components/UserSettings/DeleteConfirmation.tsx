@@ -3,7 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 
-import { type ApiError, UsersService } from "@/client"
+import type { ApiError } from "@/client"
+import { deleteUserMeApi } from "@/client/service/user.api"
 import {
   DialogActionTrigger,
   DialogBody,
@@ -30,7 +31,7 @@ const DeleteConfirmation = () => {
   const { logout } = useAuth()
 
   const mutation = useMutation({
-    mutationFn: () => UsersService.deleteUserMe(),
+    mutationFn: deleteUserMeApi,
     onSuccess: () => {
       showSuccessToast("Your account has been successfully deleted")
       setIsOpen(false)

@@ -1,5 +1,5 @@
-import type { BaseStoreManager } from "../../base-store-manager"
-import type { WriteOnlyStore } from "./write-only-store"
+import type {BaseStoreManager} from "../../base-store-manager"
+import type {WriteOnlyStore} from "./write-only-store"
 
 export class WriteOnlyStoreManager implements BaseStoreManager {
   private static instance: WriteOnlyStoreManager
@@ -18,7 +18,8 @@ export class WriteOnlyStoreManager implements BaseStoreManager {
     ) => void)[]
   > = new Map()
 
-  private constructor() {}
+  private constructor() {
+  }
 
   public static getInstance(): WriteOnlyStoreManager {
     if (!WriteOnlyStoreManager.instance) {

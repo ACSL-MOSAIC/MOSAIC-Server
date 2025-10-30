@@ -6,7 +6,7 @@ from app.api.deps import CurrentUser, SessionDep
 from app.repositories.dashboard_repository import DashboardRepository
 from app.schemas.dashboard import DashboardCreate, DashboardPublic
 
-router = APIRouter(tags=["dashboard"])
+router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 
 @router.get("/", response_model=DashboardPublic)

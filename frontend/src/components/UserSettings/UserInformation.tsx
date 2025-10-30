@@ -13,12 +13,9 @@ import { useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
 import { FiCopy } from "react-icons/fi"
 
-import {
-  type ApiError,
-  type UserPublic,
-  type UserUpdate,
-  UsersService,
-} from "@/client"
+import type { ApiError } from "@/client"
+import { updateUserMeApi } from "@/client/service/user.api.ts"
+import type { UserPublic, UserUpdate } from "@/client/service/user.dto.ts"
 import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 import { emailPattern, handleError } from "@/utils"
@@ -49,8 +46,7 @@ const UserInformation = () => {
   }
 
   const mutation = useMutation({
-    mutationFn: (data: UserUpdate) =>
-      UsersService.updateUserMe({ requestBody: data }),
+    mutationFn: updateUserMeApi,
     onSuccess: () => {
       showSuccessToast("User updated successfully.")
     },

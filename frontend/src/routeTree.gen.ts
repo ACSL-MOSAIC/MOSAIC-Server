@@ -18,6 +18,7 @@ import { Route as LayoutImport } from './routes/_layout'
 import { Route as LayoutIndexImport } from './routes/_layout/index'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutRobotsImport } from './routes/_layout/robots'
+import { Route as LayoutOccupancyMapsImport } from './routes/_layout/occupancy-maps'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
 import { Route as LayoutConnectIndexImport } from './routes/_layout/connect/index'
 
@@ -58,6 +59,11 @@ const LayoutRobotsRoute = LayoutRobotsImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
+const LayoutOccupancyMapsRoute = LayoutOccupancyMapsImport.update({
+  path: '/occupancy-maps',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
 const LayoutAdminRoute = LayoutAdminImport.update({
   path: '/admin',
   getParentRoute: () => LayoutRoute,
@@ -92,6 +98,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/occupancy-maps': {
+      preLoaderRoute: typeof LayoutOccupancyMapsImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/robots': {
       preLoaderRoute: typeof LayoutRobotsImport
       parentRoute: typeof LayoutImport
@@ -116,6 +126,7 @@ declare module '@tanstack/react-router' {
 export const routeTree = rootRoute.addChildren([
   LayoutRoute.addChildren([
     LayoutAdminRoute,
+    LayoutOccupancyMapsRoute,
     LayoutRobotsRoute,
     LayoutSettingsRoute,
     LayoutIndexRoute,

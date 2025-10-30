@@ -61,7 +61,8 @@ export function AddWidgetModal({
       {label: "Remote Control Pad", value: "remote_control_pad"},
       {label: "Turtlesim Position", value: "turtlesim_position"},
       {label: "Go2 Low State", value: "go2_low_state"},
-      {label: "Gps Map", value: "oss_gps_map"},
+      {label: "Gps Map", value: "osm_gps_map"},
+      {label: "ROS 2D Map Pose", value: "ros_2d_map_pose"},
     ],
   })
 
@@ -82,9 +83,15 @@ export function AddWidgetModal({
         },
       },
       {
-        label: "oss_gps_map",
+        label: "osm_gps_map",
         value: {
-          robotIdList: []
+          robotIdList: [],
+        },
+      },
+      {
+        label: "ros_2d_map_pose",
+        value: {
+          robotIdList: [],
         },
       },
     ],
@@ -99,8 +106,8 @@ export function AddWidgetModal({
   }
 
   const handleAdd = () => {
-    if (selectedType === "oss_gps_map") {
-      // oss gps map widget 은 robot id 가 필요하지 않음
+    if (selectedType === "osm_gps_map" || selectedType === "ros_2d_map_pose") {
+      // osm gps map 과 ros 2d map pose widget 은 robot id 가 필요하지 않음
       addWidget(selectedType, selectedRobotId)
     }
 
