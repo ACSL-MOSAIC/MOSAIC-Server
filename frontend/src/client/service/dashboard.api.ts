@@ -1,7 +1,7 @@
-import type { CancelablePromise } from "@/client/core/CancelablePromise.ts"
-import { OpenAPI } from "@/client/core/OpenAPI.ts"
-import { request as __request } from "@/client/core/request.ts"
-import type { DashboardCreate, DashboardPublic } from "./dashboard.dto.ts"
+import type {CancelablePromise} from "@/client/core/CancelablePromise.ts"
+import {OpenAPI} from "@/client/core/OpenAPI.ts"
+import {request as __request} from "@/client/core/request.ts"
+import type {DashboardCreate, DashboardPublic} from "./dashboard.dto.ts"
 
 /**
  * Read Dashboard
@@ -12,7 +12,7 @@ import type { DashboardCreate, DashboardPublic } from "./dashboard.dto.ts"
 export const readDashboardApi = (): CancelablePromise<DashboardPublic> => {
   return __request(OpenAPI, {
     method: "GET",
-    url: "/api/v1/dashboard",
+    url: "/api/v1/dashboard/",
   })
 }
 
@@ -27,7 +27,7 @@ export const upsertDashboardApi = (
 ): CancelablePromise<DashboardPublic> => {
   return __request(OpenAPI, {
     method: "POST",
-    url: "/api/v1/dashboard",
+    url: "/api/v1/dashboard/",
     body: requestBody,
     mediaType: "application/json",
     errors: {
