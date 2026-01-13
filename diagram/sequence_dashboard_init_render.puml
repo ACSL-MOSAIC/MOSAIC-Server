@@ -1,0 +1,59 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+participant DashboardGrid
+participant ChannelManager
+participant DB
+participant WidgetFactory
+participant WidgetComponent
+participant StoreManager
+participant MapWithRefCount
+participant StoreFactory
+participant ReadOnlyStore
+participant WebRTCConnectionManager
+participant WebRTCConnection
+participant Robot
+
+autonumber
+
+== 대시보드 페이지 접속 ==
+
+DashboardGrid -[#red]> DashboardGrid ++: 컴포넌트 마운트
+
+loop 각 로봇별로
+    DashboardGrid -[#red]> ChannelManager ++: refreshChannels(robotId)
+    ChannelManager -[#red]> DB: 채널 설정 조회
+    DB -[#blue]> ChannelManager: ChannelConfig[]
+    ChannelManager [#blue]-> ChannelManager: 채널 설정 저장
+    DashboardGrid <[#blue]- ChannelManager: ChannelConfig[]
+end
+
+DashboardGrid [#blue]-> DashboardGrid --: 마운트 완료
+
+== 위젯 렌더링 ==
+
+DashboardGrid -[#red]> WidgetFactory ++: renderWidget(widgetConfig)
+WidgetFactory -[#blue]> WidgetComponent --: WidgetComponent 렌더링
+
+WidgetComponent -[#red]> StoreManager ++: getOrCreateStore(robotId, channelLabel, dataType, "readonly")
+StoreManager -[#red]> MapWithRefCount: get(key)
+MapWithRefCount -[#blue]> StoreManager: Store | undefined
+
+alt Store가 없을 때
+    StoreManager -[#red]> StoreFactory ++: createReadOnlyStore(robotId, channelLabel, dataType)
+    StoreFactory -[#red]> ReadOnlyStore: ReadOnlyStore.create()()
+    ReadOnlyStore -[#blue]> StoreFactory: ReadOnlyStore 인스턴스
+    StoreManager <[#blue]- StoreFactory: ReadOnlyStore
+    
+    StoreManager -[#red]> MapWithRefCount: set(key, value)
+    StoreManager -[#red]> MapWithRefCount: incrementRefCount(key)
+    
+    StoreManager -[#red]> ChannelManager: registerDataCallback(robotId, channelLabel, store.add)
+    ChannelManager [#blue]-> ChannelManager: 콜백 함수 저장
+    ChannelManager -[#red]> WebRTCConnectionManager: onCallbackRegistered(robotId, channelLabel, callback)
+    WebRTCConnectionManager -[#red]> WebRTCConnection: setCallback(channelLabel, callback)
+end
+
+WidgetComponent <[#blue]- StoreManager: ReadOnlyStore
+WidgetFactory <[#blue]- WidgetComponent: 렌더링 완료
+@enduml

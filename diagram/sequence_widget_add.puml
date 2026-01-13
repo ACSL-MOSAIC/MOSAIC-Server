@@ -1,0 +1,76 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+participant DashboardGrid
+participant ChannelManager
+participant DB
+participant WidgetFactory
+participant WidgetComponent
+participant StoreManager
+participant MapWithRefCount
+participant StoreFactory
+participant ReadOnlyStore
+participant WebRTCConnectionManager
+participant WebRTCConnection
+
+autonumber
+
+== 위젯 추가 ==
+
+DashboardGrid -[#red]> DashboardGrid ++: handleAddWidget(type, robotId?, config?)
+
+DashboardGrid [#blue]-> DashboardGrid: WidgetConfig 생성\n(robotIdList 포함)
+DashboardGrid -[#red]> DB: WidgetConfig 저장
+DB -[#blue]> DashboardGrid: 저장 완료
+
+DashboardGrid -[#red]> WidgetFactory ++: renderWidget(widgetConfig)
+WidgetFactory -[#blue]> WidgetComponent --: WidgetComponent 렌더링
+
+loop widgetConfig.robotIdList의 각 robotId
+    WidgetComponent -[#red]> StoreManager ++: getOrCreateStore(robotId, channelLabel, dataType, "readonly")
+    
+    StoreManager -[#red]> MapWithRefCount: get(key)
+    MapWithRefCount -[#blue]> StoreManager: Store | undefined
+    
+    alt Store가 없음 (새로 생성)
+        StoreManager -[#red]> StoreFactory ++: createReadOnlyStore(robotId, channelLabel, dataType)
+        StoreFactory -[#red]> ReadOnlyStore: ReadOnlyStore.create()()
+        ReadOnlyStore -[#blue]> StoreFactory: ReadOnlyStore 인스턴스
+        StoreManager <[#blue]- StoreFactory: ReadOnlyStore
+        
+        StoreManager -[#red]> MapWithRefCount: set(key, value)
+        StoreManager -[#red]> MapWithRefCount: incrementRefCount(key)
+        
+        StoreManager -[#red]> ChannelManager: registerDataCallback(robotId, channelLabel, store.add)
+        ChannelManager [#blue]-> ChannelManager: 콜백 함수 저장
+        
+        alt WebRTC 연결이 이미 되어 있음
+            ChannelManager -[#red]> WebRTCConnectionManager: onCallbackRegistered(robotId, channelLabel, callback)
+            WebRTCConnectionManager -[#red]> WebRTCConnection: getConnection(robotId)
+            WebRTCConnectionManager <[#blue]- WebRTCConnection: WebRTCConnection
+            
+            alt DataChannel이 이미 생성되어 있음
+                WebRTCConnectionManager -[#red]> WebRTCConnection: setCallback(channelLabel, callback)
+                WebRTCConnection [#blue]-> WebRTCConnection: DataChannel.onmessage에 콜백 연결
+            else DataChannel이 아직 생성 안됨
+                WebRTCConnectionManager -[#red]> WebRTCConnection: createDataChannel(channelLabel)
+                WebRTCConnection [#blue]-> WebRTCConnection: DataChannel 생성
+                WebRTCConnectionManager -[#red]> WebRTCConnection: setCallback(channelLabel, callback)
+                WebRTCConnection [#blue]-> WebRTCConnection: DataChannel.onmessage에 콜백 연결
+            end
+        else WebRTC 연결이 안되어 있음
+            ChannelManager [#blue]-> ChannelManager: 콜백만 저장 (연결 대기)
+        end
+    else Store가 이미 있음 (기존 Store 사용)
+        StoreManager -[#red]> MapWithRefCount: incrementRefCount(key)
+        MapWithRefCount [#blue]-> MapWithRefCount: 참조 카운트 증가
+    end
+    
+    WidgetComponent <[#blue]- StoreManager: ReadOnlyStore
+end
+
+WidgetFactory <[#blue]- WidgetComponent: 렌더링 완료
+DashboardGrid <[#blue]- WidgetFactory: 위젯 표시
+
+DashboardGrid [#blue]-> DashboardGrid --: 위젯 추가 완료
+@enduml

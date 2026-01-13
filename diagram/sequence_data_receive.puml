@@ -1,0 +1,25 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+participant ChannelManager
+participant WidgetComponent
+participant ReadOnlyStore
+participant WebRTCConnection
+participant Robot
+
+autonumber
+
+
+== 데이터 수신 ==
+
+Robot -[#red]> WebRTCConnection: 데이터 전송 (DataChannel)
+WebRTCConnection -[#red]> ChannelManager: getDataCallback(robotId, channelLabel)
+WebRTCConnection <[#blue]- ChannelManager: callback 함수
+
+WebRTCConnection -[#red]> ReadOnlyStore: callback(data)
+ReadOnlyStore -[#red]> ReadOnlyStore ++: parser(data)
+ReadOnlyStore [#blue]-> ReadOnlyStore --: 파싱된 데이터 저장
+
+ReadOnlyStore -[#red]> WidgetComponent: subscribe callback 호출
+WidgetComponent [#blue]-> WidgetComponent: UI 업데이트
+@enduml

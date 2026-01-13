@@ -1,0 +1,172 @@
+@startuml
+'https://plantuml.com/class-diagram
+skinparam linetype ortho
+
+package "Dashboard Layer" {
+    class DashboardGrid {
+        +handleConnectRobot(robotId: string): Promise<void>
+        +handleDisconnectRobot(robotId: string): void
+        +handleAddWidget(type, robotId?, config?): void
+        +handleRemoveWidget(widgetId: string): void
+        +handleAddTab(tabName: string): void
+        +handleSave(): void
+    }
+
+    class WidgetFactory {
+        +renderWidget(widgetConfig: WidgetConfig): ReactElement | null
+    }
+
+    abstract class WidgetComponent {
+        -widgetConfig: WidgetConfig
+        +render(): ReactElement
+    }
+
+    struct WidgetConfig {
+        +id: string
+        +type: WidgetType
+        +position: WidgetPosition
+        +dataType: string
+        +robotIdList: string[]
+        +config?: any
+    }
+}
+
+package "Channel Manager" {
+    class ChannelManager {
+        <<Zustand Store>>
+        -activeChannels: Map<string, Map<string, ChannelInfo>>
+        -channelRequirements: Map<string, ChannelRequirement[]>
+        +refreshChannels(robotId: string): Promise<ChannelConfig[]>
+        +registerActiveChannel(robotId, channelInfo): void
+        +getAllActiveChannels(robotId: string): ChannelInfo[]
+        +registerDataCallback(robotId, channelLabel, callback): void
+        +unregisterDataCallback(robotId, channelLabel): void
+        +getDataCallback(robotId, channelLabel): Function | undefined
+        +getChannelRequirements(robotId: string): ChannelRequirement[]
+        +onCallbackRegistered(robotId, channelLabel, callback): void
+    }
+
+    interface ChannelInfo {
+        +channelLabel: string
+        +dataType: string
+        +channelType: "readonly" | "writeonly" | "media"
+        +robotId: string
+        +isConnected: boolean
+    }
+
+    interface ChannelRequirement {
+        +channelLabel: string
+        +dataType: string
+        +channelType: "readonly" | "writeonly" | "media"
+    }
+}
+
+package "Store Layer" {
+    class MapWithRefCount<K, V> {
+        -map: Map<K, V>
+        -refCounts: Map<K, number>
+        +get(key: K): V | undefined
+        +set(key: K, value: V): void
+        +incrementRefCount(key: K): void
+        +decrementRefCount(key: K): void
+        +getRefCount(key: K): number
+        +delete(key: K): void
+    }
+    class StoreManager {
+        <<Zustand Store>>
+        -stores: MapWithRefCount<string, ReadOnlyStore | WriteOnlyStore>
+        +getOrCreateStore(robotId, channelLabel, dataType, channelType): ReadOnlyStore | WriteOnlyStore
+        +releaseStore(robotId, channelLabel): void
+        +removeStore(robotId, channelLabel): void
+    }
+
+    class StoreFactory {
+        -readOnlyStoreClasses: Map<string, () => ReadOnlyStore>
+        -writeOnlyStoreClasses: Map<string, () => WriteOnlyStore>
+        +registerReadOnlyStore<T extends ReadOnlyStore>(): void
+        +registerWriteOnlyStore<T extends WriteOnlyStore>(): void
+        +createReadOnlyStore(robotId, channelLabel, dataType): ReadOnlyStore | null
+        +createWriteOnlyStore(robotId, channelLabel, dataType): WriteOnlyStore | null
+    }
+
+    abstract class ReadOnlyStore {
+        +robotId: string
+        +channelLabel: string
+        +{static}getDataType(): string
+        +{static}create(): () => ReadOnlyStore
+        +{abstract}subscribe(callback): UnsubscribeFunction
+        +addDataChannel(channel: RTCDataChannel): void
+    }
+
+    abstract class WriteOnlyStore {
+        +robotId: string
+        +channelLabel: string
+        +{static}getDataType(): string
+        +{static}create(): () => WriteOnlyStore
+        +{abstract}add(data: I): void
+        +setDataChannel(channel: RTCDataChannel): void
+    }
+}
+
+package "WebRTC Layer" {
+    class WebRTCConnectionManager {
+        -connections: Map<string, WebRTCConnection>
+        +createConnection(robotId: string): Promise<void>
+        +disconnectConnection(robotId: string): void
+        +getConnection(robotId: string): WebRTCConnection | undefined
+        +onCallbackRegistered(robotId, channelLabel, callback): void
+        +removeDataChannel(robotId, channelLabel): void
+        -setupDataChannels(robotId, connection): void
+    }
+
+    class WebRTCConnection {
+        -peerConnection: RTCPeerConnection | null
+        -dataChannels: Map<string, RTCDataChannel>
+        -callbacks: Map<string, (data: ArrayBuffer) => void>
+        +startConnection(): Promise<void>
+        +disconnect(): void
+        +setCallback(channelLabel: string, callback: (data: ArrayBuffer) => void): void
+        +removeCallback(channelLabel: string): void
+        +sendData(channelLabel: string, data: ArrayBuffer): void
+        +getPeerConnection(): RTCPeerConnection | null
+        -createPeerConnection(): RTCPeerConnection
+        -setupDataChannel(dataChannel, robotId): void
+    }
+}
+
+package "WebSocket Layer" {
+    class WSConnectionManager {
+        <<Zustand Store>>
+        -wsConnections: Map<string, boolean>
+        +registerConnection(robotId: string): void
+        +unregisterConnection(robotId: string): void
+        +isConnected(robotId: string): boolean
+        +getAllConnections(): Map<string, boolean>
+    }
+}
+
+' Relationships
+DashboardGrid --> ChannelManager : requestConnection()
+DashboardGrid --> WidgetFactory : renderWidget()
+WidgetFactory --> WidgetComponent : renders
+WidgetComponent *-- WidgetConfig
+
+WidgetComponent --> StoreManager : getOrCreateStore()\nreleaseStore()
+StoreManager --> StoreFactory : uses
+StoreManager --> ChannelManager : registerDataCallback()\nunregisterDataCallback()
+
+StoreFactory --> ReadOnlyStore : creates
+StoreFactory --> WriteOnlyStore : creates
+
+ChannelManager --> WebRTCConnectionManager : onCallbackRegistered()\nonCallbackUnregistered()
+WebRTCConnectionManager --> WebRTCConnection : creates/manages
+WebRTCConnectionManager --> ChannelManager : getChannelRequirements()\ngetDataCallback()
+
+WebRTCConnection --> ChannelManager : refreshChannels()\nregisterActiveChannel()
+
+DashboardGrid --> WSConnectionManager : WS 연결 상태 조회
+WebRTCConnectionManager --> WSConnectionManager : WS 연결 상태 조회
+
+ChannelManager *-- ChannelInfo
+ChannelManager *-- ChannelRequirement
+@enduml
