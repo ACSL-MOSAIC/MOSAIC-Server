@@ -24,10 +24,44 @@ package "Dashboard Layer" {
     struct WidgetConfig {
         +id: string
         +type: WidgetType
-        +position: WidgetPosition
-        +dataType: string
-        +robotIdList: string[]
-        +config?: any
+        +position: WidgetPositionConfig
+        +connectors: RobotConnector[]
+        +...others
+    }
+
+    struct DashboardConfig {
+        + id: string
+        + name: string
+        + widgets: WidgetConfig[]
+    }
+
+    struct WidgetPositionConfig {
+        +x: number
+        +y: number
+        +w: number
+        +h: number
+    }
+
+    struct RobotConnector {
+        +robot_id: string
+        +connector_id: string
+    }
+
+    struct RobotConfig {
+        +robot_id: string
+        +name: string
+        +connectors: ConnectorConfig[]
+    }
+
+    note top of RobotConfig
+      어디 저장할진 미정,
+      아마 백엔드에서 가져와서 Zustand 에 저장해둘 듯
+    end note
+
+    struct ConnectorConfig {
+        +connector_id: string
+        +type: string
+        +params: any
     }
 }
 
@@ -62,47 +96,56 @@ package "Channel Manager" {
 }
 
 package "Store Layer" {
-    class MapWithRefCount<K, V> {
-        -map: Map<K, V>
-        -refCounts: Map<K, number>
-        +get(key: K): V | undefined
-        +set(key: K, value: V): void
-        +incrementRefCount(key: K): void
-        +decrementRefCount(key: K): void
-        +getRefCount(key: K): number
-        +delete(key: K): void
+    class RobotConnectorRefMap<V> {
+        -map: Map<string, V>
+        -refCounts: Map<string, number>
+        -serializeKey(robotConnector: RobotConnector): string
+        -deserializeKey(key: string): RobotConnector
+        +get(key: RobotConnector): V | undefined
+        +set(key: RobotConnector, value: V): void
+        +incrementRefCount(key: RobotConnector): void
+        +decrementRefCount(key: RobotConnector): void
+        +getRefCount(key: RobotConnector): number
+        +delete(key: RobotConnector): void
     }
+
     class StoreManager {
         <<Zustand Store>>
-        -stores: MapWithRefCount<string, ReadOnlyStore | WriteOnlyStore>
-        +getOrCreateStore(robotId, channelLabel, dataType, channelType): ReadOnlyStore | WriteOnlyStore
-        +releaseStore(robotId, channelLabel): void
-        +removeStore(robotId, channelLabel): void
+        -stores: RobotConnectorRefMap<ReadOnlyStore | WriteOnlyStore>
+        -robotConfigs: Map<string, RobotConfig>
+        +setRobotConfigs(robotConfigs: RobotConfig[]): void
+        +getRobotConfig(robotId: string): RobotConfig | undefined
+        +getOrCreateStore(robotConnector: RobotConnector): ReadOnlyStore | WriteOnlyStore
+        +releaseStore(robotConnector: RobotConnector): void
+        -resolveConnectorType(robotConnector: RobotConnector): string
     }
+
+    note bottom of StoreManager
+        RobotConnector 하나당 Store 하나 매핑
+    end note
 
     class StoreFactory {
-        -readOnlyStoreClasses: Map<string, () => ReadOnlyStore>
-        -writeOnlyStoreClasses: Map<string, () => WriteOnlyStore>
+        -storeFactories: Map<string, (robotConnector) => ReadOnlyStore | WriteOnlyStore>
         +registerReadOnlyStore<T extends ReadOnlyStore>(): void
         +registerWriteOnlyStore<T extends WriteOnlyStore>(): void
-        +createReadOnlyStore(robotId, channelLabel, dataType): ReadOnlyStore | null
-        +createWriteOnlyStore(robotId, channelLabel, dataType): WriteOnlyStore | null
+        +createStore(connectorType: string, robotConnector): ReadOnlyStore | WriteOnlyStore | null
     }
+    note bottom of StoreFactory
+        connectorType 이 Map 의 Key
+    end note
 
     abstract class ReadOnlyStore {
-        +robotId: string
-        +channelLabel: string
+        +robotConnector: RobotConnector
         +{static}getDataType(): string
-        +{static}create(): () => ReadOnlyStore
+        +{static}createFn(): (robotConnector) => ReadOnlyStore
         +{abstract}subscribe(callback): UnsubscribeFunction
         +addDataChannel(channel: RTCDataChannel): void
     }
 
     abstract class WriteOnlyStore {
-        +robotId: string
-        +channelLabel: string
+        +robotConnector: RobotConnector
         +{static}getDataType(): string
-        +{static}create(): () => WriteOnlyStore
+        +{static}createFn(): (robotConnector) => WriteOnlyStore
         +{abstract}add(data: I): void
         +setDataChannel(channel: RTCDataChannel): void
     }
@@ -149,11 +192,19 @@ package "WebSocket Layer" {
 DashboardGrid --> ChannelManager : requestConnection()
 DashboardGrid --> WidgetFactory : renderWidget()
 WidgetFactory --> WidgetComponent : renders
-WidgetComponent *-- WidgetConfig
+WidgetConfig -* WidgetComponent
+DashboardConfig -* DashboardGrid
+
+DashboardConfig *-- WidgetConfig
+RobotConfig *-- ConnectorConfig
+WidgetConfig *-- RobotConnector
+WidgetConfig *-- WidgetPositionConfig
 
 WidgetComponent --> StoreManager : getOrCreateStore()\nreleaseStore()
 StoreManager --> StoreFactory : uses
-StoreManager --> ChannelManager : registerDataCallback()\nunregisterDataCallback()
+WidgetComponent -> ChannelManager : registerDataCallback()\nunregisterDataCallback()
+
+StoreManager *- RobotConnectorRefMap
 
 StoreFactory --> ReadOnlyStore : creates
 StoreFactory --> WriteOnlyStore : creates

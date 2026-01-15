@@ -2,13 +2,14 @@
 'https://plantuml.com/sequence-diagram
 
 participant DashboardGrid
-participant ChannelManager
-participant DB
+participant Backend
 participant WidgetFactory
 participant WidgetComponent
 participant StoreManager
-participant MapWithRefCount
+participant RobotConnectorRefMap
 participant StoreFactory
+participant Store
+participant ChannelManager
 participant ReadOnlyStore
 participant WebRTCConnectionManager
 participant WebRTCConnection
@@ -18,42 +19,71 @@ autonumber
 
 == 대시보드 페이지 접속 ==
 
-DashboardGrid -[#red]> DashboardGrid ++: 컴포넌트 마운트
+DashboardGrid -> DashboardGrid: 컴포넌트 마운트
 
-loop 각 로봇별로
-    DashboardGrid -[#red]> ChannelManager ++: refreshChannels(robotId)
-    ChannelManager -[#red]> DB: 채널 설정 조회
-    DB -[#blue]> ChannelManager: ChannelConfig[]
-    ChannelManager [#blue]-> ChannelManager: 채널 설정 저장
-    DashboardGrid <[#blue]- ChannelManager: ChannelConfig[]
-end
+== 로봇 리스트 렌더링을 위한 API 호출 ==
 
-DashboardGrid [#blue]-> DashboardGrid --: 마운트 완료
+DashboardGrid -[#red]> Backend: 로봇 리스트 조회
+note right
+  API: GET /api/robots <----미정
+end note
+DashboardGrid <[#blue]- Backend: 로봇 리스트 with RobotConfig
+note right
+  class diagram 참고
+end note
+DashboardGrid -[#red]> StoreManager: setRobotConfigs(robotConfigs)
+note over DashboardGrid, StoreManager
+  이 부분 약간 맘에 안듦. store manager 가 아닌 다른 곳에 저장하고, store manager 가 그곳을 참조할 수 있으면 더 좋음
+end note
+DashboardGrid <[#blue]- StoreManager: 완료
+
+== 대시보드 렌더링을 위한 API 호출 ==
+
+DashboardGrid -[#red]> Backend: 탭 리스트 조회
+note right
+  API: GET /api/dashboard/tabs <----미정
+end note
+DashboardGrid <[#blue]- Backend: 탭 리스트
+
+DashboardGrid -> DashboardGrid: 현재 탭 LocalStorage에서 로드
+
+DashboardGrid -[#red]> Backend: 대시보드 설정 조회
+note right
+  API: GET /api/dashboard/configs <----미정
+end note
+DashboardGrid <[#blue]- Backend: DashboardConfig
+note right
+  class diagram 참고
+end note
+
+DashboardGrid -> DashboardGrid --: 마운트 완료
 
 == 위젯 렌더링 ==
 
 DashboardGrid -[#red]> WidgetFactory ++: renderWidget(widgetConfig)
-WidgetFactory -[#blue]> WidgetComponent --: WidgetComponent 렌더링
+WidgetFactory -[#red]> WidgetComponent --: WidgetComponent 렌더링
 
-WidgetComponent -[#red]> StoreManager ++: getOrCreateStore(robotId, channelLabel, dataType, "readonly")
-StoreManager -[#red]> MapWithRefCount: get(key)
-MapWithRefCount -[#blue]> StoreManager: Store | undefined
+WidgetComponent -[#red]> StoreManager ++: getOrCreateStore(robotConnector)
+StoreManager -[#red]> RobotConnectorRefMap: get(robotConnector)
+RobotConnectorRefMap -[#blue]> StoreManager: Store | undefined
 
 alt Store가 없을 때
-    StoreManager -[#red]> StoreFactory ++: createReadOnlyStore(robotId, channelLabel, dataType)
-    StoreFactory -[#red]> ReadOnlyStore: ReadOnlyStore.create()()
-    ReadOnlyStore -[#blue]> StoreFactory: ReadOnlyStore 인스턴스
-    StoreManager <[#blue]- StoreFactory: ReadOnlyStore
-    
-    StoreManager -[#red]> MapWithRefCount: set(key, value)
-    StoreManager -[#red]> MapWithRefCount: incrementRefCount(key)
-    
-    StoreManager -[#red]> ChannelManager: registerDataCallback(robotId, channelLabel, store.add)
-    ChannelManager [#blue]-> ChannelManager: 콜백 함수 저장
-    ChannelManager -[#red]> WebRTCConnectionManager: onCallbackRegistered(robotId, channelLabel, callback)
-    WebRTCConnectionManager -[#red]> WebRTCConnection: setCallback(channelLabel, callback)
+    StoreManager -> StoreManager: resolveConnectorType(robotConnector)
+    StoreManager -[#red]> StoreFactory ++: createStore(connectorType, robotConnector)
+    StoreFactory -> StoreFactory: storeFactories.get(connectorType)
+    create Store
+    StoreFactory -> Store: create(robotConnector)
+    StoreManager <[#blue]- StoreFactory --: ReadOnlyStore | WriteOnlyStore | null
+
+    StoreManager -[#red]> RobotConnectorRefMap: set(robotConnector, Store)
 end
 
-WidgetComponent <[#blue]- StoreManager: ReadOnlyStore
+WidgetComponent <[#blue]- StoreManager --: Store
+
+WidgetComponent -[#red]> ChannelManager: registerDataCallback(robotId, channelLabel, store.add)
+ChannelManager [#blue]-> ChannelManager: 콜백 함수 저장
+ChannelManager -[#red]> WebRTCConnectionManager: onCallbackRegistered(robotId, channelLabel, callback)
+WebRTCConnectionManager -[#red]> WebRTCConnection: setCallback(channelLabel, callback)
+
 WidgetFactory <[#blue]- WidgetComponent: 렌더링 완료
 @enduml
