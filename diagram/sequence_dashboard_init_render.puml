@@ -80,6 +80,9 @@ end
 
 WidgetComponent <[#blue]- StoreManager --: Store
 
+note over WidgetComponent, Store
+  아래 부분 수정 필요
+end note
 WidgetComponent -[#red]> ChannelManager: registerDataCallback(robotId, channelLabel, store.add)
 ChannelManager [#blue]-> ChannelManager: 콜백 함수 저장
 ChannelManager -[#red]> WebRTCConnectionManager: onCallbackRegistered(robotId, channelLabel, callback)
