@@ -8,12 +8,8 @@ participant WidgetComponent
 participant StoreManager
 participant RobotConnectorRefMap
 participant StoreFactory
-participant Store
+participant MosaicStore
 participant ChannelManager
-participant ReadOnlyStore
-participant WebRTCConnectionManager
-participant WebRTCConnection
-participant Robot
 
 autonumber
 
@@ -60,33 +56,44 @@ DashboardGrid -> DashboardGrid --: 마운트 완료
 
 == 위젯 렌더링 ==
 
-DashboardGrid -[#red]> WidgetFactory ++: renderWidget(widgetConfig)
-WidgetFactory -[#red]> WidgetComponent --: WidgetComponent 렌더링
+DashboardGrid -[#red]> WidgetFactory: renderWidget(widgetConfig)
+WidgetFactory -[#red]> WidgetComponent ++: WidgetComponent 렌더링
+note right
+아래 로직이 useEffect 에서 이루어질지는 잘 모르겠음. (useEffect 에서 안이루어질수도)
+end note
 
 WidgetComponent -[#red]> StoreManager ++: getOrCreateStore(robotConnector)
 StoreManager -[#red]> RobotConnectorRefMap: get(robotConnector)
-RobotConnectorRefMap -[#blue]> StoreManager: Store | undefined
+RobotConnectorRefMap -[#blue]> StoreManager: MosaicStore | undefined
 
 alt Store가 없을 때
     StoreManager -> StoreManager: resolveConnectorType(robotConnector)
     StoreManager -[#red]> StoreFactory ++: createStore(connectorType, robotConnector)
     StoreFactory -> StoreFactory: storeFactories.get(connectorType)
-    create Store
-    StoreFactory -> Store: create(robotConnector)
-    StoreManager <[#blue]- StoreFactory --: ReadOnlyStore | WriteOnlyStore | null
+    create MosaicStore
+    StoreFactory -> MosaicStore: create(robotConnector)
+    StoreManager <[#blue]- StoreFactory --: MosaicStore | null
 
-    StoreManager -[#red]> RobotConnectorRefMap: set(robotConnector, Store)
+    StoreManager -[#red]> RobotConnectorRefMap: set(robotConnector, MosaicStore)
 end
 
-WidgetComponent <[#blue]- StoreManager --: Store
+WidgetComponent <[#blue]- StoreManager --: MosaicStore
 
-note over WidgetComponent, Store
-  아래 부분 수정 필요
-end note
-WidgetComponent -[#red]> ChannelManager: registerDataCallback(robotId, channelLabel, store.add)
-ChannelManager [#blue]-> ChannelManager: 콜백 함수 저장
-ChannelManager -[#red]> WebRTCConnectionManager: onCallbackRegistered(robotId, channelLabel, callback)
-WebRTCConnectionManager -[#red]> WebRTCConnection: setCallback(channelLabel, callback)
+WidgetComponent -> WidgetComponent: create ChannelRequirement
 
-WidgetFactory <[#blue]- WidgetComponent: 렌더링 완료
+WidgetComponent -[#red]> ChannelManager: addChannelRequirement(channelRequirement)
+ChannelManager -> ChannelManager: 내부 channelRequirements 에 저장
+WidgetComponent <[#blue]- ChannelManager
+
+alt ReadableStore 일 때
+    WidgetComponent -[#red]> MosaicStore: subscribe(subscriber: (data: ArrayBuffer) => void)
+    WidgetComponent <[#blue]- MosaicStore: UnsubscribeFunction
+    note over WidgetComponent, MosaicStore
+      위젯 컴포넌트가 언마운트 될 때 또는 구독이 필요하지 않을 때
+      UnsubscribeFunction 호출하여 구독 해제
+    end note
+end
+
+WidgetFactory <[#blue]- WidgetComponent --: 렌더링 완료
+DashboardGrid <[#blue]- WidgetFactory: 위젯 렌더링 완료
 @enduml

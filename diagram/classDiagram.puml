@@ -43,12 +43,12 @@ package "Dashboard Layer" {
     }
 
     struct RobotConnector {
-        +robot_id: string
-        +connector_id: string
+        +robotId: string
+        +connectorId: string
     }
 
     struct RobotConfig {
-        +robot_id: string
+        +robotId: string
         +name: string
         +connectors: ConnectorConfig[]
     }
@@ -59,8 +59,8 @@ package "Dashboard Layer" {
     end note
 
     struct ConnectorConfig {
-        +connector_id: string
-        +type: string
+        +connectorId: string
+        +dataType: string
         +params: any
     }
 }
@@ -70,28 +70,29 @@ package "Channel Manager" {
         <<Zustand Store>>
         -activeChannels: Map<string, Map<string, ChannelInfo>>
         -channelRequirements: Map<string, ChannelRequirement[]>
-        +refreshChannels(robotId: string): Promise<ChannelConfig[]>
-        +registerActiveChannel(robotId, channelInfo): void
+        +registerActiveChannel(channelInfo): void
         +getAllActiveChannels(robotId: string): ChannelInfo[]
-        +registerDataCallback(robotId, channelLabel, callback): void
-        +unregisterDataCallback(robotId, channelLabel): void
-        +getDataCallback(robotId, channelLabel): Function | undefined
+        +addChannelRequirement(channelRequirement): void
+        +removeChannelRequirement(channelRequirement): void
         +getChannelRequirements(robotId: string): ChannelRequirement[]
         +onCallbackRegistered(robotId, channelLabel, callback): void
     }
 
+    note bottom of ChannelManager
+        activeChannels 의 key 및 value map 의 key 가 뭔지 모르겠음
+    end note
+
     interface ChannelInfo {
-        +channelLabel: string
-        +dataType: string
-        +channelType: "readonly" | "writeonly" | "media"
-        +robotId: string
-        +isConnected: boolean
+        + channelType: "datachannel" | "mediastream"
+        + robotConnector: RobotConnector
+        + rtcConnection: WebRTCConnection
+        + rtcDataChannel?: RTCDataChannel
+        + mediaStream?: MediaStream
     }
 
     interface ChannelRequirement {
-        +channelLabel: string
-        +dataType: string
-        +channelType: "readonly" | "writeonly" | "media"
+        + store: MosaicStore
+        + robotConnector: RobotConnector
     }
 }
 
@@ -103,19 +104,17 @@ package "Store Layer" {
         -deserializeKey(key: string): RobotConnector
         +get(key: RobotConnector): V | undefined
         +set(key: RobotConnector, value: V): void
-        +incrementRefCount(key: RobotConnector): void
-        +decrementRefCount(key: RobotConnector): void
         +getRefCount(key: RobotConnector): number
         +delete(key: RobotConnector): void
     }
 
     class StoreManager {
         <<Zustand Store>>
-        -stores: RobotConnectorRefMap<ReadOnlyStore | WriteOnlyStore>
+        -mosaicStores: RobotConnectorRefMap<MosaicStore>
         -robotConfigs: Map<string, RobotConfig>
         +setRobotConfigs(robotConfigs: RobotConfig[]): void
         +getRobotConfig(robotId: string): RobotConfig | undefined
-        +getOrCreateStore(robotConnector: RobotConnector): ReadOnlyStore | WriteOnlyStore
+        +getOrCreateStore(robotConnector: RobotConnector): ReadableStore | WritableStore
         +releaseStore(robotConnector: RobotConnector): void
         -resolveConnectorType(robotConnector: RobotConnector): string
     }
@@ -125,29 +124,56 @@ package "Store Layer" {
     end note
 
     class StoreFactory {
-        -storeFactories: Map<string, (robotConnector) => ReadOnlyStore | WriteOnlyStore>
-        +registerReadOnlyStore<T extends ReadOnlyStore>(): void
-        +registerWriteOnlyStore<T extends WriteOnlyStore>(): void
-        +createStore(connectorType: string, robotConnector): ReadOnlyStore | WriteOnlyStore | null
+        -storeFactories: Map<string, (robotConnector) => MosaicStore>
+        +registerReadableStore<T extends ReadableStore>(): void
+        +registerWritableStore<T extends WritableStore>(): void
+        +createStore(connectorType: string, robotConnector): MosaicStore | null
     }
     note bottom of StoreFactory
         connectorType 이 Map 의 Key
     end note
 
-    abstract class ReadOnlyStore {
-        +robotConnector: RobotConnector
+    abstract class MosaicStore {
+        #{static}dataType: string
+        #robotConnector: RobotConnector
+        +MosaicStore(robotConnector: RobotConnector)
         +{static}getDataType(): string
-        +{static}createFn(): (robotConnector) => ReadOnlyStore
-        +{abstract}subscribe(callback): UnsubscribeFunction
-        +addDataChannel(channel: RTCDataChannel): void
+        +{abstract}getStoreType(): "readable" | "writable" | "media"
+        +getRobotConnector(): RobotConnector
+        +{abstract}beforeConnected(): void
+        +{abstract}afterConnected(): void
+        +{abstract}afterDisconnected(): void
     }
 
-    abstract class WriteOnlyStore {
-        +robotConnector: RobotConnector
-        +{static}getDataType(): string
-        +{static}createFn(): (robotConnector) => WriteOnlyStore
-        +{abstract}add(data: I): void
+    abstract class ReadableStore extends MosaicStore {
+        -subscriberList: Map<string, Subscriber>
+        +getStoreType(): "readable"
+        +subscribe(subscriber: (data: ArrayBuffer) => void): UnsubscribeFunction
+        +notifySubscribers(data: ArrayBuffer): void
+        +{abstract}onSubscriberAdded(subscriber): void
+        +{abstract}onSubscriberRemoved(subscriber): void
+        -removeSubscriber(subscriberId: string): void
+    }
+
+    abstract class WritableStore<V> extends MosaicStore {
+        +getStoreType(): "writable"
+        +{abstract}add(data: V): void
+        #sendData(data: string): void
         +setDataChannel(channel: RTCDataChannel): void
+    }
+
+    abstract class MediaStreamStore extends MosaicStore {
+        +getStoreType(): "media"
+        +{abstract}setMediaStream(stream: MediaStream): void
+    }
+
+    class ConnectionCheckingStore extends ReadableStore, WritableStore {
+        +{static} dataType: "connection_check"
+        -intervalId: number | null
+        +afterConnected(): void
+        +afterDisconnected(): void
+        -connectionCheckInterval(): void
+        -replyCheck(data: ArrayBuffer): void
     }
 }
 
@@ -202,18 +228,17 @@ WidgetConfig *-- WidgetPositionConfig
 
 WidgetComponent --> StoreManager : getOrCreateStore()\nreleaseStore()
 StoreManager --> StoreFactory : uses
-WidgetComponent -> ChannelManager : registerDataCallback()\nunregisterDataCallback()
+WidgetComponent -> ChannelManager : addChannelRequirement()\nremoveChannelRequirement()
 
 StoreManager *- RobotConnectorRefMap
 
-StoreFactory --> ReadOnlyStore : creates
-StoreFactory --> WriteOnlyStore : creates
+StoreFactory --> MosaicStore : creates
 
 ChannelManager --> WebRTCConnectionManager : onCallbackRegistered()\nonCallbackUnregistered()
 WebRTCConnectionManager --> WebRTCConnection : creates/manages
-WebRTCConnectionManager --> ChannelManager : getChannelRequirements()\ngetDataCallback()
+WebRTCConnectionManager --> ChannelManager : getChannelRequirements()
 
-WebRTCConnection --> ChannelManager : refreshChannels()\nregisterActiveChannel()
+WebRTCConnection --> ChannelManager : registerActiveChannel()
 
 DashboardGrid --> WSConnectionManager : WS 연결 상태 조회
 WebRTCConnectionManager --> WSConnectionManager : WS 연결 상태 조회
