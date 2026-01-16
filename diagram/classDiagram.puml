@@ -48,7 +48,7 @@ package "Dashboard Layer" {
     }
 
     struct RobotConfig {
-        +robotId: string
+        +id: string
         +name: string
         +connectors: ConnectorConfig[]
     }
