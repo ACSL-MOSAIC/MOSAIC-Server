@@ -1,0 +1,29 @@
+server:
+  port: 9001
+
+spring:
+  application:
+    name: backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mosaic
+    username: username
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/mosaic
+    username: username
+    password: password
+
+  jooq:
+    sql-dialect: POSTGRES
+
+  profiles:
+    default: local
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
