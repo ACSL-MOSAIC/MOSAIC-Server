@@ -1,0 +1,35 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+participant DashboardGrid
+participant ChannelManager
+participant WebRTCConnectionManager
+participant WebRTCConnection
+participant Robot
+
+autonumber
+
+
+== 로봇 연결 ==
+
+DashboardGrid -[#red]> WebRTCConnectionManager ++: createConnection(robotId)
+WebRTCConnectionManager -[#red]> ChannelManager: getChannelRequirements(robotId)
+WebRTCConnectionManager <[#blue]- ChannelManager: ChannelRequirement[]
+
+create WebRTCConnection
+WebRTCConnectionManager -> WebRTCConnection: 생성
+WebRTCConnectionManager -[#red]> WebRTCConnection ++: startConnection()
+
+WebRTCConnection -[#red]> ChannelManager: refreshChannels(robotId)
+WebRTCConnection <[#blue]- ChannelManager: ChannelConfig[]
+
+WebRTCConnection -[#red]> WebRTCConnection ++: createDataChannel(channelLabel)
+WebRTCConnection [#blue]-> WebRTCConnection --: DataChannel 생성
+
+WebRTCConnection -[#red]> ChannelManager: registerActiveChannel(robotId, channelInfo)
+WebRTCConnection -[#red]> Robot: SDP Offer 전송
+Robot -[#blue]> WebRTCConnection: SDP Answer
+WebRTCConnection [#blue]-> WebRTCConnection --: 연결 완료
+
+WebRTCConnectionManager <[#blue]- WebRTCConnection: 연결 완료
+@enduml

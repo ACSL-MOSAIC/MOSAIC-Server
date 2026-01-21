@@ -1,0 +1,293 @@
+@startuml
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam nodesep 8
+skinparam ranksep 12
+
+package "Dashboard Layer" {
+  class DashboardGrid {
+    +handleConnectRobot(robotId: string): Promise<void>
+    +handleDisconnectRobot(robotId: string): void
+    +handleAddWidget(type, robotId?, config?): void
+    +handleRemoveWidget(widgetId: string): void
+    +handleAddTab(tabName: string): void
+    +handleSave(): void
+  }
+  class WidgetFactory {
+    +renderWidget(widgetConfig: WidgetConfig): ReactElement | null
+  }
+  abstract class WidgetComponent {
+    -widgetConfig: WidgetConfig
+    +render(): ReactElement
+  }
+  struct WidgetConfig {
+    +id: string
+    +type: WidgetType
+    +position: WidgetPositionConfig
+    +connectors: RobotConnector[]
+    +...others
+  }
+  struct DashboardConfig {
+    + id: string
+    + name: string
+    + widgets: WidgetConfig[]
+  }
+  struct WidgetPositionConfig {
+    +x: number
+    +y: number
+    +w: number
+    +h: number
+  }
+  struct RobotConnector {
+    +robotId: string
+    +connectorId: string
+    +serialize(): string
+    +{static}deserialize(serialized: string): RobotConnector
+  }
+}
+
+package "Context Layer" {
+  class MosaicContext {
+    <<Context>>
+    -storeManager: StoreManager
+    -channelManager: ChannelManager
+    -robotConnectionManager: RobotConnectionManager
+    -webrtcConnectionManager: WebRTCConnectionManager
+    -robotConfigs: RobotConfig[]
+  }
+  
+  struct RobotConfig {
+    +id: string
+    +name: string
+    +connectors: ConnectorConfig[]
+  }
+  
+  struct ConnectorConfig {
+    +connectorId: string
+    +dataType: string
+    +params: any
+  }
+}
+
+package "StoreManager" {
+  class useMosaicStore {
+    <<Custom Hook>>
+    +getOrCreateStore(robotConnector, dataType, channelType): MosaicStore
+    +releaseStore(robotConnector): void
+  }
+  
+  class StoreManager {
+    -mosaicStores: RobotConnectorRefMap<MosaicStore>
+    +getOrCreateStore(robotConnector: RobotConnector, dataType: string, channelType: "readable" | "writable"): ReadableStore | WritableStore
+    +releaseStore(robotConnector: RobotConnector): void
+    -resolveConnectorType(robotConnector: RobotConnector): string
+  }
+  
+  class RobotConnectorRefMap<V> {
+    -map: Map<string, V>
+    -refCounts: Map<string, number>
+    +get(key: RobotConnector): V | undefined
+    +set(key: RobotConnector, value: V): void
+    +incrementRefCount(key: RobotConnector): void
+    +decrementRefCount(key: RobotConnector): void
+    +getRefCount(key: RobotConnector): number
+    +delete(key: RobotConnector): void
+  }
+  
+  class StoreFactory {
+    -storeFactories: Map<string, (robotConnector: RobotConnector) => MosaicStore>
+    +registerReadableStore<T extends ReadableStore>(StoreClass: new (...args: any[]) => T): void
+    +registerWritableStore<T extends WritableStore>(StoreClass: new (...args: any[]) => T): void
+    +createStore(connectorType: string, robotConnector: RobotConnector): MosaicStore | null
+  }
+  
+  useMosaicStore ..> MosaicContext : uses
+  useMosaicStore --> StoreManager : delegates
+  StoreManager *-- RobotConnectorRefMap
+  StoreManager --> StoreFactory
+}
+
+package "ChannelManager" {
+  class useMosaicChannel {
+    <<Custom Hook>>
+    +getAllActiveChannels(robotId): ChannelInfo[]
+    +registerDataCallback(robotConnector, callback): void
+    +getDataCallback(robotConnector): (data: ArrayBuffer) => void | undefined
+  }
+  
+  class ChannelManager {
+    -activeChannels: Map<string, ChannelInfo>
+    -channelRequirements: Map<string, ChannelRequirement[]>
+    +registerActiveChannel(channelInfo: ChannelInfo): void
+    +getActiveChannel(robotConnector: RobotConnector): ChannelInfo | undefined
+    +getAllActiveChannels(robotId: string): ChannelInfo[]
+    +registerDataCallback(robotConnector: RobotConnector, callback: (data: ArrayBuffer) => void): void
+    +getDataCallback(robotConnector: RobotConnector): (data: ArrayBuffer) => void | undefined
+    +onCallbackRegistered(robotConnector: RobotConnector, callback: (data: ArrayBuffer) => void): void
+    +onCallbackUnregistered(robotConnector: RobotConnector): void
+  }
+ 
+  
+  interface ChannelInfo {
+    + channelType: "datachannel" | "mediastream"
+    + robotConnector: RobotConnector
+    + rtcConnection: WebRTCConnection
+    + rtcDataChannel?: RTCDataChannel
+    + mediaStream?: MediaStream
+  }
+  
+  interface ChannelRequirement {
+    + store: MosaicStore
+    + robotConnector: RobotConnector
+  }
+  
+  useMosaicChannel ..> MosaicContext : uses
+  useMosaicChannel --> ChannelManager : delegates
+  ChannelManager *-- ChannelInfo
+  ChannelManager *-- ChannelRequirement
+}
+
+package "RobotConnectionManager" {
+  enum RTCConnectionState {
+    DISCONNECTED
+    CONNECTING
+    CONNECTED
+    FAILED
+    DISCONNECTING
+  }
+  
+  class useMosaicRobotConnection {
+    <<Custom Hook>>
+    +isWSConnected(robotId: string): boolean
+    +getRTCStatus(robotId: string): RTCConnectionState
+    +isRTCConnected(robotId: string): boolean
+    +isRTCConnecting(robotId: string): boolean
+    +isRTCFailed(robotId: string): boolean
+    +requestConnection(robotId: string): Promise<void>
+    +requestDisconnection(robotId: string): void
+  }
+  
+  class RobotConnectionManager {
+    -wsConnections: Map<string, boolean>
+    -rtcStatuses: Map<string, RTCConnectionState>
+    +isWSConnected(robotId: string): boolean
+    +setWSConnection(robotId: string, connected: boolean): void
+    +getRTCStatus(robotId: string): RTCConnectionState
+    +setRTCStatus(robotId: string, status: RTCConnectionState): void
+    +isRTCConnected(robotId: string): boolean
+    +isRTCConnecting(robotId: string): boolean
+    +isRTCFailed(robotId: string): boolean
+    +requestConnection(robotId: string): Promise<void>
+    +requestDisconnection(robotId: string): void
+  }
+  
+  useMosaicRobotConnection ..> MosaicContext : uses
+  useMosaicRobotConnection --> RobotConnectionManager : delegates
+  RobotConnectionManager ..> RTCConnectionState
+}
+
+package "WebRTCConnectionManager" {
+  class WebRTCConnectionManager {
+    -connections: Map<string, WebRTCConnection>
+    +createConnection(robotId: string): Promise<void>
+    +disconnectConnection(robotId: string): void
+    +getConnection(robotId: string): WebRTCConnection | undefined
+    +onCallbackRegistered(robotConnector: RobotConnector, callback: (data: ArrayBuffer) => void): void
+    +removeDataChannel(robotConnector: RobotConnector): void
+    -setupDataChannels(robotId: string, connection: WebRTCConnection): void
+  }
+  
+  class WebRTCConnection {
+    -peerConnection: RTCPeerConnection | null
+    -dataChannels: Map<string, RTCDataChannel>
+    -callbacks: Map<string, (data: ArrayBuffer) => void>
+    +startConnection(): Promise<void>
+    +disconnect(): void
+    +setCallback(robotConnector: RobotConnector, callback: (data: ArrayBuffer) => void): void
+    +removeCallback(robotConnector: RobotConnector): void
+    +sendData(robotConnector: RobotConnector, data: ArrayBuffer): void
+    +getPeerConnection(): RTCPeerConnection | null
+    -createPeerConnection(): RTCPeerConnection
+    -setupDataChannel(dataChannel: RTCDataChannel, robotId: string): void
+  }
+ 
+  
+  WebRTCConnectionManager --> WebRTCConnection
+}
+
+package "Store Layer" {
+  abstract class MosaicStore {
+    #{static}dataType: string
+    #robotConnector: RobotConnector
+    +MosaicStore(robotConnector: RobotConnector)
+    +{static}getDataType(): string
+    +{abstract}getStoreType(): "readable" | "writable" | "media"
+    +getRobotConnector(): RobotConnector
+    +{abstract}beforeConnected(): void
+    +{abstract}afterConnected(): void
+    +{abstract}afterDisconnected(): void
+  }
+  
+  abstract class ReadableStore extends MosaicStore {
+    -subscriberList: Map<string, Subscriber>
+    +getStoreType(): "readable"
+    +subscribe(subscriber: (data: ArrayBuffer) => void): UnsubscribeFunction
+    +notifySubscribers(data: ArrayBuffer): void
+    +{abstract}onSubscriberAdded(subscriber): void
+    +{abstract}onSubscriberRemoved(subscriber): void
+    -removeSubscriber(subscriberId: string): void
+  }
+  
+  abstract class WritableStore<V> extends MosaicStore {
+    +getStoreType(): "writable"
+    +{abstract}add(data: V): void
+    #sendData(data: string): void
+    +setDataChannel(channel: RTCDataChannel): void
+  }
+  
+  abstract class MediaStreamStore extends MosaicStore {
+    +getStoreType(): "media"
+    +{abstract}setMediaStream(stream: MediaStream): void
+  }
+  
+  class ConnectionCheckingStore extends ReadableStore, WritableStore {
+    +{static} dataType: "connection_check"
+    -intervalId: number | null
+    +afterConnected(): void
+    +afterDisconnected(): void
+    -connectionCheckInterval(): void
+    -replyCheck(data: ArrayBuffer): void
+  }
+}
+
+' Dashboard Layer relationships
+DashboardGrid --> WidgetFactory
+WidgetFactory --> WidgetComponent
+WidgetConfig -* WidgetComponent
+DashboardConfig -* DashboardGrid
+DashboardConfig *-- WidgetConfig
+WidgetConfig *-- RobotConnector
+WidgetConfig *-- WidgetPositionConfig
+
+' Dashboard to Hooks
+DashboardGrid --> useMosaicRobotConnection
+WidgetComponent --> useMosaicStore
+WidgetComponent --> useMosaicChannel
+
+' Context contains Managers
+MosaicContext *-- StoreManager
+MosaicContext *-- ChannelManager
+MosaicContext *-- RobotConnectionManager
+MosaicContext *-- WebRTCConnectionManager
+MosaicContext *-- RobotConfig
+RobotConfig *-- ConnectorConfig
+
+' Manager relationships
+RobotConnectionManager --> ChannelManager
+ChannelManager --> WebRTCConnectionManager
+WebRTCConnectionManager --> RobotConnectionManager
+
+' Store Factory relationships
+StoreFactory ..> MosaicStore
+
+@enduml

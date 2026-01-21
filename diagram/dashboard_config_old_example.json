@@ -1,0 +1,40 @@
+{
+  "userId": "user123",
+  "activeTabId": "tab1",
+  "tabs": [
+    {
+      "id": "tab1",
+      "name": "Control Panel",
+      "widgets": [
+        {
+          "id": "widget1",
+          "type": "osm_gps_map",
+          "position": {
+            "x": 3,
+            "y": 0,
+            "w": 7,
+            "h": 6
+          },
+          "robotId": "robot001",
+          "dataType": "sensor/gps"
+        },
+        {
+          "id": "widget2",
+          "type": "universal",
+          "position": {
+            "x": 0,
+            "y": 3,
+            "w": 3,
+            "h": 3
+          },
+          "dataType": "custom/data",
+          "config": {
+            "title": "Custom Widget",
+            "refreshRate": 1000,
+            "displayMode": "chart"
+          }
+        }
+      ]
+    }
+  ]
+}

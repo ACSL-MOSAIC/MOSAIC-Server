@@ -1,0 +1,122 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.1'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id "org.jooq.jooq-codegen-gradle" version "3.19.10" // TODO version check
+}
+
+group = 'com.gistacsl'
+version = '0.0.1-SNAPSHOT'
+description = 'mosaic'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    jooq_generated_location = 'build/generated-sources/jooq'
+    jooq_source_set_location = '../jooq/build/generated-sources/jooq'
+    jooq_package = 'com.gistacsl.mosaic.jooq'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir jooq_source_set_location
+        }
+    }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-flyway' // TODO
+    implementation 'org.flywaydb:flyway-database-postgresql'
+
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+    implementation 'org.springframework.boot:spring-boot-starter-jooq'
+    implementation 'org.jooq:jooq:3.19.10' // TODO: version check
+    jooqCodegen 'org.jooq:jooq-meta-extensions:3.19.10'
+    runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'org.postgresql:r2dbc-postgresql'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-flyway-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-jooq-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-r2dbc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webflux-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-websocket-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.register('deleteGeneratedFolder', Delete) {
+    delete jooq_generated_location
+}
+
+jooqCodegen {
+    dependsOn deleteGeneratedFolder
+}
+
+compileJava {
+    dependsOn jooqCodegen
+}
+
+jooq {
+    configuration {
+        generator {
+            name = "org.jooq.codegen.JavaGenerator"
+            database {
+                name = "org.jooq.meta.extensions.ddl.DDLDatabase"
+                properties {
+
+                    // Specify the location of your SQL script.
+                    // You may use ant-style file matching, e.g. /path/**/to/*.sql
+                    //
+                    // Where:
+                    // - ** matches any directory subtree
+                    // - * matches any number of characters in a directory / file name
+                    // - ? matches a single character in a directory / file name
+                    property {
+                        key = "scripts"
+                        value = "src/main/resources/sql/schema.sql"
+                    }
+
+                    // The default name case for unquoted objects:
+                    //
+                    // - as_is: unquoted object names are kept unquoted
+                    // - upper: unquoted object names are turned into upper case (most databases)
+                    // - lower: unquoted object names are turned into lower case (e.g. PostgreSQL)
+                    property {
+                        key = "defaultNameCase"
+                        value = "lower"
+                    }
+                }
+            }
+            target {
+                packageName = jooq_package
+                directory = jooq_generated_location
+            }
+        }
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

@@ -1,0 +1,57 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+participant DashboardGrid
+participant ChannelManager
+participant DB
+participant WidgetComponent
+participant StoreManager
+participant MapWithRefCount
+participant ChannelManager
+participant WebRTCConnectionManager
+participant WebRTCConnection
+
+autonumber
+
+== 위젯 삭제 ==
+
+DashboardGrid -[#red]> DashboardGrid ++: handleRemoveWidget(widgetId)
+
+DashboardGrid -[#red]> DB: WidgetConfig 삭제
+DB -[#blue]> DashboardGrid: 삭제 완료
+
+DashboardGrid -[#red]> WidgetComponent: 위젯 언마운트
+
+loop widgetConfig.robotIdList의 각 robotId
+    WidgetComponent -[#red]> StoreManager ++: releaseStore(robotId, channelLabel)
+    
+    StoreManager -[#red]> MapWithRefCount: decrementRefCount(key)
+    MapWithRefCount -[#blue]> StoreManager: 새로운 참조 카운트
+    
+    alt 참조 카운트가 0 (마지막 참조)
+        StoreManager -[#red]> MapWithRefCount: delete(key)
+        MapWithRefCount [#blue]-> MapWithRefCount: Store 제거
+        
+        StoreManager -[#red]> ChannelManager: unregisterDataCallback(robotId, channelLabel)
+        ChannelManager [#blue]-> ChannelManager: 콜백 함수 제거
+        
+        ChannelManager -[#red]> WebRTCConnectionManager: onCallbackUnregistered(robotId, channelLabel)
+        WebRTCConnectionManager -[#red]> WebRTCConnection: getConnection(robotId)
+        WebRTCConnectionManager <[#blue]- WebRTCConnection: WebRTCConnection
+        
+        WebRTCConnectionManager -[#red]> WebRTCConnection: removeCallback(channelLabel)
+        WebRTCConnection [#blue]-> WebRTCConnection: DataChannel.onmessage 핸들러 제거
+        
+        WebRTCConnectionManager -[#red]> WebRTCConnection: removeDataChannel(channelLabel)
+        WebRTCConnection [#blue]-> WebRTCConnection: DataChannel 제거
+    else 참조 카운트 > 0 (다른 위젯이 사용 중)
+        StoreManager [#blue]-> StoreManager: 참조 카운트만 감소 (Store 유지)
+    end
+    
+    StoreManager [#blue]-> StoreManager: 처리 완료
+end
+
+DashboardGrid <[#blue]- StoreManager: 완료
+
+DashboardGrid [#blue]-> DashboardGrid --: 위젯 삭제 완료
+@enduml

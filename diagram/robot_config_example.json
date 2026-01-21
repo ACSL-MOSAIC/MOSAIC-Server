@@ -1,0 +1,53 @@
+{
+  "id": "a200_0000",
+  "name": "ClearPath A200 Robot",
+  "connectors": [
+    {
+      "connector_id": "front_camera",
+      "data_type": "opencv-webcam",
+      "params": {
+        "device_id": "0",
+        "fps": 30,
+        "width": 640,
+        "height": 480
+      }
+    },
+    {
+      "connector_id": "lidar_sensor",
+      "data_type": "ros2-sender-sensor-PointCloud2",
+      "params": {
+        "topic_name": "/a200_0000/sensors/lidar3d_0/points",
+        "parallel_stream": 5
+      }
+    },
+    {
+      "connector_id": "front_camera_ros2",
+      "data_type": "ros2-sender-sensor-Image",
+      "params": {
+        "topic_name": "/a200_0000/sensors/camera_0/color/image",
+        "recordable": true
+      }
+    },
+    {
+      "connector_id": "gps_sensor",
+      "data_type": "ros2-sender-sensor-NavSatFix",
+      "params": {
+        "topic_name": "/a200_0000/sensors/gps_0/fix"
+      }
+    },
+    {
+      "connector_id": "amcl_pose",
+      "data_type": "ros2-sender-geometry-PoseWithCovarianceStamped",
+      "params": {
+        "topic_name": "/a200_0000/amcl_pose"
+      }
+    },
+    {
+      "connector_id": "robot_cmd_vel",
+      "data_type": "ros2-receiver-geometry-TwistStamped",
+      "params": {
+        "topic_name": "/a200_0000/cmd_vel"
+      }
+    }
+  ]
+}

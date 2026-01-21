@@ -1,0 +1,58 @@
+{
+  "id": "c3767ae3-0624-482c-a12c-73bc63139be3",
+  "name": "Control Panel",
+  "widgets": [
+    {
+      "id": "f040953d-f50e-4652-bc30-0f166af865e4",
+      "type": "osm_gps_map",
+      "connectors": [
+        {
+          "robot_id": "a200_0000",
+          "connector_id": "gps_sensor"
+        },
+        {
+          "robot_id": "a200_0001",
+          "connector_id": "gps_sensor"
+        }
+      ],
+      "position": {
+        "x": 3,
+        "y": 0,
+        "w": 7,
+        "h": 6
+      }
+    },
+    {
+      "id": "079ef55b-c25b-41fd-b084-61c720dd0405",
+      "type": "video_stream",
+      "connectors": [
+        {
+          "robot_id": "a200_0000",
+          "connector_id": "front_camera_ros2"
+        }
+      ],
+      "position": {
+        "x": 4,
+        "y": 2,
+        "w": 7,
+        "h": 6
+      }
+    },
+    {
+      "id": "e9b43378-65c8-4d8f-aa75-569c2ff91b64",
+      "type": "progressive_pointcloud_2d",
+      "connectors": [
+        {
+          "robot_id": "a200_0000",
+          "connector_id": "lidar_sensor"
+        }
+      ],
+      "position": {
+        "x": 4,
+        "y": 2,
+        "w": 7,
+        "h": 6
+      }
+    }
+  ]
+}

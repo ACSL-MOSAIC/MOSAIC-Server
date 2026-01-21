@@ -1,0 +1,19 @@
+services:
+  frontend:
+    container_name: prod-frontend
+    build:
+      context: ./../../frontend
+      args:
+        VITE_API_URL: https://api.acslgcs.com  
+        VITE_ENVIRONMENT: production
+    image: my-frontend-app:latest
+    ports:
+      - "3000:80"
+    networks:
+      - default
+      - proxy
+
+networks:
+  default:
+  proxy:
+    external: true
