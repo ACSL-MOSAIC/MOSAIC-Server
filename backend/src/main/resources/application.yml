@@ -27,3 +27,9 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     baseline-version: 0
+
+jwt:
+  access-token:
+    expiration-time: 3600000  # 1 hour in milliseconds (1000 * 60 * 60)
+  refresh-token:
+    expiration-time: 15552000000  # 6 months in milliseconds (1000 * 60 * 60 * 24 * 180)

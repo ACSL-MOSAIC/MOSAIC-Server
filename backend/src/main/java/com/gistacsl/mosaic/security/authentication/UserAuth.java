@@ -15,26 +15,18 @@ import java.util.List;
 import java.util.UUID;
 
 public class UserAuth implements Authentication {
-    public static final String JWT_USER_PK_KEY = "userPk";
-    public static final String JWT_ORGANIZE_KEY = "organize";
-
     @Getter
     private final UUID userPk;
+    @Getter
+    private final String organization;
     private final Collection<GrantedAuthority> authorities;
     private boolean authenticated;
 
-    public UserAuth(UUID userPk, List<GrantedAuthority> authorities) {
+    public UserAuth(UUID userPk, String organization, String role) {
         this.userPk = userPk;
-        this.authorities = authorities;
+        this.organization = organization;
+        this.authorities = List.of(new SimpleGrantedAuthority(role));
         this.authenticated = true;
-    }
-
-    // TODO
-    public static UserAuth fromAutoJsonWebToken() {
-        return new UserAuth(
-                UUID.randomUUID(),
-                List.of(new SimpleGrantedAuthority("ROLE_USER"))
-        );
     }
 
     public static Mono<UserAuth> getUserAuthFromSecurityContextHolder() {

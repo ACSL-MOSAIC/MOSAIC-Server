@@ -2,6 +2,7 @@ package com.gistacsl.mosaic.security;
 
 import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.common.exception.CustomRuntimeException;
+import com.gistacsl.mosaic.security.jwt.JwtTokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -20,6 +21,7 @@ import reactor.core.publisher.Mono;
 @EnableWebFluxSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+    private final JwtTokenService jwtTokenService;
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
@@ -39,7 +41,7 @@ public class SecurityConfig {
                         .pathMatchers("/api/service/auth/refresh").permitAll() // TODO
                         .pathMatchers("/api/**").authenticated()
                 )
-                .addFilterAt(new BearerTokenAuthenticationFilter(), SecurityWebFiltersOrder.AUTHENTICATION)
+                .addFilterAt(new BearerTokenAuthenticationFilter(jwtTokenService), SecurityWebFiltersOrder.AUTHENTICATION)
                 .exceptionHandling(exceptionHandlingSpec -> {
                     exceptionHandlingSpec.accessDeniedHandler((exchange, e) -> Mono.error(new CustomRuntimeException(ResultCode.ACCESS_DENIED, e)));
                     exceptionHandlingSpec.authenticationEntryPoint((exchange, e) -> Mono.error(new CustomRuntimeException(ResultCode.AUTHENTICATION_FAILED, e)));
