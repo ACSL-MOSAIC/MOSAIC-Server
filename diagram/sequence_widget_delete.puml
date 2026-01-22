@@ -1,57 +1,112 @@
 @startuml
-'https://plantuml.com/sequence-diagram
-
-participant DashboardGrid
-participant ChannelManager
-participant DB
-participant WidgetComponent
-participant StoreManager
-participant MapWithRefCount
-participant ChannelManager
-participant WebRTCConnectionManager
-participant WebRTCConnection
-
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 250
 autonumber
+
+participant "Backend" as Backend
+participant "DashboardGrid" as DashboardGrid
+participant "WidgetComponent" as WidgetComponent
+participant "MosaicContext" as MosaicContext
+participant "StoreManager" as StoreManager
+participant "RobotConnectorRefMap" as RobotConnectorRefMap
+participant "MosaicStore" as MosaicStore
 
 == 위젯 삭제 ==
 
-DashboardGrid -[#red]> DashboardGrid ++: handleRemoveWidget(widgetId)
+DashboardGrid -[#black]> DashboardGrid: handleRemoveWidget(widgetId)
+activate DashboardGrid
 
-DashboardGrid -[#red]> DB: WidgetConfig 삭제
-DB -[#blue]> DashboardGrid: 삭제 완료
+note right of DashboardGrid: 삭제할 WidgetConfig 찾기
 
-DashboardGrid -[#red]> WidgetComponent: 위젯 언마운트
+DashboardGrid -[#red]> WidgetComponent: 언마운트
+activate WidgetComponent
 
-loop widgetConfig.robotIdList의 각 robotId
-    WidgetComponent -[#red]> StoreManager ++: releaseStore(robotId, channelLabel)
-    
-    StoreManager -[#red]> MapWithRefCount: decrementRefCount(key)
-    MapWithRefCount -[#blue]> StoreManager: 새로운 참조 카운트
-    
-    alt 참조 카운트가 0 (마지막 참조)
-        StoreManager -[#red]> MapWithRefCount: delete(key)
-        MapWithRefCount [#blue]-> MapWithRefCount: Store 제거
-        
-        StoreManager -[#red]> ChannelManager: unregisterDataCallback(robotId, channelLabel)
-        ChannelManager [#blue]-> ChannelManager: 콜백 함수 제거
-        
-        ChannelManager -[#red]> WebRTCConnectionManager: onCallbackUnregistered(robotId, channelLabel)
-        WebRTCConnectionManager -[#red]> WebRTCConnection: getConnection(robotId)
-        WebRTCConnectionManager <[#blue]- WebRTCConnection: WebRTCConnection
-        
-        WebRTCConnectionManager -[#red]> WebRTCConnection: removeCallback(channelLabel)
-        WebRTCConnection [#blue]-> WebRTCConnection: DataChannel.onmessage 핸들러 제거
-        
-        WebRTCConnectionManager -[#red]> WebRTCConnection: removeDataChannel(channelLabel)
-        WebRTCConnection [#blue]-> WebRTCConnection: DataChannel 제거
-    else 참조 카운트 > 0 (다른 위젯이 사용 중)
-        StoreManager [#blue]-> StoreManager: 참조 카운트만 감소 (Store 유지)
-    end
-    
-    StoreManager [#blue]-> StoreManager: 처리 완료
+note right of WidgetComponent: 위젯 컴포넌트 언마운트 시작
+
+== Store 해제 ==
+
+WidgetComponent -[#red]> MosaicContext: releaseStore(robotConnector)
+activate MosaicContext
+
+MosaicContext -[#red]> StoreManager: releaseStore(robotConnector)
+activate StoreManager
+
+StoreManager -[#red]> RobotConnectorRefMap: decrementRefCount(robotConnector)
+activate RobotConnectorRefMap
+
+RobotConnectorRefMap -[#black]> RobotConnectorRefMap: refCount 감소
+
+RobotConnectorRefMap --[#blue]> StoreManager: 완료
+deactivate RobotConnectorRefMap
+
+StoreManager -[#red]> RobotConnectorRefMap: getRefCount(robotConnector)
+activate RobotConnectorRefMap
+
+RobotConnectorRefMap --[#blue]> StoreManager: refCount
+deactivate RobotConnectorRefMap
+
+alt refCount === 0 (마지막 사용자)
+  
+  StoreManager -[#red]> MosaicStore: afterDisconnected()
+  activate MosaicStore
+  
+  MosaicStore -[#black]> MosaicStore: Store 정리 시작
+  note right of MosaicStore: dataChannel 또한 정리
+  
+  MosaicStore --[#blue]> StoreManager: 완료
+  deactivate MosaicStore
+  
+  StoreManager -[#red]> RobotConnectorRefMap: delete(robotConnector)
+  activate RobotConnectorRefMap
+  
+  RobotConnectorRefMap -[#black]> RobotConnectorRefMap: map에서 제거
+  
+  RobotConnectorRefMap --[#blue]> StoreManager: 완료
+  deactivate RobotConnectorRefMap
+  
+  note right of StoreManager: Store 제거 완료
 end
 
-DashboardGrid <[#blue]- StoreManager: 완료
+StoreManager --[#blue]> MosaicContext: 완료
+deactivate StoreManager
 
-DashboardGrid [#blue]-> DashboardGrid --: 위젯 삭제 완료
+MosaicContext --[#blue]> WidgetComponent: 완료
+deactivate MosaicContext
+
+== Channel Requirement 제거 ==
+
+WidgetComponent -[#red]> MosaicContext: removeChannelRequirement(channelRequirement)
+activate MosaicContext
+
+note right of MosaicContext: ChannelManager에서\nchannelRequirement 제거
+
+MosaicContext --[#blue]> WidgetComponent: 완료
+deactivate MosaicContext
+
+== 데이터 콜백 해제 ==
+
+WidgetComponent -[#red]> MosaicContext: onCallbackUnregistered(robotConnector)
+activate MosaicContext
+
+note right of MosaicContext: ChannelManager에서\n콜백 제거
+
+MosaicContext --[#blue]> WidgetComponent: 완료
+deactivate MosaicContext
+
+== 언마운트 완료 ==
+
+WidgetComponent --[#blue]> DashboardGrid: 언마운트 완료
+deactivate WidgetComponent
+
+DashboardGrid -[#black]> DashboardGrid: UI에서 위젯 제거
+
+DashboardGrid -[#red]> Backend: WidgetConfig 업데이트
+activate Backend
+note right of Backend: POST /api/dashboard/configs (미정)
+
+Backend --[#blue]> DashboardGrid: 완료
+deactivate Backend
+
+deactivate DashboardGrid
+
 @enduml
