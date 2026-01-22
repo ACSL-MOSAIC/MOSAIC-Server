@@ -1,111 +1,129 @@
 @startuml
-'https://plantuml.com/sequence-diagram
-
-participant DashboardGrid
-participant Backend
-participant WebSocketContext
-participant WidgetFactory
-participant WidgetComponent
-participant StoreManager
-participant RobotConnectorRefMap
-participant StoreFactory
-participant MosaicStore
-participant ChannelManager
-
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 250
 autonumber
 
-== 대시보드 페이지 접속 ==
+participant "Backend" as Backend
+participant "DashboardGrid" as DashboardGrid
+participant "MosaicContext" as MosaicContext
+participant "WidgetFactory" as WidgetFactory
+participant "WidgetComponent" as WidgetComponent
+participant "useMosaicStore" as useMosaicStore
+participant "StoreManager" as StoreManager
+participant "RobotConnectorRefMap" as RobotConnectorRefMap
+participant "StoreFactory" as StoreFactory
+participant "MosaicStore" as MosaicStore
+participant "ReadableStore" as ReadableStore
+participant "ChannelManager" as ChannelManager
 
-DashboardGrid -> DashboardGrid: 컴포넌트 마운트
-
-== 로봇 리스트 렌더링을 위한 API 호출 ==
+DashboardGrid -[#black]> DashboardGrid: 컴포넌트 마운트
+activate DashboardGrid
 
 DashboardGrid -[#red]> Backend: 로봇 리스트 조회
-note right
-  API: GET /api/robots <----미정
-end note
-DashboardGrid <[#blue]- Backend: 로봇 리스트 with RobotConfig
-note right
-  class diagram 참고
-end note
-DashboardGrid -[#red]> WebSocketContext: setRobotConfigs(robotConfigs)
-note over DashboardGrid, WebSocketContext
-  WebSocketContext는 로봇 정보를 관리하는 Context,
-  RobotConfig도 함께 저장하여 통합 관리
-end note
-DashboardGrid <[#blue]- WebSocketContext: 완료
+activate Backend
+note right of Backend: API: GET /api/robots (미정)
 
-== 대시보드 렌더링을 위한 API 호출 ==
+Backend --[#blue]> DashboardGrid: 로봇 리스트 with RobotConfig
+deactivate Backend
+
+DashboardGrid -[#red]> MosaicContext: updateRobotInfo(robotInfo)
+activate MosaicContext
+
+MosaicContext --[#blue]> DashboardGrid: 완료
+deactivate MosaicContext
 
 DashboardGrid -[#red]> Backend: 탭 리스트 조회
-note right
-  API: GET /api/dashboard/tabs <----미정
-end note
-DashboardGrid <[#blue]- Backend: 탭 리스트
+activate Backend
+note right of Backend: API: GET /api/dashboard/tabs (미정)
 
-DashboardGrid -> DashboardGrid: 현재 탭 LocalStorage에서 로드
+Backend --[#blue]> DashboardGrid: 탭 리스트
+deactivate Backend
+
+DashboardGrid -[#black]> DashboardGrid: 현재 탭 LocalStorage에서 로드
 
 DashboardGrid -[#red]> Backend: 대시보드 설정 조회
-note right
-  API: GET /api/dashboard/configs <----미정
-end note
-DashboardGrid <[#blue]- Backend: DashboardConfig
-note right
-  class diagram 참고
-end note
+activate Backend
+note right of Backend: API: GET /api/dashboard/configs (미정)
 
-DashboardGrid -> DashboardGrid --: 마운트 완료
+Backend --[#blue]> DashboardGrid: DashboardConfig
+deactivate Backend
 
-== 위젯 렌더링 ==
+DashboardGrid -[#black]> DashboardGrid: 마운트 완료
 
 DashboardGrid -[#red]> WidgetFactory: renderWidget(widgetConfig)
-WidgetFactory -[#red]> WidgetComponent ++: WidgetComponent 렌더링
-note right
-아래 로직이 useEffect 에서 이루어질지는 잘 모르겠음. (useEffect 에서 안이루어질수도)
-end note
+activate WidgetFactory
 
-WidgetComponent -[#red]> StoreManager ++: getOrCreateStore(robotConnector)
-StoreManager -> StoreManager: resolveConnectorType(robotConnector)
-StoreManager -[#red]> WebSocketContext: getRobotConfig(robotId)
-note over StoreManager, WebSocketContext
-  resolveConnectorType 내부에서
-  WebSocketContext를 참조하여
-  RobotConfig를 가져와
-  connectorType 결정
-end note
-WebSocketContext -[#blue]> StoreManager: RobotConfig | undefined
-StoreManager -> StoreManager: connectorType 결정
+WidgetFactory -[#red]> WidgetComponent: WidgetComponent 렌더링
+activate WidgetComponent
+
+WidgetComponent -[#red]> useMosaicStore: getOrCreateStore(robotConnector)
+activate useMosaicStore
+
+useMosaicStore -[#red]> StoreManager: getOrCreateStore(robotConnector, robotConfig)
+activate StoreManager
+
+StoreManager -[#black]> StoreManager: resolveConnectorType(robotConnector)
 
 StoreManager -[#red]> RobotConnectorRefMap: get(robotConnector)
-RobotConnectorRefMap -[#blue]> StoreManager: MosaicStore | undefined
+activate RobotConnectorRefMap
 
-alt Store가 없을 때
-    StoreManager -[#red]> StoreFactory ++: createStore(connectorType, robotConnector)
-    StoreFactory -> StoreFactory: storeFactories.get(connectorType)
-    create MosaicStore
-    StoreFactory -> MosaicStore: create(robotConnector)
-    StoreManager <[#blue]- StoreFactory --: MosaicStore | null
+RobotConnectorRefMap --[#blue]> StoreManager: MosaicStore | undefined
+deactivate RobotConnectorRefMap
 
-    StoreManager -[#red]> RobotConnectorRefMap: set(robotConnector, MosaicStore)
+alt store가 없을 때
+  StoreManager -[#red]> StoreFactory: createStore(connectorType, robotConnector)
+  activate StoreFactory
+  
+  StoreFactory -[#black]> StoreFactory: storeFactories.get(connectorType)
+  
+  StoreFactory -[#red]> MosaicStore: createStore(connectorType, robotConnector)
+  activate MosaicStore
+  MosaicStore --[#blue]> StoreFactory: MosaicStore | null
+  deactivate MosaicStore
+  
+  StoreFactory --[#blue]> StoreManager: MosaicStore | null
+  deactivate StoreFactory
+  
+  StoreManager -[#red]> RobotConnectorRefMap: set(robotConnector, 1)
+  activate RobotConnectorRefMap
+  RobotConnectorRefMap --[#blue]> StoreManager: 완료
+  deactivate RobotConnectorRefMap
 end
 
-WidgetComponent <[#blue]- StoreManager --: MosaicStore
+StoreManager -[#red]> RobotConnectorRefMap: incrementRefCount(robotConnector)
+activate RobotConnectorRefMap
 
-WidgetComponent -> WidgetComponent: create ChannelRequirement
+RobotConnectorRefMap --[#blue]> StoreManager: 완료
+deactivate RobotConnectorRefMap
+
+StoreManager --[#blue]> WidgetComponent: MosaicStore
+deactivate StoreManager
+deactivate useMosaicStore
+
+WidgetComponent -[#black]> WidgetComponent: create ChannelRequirement
 
 WidgetComponent -[#red]> ChannelManager: addChannelRequirement(channelRequirement)
-ChannelManager -> ChannelManager: 내부 channelRequirements 에 저장
-WidgetComponent <[#blue]- ChannelManager
+activate ChannelManager
 
-alt ReadableStore 일 때
-    WidgetComponent -[#red]> MosaicStore: subscribe(subscriber: (data: ArrayBuffer) => void)
-    WidgetComponent <[#blue]- MosaicStore: UnsubscribeFunction
-    note over WidgetComponent, MosaicStore
-      위젯 컴포넌트가 언마운트 될 때 또는 구독이 필요하지 않을 때
-      UnsubscribeFunction 호출하여 구독 해제
-    end note
+ChannelManager -[#black]> ChannelManager: 내부 channelRequirements에 저장\n(key = robotId)
+
+ChannelManager --[#blue]> WidgetComponent: 완료
+deactivate ChannelManager
+
+alt ReadableStore일 때
+  WidgetComponent -[#red]> MosaicStore: subscribe(subscriber: (data: ArrayBuffer) => void)
+  activate MosaicStore
+  
+  MosaicStore --[#blue]> WidgetComponent: UnsubscribeFunction
+  deactivate MosaicStore
 end
 
-WidgetFactory <[#blue]- WidgetComponent --: 렌더링 완료
-DashboardGrid <[#blue]- WidgetFactory: 위젯 렌더링 완료
+WidgetComponent --[#blue]> WidgetFactory: 렌더링 완료
+deactivate WidgetComponent
+
+WidgetFactory --[#blue]> DashboardGrid: 위젯 렌더링 완료
+deactivate WidgetFactory
+
+deactivate DashboardGrid
+
 @enduml
