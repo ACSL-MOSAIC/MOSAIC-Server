@@ -138,6 +138,7 @@ package "ChannelManager" {
     -channelRequirements: Map<string, ChannelRequirement[]>
     +registerActiveChannel(channelInfo: ChannelInfo): void
     +addChannelRequirement(channelRequirement: ChannelRequirement): void
+    +removeChannelRequirement(channelRequirment: ChannelRequirement): void
     +getActiveChannel(robotConnector: RobotConnector): ChannelInfo | undefined
     +getAllActiveChannels(robotId: string): ChannelInfo[]
     +registerDataCallback(robotConnector: RobotConnector, callback: (data: ArrayBuffer) => void): void
