@@ -84,6 +84,8 @@ DashboardGrid -[#black]> DashboardGrid: 화면에 위젯 표시
 DashboardGrid -[#red]> Backend : WidgetConfig 업데이트
 note left of DashboardGrid : POST /api/dashboard/configs <-- 미정
 
+Backend -[#blue]> DashboardGrid : 완료
+
 deactivate DashboardGrid
 
 @enduml
