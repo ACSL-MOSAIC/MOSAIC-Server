@@ -1,7 +1,6 @@
 @startuml
 skinparam linetype ortho
 skinparam packageStyle rectangle
-skinparam nodesep 8
 skinparam ranksep 12
 
 package "Dashboard Layer" {
@@ -12,6 +11,11 @@ package "Dashboard Layer" {
     +handleRemoveWidget(widgetId: string): void
     +handleAddTab(tabName: string): void
     +handleSave(): void
+  }
+  class useRobotInfo {
+    <<Custom Hook>>
+    -context: MosaicContext (robotInfos: RobotInfo[])
+    +updateRobotInfo(robotInfo: RobotInfo): void
   }
   class WidgetFactory {
     +renderWidget(widgetConfig: WidgetConfig): ReactElement | null
@@ -53,7 +57,21 @@ package "Context Layer" {
     -channelManager: ChannelManager
     -robotConnectionManager: RobotConnectionManager
     -webrtcConnectionManager: WebRTCConnectionManager
-    -robotConfigs: RobotConfig[]
+    -robotInfos: RobotInfo[]
+    +getOrCreateStore(robotConnector: RobotConnector): MosaicStore
+    +updateRobotInfo(robotInfo: RobotInfo): void
+  }
+  
+  class RobotInfo {
+    -id: string
+    -name: string
+    -wsConnected: boolean
+    -rtcStates: RTCConnectionState
+    -robotConfigs: RobotConfig
+    +getRobotConfigs(): RobotConfig | undefined
+    +setRobotConfigs(robotConfigs: RobotConfig[]): void
+    +setWSConnection(connected: boolean): void
+    +setRTCStatus(status: RTCConnectionState): void
   }
   
   struct RobotConfig {
@@ -72,17 +90,18 @@ package "Context Layer" {
 package "StoreManager" {
   class useMosaicStore {
     <<Custom Hook>>
-    +getOrCreateStore(robotConnector, dataType, channelType): MosaicStore
-    +releaseStore(robotConnector): void
+    -context: MosaicContext (robotConfigs: Map<string, RobotConfig>)
+    +getOrCreateStore(robotConnector: RobotConnector): ReadableStore | WritableStore
+    +releaseStore(robotConnector: RobotConnector): void
   }
   
   class StoreManager {
     -mosaicStores: RobotConnectorRefMap<MosaicStore>
-    +getOrCreateStore(robotConnector: RobotConnector, dataType: string, channelType: "readable" | "writable"): ReadableStore | WritableStore
+    +getOrCreateStore(robotConnector: RobotConnector, robotConfig: RobotConfig): ReadableStore | WritableStore
     +releaseStore(robotConnector: RobotConnector): void
     -resolveConnectorType(robotConnector: RobotConnector): string
   }
-  
+    
   class RobotConnectorRefMap<V> {
     -map: Map<string, V>
     -refCounts: Map<string, number>
@@ -101,8 +120,7 @@ package "StoreManager" {
     +createStore(connectorType: string, robotConnector: RobotConnector): MosaicStore | null
   }
   
-  useMosaicStore ..> MosaicContext : uses
-  useMosaicStore --> StoreManager : delegates
+  useMosaicStore --> StoreManager
   StoreManager *-- RobotConnectorRefMap
   StoreManager --> StoreFactory
 }
@@ -119,6 +137,7 @@ package "ChannelManager" {
     -activeChannels: Map<string, ChannelInfo>
     -channelRequirements: Map<string, ChannelRequirement[]>
     +registerActiveChannel(channelInfo: ChannelInfo): void
+    +addChannelRequirement(channelRequirement: ChannelRequirement): void
     +getActiveChannel(robotConnector: RobotConnector): ChannelInfo | undefined
     +getAllActiveChannels(robotId: string): ChannelInfo[]
     +registerDataCallback(robotConnector: RobotConnector, callback: (data: ArrayBuffer) => void): void
@@ -141,8 +160,7 @@ package "ChannelManager" {
     + robotConnector: RobotConnector
   }
   
-  useMosaicChannel ..> MosaicContext : uses
-  useMosaicChannel --> ChannelManager : delegates
+  useMosaicChannel --> ChannelManager
   ChannelManager *-- ChannelInfo
   ChannelManager *-- ChannelRequirement
 }
@@ -156,24 +174,15 @@ package "RobotConnectionManager" {
     DISCONNECTING
   }
   
-  class useMosaicRobotConnection {
+  class useRobotConnection{
     <<Custom Hook>>
-    +isWSConnected(robotId: string): boolean
-    +getRTCStatus(robotId: string): RTCConnectionState
-    +isRTCConnected(robotId: string): boolean
-    +isRTCConnecting(robotId: string): boolean
-    +isRTCFailed(robotId: string): boolean
-    +requestConnection(robotId: string): Promise<void>
-    +requestDisconnection(robotId: string): void
+    -context: MosaicContext(robotInfos: RobotInfo[])
+    +setWSConnection(robotId: string, connected: boolean): void
+    +setRTCStatus(robotId: string, status: RTCConnectionState): void
   }
   
   class RobotConnectionManager {
-    -wsConnections: Map<string, boolean>
-    -rtcStatuses: Map<string, RTCConnectionState>
-    +isWSConnected(robotId: string): boolean
-    +setWSConnection(robotId: string, connected: boolean): void
-    +getRTCStatus(robotId: string): RTCConnectionState
-    +setRTCStatus(robotId: string, status: RTCConnectionState): void
+    -wsObjects: Map<string, WebSocket>
     +isRTCConnected(robotId: string): boolean
     +isRTCConnecting(robotId: string): boolean
     +isRTCFailed(robotId: string): boolean
@@ -181,8 +190,6 @@ package "RobotConnectionManager" {
     +requestDisconnection(robotId: string): void
   }
   
-  useMosaicRobotConnection ..> MosaicContext : uses
-  useMosaicRobotConnection --> RobotConnectionManager : delegates
   RobotConnectionManager ..> RTCConnectionState
 }
 
@@ -192,7 +199,6 @@ package "WebRTCConnectionManager" {
     +createConnection(robotId: string): Promise<void>
     +disconnectConnection(robotId: string): void
     +getConnection(robotId: string): WebRTCConnection | undefined
-    +onCallbackRegistered(robotConnector: RobotConnector, callback: (data: ArrayBuffer) => void): void
     +removeDataChannel(robotConnector: RobotConnector): void
     -setupDataChannels(robotId: string, connection: WebRTCConnection): void
   }
@@ -200,12 +206,8 @@ package "WebRTCConnectionManager" {
   class WebRTCConnection {
     -peerConnection: RTCPeerConnection | null
     -dataChannels: Map<string, RTCDataChannel>
-    -callbacks: Map<string, (data: ArrayBuffer) => void>
     +startConnection(): Promise<void>
     +disconnect(): void
-    +setCallback(robotConnector: RobotConnector, callback: (data: ArrayBuffer) => void): void
-    +removeCallback(robotConnector: RobotConnector): void
-    +sendData(robotConnector: RobotConnector, data: ArrayBuffer): void
     +getPeerConnection(): RTCPeerConnection | null
     -createPeerConnection(): RTCPeerConnection
     -setupDataChannel(dataChannel: RTCDataChannel, robotId: string): void
@@ -270,7 +272,6 @@ WidgetConfig *-- RobotConnector
 WidgetConfig *-- WidgetPositionConfig
 
 ' Dashboard to Hooks
-DashboardGrid --> useMosaicRobotConnection
 WidgetComponent --> useMosaicStore
 WidgetComponent --> useMosaicChannel
 
@@ -279,7 +280,8 @@ MosaicContext *-- StoreManager
 MosaicContext *-- ChannelManager
 MosaicContext *-- RobotConnectionManager
 MosaicContext *-- WebRTCConnectionManager
-MosaicContext *-- RobotConfig
+MosaicContext *-- RobotInfo
+RobotInfo *-- RobotConfig
 RobotConfig *-- ConnectorConfig
 
 ' Manager relationships
