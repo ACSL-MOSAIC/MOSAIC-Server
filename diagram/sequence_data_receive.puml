@@ -1,25 +1,68 @@
 @startuml
-'https://plantuml.com/sequence-diagram
-
-participant ChannelManager
-participant WidgetComponent
-participant ReadOnlyStore
-participant WebRTCConnection
-participant Robot
-
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 250
 autonumber
 
+participant "Robot" as Robot
+participant "WebRTCConnection" as WebRTCConnection
+participant "MosaicContext" as MosaicContext
+participant "MosaicStore" as MosaicStore
+participant "ReadableStore" as ReadableStore
+participant "WidgetComponent" as WidgetComponent
 
 == 데이터 수신 ==
 
-Robot -[#red]> WebRTCConnection: 데이터 전송 (DataChannel)
-WebRTCConnection -[#red]> ChannelManager: getDataCallback(robotId, channelLabel)
-WebRTCConnection <[#blue]- ChannelManager: callback 함수
+Robot -[#red]> WebRTCConnection: 센서 데이터 전송
 
-WebRTCConnection -[#red]> ReadOnlyStore: callback(data)
-ReadOnlyStore -[#red]> ReadOnlyStore ++: parser(data)
-ReadOnlyStore [#blue]-> ReadOnlyStore --: 파싱된 데이터 저장
+activate WebRTCConnection
+note right of WebRTCConnection: dataChannel.onmessage 이벤트 발생
 
-ReadOnlyStore -[#red]> WidgetComponent: subscribe callback 호출
-WidgetComponent [#blue]-> WidgetComponent: UI 업데이트
+WebRTCConnection -[#black]> WebRTCConnection: event.data 파싱
+
+== 콜백 조회 & 실행 ==
+
+WebRTCConnection -[#red]> MosaicContext: getDataCallback(robotConnector)
+activate MosaicContext
+
+note right of MosaicContext: ChannelManager에서\n등록된 콜백 조회
+
+MosaicContext --[#blue]> WebRTCConnection: callback
+deactivate MosaicContext
+
+
+WebRTCConnection -[#red]> MosaicStore: callback(data)
+activate MosaicStore
+note right of MosaicStore: Store의 데이터 처리 콜백 실행
+
+== Store 내부 처리 ==
+
+MosaicStore -[#black]> MosaicStore: 데이터 파싱 및 변환
+
+
+MosaicStore -[#red]> ReadableStore: notifySubscribers(data)
+activate ReadableStore
+
+ReadableStore -[#black]> ReadableStore: subscriberList 순회
+
+loop 각 subscriber
+  ReadableStore -[#red]> WidgetComponent: subscriber(data)
+  activate WidgetComponent
+  
+  WidgetComponent -[#black]> WidgetComponent: widget update
+  note right of WidgetComponent: 위젯 내부 상태 업데이트
+  
+  WidgetComponent --[#blue]> ReadableStore: 완료
+  deactivate WidgetComponent
+
+ReadableStore --[#blue]> MosaicStore: 모든 subscriber 알림 완료
+deactivate ReadableStore
+
+end
+
+MosaicStore --[#blue]> WebRTCConnection: 처리 완료
+deactivate MosaicStore
+
+WebRTCConnection --[#blue]> Robot: 완료
+deactivate WebRTCConnection
+
 @enduml
