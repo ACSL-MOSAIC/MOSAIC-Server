@@ -40,9 +40,6 @@ sourceSets {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-flyway' // TODO
-    implementation 'org.flywaydb:flyway-database-postgresql'
-
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation('org.springframework.boot:spring-boot-starter-webflux') {
         exclude module: 'spring-boot-starter-tomcat'
@@ -51,7 +48,9 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
     implementation 'org.springframework.boot:spring-boot-starter-jooq'
-    implementation 'org.jooq:jooq:3.20.10' // TODO: version check
+    implementation 'org.jooq:jooq:3.20.10'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
     jooqCodegen 'org.jooq:jooq-meta-extensions:3.20.10'
     runtimeOnly 'org.postgresql:postgresql'
     runtimeOnly 'org.postgresql:r2dbc-postgresql'
@@ -62,10 +61,10 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
     implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
-    implementation 'org.bouncycastle:bcpkix-jdk18on:1.78.1'
+    implementation 'org.bouncycastle:bcpkix-jdk18on:1.79'
 
     testImplementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
-    testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.78.1'
+    testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.79'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -99,16 +98,17 @@ jooq {
                 name = "org.jooq.meta.extensions.ddl.DDLDatabase"
                 properties {
 
-                    // Specify the location of your SQL script.
-                    // You may use ant-style file matching, e.g. /path/**/to/*.sql
-                    //
-                    // Where:
-                    // - ** matches any directory subtree
-                    // - * matches any number of characters in a directory / file name
-                    // - ? matches a single character in a directory / file name
+                    // Specify the location of Flyway migration scripts
+                    // Use V*.sql pattern to include only versioned migrations (excludes local seed data)
                     property {
                         key = "scripts"
-                        value = "src/main/resources/sql/schema.sql"
+                        value = "src/main/resources/db/migration/V*.sql"
+                    }
+
+                    // Sort migration files to ensure they are applied in correct order
+                    property {
+                        key = "sort"
+                        value = "flyway"
                     }
 
                     // The default name case for unquoted objects:

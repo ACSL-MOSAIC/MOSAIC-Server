@@ -5,27 +5,15 @@ import lombok.Getter;
 
 @Getter
 public class CustomRuntimeException extends RuntimeException implements ICustomException {
-    private Integer resultCode;
-
-    public CustomRuntimeException() {
-        super();
-    }
+    private final ResultCode resultCode;
 
     public CustomRuntimeException(ResultCode resultCode) {
         super();
-        this.resultCode = resultCode.getValue();
+        this.resultCode = resultCode;
     }
 
     public CustomRuntimeException(ResultCode resultCode, Throwable e) {
         super(e);
-        this.resultCode = resultCode.getValue();
-    }
-
-    public CustomRuntimeException(String message) {
-        super(message);
-    }
-
-    public CustomRuntimeException(String message, Throwable e) {
-        super(message, e);
+        this.resultCode = resultCode;
     }
 }

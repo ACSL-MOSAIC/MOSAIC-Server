@@ -5,17 +5,6 @@ spring:
   application:
     name: backend
 
-  datasource:
-    url: jdbc:postgresql://localhost:5432/mosaic
-    username: username
-    password: password
-    driver-class-name: org.postgresql.Driver
-
-  r2dbc:
-    url: r2dbc:postgresql://localhost:5432/mosaic
-    username: username
-    password: password
-
   jooq:
     sql-dialect: POSTGRES
 
@@ -24,7 +13,6 @@ spring:
 
   flyway:
     enabled: true
-    locations: classpath:db/migration
     baseline-on-migrate: true
     baseline-version: 0
 
@@ -33,3 +21,9 @@ jwt:
     expiration-time: 3600000  # 1 hour in milliseconds (1000 * 60 * 60)
   refresh-token:
     expiration-time: 15552000000  # 6 months in milliseconds (1000 * 60 * 60 * 24 * 180)
+
+# File storage paths (overridable by profiles)
+file:
+  storage:
+    base-path: /var/mosaic/storage
+    occupancy-map-path: /var/mosaic/storage/occupancy-maps
