@@ -13,15 +13,16 @@ participant "StoreManager" as StoreManager
 participant "RobotConnectorRefMap" as RobotConnectorRefMap
 participant "StoreFactory" as StoreFactory
 participant "MosaicStore" as MosaicStore
-participant "ReadableStore" as ReadableStore
 participant "ChannelManager" as ChannelManager
 
-DashboardGrid -[#black]> DashboardGrid: 컴포넌트 마운트
+== WS 연결 & RobotInfo 업데이트 ==
+
+DashboardGrid -[#black]> DashboardGrid: WS 연결됨
 activate DashboardGrid
 
-DashboardGrid -[#red]> Backend: 로봇 리스트 조회
+DashboardGrid -[#red]> Backend: "get_robot_list" 메시지
 activate Backend
-note right of Backend: API: GET /api/robots (미정)
+note right of Backend: WebSocket 메시지
 
 Backend --[#blue]> DashboardGrid: 로봇 리스트 with RobotConfig
 deactivate Backend
@@ -31,6 +32,13 @@ activate MosaicContext
 
 MosaicContext --[#blue]> DashboardGrid: 완료
 deactivate MosaicContext
+
+note right of DashboardGrid: 이후 로봇 상태 변경 시\n서버가 자동으로 메시지 전송
+
+== 대시보드 컴포넌트 렌더링 ==
+
+DashboardGrid -[#black]> DashboardGrid: 컴포넌트 마운트
+activate DashboardGrid
 
 DashboardGrid -[#red]> Backend: 탭 리스트 조회
 activate Backend
@@ -110,7 +118,7 @@ ChannelManager -[#black]> ChannelManager: 내부 channelRequirements에 저장\n
 ChannelManager --[#blue]> WidgetComponent: 완료
 deactivate ChannelManager
 
-alt ReadableStore일 때
+alt ReceivableStore일 때
   WidgetComponent -[#red]> MosaicStore: subscribe(subscriber: (data: ArrayBuffer) => void)
   activate MosaicStore
   
@@ -125,5 +133,4 @@ WidgetFactory --[#blue]> DashboardGrid: 위젯 렌더링 완료
 deactivate WidgetFactory
 
 deactivate DashboardGrid
-
 @enduml

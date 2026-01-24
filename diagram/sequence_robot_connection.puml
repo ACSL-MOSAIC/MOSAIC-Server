@@ -3,6 +3,8 @@ skinparam sequenceMessageAlign center
 skinparam maxMessageSize 250
 autonumber
 
+participant "Backend" as Backend
+participant "Robot" as Robot
 participant "DashboardGrid" as DashboardGrid
 participant "MosaicContext" as MosaicContext
 participant "RobotInfo" as RobotInfo
@@ -23,50 +25,119 @@ RobotInfo -[#black]> RobotInfo: this.wsConnected = true
 RobotInfo --[#blue]> MosaicContext: 완료
 deactivate RobotInfo
 
-== WebRTC Connection 생성 ==
+== WebRTC 연결 시작 ==
 
-MosaicContext -[#red]> WebRTCConnection: startConnection()
-activate WebRTCConnection
-
-WebRTCConnection -[#black]> WebRTCConnection: createPeerConnection()
-
-
-
-WebRTCConnection -[#black]> WebRTCConnection: ondatachannel 이벤트 발생
-note right of WebRTCConnection: 로봇으로부터 DataChannel 수신
-
-loop 각 DataChannel
-  WebRTCConnection -[#black]> WebRTCConnection: setupDataChannel(dataChannel, robotId)
-end
-
-WebRTCConnection -[#blue]> MosaicContext: connections.set(robotId, this)
-
-deactivate WebRTCConnection
-
-== Channel 등록 ==
-
-MosaicContext -[#black]> MosaicContext: ChannelRequirements 참조
-
-loop 각 ChannelRequirement
-  MosaicContext -[#black]> MosaicContext: registerActiveChannel(channelInfo)
-
-  MosaicContext -[#black]> MosaicContext: onCallbackRegistered(robotConnector, callback)
-  note right of MosaicContext: Store 콜백과\nDataChannel 연결
-end
-
-== 연결 완료 ==
-
-MosaicContext -[#red]> RobotInfo: setRTCStatus("CONNECTED")
+MosaicContext -[#red]> RobotInfo: setRTCStatus("CONNECTING")
 activate RobotInfo
-RobotInfo -[#black]> RobotInfo: this.rtcStates = "CONNECTED"
+RobotInfo -[#black]> RobotInfo: this.rtcStatus = "CONNECTING"
 RobotInfo --[#blue]> MosaicContext: 완료
 deactivate RobotInfo
 
-MosaicContext --[#blue]> DashboardGrid: 연결 완료
+MosaicContext -[#red]> WebRTCConnection: new WebRTCConnection(robotId)
+activate WebRTCConnection
+
+WebRTCConnection -[#black]> WebRTCConnection: createPeerConnection()
+note right of WebRTCConnection: RTCPeerConnection 생성\nonicecandidate 이벤트 등록\nonconnectionstatechange 등록\nondatachannel 이벤트 등록
+
+== DataChannel 생성 및 콜백 등록 ==
+
+WebRTCConnection -[#red]> MosaicContext: ChannelRequirement 참조
+activate MosaicContext
+
+MosaicContext --[#blue]> WebRTCConnection: ChannelRequirement[]
 deactivate MosaicContext
 
-DashboardGrid -[#black]> DashboardGrid: UI 업데이트 (연결됨 표시)
+loop 각 ChannelRequirement
+  WebRTCConnection -[#black]> WebRTCConnection: setupDataChannel(dataChannel, robotId)
+  
+  WebRTCConnection -[#red]> MosaicContext: getDataCallback(robotConnector)
+  activate MosaicContext
+  
+  MosaicContext --[#blue]> WebRTCConnection: callback
+  deactivate MosaicContext
+  
+  WebRTCConnection -[#black]> WebRTCConnection: dataChannel에 콜백 등록
+  
+  WebRTCConnection -[#red]> MosaicContext: registerActiveChannel(channelInfo)
+  activate MosaicContext
+  
+  MosaicContext --[#blue]> WebRTCConnection: 완료
+  deactivate MosaicContext
+end
 
-deactivate DashboardGrid
+== SDP Offer 전송 ==
 
+WebRTCConnection -[#red]> Backend: SDP Offer 전송
+activate Backend
+note right of Backend: WebSocket 메시지
+
+Backend -[#red]> Robot: SDP Offer 전달
+activate Robot
+deactivate Backend
+
+WebRTCConnection --[#blue]> MosaicContext: 완료
+deactivate WebRTCConnection
+
+MosaicContext --[#blue]> DashboardGrid: 완료
+deactivate MosaicContext
+
+note right of DashboardGrid: requestConnection() 종료\n이후 비동기 처리
+
+== SDP Answer 수신 ==
+
+Robot -[#black]> Robot: SDP 처리 및 Answer 생성
+
+Robot --[#blue]> Backend: SDP Answer 전송
+activate Backend
+deactivate Robot
+
+Backend -[#red]> WebRTCConnection: SDP Answer 전달
+activate WebRTCConnection
+deactivate Backend
+
+WebRTCConnection -[#black]> WebRTCConnection: Answer 저장
+
+WebRTCConnection --[#blue]> Backend: 완료
+deactivate WebRTCConnection
+
+== ICE Candidate 교환 ==
+
+WebRTCConnection -[#red]> Robot: ICE Candidate 수집 및 교환
+Robot -[#blue]> WebRTCConnection: ICE Candidate 수집 및 교환
+
+== 연결 완료 ==
+
+WebRTCConnection -[#black]> WebRTCConnection: onconnectionstatechange 이벤트
+activate WebRTCConnection
+
+WebRTCConnection -[#red]> RobotInfo: setRTCStatus("CONNECTED")
+activate RobotInfo
+
+RobotInfo -[#black]> RobotInfo: this.rtcStatus = "CONNECTED"
+
+RobotInfo --[#blue]> WebRTCConnection: 완료
+deactivate RobotInfo
+
+deactivate WebRTCConnection
+
+note right of DashboardGrid: UI 자동 업데이트 (async)\n(RobotInfo 상태 변경 감지)
+
+== 연결 실패 시 ==
+
+alt 연결 실패
+  WebRTCConnection -[#black]> WebRTCConnection: onconnectionstatechange 이벤트
+  activate WebRTCConnection
+  
+  WebRTCConnection -[#red]> RobotInfo: setRTCStatus("ERROR")
+  activate RobotInfo
+  
+  RobotInfo -[#black]> RobotInfo: this.rtcStatus = "ERROR"
+  
+  RobotInfo --[#blue]> WebRTCConnection: 완료
+  deactivate RobotInfo
+  
+  deactivate WebRTCConnection
+  
+  note right of DashboardGrid: UI 자동 업데이트 (async)\n(RobotInfo 상태 변경 감지)
+end
 @enduml

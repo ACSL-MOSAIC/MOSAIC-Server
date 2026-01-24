@@ -7,7 +7,7 @@ participant "Robot" as Robot
 participant "WebRTCConnection" as WebRTCConnection
 participant "MosaicContext" as MosaicContext
 participant "MosaicStore" as MosaicStore
-participant "ReadableStore" as ReadableStore
+participant "ReceivableStore" as ReceivableStore
 participant "WidgetComponent" as WidgetComponent
 
 == 데이터 수신 ==
@@ -39,30 +39,31 @@ note right of MosaicStore: Store의 데이터 처리 콜백 실행
 MosaicStore -[#black]> MosaicStore: 데이터 파싱 및 변환
 
 
-MosaicStore -[#red]> ReadableStore: notifySubscribers(data)
-activate ReadableStore
+MosaicStore -[#red]> ReceivableStore: notifySubscribers(data)
+activate ReceivableStore
 
-ReadableStore -[#black]> ReadableStore: subscriberList 순회
+ReceivableStore -[#black]> ReceivableStore: Promise.all로 모든 subscriber 호출
+note right of ReceivableStore: 모든 subscriber를\n동시에 병렬로 호출
 
-loop 각 subscriber
-  ReadableStore -[#red]> WidgetComponent: subscriber(data)
+par 모든 subscriber에게 동시 전송
+  ReceivableStore -[#red]> WidgetComponent: await subscriber(data)
   activate WidgetComponent
   
   WidgetComponent -[#black]> WidgetComponent: widget update
-  note right of WidgetComponent: 위젯 내부 상태 업데이트
+  note right of WidgetComponent: 위젯 내부 상태 업데이트\n(비동기 처리 가능)
   
-  WidgetComponent --[#blue]> ReadableStore: 완료
+  WidgetComponent --[#blue]> ReceivableStore: 완료
   deactivate WidgetComponent
 
-ReadableStore --[#blue]> MosaicStore: 모든 subscriber 알림 완료
-deactivate ReadableStore
-
+  deactivate WidgetComponent
 end
+
+ReceivableStore --[#blue]> MosaicStore: 모든 subscriber 알림 완료
+deactivate ReceivableStore
 
 MosaicStore --[#blue]> WebRTCConnection: 처리 완료
 deactivate MosaicStore
 
 WebRTCConnection --[#blue]> Robot: 완료
 deactivate WebRTCConnection
-
 @enduml

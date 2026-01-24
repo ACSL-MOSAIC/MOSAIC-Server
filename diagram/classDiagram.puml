@@ -69,7 +69,6 @@ package "Context Layer" {
     -rtcStates: RTCConnectionState
     -robotConfigs: RobotConfig
     +getRobotConfigs(): RobotConfig | undefined
-    +setRobotConfigs(robotConfigs: RobotConfig[]): void
     +setWSConnection(connected: boolean): void
     +setRTCStatus(status: RTCConnectionState): void
   }
@@ -91,13 +90,13 @@ package "StoreManager" {
   class useMosaicStore {
     <<Custom Hook>>
     -context: MosaicContext (robotConfigs: Map<string, RobotConfig>)
-    +getOrCreateStore(robotConnector: RobotConnector): ReadableStore | WritableStore
+    +getOrCreateStore(robotConnector: RobotConnector): ReceivableStore | SendableStore
     +releaseStore(robotConnector: RobotConnector): void
   }
   
   class StoreManager {
     -mosaicStores: RobotConnectorRefMap<MosaicStore>
-    +getOrCreateStore(robotConnector: RobotConnector, robotConfig: RobotConfig): ReadableStore | WritableStore
+    +getOrCreateStore(robotConnector: RobotConnector, robotConfig: RobotConfig): ReceivableStore | SendableStore
     +releaseStore(robotConnector: RobotConnector): void
     -resolveConnectorType(robotConnector: RobotConnector): string
   }
@@ -115,8 +114,8 @@ package "StoreManager" {
   
   class StoreFactory {
     -storeFactories: Map<string, (robotConnector: RobotConnector) => MosaicStore>
-    +registerReadableStore<T extends ReadableStore>(StoreClass: new (...args: any[]) => T): void
-    +registerWritableStore<T extends WritableStore>(StoreClass: new (...args: any[]) => T): void
+    +registerReceivableStore<T extends ReceivableStore>(StoreClass: new (...args: any[]) => T): void
+    +registerSendableStore<T extends SendableStore>(StoreClass: new (...args: any[]) => T): void
     +createStore(connectorType: string, robotConnector: RobotConnector): MosaicStore | null
   }
   
@@ -224,25 +223,25 @@ package "Store Layer" {
     #robotConnector: RobotConnector
     +MosaicStore(robotConnector: RobotConnector)
     +{static}getDataType(): string
-    +{abstract}getStoreType(): "readable" | "writable" | "media"
+    +{abstract}getStoreType(): "receivable" | "sendable" | "media"
     +getRobotConnector(): RobotConnector
     +{abstract}beforeConnected(): void
     +{abstract}afterConnected(): void
     +{abstract}afterDisconnected(): void
   }
   
-  abstract class ReadableStore extends MosaicStore {
-    -subscriberList: Map<string, Subscriber>
-    +getStoreType(): "readable"
-    +subscribe(subscriber: (data: ArrayBuffer) => void): UnsubscribeFunction
-    +notifySubscribers(data: ArrayBuffer): void
-    +{abstract}onSubscriberAdded(subscriber): void
-    +{abstract}onSubscriberRemoved(subscriber): void
-    -removeSubscriber(subscriberId: string): void
-  }
+  abstract class ReceivableStore extends MosaicStore {
+  -subscriberList: Map<string, Subscriber>
+  +getStoreType(): "receivable"
+  +subscribe(subscriber: (data: ArrayBuffer) => Promise<void>): UnsubscribeFunction
+  +notifySubscribers(data: ArrayBuffer): Promise<void>
+  +{abstract}onSubscriberAdded(subscriber): void
+  +{abstract}onSubscriberRemoved(subscriber): void
+  -removeSubscriber(subscriberId: string): void
+}
   
-  abstract class WritableStore<V> extends MosaicStore {
-    +getStoreType(): "writable"
+  abstract class SendableStore<V> extends MosaicStore {
+    +getStoreType(): "sendable"
     +{abstract}add(data: V): void
     #sendData(data: string): void
     +setDataChannel(channel: RTCDataChannel): void
@@ -253,7 +252,7 @@ package "Store Layer" {
     +{abstract}setMediaStream(stream: MediaStream): void
   }
   
-  class ConnectionCheckingStore extends ReadableStore, WritableStore {
+  class ConnectionCheckingStore extends ReceivableStore, SendableStore {
     +{static} dataType: "connection_check"
     -intervalId: number | null
     +afterConnected(): void
