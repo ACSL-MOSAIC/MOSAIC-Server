@@ -3,12 +3,16 @@ skinparam sequenceMessageAlign center
 skinparam maxMessageSize 250
 autonumber
 
-participant "Backend" as Backend
-participant "Robot" as Robot
-participant "DashboardGrid" as DashboardGrid
-participant "MosaicContext" as MosaicContext
-participant "RobotInfo" as RobotInfo
-participant "WebRTCConnection" as WebRTCConnection
+participant DashboardGrid
+participant MosaicContext
+participant RobotInfo
+participant WebRTCConnectionManager
+participant WebRTCConnection
+participant MosaicStore
+participant RTCDataChannel
+participant SignalingServer
+participant Backend
+participant Robot
 
 == 로봇 연결 시작 ==
 
@@ -24,6 +28,7 @@ activate RobotInfo
 RobotInfo -[#black]> RobotInfo: this.wsConnected = true
 RobotInfo --[#blue]> MosaicContext: 완료
 deactivate RobotInfo
+note over MosaicContext, RobotInfo: TODO: 윗부분 제거 필요!!!
 
 == WebRTC 연결 시작 ==
 
@@ -32,112 +37,231 @@ activate RobotInfo
 RobotInfo -[#black]> RobotInfo: this.rtcStatus = "CONNECTING"
 RobotInfo --[#blue]> MosaicContext: 완료
 deactivate RobotInfo
+note over MosaicContext, RobotInfo: TODO: 윗부분 제거 필요!!!
 
-MosaicContext -[#red]> WebRTCConnection: new WebRTCConnection(robotId)
+MosaicContext -[#red]> WebRTCConnectionManager: createConnection(robotId, channelRequirements)
+activate WebRTCConnectionManager
+note over WebRTCConnectionManager
+TODO: connections 변수에 이미 robotId 로 된 WebRTCConnection 존재하는지 확인
+있는 경우 핸들링 필요!!!! (추천하는건 걍 깔끔히 지우고 새로 만드는 것)
+end note
+
+WebRTCConnectionManager -[#red]> Backend: API 호출 POST /api/v1/connection/create
+note right of WebRTCConnectionManager
+{
+    "robotId": "e8715ad5-7a19-4733-9692-ec5572d6de7c"
+}
+end note
+Backend -> Backend: WebRTC 연결을 위한 RTC Connection ID 생성, 저장
+WebRTCConnectionManager <[#blue]- Backend: RTC Connection ID 응답
+note right of WebRTCConnectionManager
+{
+    "rtcConnectionId": "d1c35a55-445c-4e5e-9451-34c42d74fcbd"
+}
+end note
+
+create WebRTCConnection
+WebRTCConnectionManager -[#black]> WebRTCConnection: new WebRTCConnection(rtcConnectionId, robotId)
+
+WebRTCConnectionManager -[#red]> WebRTCConnection: createConnection(channelRequirements)
+note right of WebRTCConnection: RTCPeerConnection 생성 및 저장\nonicecandidate 이벤트 등록\nonconnectionstatechange 등록\nondatachannel 이벤트 등록\nWebRTCConnection private method 호출
 activate WebRTCConnection
 
-WebRTCConnection -[#black]> WebRTCConnection: createPeerConnection()
-note right of WebRTCConnection: RTCPeerConnection 생성\nonicecandidate 이벤트 등록\nonconnectionstatechange 등록\nondatachannel 이벤트 등록
-
-== DataChannel 생성 및 콜백 등록 ==
-
-WebRTCConnection -[#red]> MosaicContext: ChannelRequirement 참조
-activate MosaicContext
-
-MosaicContext --[#blue]> WebRTCConnection: ChannelRequirement[]
-deactivate MosaicContext
+== MediaStream, DataChannel 생성 및 콜백 등록 ==
 
 loop 각 ChannelRequirement
-  WebRTCConnection -[#black]> WebRTCConnection: setupDataChannel(dataChannel, robotId)
-  
-  WebRTCConnection -[#red]> MosaicContext: getDataCallback(robotConnector)
-  activate MosaicContext
-  
-  MosaicContext --[#blue]> WebRTCConnection: callback
-  deactivate MosaicContext
-  
-  WebRTCConnection -[#black]> WebRTCConnection: dataChannel에 콜백 등록
-  
-  WebRTCConnection -[#red]> MosaicContext: registerActiveChannel(channelInfo)
-  activate MosaicContext
-  
-  MosaicContext --[#blue]> WebRTCConnection: 완료
-  deactivate MosaicContext
+    WebRTCConnection -[#red]> MosaicStore ++: notifyBeforeConnected(robotId) 호출
+    MosaicStore -> MosaicStore: beforeConnectedSubscribers 모두 호출
+    MosaicStore -> MosaicStore: beforeConnected(robotId) 호출
+    WebRTCConnection <[#blue]- MosaicStore --: 완료
+    WebRTCConnection -> MosaicStore: getStoreType()
+    WebRTCConnection <- MosaicStore: storeType
+    alt storeType === "receivable"
+        WebRTCConnection -[#red]> WebRTCConnection ++: createDataChannel(connectorId)
+        WebRTCConnection -> WebRTCConnection: dataChannels Map 에 connectorId 를 key 로 생성한 RTCDataChannel 저장
+        WebRTCConnection <[#blue]- WebRTCConnection --: RTCDataChannel 반환
+
+        WebRTCConnection -[#red]> WebRTCConnection ++: setupReceivableChannel(RTCDataChannel, ReceivableStore)
+        WebRTCConnection -> RTCDataChannel: onmessage 이벤트 등록
+        note over WebRTCConnection, RTCDataChannel: onmessage 시 ReceivableStore 의 notifySubscribers(data) 호출
+        WebRTCConnection <[#blue]- WebRTCConnection --: 완료
+    else storeType === "sendable"
+        WebRTCConnection -[#red]> WebRTCConnection ++: createDataChannel(connectorId)
+        WebRTCConnection -> WebRTCConnection: dataChannels Map 에 connectorId 를 key 로 생성한 RTCDataChannel 저장
+        WebRTCConnection <[#blue]- WebRTCConnection --: RTCDataChannel 반환
+
+        WebRTCConnection -[#red]> WebRTCConnection ++: setupSendableChannel(RTCDataChannel, SendableStore)
+        WebRTCConnection -[#red]> MosaicStore: SendableStore 의 setDataChannel(RTCDataChannel) 호출
+        MosaicStore -> MosaicStore: RTCDataChannel 저장
+        MosaicStore -[#blue]> WebRTCConnection: 완료
+        WebRTCConnection <[#blue]- WebRTCConnection --: 완료
+    else storeType === "media"
+        WebRTCConnection -[#red]> WebRTCConnection: createMediaStream(connectorId)
+        WebRTCConnection <[#blue]- WebRTCConnection: 완료
+    end
 end
+WebRTCConnectionManager <[#blue]- WebRTCConnection: 완료
+deactivate WebRTCConnection
 
 == SDP Offer 전송 ==
+WebRTCConnectionManager -[#red]> WebRTCConnection: startConnection()
+activate WebRTCConnection
+WebRTCConnection -> WebRTCConnection ++: createSdpOffer()
+WebRTCConnection -> WebRTCConnection: addTransceiver()
+note right of WebRTCConnection: addTransceiver 를 꼭 호출해야 하는지 검토 필요.
+WebRTCConnection -> WebRTCConnection --: RTCSessionDescriptionInit
 
-WebRTCConnection -[#red]> Backend: SDP Offer 전송
+WebRTCConnection -> WebRTCConnection: peerConnection.setLocalDescription(offer)
+
+WebRTCConnection -[#red]> SignalingServer: sendSdpOffer(rtcConnectionId, offer)
+activate SignalingServer
+SignalingServer -[#red]> Backend: SDP Offer 전송
 activate Backend
-note right of Backend: WebSocket 메시지
+WebRTCConnection <[#blue]- SignalingServer: 완료
+deactivate SignalingServer
+
+WebRTCConnection -[#blue]> WebRTCConnectionManager: 완료
+deactivate WebRTCConnection
+WebRTCConnectionManager -[#blue]> MosaicContext: 완료
+deactivate WebRTCConnectionManager
+MosaicContext -[#blue]> DashboardGrid: 완료
+deactivate MosaicContext
+
+note right of DashboardGrid: startConnection() 종료\n이후 비동기 처리
+note over SignalingServer, Robot
+{
+    "type": "send_sdp_offer",
+    "rtcConnectionId": "d1c35a55-445c-4e5e-9451-34c42d74fcbd",
+    "sdp_offer": "v=0\r\no=- 0 0 IN IP4..."
+}
+end note
 
 Backend -[#red]> Robot: SDP Offer 전달
 activate Robot
 deactivate Backend
 
-WebRTCConnection --[#blue]> MosaicContext: 완료
-deactivate WebRTCConnection
-
-MosaicContext --[#blue]> DashboardGrid: 완료
-deactivate MosaicContext
-
-note right of DashboardGrid: requestConnection() 종료\n이후 비동기 처리
-
 == SDP Answer 수신 ==
 
 Robot -[#black]> Robot: SDP 처리 및 Answer 생성
 
-Robot --[#blue]> Backend: SDP Answer 전송
+Robot -[#blue]> Backend: SDP Answer 전송
 activate Backend
 deactivate Robot
 
-Backend -[#red]> WebRTCConnection: SDP Answer 전달
-activate WebRTCConnection
+note over SignalingServer, Robot
+{
+    "type": "send_sdp_answer",
+    "rtcConnectionId": "d1c35a55-445c-4e5e-9451-34c42d74fcbd",
+    "sdp_answer": "v=0\r\no=- 0 0 IN IP4..."
+}
+end note
+
+Backend -[#red]> SignalingServer: SDP Answer 전달
+activate SignalingServer
 deactivate Backend
 
-WebRTCConnection -[#black]> WebRTCConnection: Answer 저장
+SignalingServer -> SignalingServer: receiveSdpAnswer 이벤트 실행
+SignalingServer -> SignalingServer: rtcConnections Map 에서 rtcConnectionId 로 WebRTCConnection 조회
+SignalingServer -[#red]> WebRTCConnection ++: receiveSdpAnswer(data)
+WebRTCConnection -> WebRTCConnection: resolveSdpAnswer(data)
+WebRTCConnection -> WebRTCConnection: peerConnection.setRemoteDescription(answer)
+WebRTCConnection -[#blue]> SignalingServer --: 완료
+deactivate SignalingServer
 
-WebRTCConnection --[#blue]> Backend: 완료
+== ICE Candidate 수집 시 ==
+WebRTCConnection -[#black]> WebRTCConnection: onicecandidate 이벤트 실행
+activate WebRTCConnection
+WebRTCConnection -[#red]> SignalingServer: sendIceCandidate(rtcConnectionId, candidate)
+activate SignalingServer
+SignalingServer -[#red]> Backend: ICE Candidate 전송
+activate Backend
+
+WebRTCConnection <[#blue]- SignalingServer: 완료
+deactivate SignalingServer
+WebRTCConnection -> WebRTCConnection: 완료
 deactivate WebRTCConnection
 
-== ICE Candidate 교환 ==
+note over SignalingServer, Robot
+{
+    "type": "exchange_ice_candidate",
+    "rtcConnectionId": "d1c35a55-445c-4e5e-9451-34c42d74fcbd",
+    "ice_candidate": {
+        "candidate": "candidate:0 1 UDP 2122260223...",
+        "sdpMid": "video",
+        "sdpMLineIndex": 0
+    }
+}
+end note
 
-WebRTCConnection -[#red]> Robot: ICE Candidate 수집 및 교환
-Robot -[#blue]> WebRTCConnection: ICE Candidate 수집 및 교환
+Backend -[#red]> Robot: SDP Offer 전달
+activate Robot
+deactivate Backend
 
-== 연결 완료 ==
+Robot -[#black]> Robot: SDP 처리 및 Answer 생성
+deactivate Robot
+== ICE Candidate 수신 시 ==
 
-WebRTCConnection -[#black]> WebRTCConnection: onconnectionstatechange 이벤트
+Robot <-: Ice Candidate 수집
+Robot -> Backend: ICE Candidate 전송
+
+note over SignalingServer, Robot
+{
+    "type": "exchange_ice_candidate",
+    "rtcConnectionId": "d1c35a55-445c-4e5e-9451-34c42d74fcbd",
+    "ice_candidate": {
+        "candidate": "candidate:0 1 UDP 2122260223...",
+        "sdpMid": "video",
+        "sdpMLineIndex": 0
+    }
+}
+end note
+
+Backend -> SignalingServer: ICE Candidate 전송
+activate SignalingServer
+SignalingServer -> SignalingServer: receiveIceCandidate 이벤트 실행
+SignalingServer -> SignalingServer: rtcConnections Map 에서 rtcConnectionId 로 WebRTC Connection 조회
+SignalingServer -[#red]> WebRTCConnection ++: receiveIceCandidate(data)
+WebRTCConnection -> WebRTCConnection: resolveIceCandidate(data)
+WebRTCConnection -> WebRTCConnection: peerConnection.addIceCandidate(candidate)
+WebRTCConnection -[#blue]> SignalingServer --: 완료
+deactivate SignalingServer
+
+== 연결 상태 변경 (연결 완료, 끊어짐, 에러) ==
+
+WebRTCConnection -[#black]> WebRTCConnection: onconnectionstatechange 이벤트 실행
 activate WebRTCConnection
 
-WebRTCConnection -[#red]> RobotInfo: setRTCStatus("CONNECTED")
-activate RobotInfo
-
-RobotInfo -[#black]> RobotInfo: this.rtcStatus = "CONNECTED"
-
-RobotInfo --[#blue]> WebRTCConnection: 완료
-deactivate RobotInfo
-
+alt peerConnection.connectionState === "connected"
+    WebRTCConnection -> WebRTCConnection ++: onConnectionConnected() 호출
+    loop relatedStores 의 모든 MosaicStore
+        WebRTCConnection -[#red]> MosaicStore: notifyAfterConnected(robotId) 호출
+        MosaicStore -> MosaicStore: afterConnectedSubscribers 모두 호출
+        MosaicStore -> MosaicStore: afterConnected(robotId) 호출
+        WebRTCConnection <[#blue]- MosaicStore: 완료
+    end
+    WebRTCConnection -> WebRTCConnection --: 완료
+else "disconnected"
+    WebRTCConnection -> WebRTCConnection ++: onConnectionDisconnected() 호출
+    loop relatedStores 의 모든 MosaicStore
+        WebRTCConnection -[#red]> MosaicStore: notifyAfterDisconnected(robotId) 호출
+        MosaicStore -> MosaicStore: afterDisconnectedSubscribers 모두 호출
+        MosaicStore -> MosaicStore: afterDisconnected(robotId) 호출
+        WebRTCConnection <[#blue]- MosaicStore: 완료
+    end
+    WebRTCConnection -> WebRTCConnection --: 완료
+else "failed"
+    WebRTCConnection -> WebRTCConnection ++: onConnectionDisconnected() 호출
+    loop relatedStores 의 모든 MosaicStore
+        WebRTCConnection -[#red]> MosaicStore: notifyAfterConnectionFailed(robotId) 호출
+        MosaicStore -> MosaicStore: afterConnectionFailedSubscribers 모두 호출
+        MosaicStore -> MosaicStore: afterConnectionFailed(robotId) 호출
+        WebRTCConnection <[#blue]- MosaicStore: 완료
+    end
+    WebRTCConnection -> WebRTCConnection --: 완료
+end
+WebRTCConnection -> WebRTCConnection: 완료
 deactivate WebRTCConnection
 
 note right of DashboardGrid: UI 자동 업데이트 (async)\n(RobotInfo 상태 변경 감지)
 
-== 연결 실패 시 ==
-
-alt 연결 실패
-  WebRTCConnection -[#black]> WebRTCConnection: onconnectionstatechange 이벤트
-  activate WebRTCConnection
-  
-  WebRTCConnection -[#red]> RobotInfo: setRTCStatus("ERROR")
-  activate RobotInfo
-  
-  RobotInfo -[#black]> RobotInfo: this.rtcStatus = "ERROR"
-  
-  RobotInfo --[#blue]> WebRTCConnection: 완료
-  deactivate RobotInfo
-  
-  deactivate WebRTCConnection
-  
-  note right of DashboardGrid: UI 자동 업데이트 (async)\n(RobotInfo 상태 변경 감지)
-end
 @enduml
