@@ -90,13 +90,13 @@ package "StoreManager" {
   class useMosaicStore {
     <<Custom Hook>>
     -context: MosaicContext (robotConfigs: Map<string, RobotConfig>)
-    +getOrCreateStore(robotConnector: RobotConnector): ReceivableStore | SendableStore
+    +getOrCreateStore(robotConnector: RobotConnector): MosaicStore
     +releaseStore(robotConnector: RobotConnector): void
   }
   
   class StoreManager {
     -mosaicStores: RobotConnectorRefMap<MosaicStore>
-    +getOrCreateStore(robotConnector: RobotConnector, robotConfig: RobotConfig): ReceivableStore | SendableStore
+    +getOrCreateStore(robotConnector: RobotConnector, robotConfig: RobotConfig): MosaicStore
     +releaseStore(robotConnector: RobotConnector): void
     -resolveConnectorType(robotConnector: RobotConnector): string
   }
@@ -114,8 +114,7 @@ package "StoreManager" {
   
   class StoreFactory {
     -storeFactories: Map<string, (robotConnector: RobotConnector) => MosaicStore>
-    +registerReceivableStore<T extends ReceivableStore>(StoreClass: new (...args: any[]) => T): void
-    +registerSendableStore<T extends SendableStore>(StoreClass: new (...args: any[]) => T): void
+    +registerMosaicStore<T extends MosaicStore>(StoreClass: new () => T): void
     +createStore(connectorType: string, robotConnector: RobotConnector): MosaicStore | null
   }
   
@@ -137,7 +136,7 @@ package "ChannelManager" {
     -channelRequirements: Map<string, ChannelRequirement[]>
     +registerActiveChannel(channelInfo: ChannelInfo): void
     +addChannelRequirement(channelRequirement: ChannelRequirement): void
-    +removeChannelRequirement(channelRequirment: ChannelRequirement): void
+    +removeChannelRequirement(channelRequirement: ChannelRequirement): void
     +getActiveChannel(robotConnector: RobotConnector): ChannelInfo | undefined
     +getAllActiveChannels(robotId: string): ChannelInfo[]
     +registerDataCallback(robotConnector: RobotConnector, callback: (data: ArrayBuffer) => void): void

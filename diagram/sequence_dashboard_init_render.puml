@@ -3,69 +3,65 @@ skinparam sequenceMessageAlign center
 skinparam maxMessageSize 250
 autonumber
 
-participant "Backend" as Backend
-participant "DashboardGrid" as DashboardGrid
-participant "MosaicContext" as MosaicContext
-participant "WidgetFactory" as WidgetFactory
-participant "WidgetComponent" as WidgetComponent
-participant "useMosaicStore" as useMosaicStore
-participant "StoreManager" as StoreManager
-participant "RobotConnectorRefMap" as RobotConnectorRefMap
-participant "StoreFactory" as StoreFactory
-participant "MosaicStore" as MosaicStore
-participant "ChannelManager" as ChannelManager
+participant Backend
+participant MosaicProvider
+participant MosaicContext
+participant DashboardGrid
+participant WidgetFactory
+participant WidgetComponent
+participant useMosaicStore
+participant StoreManager
+participant RobotConnectorRefMap
+participant StoreFactory
+participant MosaicStore
+participant ChannelManager
 
 == WS 연결 & RobotInfo 업데이트 ==
 
-DashboardGrid -[#black]> DashboardGrid: WS 연결됨
-activate DashboardGrid
+MosaicProvider -[#black]> MosaicProvider: WS 연결됨
 
-DashboardGrid -[#red]> Backend: "get_robot_list" 메시지
-activate Backend
+MosaicProvider -[#red]> Backend: "get_robot_list" 메시지
 note right of Backend: WebSocket 메시지
 
-Backend --[#blue]> DashboardGrid: 로봇 리스트 with RobotConfig
-deactivate Backend
+Backend --[#blue]> MosaicProvider: 로봇 리스트 with RobotConfig
+note right of Backend: "robot_config_example.json 참고"
 
-DashboardGrid -[#red]> MosaicContext: updateRobotInfo(robotInfo)
-activate MosaicContext
-
-MosaicContext --[#blue]> DashboardGrid: 완료
-deactivate MosaicContext
+MosaicProvider -[#red]> MosaicContext: updateRobotInfo(robotInfo)
+MosaicContext --[#blue]> MosaicProvider: 완료
 
 note right of DashboardGrid: 이후 로봇 상태 변경 시\n서버가 자동으로 메시지 전송
 
 == 대시보드 컴포넌트 렌더링 ==
-
-DashboardGrid -[#black]> DashboardGrid: 컴포넌트 마운트
+MosaicProvider -> DashboardGrid: Child 컴포넌트 마운트
 activate DashboardGrid
 
 DashboardGrid -[#red]> Backend: 탭 리스트 조회
-activate Backend
-note right of Backend: API: GET /api/dashboard/tabs (미정)
+note right of Backend: API: GET /api/v1/dashboard/tabs
 
 Backend --[#blue]> DashboardGrid: 탭 리스트
-deactivate Backend
+note right of Backend
+[
+    {
+        "id": "524dee3a-fb2c-45ff-bbe5-93ec036ae3ea",
+        "name": "For outdoor"
+    }
+]
+end note
 
 DashboardGrid -[#black]> DashboardGrid: 현재 탭 LocalStorage에서 로드
 
 DashboardGrid -[#red]> Backend: 대시보드 설정 조회
-activate Backend
-note right of Backend: API: GET /api/dashboard/configs (미정)
+note right of Backend: API: GET /api/v1/dashboard/{tabId}/configs
 
 Backend --[#blue]> DashboardGrid: DashboardConfig
-deactivate Backend
-
-DashboardGrid -[#black]> DashboardGrid: 마운트 완료
+note right of Backend: "dashboard_config_example.json 참고"
 
 DashboardGrid -[#red]> WidgetFactory: renderWidget(widgetConfig)
-activate WidgetFactory
 
 WidgetFactory -[#red]> WidgetComponent: WidgetComponent 렌더링
 activate WidgetComponent
 
 WidgetComponent -[#red]> useMosaicStore: getOrCreateStore(robotConnector)
-activate useMosaicStore
 
 useMosaicStore -[#red]> StoreManager: getOrCreateStore(robotConnector, robotConfig)
 activate StoreManager
@@ -73,10 +69,7 @@ activate StoreManager
 StoreManager -[#black]> StoreManager: resolveConnectorType(robotConnector)
 
 StoreManager -[#red]> RobotConnectorRefMap: get(robotConnector)
-activate RobotConnectorRefMap
-
 RobotConnectorRefMap --[#blue]> StoreManager: MosaicStore | undefined
-deactivate RobotConnectorRefMap
 
 alt store가 없을 때
   StoreManager -[#red]> StoreFactory: createStore(connectorType, robotConnector)
@@ -85,28 +78,21 @@ alt store가 없을 때
   StoreFactory -[#black]> StoreFactory: storeFactories.get(connectorType)
   
   StoreFactory -[#red]> MosaicStore: createStore(connectorType, robotConnector)
-  activate MosaicStore
   MosaicStore --[#blue]> StoreFactory: MosaicStore | null
-  deactivate MosaicStore
-  
+
   StoreFactory --[#blue]> StoreManager: MosaicStore | null
   deactivate StoreFactory
   
-  StoreManager -[#red]> RobotConnectorRefMap: set(robotConnector, 1)
-  activate RobotConnectorRefMap
+  StoreManager -[#red]> RobotConnectorRefMap: set(robotConnector, MosaicStore)
   RobotConnectorRefMap --[#blue]> StoreManager: 완료
-  deactivate RobotConnectorRefMap
 end
 
 StoreManager -[#red]> RobotConnectorRefMap: incrementRefCount(robotConnector)
-activate RobotConnectorRefMap
-
 RobotConnectorRefMap --[#blue]> StoreManager: 완료
-deactivate RobotConnectorRefMap
 
-StoreManager --[#blue]> WidgetComponent: MosaicStore
+StoreManager --[#blue]> useMosaicStore: MosaicStore
+useMosaicStore --[#blue]> WidgetComponent: MosaicStore
 deactivate StoreManager
-deactivate useMosaicStore
 
 WidgetComponent -[#black]> WidgetComponent: create ChannelRequirement
 
@@ -120,10 +106,7 @@ deactivate ChannelManager
 
 alt ReceivableStore일 때
   WidgetComponent -[#red]> MosaicStore: subscribe(subscriber: (data: ArrayBuffer) => void)
-  activate MosaicStore
-  
   MosaicStore --[#blue]> WidgetComponent: UnsubscribeFunction
-  deactivate MosaicStore
 end
 
 WidgetComponent --[#blue]> WidgetFactory: 렌더링 완료
