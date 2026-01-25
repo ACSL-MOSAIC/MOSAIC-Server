@@ -64,42 +64,63 @@ create WebRTCConnection
 WebRTCConnectionManager -[#black]> WebRTCConnection: new WebRTCConnection(rtcConnectionId, robotId)
 
 WebRTCConnectionManager -[#red]> WebRTCConnection: createConnection(channelRequirements)
-note right of WebRTCConnection: RTCPeerConnection 생성 및 저장\nonicecandidate 이벤트 등록\nonconnectionstatechange 등록\nondatachannel 이벤트 등록\nWebRTCConnection private method 호출
 activate WebRTCConnection
 
-== MediaStream, DataChannel 생성 및 콜백 등록 ==
-
-loop 각 ChannelRequirement
+WebRTCConnection -> WebRTCConnection ++: beforeConnection() 호출
+WebRTCConnection -> WebRTCConnection: 중복 없는 MosaicStore 리스트 생성
+loop 각 MosaicStore
     WebRTCConnection -[#red]> MosaicStore ++: notifyBeforeConnected(robotId) 호출
     MosaicStore -> MosaicStore: beforeConnectedSubscribers 모두 호출
     MosaicStore -> MosaicStore: beforeConnected(robotId) 호출
     WebRTCConnection <[#blue]- MosaicStore --: 완료
-    WebRTCConnection -> MosaicStore: getStoreType()
-    WebRTCConnection <- MosaicStore: storeType
-    alt storeType === "receivable"
-        WebRTCConnection -[#red]> WebRTCConnection ++: createDataChannel(connectorId)
-        WebRTCConnection -> WebRTCConnection: dataChannels Map 에 connectorId 를 key 로 생성한 RTCDataChannel 저장
-        WebRTCConnection <[#blue]- WebRTCConnection --: RTCDataChannel 반환
+end
 
-        WebRTCConnection -[#red]> WebRTCConnection ++: setupReceivableChannel(RTCDataChannel, ReceivableStore)
-        WebRTCConnection -> RTCDataChannel: onmessage 이벤트 등록
-        note over WebRTCConnection, RTCDataChannel: onmessage 시 ReceivableStore 의 notifySubscribers(data) 호출
-        WebRTCConnection <[#blue]- WebRTCConnection --: 완료
-    else storeType === "sendable"
-        WebRTCConnection -[#red]> WebRTCConnection ++: createDataChannel(connectorId)
-        WebRTCConnection -> WebRTCConnection: dataChannels Map 에 connectorId 를 key 로 생성한 RTCDataChannel 저장
-        WebRTCConnection <[#blue]- WebRTCConnection --: RTCDataChannel 반환
+WebRTCConnection -> WebRTCConnection: RobotConnector 별 MosaicStore 리스트 형식으로 정리 (ConnectorRequirement 생성)
+WebRTCConnection <- WebRTCConnection --: ConnectorRequirement[] 반환
 
-        WebRTCConnection -[#red]> WebRTCConnection ++: setupSendableChannel(RTCDataChannel, SendableStore)
-        WebRTCConnection -[#red]> MosaicStore: SendableStore 의 setDataChannel(RTCDataChannel) 호출
-        MosaicStore -> MosaicStore: RTCDataChannel 저장
-        MosaicStore -[#blue]> WebRTCConnection: 완료
-        WebRTCConnection <[#blue]- WebRTCConnection --: 완료
-    else storeType === "media"
-        WebRTCConnection -[#red]> WebRTCConnection: createMediaStream(connectorId)
-        WebRTCConnection <[#blue]- WebRTCConnection: 완료
+note right of WebRTCConnection
+RTCPeerConnection 생성 및 저장
+onicecandidate 이벤트 등록
+onconnectionstatechange 등록
+ondatachannel 이벤트 등록
+end note
+
+== MediaStream, DataChannel 생성 및 콜백 등록 ==
+loop 각 ConnectorRequirement
+    loop 각 MosaicStore
+        WebRTCConnection -> MosaicStore: getStoreType()
+        WebRTCConnection <- MosaicStore: storeType
+        alt storeType === "receivable"
+            WebRTCConnection -> MosaicStore: isParallelReceivable()
+            WebRTCConnection <- MosaicStore: true | false
+            opt true
+                WebRTCConnection -> WebRTCConnection: robotConnector.parallel 조회, parallel 수만큼 아래 처리 반복
+            end
+            WebRTCConnection -[#red]> WebRTCConnection ++: createDataChannel(connectorId)
+            WebRTCConnection -> WebRTCConnection: dataChannels Map 에 connectorId 를 key 로 생성한 RTCDataChannel 저장
+            WebRTCConnection <[#blue]- WebRTCConnection --: RTCDataChannel 반환
+
+            WebRTCConnection -[#red]> WebRTCConnection ++: setupReceivableChannel(RTCDataChannel, ReceivableStore)
+            WebRTCConnection -> RTCDataChannel: onmessage 이벤트 등록
+            note over WebRTCConnection, RTCDataChannel: onmessage 시 ReceivableStore 의 notifySubscribers(data) 호출
+            WebRTCConnection <[#blue]- WebRTCConnection --: 완료
+        else storeType === "sendable"
+            WebRTCConnection -[#red]> WebRTCConnection ++: createDataChannel(connectorId)
+            WebRTCConnection -> WebRTCConnection: dataChannels Map 에 connectorId 를 key 로 생성한 RTCDataChannel 저장
+            WebRTCConnection <[#blue]- WebRTCConnection --: RTCDataChannel 반환
+
+            WebRTCConnection -[#red]> WebRTCConnection ++: setupSendableChannel(RTCDataChannel, SendableStore)
+            WebRTCConnection -[#red]> MosaicStore: SendableStore 의 setDataChannel(RTCDataChannel) 호출
+            MosaicStore -> MosaicStore: RTCDataChannel 저장
+            MosaicStore -[#blue]> WebRTCConnection: 완료
+            WebRTCConnection <[#blue]- WebRTCConnection --: 완료
+        else storeType === "media"
+            WebRTCConnection -[#red]> WebRTCConnection: createMediaStream(connectorId)
+            WebRTCConnection <[#blue]- WebRTCConnection: 완료
+        end
     end
 end
+
 WebRTCConnectionManager <[#blue]- WebRTCConnection: 완료
 deactivate WebRTCConnection
 

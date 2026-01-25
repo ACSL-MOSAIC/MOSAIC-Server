@@ -45,6 +45,7 @@ package "Dashboard Layer" {
   struct RobotConnector {
     +robotId: string
     +connectorId: string
+    +parallel?: number
     +serialize(): string
     +{static}deserialize(serialized: string): RobotConnector
   }
@@ -201,6 +202,7 @@ package "WebRTCConnectionManager" {
     +getPeerConnection(): RTCPeerConnection | null
     +receiveSdpAnswer(data): Promise<void>
     +receiveIceCandidate(data): Promise<void>
+    -beforeConnection(): ConnectorRequirement[]
     -createPeerConnection(): RTCPeerConnection
     -createDataChannel(connectorId: string): RTCDataChannel
     -setupReceivableChannel(dc: RTCDataChannel, store: ReceivableStore): void
@@ -213,6 +215,11 @@ package "WebRTCConnectionManager" {
     -onConnectionFailed(): void
     -resolveSdpAnswer(data): RTCSessionDescriptionInit
     -resolveIceCandidate(data): RTCIceCandidate
+  }
+
+  interface ConnectorRequirement {
+    + robotConnector: RobotConnector
+    + stores: MosaicStore[]
   }
 
   class SignalingServer {
@@ -229,6 +236,7 @@ package "WebRTCConnectionManager" {
 
   useMosaicWebRTCConnection --> WebRTCConnectionManager
   WebRTCConnectionManager *-- WebRTCConnection
+  WebRTCConnection --> ConnectorRequirement
 }
 
 package "Store Layer" {
@@ -263,8 +271,10 @@ package "Store Layer" {
   MosaicStore -|> ConnectionSubscribable
   
   abstract class ReceivableStore extends MosaicStore {
+  #{static} isParallelReceivable: boolean: false
   -subscriberList: Map<string, Subscriber>
   +getStoreType(): "receivable"
+  +isParallelReceivable(): boolean
   +subscribe(subscriber: (data: ArrayBuffer) => Promise<void>): UnsubscribeFunction
   +notifySubscribers(data: ArrayBuffer): Promise<void>
   +{abstract}onSubscriberAdded(subscriber): void
