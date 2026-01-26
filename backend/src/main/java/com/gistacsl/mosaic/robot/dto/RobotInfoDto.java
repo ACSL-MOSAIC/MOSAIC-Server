@@ -2,11 +2,15 @@ package com.gistacsl.mosaic.robot.dto;
 
 import com.gistacsl.mosaic.robot.enumerate.RobotStatus;
 
-public class RobotAddDto {
+import java.util.UUID;
 
-    public record Req(
+public class RobotInfoDto {
+
+    public record Res(
+            UUID id,
             String name,
             String description,
-            RobotStatus status
+            RobotStatus status,
+            UUID ownerId
     ) {}
 }

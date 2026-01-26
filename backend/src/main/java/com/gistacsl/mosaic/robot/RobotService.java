@@ -6,8 +6,8 @@ import com.gistacsl.mosaic.common.exception.CustomException;
 import com.gistacsl.mosaic.repository.RobotRepository;
 import com.gistacsl.mosaic.repository.entity.RobotEntity;
 import com.gistacsl.mosaic.robot.dto.RobotAddDto;
-import com.gistacsl.mosaic.robot.dto.RobotInfo;
-import com.gistacsl.mosaic.robot.dto.RobotInfosPage;
+import com.gistacsl.mosaic.robot.dto.RobotInfoDto;
+import com.gistacsl.mosaic.robot.dto.RobotListDto;
 import com.gistacsl.mosaic.robot.dto.RobotUpdateDto;
 import com.gistacsl.mosaic.robot.enumerate.RobotStatus;
 import com.gistacsl.mosaic.security.authentication.UserAuth;
@@ -26,37 +26,37 @@ public class RobotService {
     private final DSLContext dslContext;
     private final RobotRepository robotRepository;
 
-    public Mono<RobotInfosPage> listRobots(UserAuth userAuth, int skip, int limit) {
+    public Mono<RobotListDto.Res> listRobots(UserAuth userAuth, int skip, int limit) {
         return robotRepository.countByOrganizationFk(userAuth.getOrganizationPk(), dslContext)
                 .flatMap(count -> robotRepository.findAllByOrganizationFk(userAuth.getOrganizationPk(), skip, limit, dslContext)
-                        .map(this::robotEntitytoRobotInfo)
+                        .map(this::robotEntityToRobotInfoRes)
                         .collectList()
-                        .map(robots -> new RobotInfosPage(robots, count)));
+                        .map(robots -> new RobotListDto.Res(robots, count)));
     }
 
-    public Mono<MessageDto> addRobot(UserAuth userAuth, RobotAddDto robotAddDto) {
+    public Mono<MessageDto> addRobot(UserAuth userAuth, RobotAddDto.Req req) {
         return Mono.from(dslContext.transactionPublisher(configuration -> {
             DSLContext txContext = configuration.dsl();
 
             RobotEntity newRobot = RobotEntity.builder()
                     .pk(UUID.randomUUID())
                     .organizationFk(userAuth.getOrganizationPk())
-                    .name(robotAddDto.name())
-                    .description(robotAddDto.description())
-                    .status(robotAddDto.status() != null ? robotAddDto.status() : RobotStatus.DISCONNECTED)
+                    .name(req.name())
+                    .description(req.description())
+                    .status(req.status() != null ? req.status() : RobotStatus.DISCONNECTED)
                     .build();
 
             return robotRepository.insertRobot(newRobot, txContext);
         })).map(pk -> new MessageDto("Robot added successfully"));
     }
 
-    public Mono<RobotInfo> getRobot(UserAuth userAuth, UUID robotId) {
+    public Mono<RobotInfoDto.Res> getRobot(UserAuth userAuth, UUID robotId) {
         return robotRepository.findByPkAndOrganizationFk(robotId, userAuth.getOrganizationPk(), dslContext)
                 .switchIfEmpty(Mono.error(new CustomException(ResultCode.ROBOT_NOT_FOUND)))
-                .map(this::robotEntitytoRobotInfo);
+                .map(this::robotEntityToRobotInfoRes);
     }
 
-    public Mono<MessageDto> updateRobot(UserAuth userAuth, UUID robotId, RobotUpdateDto updateDto) {
+    public Mono<MessageDto> updateRobot(UserAuth userAuth, UUID robotId, RobotUpdateDto.Req req) {
         return Mono.from(dslContext.transactionPublisher(configuration -> {
             DSLContext txContext = configuration.dsl();
 
@@ -65,9 +65,9 @@ public class RobotService {
                     .flatMap(existingRobot -> robotRepository.updateRobot(
                             robotId,
                             userAuth.getOrganizationPk(),
-                            updateDto.name(),
-                            updateDto.description(),
-                            updateDto.status(),
+                            req.name(),
+                            req.description(),
+                            req.status(),
                             txContext));
         })).map(pk -> new MessageDto("Robot updated successfully"));
     }
@@ -82,8 +82,8 @@ public class RobotService {
         })).map(rowsAffected -> new MessageDto("Robot deleted successfully"));
     }
 
-    private RobotInfo robotEntitytoRobotInfo(RobotEntity entity) {
-        return new RobotInfo(
+    private RobotInfoDto.Res robotEntityToRobotInfoRes(RobotEntity entity) {
+        return new RobotInfoDto.Res(
                 entity.getPk(),
                 entity.getName(),
                 entity.getDescription(),

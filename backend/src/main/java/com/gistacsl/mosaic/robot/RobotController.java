@@ -3,9 +3,9 @@ package com.gistacsl.mosaic.robot;
 import com.gistacsl.mosaic.common.GResponse;
 import com.gistacsl.mosaic.common.dto.MessageDto;
 import com.gistacsl.mosaic.robot.dto.RobotAddDto;
-import com.gistacsl.mosaic.robot.dto.RobotInfo;
+import com.gistacsl.mosaic.robot.dto.RobotInfoDto;
+import com.gistacsl.mosaic.robot.dto.RobotListDto;
 import com.gistacsl.mosaic.robot.dto.RobotUpdateDto;
-import com.gistacsl.mosaic.robot.dto.RobotInfosPage;
 import com.gistacsl.mosaic.security.authentication.UserAuth;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,7 +28,7 @@ public class RobotController {
     private final RobotService robotService;
 
     @GetMapping
-    public Mono<GResponse<RobotInfosPage>> listRobots(
+    public Mono<GResponse<RobotListDto.Res>> listRobots(
             @RequestParam(defaultValue = "0") int skip,
             @RequestParam(defaultValue = "100") int limit
     ) {
@@ -38,14 +38,14 @@ public class RobotController {
     }
 
     @PostMapping
-    public Mono<GResponse<MessageDto>> addRobot(@RequestBody RobotAddDto robotAddDto) {
+    public Mono<GResponse<MessageDto>> addRobot(@RequestBody RobotAddDto.Req req) {
         return UserAuth.getUserAuthFromSecurityContextHolder()
-                .flatMap(userAuth -> robotService.addRobot(userAuth, robotAddDto))
+                .flatMap(userAuth -> robotService.addRobot(userAuth, req))
                 .map(GResponse::toGResponse);
     }
 
     @GetMapping("/{id}")
-    public Mono<GResponse<RobotInfo>> getRobot(@PathVariable UUID id) {
+    public Mono<GResponse<RobotInfoDto.Res>> getRobot(@PathVariable UUID id) {
         return UserAuth.getUserAuthFromSecurityContextHolder()
                 .flatMap(userAuth -> robotService.getRobot(userAuth, id))
                 .map(GResponse::toGResponse);
@@ -54,10 +54,10 @@ public class RobotController {
     @PutMapping("/{id}")
     public Mono<GResponse<MessageDto>> updateRobot(
             @PathVariable UUID id,
-            @RequestBody RobotUpdateDto updateDto
+            @RequestBody RobotUpdateDto.Req req
     ) {
         return UserAuth.getUserAuthFromSecurityContextHolder()
-                .flatMap(userAuth -> robotService.updateRobot(userAuth, id, updateDto))
+                .flatMap(userAuth -> robotService.updateRobot(userAuth, id, req))
                 .map(GResponse::toGResponse);
     }
 
