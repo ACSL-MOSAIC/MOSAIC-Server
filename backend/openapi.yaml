@@ -147,35 +147,9 @@ components:
         existing_connection:
           type: boolean
           default: false
-        message:
-          type: string
-          nullable: true
-        user_id:
-          type: string
-          nullable: true
       required:
         - access_token
-
-    DisconnectRequest:
-      type: object
-      properties:
-        user_id:
-          type: string
-      required:
-        - user_id
-
-    NewPassword:
-      type: object
-      properties:
-        token:
-          type: string
-        new_password:
-          type: string
-          minLength: 8
-          maxLength: 40
-      required:
-        - token
-        - new_password
+        - existing_connection
 
     # Robot schemas
     RobotStatus:
@@ -575,29 +549,6 @@ paths:
         '400':
           description: Incorrect password or new password same as current
 
-  /users/signup:
-    post:
-      tags:
-        - users
-      summary: Register user
-      description: Create new user without authentication
-      operationId: registerUser
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserRegister'
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPublic'
-        '400':
-          description: User already exists
-
   /users/{user_id}:
     get:
       tags:
@@ -723,12 +674,8 @@ paths:
       summary: Disconnect session
       description: Disconnect existing WebSocket connection and force logout
       operationId: disconnectSession
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DisconnectRequest'
+      security:
+        - BearerAuth: [ ]
       responses:
         '200':
           description: Successful response
@@ -739,30 +686,28 @@ paths:
         '404':
           description: No active session found
 
-  /account/reset-password:
+  /account/signup:
     post:
       tags:
         - account
-      summary: Reset password
-      description: Reset password with token
-      operationId: resetPassword
+      summary: Register user
+      description: Create new user without authentication
+      operationId: registerUser
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewPassword'
+              $ref: '#/components/schemas/UserRegister'
       responses:
         '200':
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Message'
+                $ref: '#/components/schemas/UserPublic'
         '400':
-          description: Invalid token or inactive user
-        '404':
-          description: User not found
+          description: User already exists
 
   # Dashboard/Tab endpoints
   /dashboard/tabs:

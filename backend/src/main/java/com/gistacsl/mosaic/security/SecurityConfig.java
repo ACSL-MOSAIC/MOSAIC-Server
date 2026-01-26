@@ -11,6 +11,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.util.matcher.PathPatternParserServerWebExchangeMatcher;
 import org.springframework.web.cors.CorsConfiguration;
@@ -22,6 +24,11 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final JwtTokenService jwtTokenService;
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
@@ -38,7 +45,8 @@ public class SecurityConfig {
                 .securityMatcher(new PathPatternParserServerWebExchangeMatcher("/api/**"))
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-                        .pathMatchers("/api/service/auth/refresh").permitAll() // TODO
+                        .pathMatchers("/api/v1/account/login/access-token").permitAll()
+                        .pathMatchers("/api/v1/account/signup").permitAll()
                         .pathMatchers("/api/**").authenticated()
                 )
                 .addFilterAt(new BearerTokenAuthenticationFilter(jwtTokenService), SecurityWebFiltersOrder.AUTHENTICATION)
