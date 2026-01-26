@@ -27,14 +27,13 @@ repositories {
 
 ext {
     jooq_generated_location = 'build/generated-sources/jooq'
-    jooq_source_set_location = '../jooq/build/generated-sources/jooq'
     jooq_package = 'com.gistacsl.mosaic.jooq'
 }
 
 sourceSets {
     main {
         java {
-            srcDir jooq_source_set_location
+            srcDir jooq_generated_location
         }
     }
 }

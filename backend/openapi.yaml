@@ -206,14 +206,9 @@ components:
       required:
         - name
 
-    RobotCreate:
+    RobotAdd:
       allOf:
         - $ref: '#/components/schemas/RobotBase'
-        - type: object
-          properties:
-            id:
-              type: string
-              format: uuid
 
     RobotUpdate:
       type: object
@@ -230,7 +225,7 @@ components:
         status:
           $ref: '#/components/schemas/RobotStatus'
 
-    RobotPublic:
+    RobotInfo:
       allOf:
         - $ref: '#/components/schemas/RobotBase'
         - type: object
@@ -245,13 +240,13 @@ components:
             - id
             - owner_id
 
-    RobotsPublic:
+    RobotInfosPage:
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/RobotPublic'
+            $ref: '#/components/schemas/RobotInfo'
         count:
           type: integer
       required:
@@ -1113,14 +1108,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RobotsPublic'
+                $ref: '#/components/schemas/RobotInfosPage'
 
     post:
       tags:
         - robots
-      summary: Create robot
-      description: Create new robot
-      operationId: createRobot
+      summary: Add robot
+      description: Add new robot
+      operationId: addRobot
       security:
         - BearerAuth: []
       requestBody:
@@ -1128,14 +1123,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RobotCreate'
+              $ref: '#/components/schemas/RobotAdd'
       responses:
         '200':
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RobotPublic'
+                $ref: '#/components/schemas/Message'
 
   /robots/{id}:
     get:
@@ -1159,7 +1154,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RobotPublic'
+                $ref: '#/components/schemas/RobotInfo'
         '400':
           description: Not enough permissions
         '404':
@@ -1192,7 +1187,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RobotPublic'
+                $ref: '#/components/schemas/Message'
         '400':
           description: Not enough permissions
         '404':

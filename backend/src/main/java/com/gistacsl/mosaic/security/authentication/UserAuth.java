@@ -18,13 +18,13 @@ public class UserAuth implements Authentication {
     @Getter
     private final UUID userPk;
     @Getter
-    private final String organization;
+    private final UUID organizationPk;
     private final Collection<GrantedAuthority> authorities;
     private boolean authenticated;
 
-    public UserAuth(UUID userPk, String organization, String role) {
+    public UserAuth(UUID userPk, UUID organizationPk, String role) {
         this.userPk = userPk;
-        this.organization = organization;
+        this.organizationPk = organizationPk;
         this.authorities = List.of(new SimpleGrantedAuthority(role));
         this.authenticated = true;
     }
