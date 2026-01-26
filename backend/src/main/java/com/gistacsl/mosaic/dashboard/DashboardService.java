@@ -73,7 +73,7 @@ public class DashboardService {
         return Mono.from(dslContext.transactionPublisher(configuration -> {
             DSLContext txContext = configuration.dsl();
 
-            return tabRepository.updateTabName(
+            return tabRepository.updateTabConfig(
                     tabPk,
                     userAuth.getOrganizationPk(),
                     req.tabConfig(),
