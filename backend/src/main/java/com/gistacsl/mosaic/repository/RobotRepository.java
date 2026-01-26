@@ -33,6 +33,12 @@ public class RobotRepository {
                 .map(record -> record.get(ROBOT.PK));
     }
 
+    /*
+    select pk, organization_fk, status, name, description, created_at, updated_at
+    from robot
+    where pk = ? and organization_fk = ?
+    order by created_at desc
+     */
     public Mono<RobotEntity> findByPkAndOrganizationFk(UUID pk, UUID organizationFk, DSLContext dsl) {
         return Mono.from(dsl.select(
                                 ROBOT.PK,
@@ -57,6 +63,13 @@ public class RobotRepository {
                         .build());
     }
 
+    /*
+    select pk, organization_fk, status, name, description, created_at, updated_at
+    from robot
+    where organization_fk = ?
+    order by created_at desc
+    limit ? offset ?
+     */
     public Flux<RobotEntity> findAllByOrganizationFk(UUID organizationFk, int skip, int limit, DSLContext dsl) {
         return Flux.from(dsl.select(
                                 ROBOT.PK,
@@ -83,6 +96,9 @@ public class RobotRepository {
                         .build());
     }
 
+    /*
+    select count(*) from robot where organization_fk = ?
+     */
     public Mono<Integer> countByOrganizationFk(UUID organizationFk, DSLContext dsl) {
         return Mono.from(dsl.selectCount()
                         .from(ROBOT)

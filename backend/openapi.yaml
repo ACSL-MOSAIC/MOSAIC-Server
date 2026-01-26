@@ -253,40 +253,68 @@ components:
         - data
         - count
 
-    # Dashboard schemas
-    DashboardCreate:
+    # Dashboard/Tab schemas
+    TabInfo:
       type: object
       properties:
-        dashboard_config:
-          type: object
-          additionalProperties: true
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
       required:
-        - dashboard_config
+        - id
+        - name
 
-    DashboardPublic:
+    TabInfoList:
+      type: array
+      items:
+        $ref: '#/components/schemas/TabInfo'
+
+    TabConfig:
       type: object
       properties:
-        dashboard_id:
+        id:
           type: string
           format: uuid
-        user_id:
+        name:
           type: string
-          format: uuid
-        dashboard_config:
-          type: object
-          additionalProperties: true
-        created_at:
+        widgets:
           type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
+          description: JSON string of tab configuration
       required:
-        - dashboard_id
-        - user_id
-        - dashboard_config
-        - created_at
-        - updated_at
+        - id
+        - name
+        - widgets
+
+    TabAdd:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+        - name
+
+    TabNameUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+        - name
+
+    TabConfigUpdate:
+      type: object
+      properties:
+        tab_config:
+          type: string
+          description: JSON string of tab configuration
+      required:
+        - tab_config
 
     # Dynamic Type Config schemas
     DynamicTypeConfigCreate:
@@ -415,7 +443,7 @@ paths:
       description: Retrieve users (superuser only)
       operationId: listUsers
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: skip
           in: query
@@ -444,7 +472,7 @@ paths:
       description: Create new user (superuser only)
       operationId: createUser
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -471,7 +499,7 @@ paths:
       description: Get current user information
       operationId: getCurrentUser
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       responses:
         '200':
           description: Successful response
@@ -487,7 +515,7 @@ paths:
       description: Update own user information
       operationId: updateCurrentUser
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -511,7 +539,7 @@ paths:
       description: Delete own user account
       operationId: deleteCurrentUser
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       responses:
         '200':
           description: Successful response
@@ -530,7 +558,7 @@ paths:
       description: Update own password
       operationId: updatePassword
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -578,7 +606,7 @@ paths:
       description: Get a specific user by ID
       operationId: getUserById
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: user_id
           in: path
@@ -603,7 +631,7 @@ paths:
       description: Update a user (superuser only)
       operationId: updateUser
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: user_id
           in: path
@@ -636,7 +664,7 @@ paths:
       description: Delete a user (superuser only)
       operationId: deleteUser
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: user_id
           in: path
@@ -736,47 +764,159 @@ paths:
         '404':
           description: User not found
 
-  # Dashboard endpoints
-  /dashboard:
+  # Dashboard/Tab endpoints
+  /dashboard/tabs:
     get:
       tags:
         - dashboard
-      summary: Get dashboard
-      description: Get current user's dashboard configuration
-      operationId: getDashboard
+      summary: List tabs
+      description: Get list of dashboard tabs for current organization
+      operationId: listTabs
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       responses:
         '200':
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DashboardPublic'
-        '404':
-          description: Dashboard not found
+                $ref: '#/components/schemas/TabInfoList'
 
     post:
       tags:
         - dashboard
-      summary: Upsert dashboard
-      description: Create or update dashboard configuration
-      operationId: upsertDashboard
+      summary: Add tab
+      description: Add a new dashboard tab
+      operationId: addTab
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DashboardCreate'
+              $ref: '#/components/schemas/TabAdd'
       responses:
         '200':
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DashboardPublic'
+                $ref: '#/components/schemas/Message'
+
+  /dashboard/tabs/{tabId}:
+    get:
+      tags:
+        - dashboard
+      summary: Get tab config
+      description: Get dashboard tab configuration by ID
+      operationId: getTabConfig
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: tabId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TabConfig'
+        '404':
+          description: Tab not found
+
+    put:
+      tags:
+        - dashboard
+      summary: Update tab name
+      description: Update dashboard tab name
+      operationId: updateTabName
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: tabId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TabNameUpdate'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '404':
+          description: Tab not found
+
+    delete:
+      tags:
+        - dashboard
+      summary: Delete tab
+      description: Delete dashboard tab
+      operationId: deleteTab
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: tabId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '404':
+          description: Tab not found
+
+  /dashboard/tabs/{tabId}/configs:
+    put:
+      tags:
+        - dashboard
+      summary: Update tab config
+      description: Update dashboard tab configuration
+      operationId: updateTabConfig
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: tabId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TabConfigUpdate'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '404':
+          description: Tab not found
 
   # Dynamic Type Config endpoints
   /dynamic-type-config:
@@ -787,7 +927,7 @@ paths:
       description: Get current user's dynamic type configuration
       operationId: getDynamicTypeConfig
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       responses:
         '200':
           description: Successful response
@@ -803,7 +943,7 @@ paths:
       description: Create or update dynamic type configuration
       operationId: upsertDynamicTypeConfig
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -825,7 +965,7 @@ paths:
       description: Delete current user's dynamic type configuration
       operationId: deleteDynamicTypeConfig
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       responses:
         '200':
           description: Successful response
@@ -845,7 +985,7 @@ paths:
       description: Get occupancy maps for current user
       operationId: listOccupancyMaps
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: skip
           in: query
@@ -872,7 +1012,7 @@ paths:
       description: Create occupancy map with file uploads
       operationId: createOccupancyMap
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -912,7 +1052,7 @@ paths:
       description: Get occupancy map by ID
       operationId: getOccupancyMap
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -939,7 +1079,7 @@ paths:
       description: Update occupancy map information
       operationId: updateOccupancyMap
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -972,7 +1112,7 @@ paths:
       description: Delete occupancy map and associated files
       operationId: deleteOccupancyMap
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -1000,7 +1140,7 @@ paths:
       description: Download PGM file of occupancy map
       operationId: downloadPgmFile
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -1029,7 +1169,7 @@ paths:
       description: Download YAML file of occupancy map
       operationId: downloadYamlFile
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -1058,7 +1198,7 @@ paths:
       description: Download occupancy map as ZIP containing both PGM and YAML files
       operationId: downloadMapZip
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -1090,7 +1230,7 @@ paths:
       description: Retrieve robots (all for superuser, own for normal user)
       operationId: listRobots
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: skip
           in: query
@@ -1117,7 +1257,7 @@ paths:
       description: Add new robot
       operationId: addRobot
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -1140,7 +1280,7 @@ paths:
       description: Get robot by ID
       operationId: getRobot
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -1167,7 +1307,7 @@ paths:
       description: Update a robot
       operationId: updateRobot
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -1200,7 +1340,7 @@ paths:
       description: Delete a robot
       operationId: deleteRobot
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path

@@ -28,7 +28,7 @@ public class AccessToken extends JsonWebToken {
         ClaimsBuilder claimsBuilder = Jwts.claims();
 
         claimsBuilder.add(super.payload_user, jwtPayload.userPk());
-        claimsBuilder.add(super.payload_organization, jwtPayload.organization());
+        claimsBuilder.add(super.payload_organization, jwtPayload.organizationPk());
         claimsBuilder.add(super.payload_role, jwtPayload.role());
 
         return claimsBuilder.build();
@@ -61,18 +61,18 @@ public class AccessToken extends JsonWebToken {
             return false;
         }
 
-        String userId = tokenClaims.get(super.payload_user, String.class);
-        String organization = tokenClaims.get(super.payload_organization, String.class);
+        String userPk = tokenClaims.get(super.payload_user, String.class);
+        String organizationPk = tokenClaims.get(super.payload_organization, String.class);
         String role = tokenClaims.get(super.payload_role, String.class);
 
-        return userId.equals(jwtPayload.userPk()) && organization.equals(jwtPayload.organization()) && role != null;
+        return userPk.equals(jwtPayload.userPk()) && organizationPk.equals(jwtPayload.organizationPk()) && role != null;
     }
 
     public String getUserPk(Claims tokenClaims) {
         return tokenClaims.get(super.payload_user, String.class);
     }
 
-    public String getOrganize(Claims tokenClaims) {
+    public String getOrganizePk(Claims tokenClaims) {
         return tokenClaims.get(super.payload_organization, String.class);
     }
 

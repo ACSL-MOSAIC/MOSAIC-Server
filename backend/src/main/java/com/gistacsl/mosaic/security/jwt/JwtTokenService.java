@@ -27,10 +27,10 @@ public class JwtTokenService {
             payload = accessToken.getTokenPayload(token, mosaicKey.getPublicKey());
 
             String userPk = accessToken.getUserPk(payload);
-            String organization = accessToken.getOrganize(payload);
+            String organizationPk = accessToken.getOrganizePk(payload);
             String role = accessToken.getRole(payload);
 
-            return new UserAuth(UUID.fromString(userPk), organization, role);
+            return new UserAuth(UUID.fromString(userPk), UUID.fromString(organizationPk), role);
         } catch (ExpiredJwtException e) {
             throw new CustomException(ResultCode.ACCESS_TOKEN_EXPIRED, e);
         } catch (SignatureException e) {

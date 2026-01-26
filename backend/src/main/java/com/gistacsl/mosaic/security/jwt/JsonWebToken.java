@@ -13,7 +13,7 @@ import java.util.Date;
 public abstract class JsonWebToken {
 
     protected final String payload_user = "userId";
-    protected final String payload_organization = "organization";
+    protected final String payload_organization = "organizationPk";
     protected final String payload_role = "role";
     private final String iss = "MosaicBackend";
 

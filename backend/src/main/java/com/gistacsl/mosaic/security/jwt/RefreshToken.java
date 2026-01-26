@@ -26,7 +26,7 @@ public class RefreshToken extends JsonWebToken {
         ClaimsBuilder claimsBuilder = Jwts.claims();
 
         claimsBuilder.add(super.payload_user, jwtPayload.userPk());
-        claimsBuilder.add(super.payload_organization, jwtPayload.organization());
+        claimsBuilder.add(super.payload_organization, jwtPayload.organizationPk());
 
         return claimsBuilder.build();
     }
@@ -65,7 +65,7 @@ public class RefreshToken extends JsonWebToken {
         String userId = tokenClaims.get(super.payload_user, String.class);
         String organization = tokenClaims.get(super.payload_organization, String.class);
 
-        return userId.equals(jwtPayload.userPk()) && organization.equals(jwtPayload.organization());
+        return userId.equals(jwtPayload.userPk()) && organization.equals(jwtPayload.organizationPk());
     }
 
     public String getUserId(Claims tokenClaims) {

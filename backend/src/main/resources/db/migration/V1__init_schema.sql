@@ -1,5 +1,5 @@
 -- ============================================================================
--- Table: organization
+-- Table: organizationPk
 -- Description: Organizations that users belong to
 -- ============================================================================
 CREATE TABLE organization
@@ -18,15 +18,15 @@ CREATE INDEX idx_organization_name ON organization (name);
 -- ============================================================================
 CREATE TABLE users
 (
-    pk                      UUID PRIMARY KEY                  DEFAULT gen_random_uuid(),
-    organization_fk         UUID,
-    is_active               BOOLEAN                  NOT NULL DEFAULT TRUE,
-    is_organization_admin   BOOLEAN                  NOT NULL DEFAULT FALSE,
-    email                   VARCHAR(255)             NOT NULL,
-    full_name               VARCHAR(255),
-    created_at              TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at              TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    hashed_password         TEXT                     NOT NULL,
+    pk                    UUID PRIMARY KEY                  DEFAULT gen_random_uuid(),
+    organization_fk       UUID,
+    is_active             BOOLEAN                  NOT NULL DEFAULT TRUE,
+    is_organization_admin BOOLEAN                  NOT NULL DEFAULT FALSE,
+    email                 VARCHAR(255)             NOT NULL,
+    full_name             VARCHAR(255),
+    created_at            TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at            TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    hashed_password       TEXT                     NOT NULL,
 
     CONSTRAINT users_organization_email_unique UNIQUE (organization_fk, email),
     CONSTRAINT fk_users_organization FOREIGN KEY (organization_fk)
@@ -88,40 +88,23 @@ CREATE TABLE occupancy_map
 CREATE INDEX idx_occupancy_map_organization_fk ON occupancy_map (organization_fk);
 
 -- ============================================================================
--- Table: dashboard
--- Description: Organization dashboard
--- ============================================================================
-CREATE TABLE dashboard
-(
-    pk              UUID PRIMARY KEY                  DEFAULT gen_random_uuid(),
-    organization_fk UUID                     NOT NULL,
-    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT fk_dashboard_organization FOREIGN KEY (organization_fk)
-        REFERENCES organization (pk) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_dashboard_organization_fk ON dashboard (organization_fk);
-
--- ============================================================================
 -- Table: tab
 -- Description: Dashboard tabs containing widget configurations
 -- ============================================================================
 CREATE TABLE tab
 (
-    pk           UUID PRIMARY KEY                  DEFAULT gen_random_uuid(),
-    dashboard_fk UUID                     NOT NULL,
-    name         VARCHAR(255)             NOT NULL,
-    tab_config   JSONB                    NOT NULL DEFAULT '{}'::jsonb,
-    created_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    pk              UUID PRIMARY KEY                  DEFAULT gen_random_uuid(),
+    organization_fk UUID                     NOT NULL,
+    name            VARCHAR(255)             NOT NULL,
+    tab_config      JSONB                    NOT NULL DEFAULT '{}'::jsonb,
+    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT fk_tab_dashboard FOREIGN KEY (dashboard_fk)
-        REFERENCES dashboard (pk) ON DELETE CASCADE
+    CONSTRAINT fk_tab_organization FOREIGN KEY (organization_fk)
+        REFERENCES organization (pk) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_tab_dashboard_fk ON tab (dashboard_fk);
+CREATE INDEX idx_tab_organization_fk ON tab (organization_fk);
 
 -- ============================================================================
 -- Table: dynamic_type_config
