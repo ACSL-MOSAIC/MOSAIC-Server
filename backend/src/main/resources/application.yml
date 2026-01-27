@@ -27,3 +27,10 @@ file:
   storage:
     base-path: /var/mosaic/storage
     occupancy-map-path: /var/mosaic/storage/occupancy-maps
+
+logging:
+  level:
+    root: DEBUG
+    com.gistacsl.mosaic: DEBUG
+    org.springframework: DEBUG
+    org.springframework.web: DEBUG

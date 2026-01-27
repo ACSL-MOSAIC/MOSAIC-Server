@@ -10,6 +10,7 @@ public class SpringConfig {
     @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.findAndRegisterModules();
         objectMapper.registerModule(ObjectMapperModule.getEnumModule());
 
         return objectMapper;
