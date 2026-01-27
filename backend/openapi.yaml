@@ -8,6 +8,22 @@ servers:
   - url: /api/v1
     description: API base path
 
+tags:
+  - name: users
+    description: User management APIs
+  - name: users (organization admin)
+    description: User management APIs for organization administrators
+  - name: account
+    description: Account authentication and session management
+  - name: dashboard
+    description: Dashboard and tab management
+  - name: dynamic-type-config
+    description: Dynamic type configuration management
+  - name: occupancy_map
+    description: Occupancy map management for robot navigation
+  - name: robots
+    description: Robot device management
+
 components:
   securitySchemes:
     BearerAuth:
@@ -80,6 +96,10 @@ components:
     UserUpdate:
       type: object
       properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
         email:
           type: string
           format: email
@@ -94,6 +114,23 @@ components:
           type: boolean
         is_superuser:
           type: boolean
+        full_name:
+          type: string
+          maxLength: 255
+          nullable: true
+
+    UserDelete:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+      required:
+        - id
+
+    UserUpdateMe:
+      type: object
+      properties:
         full_name:
           type: string
           maxLength: 255
@@ -408,13 +445,13 @@ components:
         - full_name
 
 paths:
-  # User endpoints
-  /users:
+  # Organization User endpoints
+  /organization/users:
     get:
       tags:
-        - users
+        - users (organization admin)
       summary: List users
-      description: Retrieve users (superuser only)
+      description: Retrieve users in organization (organization admin only)
       operationId: listUsers
       security:
         - BearerAuth: [ ]
@@ -441,9 +478,9 @@ paths:
 
     post:
       tags:
-        - users
+        - users (organization admin)
       summary: Create user
-      description: Create new user (superuser only)
+      description: Create new user in organization (organization admin only)
       operationId: createUser
       security:
         - BearerAuth: [ ]
@@ -459,11 +496,63 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserPublic'
+                $ref: '#/components/schemas/Message'
         '400':
           description: User already exists
         '403':
           description: Not enough privileges
+
+    put:
+      tags:
+        - users (organization admin)
+      summary: Update user
+      description: Update a user (organization admin only)
+      operationId: updateUser
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '404':
+          description: User not found
+        '409':
+          description: Email already exists
+
+    delete:
+      tags:
+        - users (organization admin)
+      summary: Delete user
+      description: Delete a user (organization admin only)
+      operationId: deleteUser
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserDelete'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '403':
+          description: Cannot delete yourself
+        '404':
+          description: User not found
 
   /users/me:
     get:
@@ -482,7 +571,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserPublic'
 
-    patch:
+    put:
       tags:
         - users
       summary: Update current user
@@ -495,25 +584,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserUpdate'
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPublic'
-        '409':
-          description: Email already exists
-
-    delete:
-      tags:
-        - users
-      summary: Delete current user
-      description: Delete own user account
-      operationId: deleteCurrentUser
-      security:
-        - BearerAuth: [ ]
+              $ref: '#/components/schemas/UserUpdateMe'
       responses:
         '200':
           description: Successful response
@@ -521,11 +592,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Message'
-        '403':
-          description: Super users cannot delete themselves
 
   /users/me/password:
-    patch:
+    put:
       tags:
         - users
       summary: Update password
@@ -548,92 +617,6 @@ paths:
                 $ref: '#/components/schemas/Message'
         '400':
           description: Incorrect password or new password same as current
-
-  /users/{user_id}:
-    get:
-      tags:
-        - users
-      summary: Get user by ID
-      description: Get a specific user by ID
-      operationId: getUserById
-      security:
-        - BearerAuth: [ ]
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPublic'
-        '403':
-          description: Not enough privileges
-
-    patch:
-      tags:
-        - users
-      summary: Update user
-      description: Update a user (superuser only)
-      operationId: updateUser
-      security:
-        - BearerAuth: [ ]
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserUpdate'
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPublic'
-        '404':
-          description: User not found
-        '409':
-          description: Email already exists
-
-    delete:
-      tags:
-        - users
-      summary: Delete user
-      description: Delete a user (superuser only)
-      operationId: deleteUser
-      security:
-        - BearerAuth: [ ]
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Message'
-        '403':
-          description: Cannot delete yourself
-        '404':
-          description: User not found
 
   # Account endpoints
   /account/login/access-token:

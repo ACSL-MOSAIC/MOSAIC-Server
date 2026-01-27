@@ -61,6 +61,15 @@ public class UserRepository {
         ).onErrorMap(e -> new CustomException(ResultCode.DB_USER_UPDATE_FAILED, e));
     }
 
+    public Mono<Integer> updateFullName(java.util.UUID pk, String fullName, DSLContext dslContext) {
+        return Mono.from(
+                dslContext.update(USERS)
+                        .set(USERS.FULL_NAME, fullName)
+                        .set(USERS.UPDATED_AT, java.time.OffsetDateTime.now())
+                        .where(USERS.PK.eq(pk))
+        ).onErrorMap(e -> new CustomException(ResultCode.DB_USER_UPDATE_FAILED, e));
+    }
+
     public Mono<UUID> insertUser(UserEntity user, DSLContext dslContext) {
         return Mono.from(dslContext.insertInto(USERS)
                         .set(USERS.PK, user.getPk())

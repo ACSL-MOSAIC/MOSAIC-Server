@@ -1,4 +1,4 @@
-package com.gistacsl.mosaic.occupancymap.dto;
+package com.gistacsl.mosaic.occupancy_map.dto;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;

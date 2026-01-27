@@ -1,11 +1,11 @@
-package com.gistacsl.mosaic.occupancymap;
+package com.gistacsl.mosaic.occupancy_map;
 
 import com.gistacsl.mosaic.common.dto.MessageDto;
 import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.common.exception.CustomException;
-import com.gistacsl.mosaic.occupancymap.dto.OccupancyMapDto;
-import com.gistacsl.mosaic.occupancymap.dto.OccupancyMapListDto;
-import com.gistacsl.mosaic.occupancymap.dto.OccupancyMapUpdateDto;
+import com.gistacsl.mosaic.occupancy_map.dto.OccupancyMapDto;
+import com.gistacsl.mosaic.occupancy_map.dto.OccupancyMapListDto;
+import com.gistacsl.mosaic.occupancy_map.dto.OccupancyMapUpdateDto;
 import com.gistacsl.mosaic.repository.OccupancyMapRepository;
 import com.gistacsl.mosaic.repository.entity.OccupancyMapEntity;
 import com.gistacsl.mosaic.security.authentication.UserAuth;

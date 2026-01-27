@@ -1,13 +1,12 @@
-package com.gistacsl.mosaic.occupancymap;
+package com.gistacsl.mosaic.occupancy_map;
 
 import com.gistacsl.mosaic.common.GResponse;
 import com.gistacsl.mosaic.common.dto.MessageDto;
-import com.gistacsl.mosaic.occupancymap.dto.OccupancyMapDto;
-import com.gistacsl.mosaic.occupancymap.dto.OccupancyMapListDto;
-import com.gistacsl.mosaic.occupancymap.dto.OccupancyMapUpdateDto;
+import com.gistacsl.mosaic.occupancy_map.dto.OccupancyMapDto;
+import com.gistacsl.mosaic.occupancy_map.dto.OccupancyMapListDto;
+import com.gistacsl.mosaic.occupancy_map.dto.OccupancyMapUpdateDto;
 import com.gistacsl.mosaic.security.authentication.UserAuth;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.DeleteMapping;
