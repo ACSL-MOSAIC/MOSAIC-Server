@@ -5,6 +5,7 @@ import com.gistacsl.mosaic.common.exception.CustomException;
 import com.gistacsl.mosaic.repository.entity.UserEntity;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;
@@ -84,5 +85,77 @@ public class UserRepository {
                         .returning(USERS.PK))
                 .onErrorMap(e -> new CustomException(ResultCode.DB_USER_CREATE_FAILED, e))
                 .map(record -> record.get(USERS.PK));
+    }
+
+    public Mono<Integer> countByOrganizationFk(UUID organizationFk, DSLContext dslContext) {
+        return Mono.from(
+                dslContext.selectCount()
+                        .from(USERS)
+                        .where(USERS.ORGANIZATION_FK.eq(organizationFk))
+        ).onErrorMap(e -> new CustomException(ResultCode.DB_USER_READ_FAILED, e))
+        .map(record -> record.value1());
+    }
+
+    public Flux<UserEntity> findAllByOrganizationFk(UUID organizationFk, int skip, int limit, DSLContext dslContext) {
+        return Flux.from(
+                dslContext.selectFrom(USERS)
+                        .where(USERS.ORGANIZATION_FK.eq(organizationFk))
+                        .orderBy(USERS.CREATED_AT.desc())
+                        .offset(skip)
+                        .limit(limit)
+        ).onErrorMap(e -> new CustomException(ResultCode.DB_USER_READ_FAILED, e))
+        .map(record -> UserEntity.builder()
+                .pk(record.getPk())
+                .organizationFk(record.getOrganizationFk())
+                .isActive(record.getIsActive())
+                .isOrganizationAdmin(record.getIsOrganizationAdmin())
+                .email(record.getEmail())
+                .fullName(record.getFullName())
+                .createdAt(record.getCreatedAt())
+                .updatedAt(record.getUpdatedAt())
+                .hashedPassword(record.getHashedPassword())
+                .build()
+        );
+    }
+
+    public Mono<Integer> updateUser(
+            UUID pk,
+            UUID organizationFk,
+            String email,
+            String hashedPassword,
+            Boolean isActive,
+            Boolean isOrganizationAdmin,
+            String fullName,
+            DSLContext dslContext
+    ) {
+        var query = dslContext.update(USERS)
+                .set(USERS.UPDATED_AT, java.time.OffsetDateTime.now());
+
+        if (email != null) {
+            query = query.set(USERS.EMAIL, email);
+        }
+        if (hashedPassword != null) {
+            query = query.set(USERS.HASHED_PASSWORD, hashedPassword);
+        }
+        if (isActive != null) {
+            query = query.set(USERS.IS_ACTIVE, isActive);
+        }
+        if (isOrganizationAdmin != null) {
+            query = query.set(USERS.IS_ORGANIZATION_ADMIN, isOrganizationAdmin);
+        }
+        if (fullName != null) {
+            query = query.set(USERS.FULL_NAME, fullName);
+        }
+
+        return Mono.from(
+                query.where(USERS.PK.eq(pk).and(USERS.ORGANIZATION_FK.eq(organizationFk)))
+        ).onErrorMap(e -> new CustomException(ResultCode.DB_USER_UPDATE_FAILED, e));
+    }
+
+    public Mono<Integer> deleteByPk(UUID pk, DSLContext dslContext) {
+        return Mono.from(
+                dslContext.deleteFrom(USERS)
+                        .where(USERS.PK.eq(pk))
+        ).onErrorMap(e -> new CustomException(ResultCode.DB_USER_DELETE_FAILED, e));
     }
 }
