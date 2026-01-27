@@ -6,6 +6,7 @@ import com.gistacsl.mosaic.common.exception.CustomException;
 import com.gistacsl.mosaic.common.exception.ICustomException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -18,6 +19,7 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Order(-2) // Must be higher than DefaultErrorWebExceptionHandler
 @Configuration
 @RequiredArgsConstructor
@@ -38,6 +40,7 @@ public class GlobalWebExceptionHandler implements ErrorWebExceptionHandler {
         response.setStatusCode(getStatusCode(ex));
 
         String responseBody = getResponseBody(ex);
+        log.error("Error occurred: {}", responseBody, ex);
 //        logger.logResponse(exchange, responseBody);
 
         Mono<DataBuffer> dataBuffer = Mono.just(response.bufferFactory().wrap(responseBody.getBytes()));

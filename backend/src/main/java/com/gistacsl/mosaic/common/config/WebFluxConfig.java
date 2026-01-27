@@ -16,6 +16,7 @@ public class WebFluxConfig implements WebFluxConfigurer {
     public void configureHttpMessageCodecs(ServerCodecConfigurer configurer) {
         ObjectMapper objectMapper = new ObjectMapper();
 
+        objectMapper.findAndRegisterModules();
         objectMapper.registerModule(ObjectMapperModule.getEnumModule());
 
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

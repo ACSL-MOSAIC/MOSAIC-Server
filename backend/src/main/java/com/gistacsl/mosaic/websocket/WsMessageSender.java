@@ -7,12 +7,14 @@ import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.common.exception.CustomException;
 import com.gistacsl.mosaic.websocket.dto.WsGResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WsMessageSender {
@@ -25,14 +27,17 @@ public class WsMessageSender {
     }
 
     public <R> Mono<Void> sendWsGResponse(WsGResponse<R> wsGResponse, UUID targetSessionId) {
+        log.debug("Sending WebSocket response to session: {}", targetSessionId);
         return this.wsGResponseToWsMessage(wsGResponse)
                 .flatMap((wsMessage) -> {
                     Optional<WsSession> optionalWsSession = this.wsSessionManager.getSession(targetSessionId);
                     if (optionalWsSession.isEmpty()) {
+                        log.warn("WebSocket session not found: {}", targetSessionId);
                         return Mono.error(new CustomException(ResultCode.WEBSOCKET_SESSION_NOT_EXIST));
                     } else {
                         WsSession wsSession = optionalWsSession.get();
                         wsSession.getSinks().tryEmitNext(wsMessage);
+                        log.debug("WebSocket message sent successfully to session: {}", targetSessionId);
                     }
                     return Mono.empty();
                 });
@@ -48,8 +53,11 @@ public class WsMessageSender {
 
     private Mono<String> wsGResponseToWsMessage(WsGResponse<?> wsGResponse) {
         try {
-            return Mono.just(this.objectMapper.writeValueAsString(wsGResponse));
+            String json = this.objectMapper.writeValueAsString(wsGResponse);
+            log.debug("Serialized WebSocket response: {}", json);
+            return Mono.just(json);
         } catch (JsonProcessingException e) {
+            log.error("Failed to serialize WsGResponse to JSON: {}", wsGResponse, e);
             return Mono.error(new CustomException(ResultCode.UNKNOWN_EXCEPTION_OCCURRED, e));
         }
     }
