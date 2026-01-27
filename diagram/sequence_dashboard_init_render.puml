@@ -27,6 +27,7 @@ Backend --[#blue]> MosaicProvider: 로봇 리스트 with RobotConfig
 note right of Backend: "robot_config_example.json 참고"
 
 MosaicProvider -[#red]> MosaicContext: updateRobotInfo(robotInfo)
+note right of MosaicContext: updateRobotInfo 실행 주체는 아직 미정
 MosaicContext --[#blue]> MosaicProvider: 완료
 
 note right of DashboardGrid: 이후 로봇 상태 변경 시\n서버가 자동으로 메시지 전송
