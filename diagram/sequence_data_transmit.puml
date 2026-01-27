@@ -1,23 +1,39 @@
 @startuml
-'https://plantuml.com/sequence-diagram
-
-participant WidgetComponent
-participant WriteOnlyStore
-participant WebRTCConnection
-participant Robot
-
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 250
 autonumber
+
+actor User
+participant "WidgetComponent" as WidgetComponent
+participant "MosaicStore" as MosaicStore
+participant "Robot" as Robot
 
 == 데이터 송신 ==
 
-WidgetComponent -[#red]> WriteOnlyStore: add(data)
-WriteOnlyStore -[#red]> WriteOnlyStore ++: parser(data)
-WriteOnlyStore [#blue]-> WriteOnlyStore --: 파싱된 데이터
+User -[#red]> WidgetComponent: 데이터 입력
+activate WidgetComponent
 
-WriteOnlyStore -[#red]> WebRTCConnection: sendData(channelLabel, data)
-WebRTCConnection -[#red]> WebRTCConnection ++: DataChannel.send(data)
-WebRTCConnection [#blue]-> WebRTCConnection --: 데이터 전송
+WidgetComponent -[#black]> WidgetComponent: 입력 데이터 처리
 
-WebRTCConnection -[#red]> Robot: 데이터 전송 (DataChannel)
-Robot [#blue]-> Robot: 데이터 수신 및 처리
+WidgetComponent -[#red]> MosaicStore: add(data)
+activate MosaicStore
+note right of MosaicStore: Store에 데이터 추가
+
+== Store 내부 처리 ==
+
+MosaicStore -[#black]> MosaicStore: 데이터 변환 및 sendData(data)
+
+MosaicStore --[#blue]> WidgetComponent: 완료
+deactivate MosaicStore
+
+WidgetComponent --[#blue]> User: UI 피드백
+deactivate WidgetComponent
+
+MosaicStore -[#red]> Robot: 센서 제어 명령 전달
+activate Robot
+note right of Robot: DataChannel을 통해\n직접 로봇에 전달
+
+Robot --[#blue]> MosaicStore: 완료
+deactivate Robot
+
 @enduml

@@ -44,7 +44,8 @@
       "connectors": [
         {
           "robot_id": "a200_0000",
-          "connector_id": "lidar_sensor"
+          "connector_id": "lidar_sensor",
+          "parallel": 5
         }
       ],
       "position": {
