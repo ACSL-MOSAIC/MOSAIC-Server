@@ -1,12 +1,28 @@
 openapi: 3.0.3
 info:
   title: MOSAIC Server API
-  description: REST API specification for MOSAIC Server (FastAPI to Spring migration reference)
+  description: REST API specification for MOSAIC Server
   version: 1.0.0
 
 servers:
-  - url: /api/v1
+  - url: http://localhost:9001/api/v1
     description: API base path
+
+tags:
+  - name: users
+    description: User management APIs
+  - name: users (organization admin)
+    description: User management APIs for organization administrators
+  - name: account
+    description: Account authentication and session management
+  - name: dashboard
+    description: Dashboard and tab management
+  - name: dynamic-type-config
+    description: Dynamic type configuration management
+  - name: occupancy_map
+    description: Occupancy map management for robot navigation
+  - name: robots
+    description: Robot device management
 
 components:
   securitySchemes:
@@ -80,6 +96,10 @@ components:
     UserUpdate:
       type: object
       properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
         email:
           type: string
           format: email
@@ -94,6 +114,23 @@ components:
           type: boolean
         is_superuser:
           type: boolean
+        full_name:
+          type: string
+          maxLength: 255
+          nullable: true
+
+    UserDelete:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+      required:
+        - id
+
+    UserUpdateMe:
+      type: object
+      properties:
         full_name:
           type: string
           maxLength: 255
@@ -147,35 +184,9 @@ components:
         existing_connection:
           type: boolean
           default: false
-        message:
-          type: string
-          nullable: true
-        user_id:
-          type: string
-          nullable: true
       required:
         - access_token
-
-    DisconnectRequest:
-      type: object
-      properties:
-        user_id:
-          type: string
-      required:
-        - user_id
-
-    NewPassword:
-      type: object
-      properties:
-        token:
-          type: string
-        new_password:
-          type: string
-          minLength: 8
-          maxLength: 40
-      required:
-        - token
-        - new_password
+        - existing_connection
 
     # Robot schemas
     RobotStatus:
@@ -206,14 +217,9 @@ components:
       required:
         - name
 
-    RobotCreate:
+    RobotAdd:
       allOf:
         - $ref: '#/components/schemas/RobotBase'
-        - type: object
-          properties:
-            id:
-              type: string
-              format: uuid
 
     RobotUpdate:
       type: object
@@ -230,7 +236,7 @@ components:
         status:
           $ref: '#/components/schemas/RobotStatus'
 
-    RobotPublic:
+    RobotInfo:
       allOf:
         - $ref: '#/components/schemas/RobotBase'
         - type: object
@@ -245,53 +251,81 @@ components:
             - id
             - owner_id
 
-    RobotsPublic:
+    RobotInfosPage:
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/RobotPublic'
+            $ref: '#/components/schemas/RobotInfo'
         count:
           type: integer
       required:
         - data
         - count
 
-    # Dashboard schemas
-    DashboardCreate:
+    # Dashboard/Tab schemas
+    TabInfo:
       type: object
       properties:
-        dashboard_config:
-          type: object
-          additionalProperties: true
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
       required:
-        - dashboard_config
+        - id
+        - name
 
-    DashboardPublic:
+    TabInfoList:
+      type: array
+      items:
+        $ref: '#/components/schemas/TabInfo'
+
+    TabConfig:
       type: object
       properties:
-        dashboard_id:
+        id:
           type: string
           format: uuid
-        user_id:
+        name:
           type: string
-          format: uuid
-        dashboard_config:
-          type: object
-          additionalProperties: true
-        created_at:
+        widgets:
           type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
+          description: JSON string of tab configuration
       required:
-        - dashboard_id
-        - user_id
-        - dashboard_config
-        - created_at
-        - updated_at
+        - id
+        - name
+        - widgets
+
+    TabAdd:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+        - name
+
+    TabNameUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+        - name
+
+    TabConfigUpdate:
+      type: object
+      properties:
+        tab_config:
+          type: string
+          description: JSON string of tab configuration
+      required:
+        - tab_config
 
     # Dynamic Type Config schemas
     DynamicTypeConfigCreate:
@@ -411,16 +445,16 @@ components:
         - full_name
 
 paths:
-  # User endpoints
-  /users:
+  # Organization User endpoints
+  /organization/users:
     get:
       tags:
-        - users
+        - users (organization admin)
       summary: List users
-      description: Retrieve users (superuser only)
+      description: Retrieve users in organization (organization admin only)
       operationId: listUsers
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: skip
           in: query
@@ -444,12 +478,12 @@ paths:
 
     post:
       tags:
-        - users
+        - users (organization admin)
       summary: Create user
-      description: Create new user (superuser only)
+      description: Create new user in organization (organization admin only)
       operationId: createUser
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -462,37 +496,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserPublic'
+                $ref: '#/components/schemas/Message'
         '400':
           description: User already exists
         '403':
           description: Not enough privileges
 
-  /users/me:
-    get:
+    put:
       tags:
-        - users
-      summary: Get current user
-      description: Get current user information
-      operationId: getCurrentUser
+        - users (organization admin)
+      summary: Update user
+      description: Update a user (organization admin only)
+      operationId: updateUser
       security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPublic'
-
-    patch:
-      tags:
-        - users
-      summary: Update current user
-      description: Update own user information
-      operationId: updateCurrentUser
-      security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -505,18 +522,26 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserPublic'
+                $ref: '#/components/schemas/Message'
+        '404':
+          description: User not found
         '409':
           description: Email already exists
 
     delete:
       tags:
-        - users
-      summary: Delete current user
-      description: Delete own user account
-      operationId: deleteCurrentUser
+        - users (organization admin)
+      summary: Delete user
+      description: Delete a user (organization admin only)
+      operationId: deleteUser
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserDelete'
       responses:
         '200':
           description: Successful response
@@ -525,17 +550,58 @@ paths:
               schema:
                 $ref: '#/components/schemas/Message'
         '403':
-          description: Super users cannot delete themselves
+          description: Cannot delete yourself
+        '404':
+          description: User not found
+
+  /users/me:
+    get:
+      tags:
+        - users
+      summary: Get current user
+      description: Get current user information
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: [ ]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+
+    put:
+      tags:
+        - users
+      summary: Update current user
+      description: Update own user information
+      operationId: updateCurrentUser
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateMe'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
 
   /users/me/password:
-    patch:
+    put:
       tags:
         - users
       summary: Update password
       description: Update own password
       operationId: updatePassword
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -552,115 +618,6 @@ paths:
         '400':
           description: Incorrect password or new password same as current
 
-  /users/signup:
-    post:
-      tags:
-        - users
-      summary: Register user
-      description: Create new user without authentication
-      operationId: registerUser
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserRegister'
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPublic'
-        '400':
-          description: User already exists
-
-  /users/{user_id}:
-    get:
-      tags:
-        - users
-      summary: Get user by ID
-      description: Get a specific user by ID
-      operationId: getUserById
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPublic'
-        '403':
-          description: Not enough privileges
-
-    patch:
-      tags:
-        - users
-      summary: Update user
-      description: Update a user (superuser only)
-      operationId: updateUser
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserUpdate'
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPublic'
-        '404':
-          description: User not found
-        '409':
-          description: Email already exists
-
-    delete:
-      tags:
-        - users
-      summary: Delete user
-      description: Delete a user (superuser only)
-      operationId: deleteUser
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Message'
-        '403':
-          description: Cannot delete yourself
-        '404':
-          description: User not found
-
   # Account endpoints
   /account/login/access-token:
     post:
@@ -672,7 +629,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
               type: object
               properties:
@@ -700,12 +657,8 @@ paths:
       summary: Disconnect session
       description: Disconnect existing WebSocket connection and force logout
       operationId: disconnectSession
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DisconnectRequest'
+      security:
+        - BearerAuth: [ ]
       responses:
         '200':
           description: Successful response
@@ -716,19 +669,61 @@ paths:
         '404':
           description: No active session found
 
-  /account/reset-password:
+  /account/signup:
     post:
       tags:
         - account
-      summary: Reset password
-      description: Reset password with token
-      operationId: resetPassword
+      summary: Register user
+      description: Create new user without authentication
+      operationId: registerUser
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewPassword'
+              $ref: '#/components/schemas/UserRegister'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+        '400':
+          description: User already exists
+
+  # Dashboard/Tab endpoints
+  /dashboard/tabs:
+    get:
+      tags:
+        - dashboard
+      summary: List tabs
+      description: Get list of dashboard tabs for current organization
+      operationId: listTabs
+      security:
+        - BearerAuth: [ ]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TabInfoList'
+
+    post:
+      tags:
+        - dashboard
+      summary: Add tab
+      description: Add a new dashboard tab
+      operationId: addTab
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TabAdd'
       responses:
         '200':
           description: Successful response
@@ -736,52 +731,120 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Message'
-        '400':
-          description: Invalid token or inactive user
-        '404':
-          description: User not found
 
-  # Dashboard endpoints
-  /dashboard:
+  /dashboard/tabs/{tabId}:
     get:
       tags:
         - dashboard
-      summary: Get dashboard
-      description: Get current user's dashboard configuration
-      operationId: getDashboard
+      summary: Get tab config
+      description: Get dashboard tab configuration by ID
+      operationId: getTabConfig
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
+      parameters:
+        - name: tabId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DashboardPublic'
+                $ref: '#/components/schemas/TabConfig'
         '404':
-          description: Dashboard not found
+          description: Tab not found
 
-    post:
+    put:
       tags:
         - dashboard
-      summary: Upsert dashboard
-      description: Create or update dashboard configuration
-      operationId: upsertDashboard
+      summary: Update tab name
+      description: Update dashboard tab name
+      operationId: updateTabName
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
+      parameters:
+        - name: tabId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DashboardCreate'
+              $ref: '#/components/schemas/TabNameUpdate'
       responses:
         '200':
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DashboardPublic'
+                $ref: '#/components/schemas/Message'
+        '404':
+          description: Tab not found
+
+    delete:
+      tags:
+        - dashboard
+      summary: Delete tab
+      description: Delete dashboard tab
+      operationId: deleteTab
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: tabId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '404':
+          description: Tab not found
+
+  /dashboard/tabs/{tabId}/configs:
+    put:
+      tags:
+        - dashboard
+      summary: Update tab config
+      description: Update dashboard tab configuration
+      operationId: updateTabConfig
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: tabId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TabConfigUpdate'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '404':
+          description: Tab not found
 
   # Dynamic Type Config endpoints
   /dynamic-type-config:
@@ -792,7 +855,7 @@ paths:
       description: Get current user's dynamic type configuration
       operationId: getDynamicTypeConfig
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       responses:
         '200':
           description: Successful response
@@ -808,7 +871,7 @@ paths:
       description: Create or update dynamic type configuration
       operationId: upsertDynamicTypeConfig
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -830,7 +893,7 @@ paths:
       description: Delete current user's dynamic type configuration
       operationId: deleteDynamicTypeConfig
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       responses:
         '200':
           description: Successful response
@@ -850,7 +913,7 @@ paths:
       description: Get occupancy maps for current user
       operationId: listOccupancyMaps
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: skip
           in: query
@@ -877,7 +940,7 @@ paths:
       description: Create occupancy map with file uploads
       operationId: createOccupancyMap
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -917,7 +980,7 @@ paths:
       description: Get occupancy map by ID
       operationId: getOccupancyMap
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -944,7 +1007,7 @@ paths:
       description: Update occupancy map information
       operationId: updateOccupancyMap
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -964,7 +1027,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OccupancyMapPublic'
+                $ref: '#/components/schemas/Message'
         '403':
           description: Unauthorized
         '404':
@@ -977,7 +1040,7 @@ paths:
       description: Delete occupancy map and associated files
       operationId: deleteOccupancyMap
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -1005,7 +1068,7 @@ paths:
       description: Download PGM file of occupancy map
       operationId: downloadPgmFile
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -1034,7 +1097,7 @@ paths:
       description: Download YAML file of occupancy map
       operationId: downloadYamlFile
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -1063,7 +1126,7 @@ paths:
       description: Download occupancy map as ZIP containing both PGM and YAML files
       operationId: downloadMapZip
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -1095,7 +1158,7 @@ paths:
       description: Retrieve robots (all for superuser, own for normal user)
       operationId: listRobots
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: skip
           in: query
@@ -1113,29 +1176,29 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RobotsPublic'
+                $ref: '#/components/schemas/RobotInfosPage'
 
     post:
       tags:
         - robots
-      summary: Create robot
-      description: Create new robot
-      operationId: createRobot
+      summary: Add robot
+      description: Add new robot
+      operationId: addRobot
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RobotCreate'
+              $ref: '#/components/schemas/RobotAdd'
       responses:
         '200':
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RobotPublic'
+                $ref: '#/components/schemas/Message'
 
   /robots/{id}:
     get:
@@ -1145,7 +1208,7 @@ paths:
       description: Get robot by ID
       operationId: getRobot
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -1159,7 +1222,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RobotPublic'
+                $ref: '#/components/schemas/RobotInfo'
         '400':
           description: Not enough permissions
         '404':
@@ -1172,7 +1235,7 @@ paths:
       description: Update a robot
       operationId: updateRobot
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -1192,7 +1255,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RobotPublic'
+                $ref: '#/components/schemas/Message'
         '400':
           description: Not enough permissions
         '404':
@@ -1205,7 +1268,7 @@ paths:
       description: Delete a robot
       operationId: deleteRobot
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
