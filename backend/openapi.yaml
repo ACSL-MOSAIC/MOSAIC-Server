@@ -1044,7 +1044,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OccupancyMapPublic'
+                $ref: '#/components/schemas/Message'
         '403':
           description: Unauthorized
         '404':
