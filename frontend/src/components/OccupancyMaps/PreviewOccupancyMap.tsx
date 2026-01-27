@@ -8,7 +8,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react"
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { FiEye } from "react-icons/fi"
 
 import {
@@ -16,10 +16,6 @@ import {
   getOccupancyMapYamlApi,
 } from "@/client/service/occupancy-map.api.ts"
 import type { OccupancyMapPublic } from "@/client/service/occupancy-map.dto.ts"
-import { loadPgmMap } from "@/components/Dashboard/widgets/ros-2d-map-pose/load-pgm-map.ts"
-import type { PgmMapData } from "@/components/Dashboard/widgets/ros-2d-map-pose/load-pgm-map.ts"
-import { loadYamlMap } from "@/components/Dashboard/widgets/ros-2d-map-pose/load-yaml-map.ts"
-import type { YamlMapData } from "@/components/Dashboard/widgets/ros-2d-map-pose/load-yaml-map.ts"
 import {
   DialogActionTrigger,
   DialogBody,
@@ -31,6 +27,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import useCustomToast from "@/hooks/useCustomToast"
+import { type PgmMapData, loadPgmMap } from "@/utils/load-pgm-map.ts"
+import { type YamlMapData, loadYamlMap } from "@/utils/load-yaml-map.ts"
 
 interface PreviewOccupancyMapProps {
   occupancyMap: OccupancyMapPublic
@@ -44,7 +42,7 @@ const PreviewOccupancyMap = ({ occupancyMap }: PreviewOccupancyMapProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { showErrorToast } = useCustomToast()
 
-  const loadMapData = async () => {
+  const loadMapData = useCallback(async () => {
     setIsLoading(true)
     try {
       const [pgmBlob, yamlBlob] = await Promise.all([
@@ -74,9 +72,9 @@ const PreviewOccupancyMap = ({ occupancyMap }: PreviewOccupancyMapProps) => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [occupancyMap.id, showErrorToast])
 
-  const drawMap = () => {
+  const drawMap = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas || !pgmMapData) return
 
@@ -102,19 +100,19 @@ const PreviewOccupancyMap = ({ occupancyMap }: PreviewOccupancyMapProps) => {
     }
 
     ctx.putImageData(imageData, 0, 0)
-  }
+  }, [pgmMapData])
 
   useEffect(() => {
     if (isOpen && !pgmMapData && !isLoading) {
       loadMapData()
     }
-  }, [isOpen])
+  }, [isOpen, pgmMapData, isLoading, loadMapData])
 
   useEffect(() => {
     if (pgmMapData) {
       drawMap()
     }
-  }, [pgmMapData])
+  }, [pgmMapData, drawMap])
 
   return (
     <DialogRoot

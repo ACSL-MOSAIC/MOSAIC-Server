@@ -1,10 +1,6 @@
 export type Body_users_login_access_token = {
-  grant_type?: string | null
   username: string
   password: string
-  scope?: string
-  client_id?: string | null
-  client_secret?: string | null
 }
 
 export type DisconnectRequest = {
@@ -24,10 +20,8 @@ export type PrivateUserCreate = {
 }
 
 export type LoginResponse = {
-  access_token: string
-  existing_connection?: boolean
-  message?: string | null
-  user_id?: string | null
+  accessToken: string
+  existingConnection?: boolean
 }
 
 export type UpdatePassword = {

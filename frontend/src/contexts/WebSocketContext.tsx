@@ -1,4 +1,5 @@
 import useAuth from "@/hooks/useAuth"
+import {getBackendWsUrl} from "@/utils/envs.ts"
 import {
   type ReactNode,
   createContext,
@@ -125,8 +126,8 @@ export interface WebSocketContextType {
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null)
 
-export function WebSocketProvider({ children }: { children: ReactNode }) {
-  const { user, logout: authLogout } = useAuth()
+export function WebSocketProvider({children}: { children: ReactNode }) {
+  const {user, logout: authLogout} = useAuth()
   const [robots, setRobots] = useState<RobotInfo[]>([])
   const [ws, setWs] = useState<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
@@ -146,17 +147,9 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     if (isConnectingRef.current || !user?.id) return
 
     isConnectingRef.current = true
-    // console.log("WebSocket 연결 시도...")
 
-    const environment = import.meta.env.VITE_ENVIRONMENT
-    const productionWsURL = "wss://api.acslgcs.com"
-    const localWsURL = "ws://localhost:8000"
-    const wsURL = environment === "production" ? productionWsURL : localWsURL
-
-    // console.log("environment", environment)
-    // console.log("wsURL", wsURL)
-
-    const websocket = new WebSocket(`${wsURL}/ws/user?user_id=${user.id}`)
+    const wsURL = getBackendWsUrl()
+    const websocket = new WebSocket(`${wsURL}/ws/user`)
 
     websocket.onopen = () => {
       console.log("WebSocket 연결됨")
@@ -170,7 +163,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       // 30초마다 ping 메시지 전송
       refreshIntervalRef.current = setInterval(() => {
         if (websocket.readyState === WebSocket.OPEN) {
-          websocket.send(JSON.stringify({ type: "ping" }))
+          websocket.send(JSON.stringify({type: "ping"}))
         }
       }, 30000)
     }
@@ -215,7 +208,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         clearInterval(refreshIntervalRef.current)
       }
 
-      if (event.code !== 1000) {
+      if (event.code !== 1000 && event.code !== 1006) {
         reconnectTimeoutRef.current = setTimeout(() => {
           console.log("WebSocket 재연결 시도...")
           connectWebSocket()
@@ -227,11 +220,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const sendMessage = (message: WebSocketMessage) => {
     if (ws?.readyState === WebSocket.OPEN) {
       // console.log("WebSocket 메시지 전송:", message)
-      const messageWithUserId = {
-        ...message,
-        user_id: user?.id,
-      }
-      ws.send(JSON.stringify(messageWithUserId))
+      ws.send(JSON.stringify(message))
     } else {
       // console.error("WebSocket이 연결되어 있지 않습니다.")
     }
@@ -262,7 +251,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && !ws && !isConnectingRef.current) {
       connectWebSocket()
     } else {
       disconnect()
@@ -304,7 +293,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
   return (
     <WebSocketContext.Provider
-      value={{ robots, ws, sendMessage, onMessage, disconnect }}
+      value={{robots, ws, sendMessage, onMessage, disconnect}}
     >
       {children}
     </WebSocketContext.Provider>

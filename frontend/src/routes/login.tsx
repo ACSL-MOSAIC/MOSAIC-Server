@@ -1,15 +1,16 @@
-import { Button, Container, Image, Input } from "@chakra-ui/react"
-import { createFileRoute, redirect } from "@tanstack/react-router"
-import { useState } from "react"
-import { FiLock, FiMail } from "react-icons/fi"
+import {Button, Container, Image, Input} from "@chakra-ui/react"
+import {createFileRoute, redirect} from "@tanstack/react-router"
+import {useState} from "react"
+import {FiLock, FiMail} from "react-icons/fi"
 
-import type { Body_users_login_access_token as AccessToken } from "@/client/service/user.dto.ts"
-import { Field } from "@/components/ui/field"
-import { InputGroup } from "@/components/ui/input-group"
-import { PasswordInput } from "@/components/ui/password-input"
-import useAuth, { isLoggedIn } from "@/hooks/useAuth"
+import type {Body_users_login_access_token as AccessToken} from "@/client/service/user.dto.ts"
+import {Field} from "@/components/ui/field"
+import {InputGroup} from "@/components/ui/input-group"
+import {PasswordInput} from "@/components/ui/password-input"
+import useAuth, {isLoggedIn} from "@/hooks/useAuth"
+import {emailPattern} from "@/utils"
+// @ts-ignore
 import Logo from "/assets/images/acsl-logo.svg"
-import { emailPattern } from "../utils"
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/login")({
 })
 
 function Login() {
-  const { loginMutation, disconnectMutation, error, resetError } = useAuth()
+  const {loginMutation, disconnectMutation, error, resetError} = useAuth()
   const [formData, setFormData] = useState<AccessToken>({
     username: "",
     password: "",
@@ -63,7 +64,7 @@ function Login() {
 
     try {
       const response = await loginMutation.mutateAsync(formData)
-      if (response.existing_connection && response.user_id) {
+      if (response.existingConnection && response.user_id) {
         if (
           window.confirm(
             "이미 다른 기기에서 로그인되어 있습니다. 기존 연결을 해제하고 로그인하시겠습니까?",
@@ -81,7 +82,7 @@ function Login() {
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
+    const {name, value} = e.target
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -108,7 +109,7 @@ function Login() {
         mb={4}
       />
       <Field invalid={!!errors.username} errorText={errors.username || !!error}>
-        <InputGroup w="100%" startElement={<FiMail />}>
+        <InputGroup w="100%" startElement={<FiMail/>}>
           <Input
             id="username"
             name="username"
@@ -126,7 +127,7 @@ function Login() {
         onChange={handleChange}
         placeholder="Password"
         errors={errors}
-        startElement={<FiLock />}
+        startElement={<FiLock/>}
       />
       <Button variant="solid" type="submit" loading={isSubmitting} size="md">
         Log In

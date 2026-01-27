@@ -1,6 +1,7 @@
 # Media Stream Setup and Management Guide
 
 ### Table of Contents
+
 1. [Video Store Structure](#1-video-store-structure)
 2. [Video Store Internal Processing and Robot Metadata](#2-video-store-internal-processing-and-robot-metadata)
 3. [Widget Modularization Structure](#3-widget-modularization-structure)
@@ -11,10 +12,12 @@
 ### 1. Video Store Structure
 
 #### 1.1 Concept and Role
+
 - The Video Store delivers WebRTC MediaStream to subscribers (such as widgets) in real time.
 - It does not store data; it simply connects and delivers incoming streams.
 
 #### 1.2 Class Structure (Example)
+
 ```mermaid
 classDiagram
     class VideoStore {
@@ -45,6 +48,7 @@ classDiagram
 ```
 
 #### 1.3 Main Components
+
 - **VideoStore**: Delivers MediaStream, measures FPS, manages statistics
 - **VideoStoreManager**: Singleton, manages stores by media type, auto-creates/cleans up
 
@@ -53,6 +57,7 @@ classDiagram
 ### 2. Video Store Internal Processing and Robot Metadata
 
 #### 2.1 Overall Data Flow
+
 ```mermaid
 flowchart TD
     subgraph "1. SDP Offer/Answer"
@@ -76,6 +81,7 @@ flowchart TD
 ```
 
 #### 2.2 MSID-based Media Type Parsing
+
 - In the SDP Answer, the `a=msid-semantic: WMS ...` line lists media types in a single line, separated by spaces.
 - Example:
   ```
@@ -84,13 +90,14 @@ flowchart TD
 - Each media stream is specified as `a=msid:{media_type} {uuid}`.
 
 #### 2.3 Frontend Parsing Example
+
 ```typescript
-// webrtc-sdp-utils.ts
+// webrtc-sdp-index.ts
 export function parseMetadataFromSdp(sdp: string): Map<string, any> {
   const metadata = new Map<string, any>();
   const normalizedSdp = sdp.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   const lines = normalizedSdp.split('\n');
-  
+
   // Parse all media types from MSID semantic
   for (const line of lines) {
     const msidSemanticMatch = line.match(/^a=msid-semantic:\s+WMS\s+(.+)$/);
@@ -100,24 +107,25 @@ export function parseMetadataFromSdp(sdp: string): Map<string, any> {
       break;
     }
   }
-  
+
   // Parse MSID for each media stream
-  const mediaStreams: Array<{mediaType: string, streamId: string}> = [];
+  const mediaStreams: Array<{ mediaType: string, streamId: string }> = [];
   for (const line of lines) {
     const msidMatch = line.match(/^a=msid:\s*([^\s]+)\s+([^\s]+)$/);
     if (msidMatch) {
       const mediaType = msidMatch[1].trim();
       const streamId = msidMatch[2].trim();
-      mediaStreams.push({ mediaType, streamId });
+      mediaStreams.push({mediaType, streamId});
     }
   }
-  
+
   metadata.set('mediaStreams', mediaStreams);
   return metadata;
 }
 ```
 
 #### 2.4 Multiple Media Streams Processing Example
+
 ```typescript
 // webrtc-connection.ts
 this.peerConnection.ontrack = (event) => {
@@ -149,6 +157,7 @@ this.peerConnection.ontrack = (event) => {
 ### 3. Widget Modularization Structure
 
 #### 3.1 WidgetFrame Component
+
 All widgets use the `WidgetFrame` component to provide consistent UI/UX.
 
 ```mermaid
@@ -183,6 +192,7 @@ classDiagram
 ```
 
 #### 3.2 Widget Structure Example
+
 ```typescript
 // New widget creation example
 export function NewVideoWidget({ robotId, store, dataType }: NewVideoWidgetProps) {
@@ -228,6 +238,7 @@ export function NewVideoWidget({ robotId, store, dataType }: NewVideoWidgetProps
 ```
 
 #### 3.3 Widget File Structure
+
 ```
 frontend/src/components/Dashboard/widgets/
 ├── WidgetFrame.tsx              # Common widget frame
@@ -244,7 +255,9 @@ frontend/src/components/Dashboard/widgets/
 ### 4. Adding New Video Tracks
 
 #### 4.1 Add Media Channel Configuration
+
 - Add a new media type to `frontend/src/rtc/webrtc-media-channel-config.ts`
+
 ```typescript
 export const MEDIA_CHANNEL_CONFIG = {
   'turtlesim_video': { ... },
@@ -257,13 +270,16 @@ export const MEDIA_CHANNEL_CONFIG = {
 ```
 
 #### 4.2 Create VideoStore Class
+
 - Create `frontend/src/dashboard/store/media-channel-store/new-video.store.ts`
 - Inherit from VideoStore and override necessary methods
 
 #### 4.3 Register Factory in VideoStoreManager
+
 - Register in `storeFactories` in `video-store-manager.ts`
 
 #### 4.4 Create and Register Widget
+
 1. **Create Widget Component**: `NewVideoWidget.tsx`
    ```typescript
    import { WidgetFrame } from './WidgetFrame';
@@ -307,6 +323,7 @@ export const MEDIA_CHANNEL_CONFIG = {
    ```
 
 #### 4.5 Add Media Type to Robot SDP Answer
+
 - Example:
   ```
   a=msid-semantic: WMS turtlesim_video new_video

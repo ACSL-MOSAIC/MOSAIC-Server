@@ -1,4 +1,4 @@
-import { type CancelablePromise, type Message, OpenAPI } from "@/client"
+import type { CancelablePromise, Message } from "@/client"
 import { request as __request } from "@/client/core/request.ts"
 import type {
   OccupancyMapPublic,
@@ -16,7 +16,7 @@ export const readOccupancyMapsApi = (
   skip?: number,
   limit?: number,
 ): CancelablePromise<OccupancyMapsPublic> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "GET",
     url: "/api/v1/occupancy_map/",
     query: {
@@ -38,7 +38,7 @@ export const readOccupancyMapsApi = (
 export const readOccupancyMapApi = (
   id: string,
 ): CancelablePromise<OccupancyMapPublic> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "GET",
     url: "/api/v1/occupancy_map/{id}",
     path: {
@@ -68,7 +68,7 @@ export const createOccupancyMapApi = (
   formData.append("pgm_file", pgmFile)
   formData.append("yaml_file", yamlFile)
 
-  return __request(OpenAPI, {
+  return __request({
     method: "POST",
     url: "/api/v1/occupancy_map/",
     body: formData,
@@ -87,7 +87,7 @@ export const createOccupancyMapApi = (
 export const downloadOccupancyMapApi = (
   id: string,
 ): CancelablePromise<Blob> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "GET",
     url: "/api/v1/occupancy_map/{id}/download",
     path: {
@@ -109,7 +109,7 @@ export const downloadOccupancyMapApi = (
 export const deleteOccupancyMapApi = (
   id: string,
 ): CancelablePromise<Message> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "DELETE",
     url: "/api/v1/occupancy_map/{id}",
     path: {
@@ -128,7 +128,7 @@ export const deleteOccupancyMapApi = (
  * @throws ApiError
  */
 export const getOccupancyMapPgmApi = (id: string): CancelablePromise<Blob> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "GET",
     url: "/api/v1/occupancy_map/{id}/pgm",
     path: {
@@ -148,7 +148,7 @@ export const getOccupancyMapPgmApi = (id: string): CancelablePromise<Blob> => {
  * @throws ApiError
  */
 export const getOccupancyMapYamlApi = (id: string): CancelablePromise<Blob> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "GET",
     url: "/api/v1/occupancy_map/{id}/yaml",
     path: {

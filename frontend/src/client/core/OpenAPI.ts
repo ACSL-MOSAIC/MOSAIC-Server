@@ -1,5 +1,6 @@
-import type { AxiosRequestConfig, AxiosResponse } from "axios"
-import type { ApiRequestOptions } from "./ApiRequestOptions"
+import {getBackendUrl} from "@/utils/envs.ts"
+import type {AxiosRequestConfig, AxiosResponse} from "axios"
+import type {ApiRequestOptions} from "./ApiRequestOptions"
 
 type Headers = Record<string, string>
 type Middleware<T> = (value: T) => T | Promise<T>
@@ -40,8 +41,13 @@ export type OpenAPIConfig = {
   }
 }
 
+const responseMiddleware = (response: AxiosResponse) => {
+  response.data = response.data.resultData
+  return response
+}
+
 export const OpenAPI: OpenAPIConfig = {
-  BASE: "",
+  BASE: getBackendUrl(),
   CREDENTIALS: "include",
   ENCODE_PATH: undefined,
   HEADERS: undefined,
@@ -55,3 +61,5 @@ export const OpenAPI: OpenAPIConfig = {
     response: new Interceptors(),
   },
 }
+
+OpenAPI.interceptors.response.use(responseMiddleware)

@@ -19,8 +19,8 @@ import { Route as LayoutIndexImport } from './routes/_layout/index'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutRobotsImport } from './routes/_layout/robots'
 import { Route as LayoutOccupancyMapsImport } from './routes/_layout/occupancy-maps'
+import { Route as LayoutDashboardImport } from './routes/_layout/dashboard'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
-import { Route as LayoutConnectIndexImport } from './routes/_layout/connect/index'
 
 // Create/Update Routes
 
@@ -64,13 +64,13 @@ const LayoutOccupancyMapsRoute = LayoutOccupancyMapsImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutAdminRoute = LayoutAdminImport.update({
-  path: '/admin',
+const LayoutDashboardRoute = LayoutDashboardImport.update({
+  path: '/dashboard',
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutConnectIndexRoute = LayoutConnectIndexImport.update({
-  path: '/connect/',
+const LayoutAdminRoute = LayoutAdminImport.update({
+  path: '/admin',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -98,6 +98,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/dashboard': {
+      preLoaderRoute: typeof LayoutDashboardImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/occupancy-maps': {
       preLoaderRoute: typeof LayoutOccupancyMapsImport
       parentRoute: typeof LayoutImport
@@ -114,10 +118,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/connect/': {
-      preLoaderRoute: typeof LayoutConnectIndexImport
-      parentRoute: typeof LayoutImport
-    }
   }
 }
 
@@ -126,11 +126,11 @@ declare module '@tanstack/react-router' {
 export const routeTree = rootRoute.addChildren([
   LayoutRoute.addChildren([
     LayoutAdminRoute,
+    LayoutDashboardRoute,
     LayoutOccupancyMapsRoute,
     LayoutRobotsRoute,
     LayoutSettingsRoute,
     LayoutIndexRoute,
-    LayoutConnectIndexRoute,
   ]),
   LoginRoute,
   ResetPasswordRoute,

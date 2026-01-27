@@ -1,7 +1,6 @@
-import type {CancelablePromise} from "@/client/core/CancelablePromise.ts"
-import {OpenAPI} from "@/client/core/OpenAPI.ts"
-import {request as __request} from "@/client/core/request.ts"
-import type {DashboardCreate, DashboardPublic} from "./dashboard.dto.ts"
+import type { CancelablePromise } from "@/client/core/CancelablePromise.ts"
+import { request as __request } from "@/client/core/request.ts"
+import type { DashboardCreate, DashboardPublic } from "./dashboard.dto.ts"
 
 /**
  * Read Dashboard
@@ -10,7 +9,7 @@ import type {DashboardCreate, DashboardPublic} from "./dashboard.dto.ts"
  * @throws ApiError
  */
 export const readDashboardApi = (): CancelablePromise<DashboardPublic> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "GET",
     url: "/api/v1/dashboard/",
   })
@@ -25,7 +24,7 @@ export const readDashboardApi = (): CancelablePromise<DashboardPublic> => {
 export const upsertDashboardApi = (
   requestBody: DashboardCreate,
 ): CancelablePromise<DashboardPublic> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "POST",
     url: "/api/v1/dashboard/",
     body: requestBody,

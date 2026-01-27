@@ -7,8 +7,9 @@
     "ignore": [
       "node_modules",
       "src/routeTree.gen.ts",
-      "playwright.config.ts",
-      "playwright-report"
+      "tsconfig.json",
+      "tsconfig.build.json",
+      "tsconfig.node.json"
     ]
   },
   "linter": {

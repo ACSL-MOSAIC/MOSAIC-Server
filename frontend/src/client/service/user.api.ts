@@ -1,5 +1,5 @@
-import { type CancelablePromise, type Message, OpenAPI } from "@/client"
-import { request as __request } from "@/client/core/request.ts"
+import type {CancelablePromise, Message} from "@/client"
+import {request as __request} from "@/client/core/request.ts"
 import type {
   Body_users_login_access_token,
   DisconnectRequest,
@@ -23,7 +23,7 @@ import type {
 export const createUserPrivateApi = (
   requestBody: PrivateUserCreate,
 ): CancelablePromise<UserPublic> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "POST",
     url: "/api/v1/private/users/",
     body: requestBody,
@@ -45,7 +45,7 @@ export const readUsersApi = (
   limit?: number,
   skip?: number,
 ): CancelablePromise<UsersPublic> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "GET",
     url: "/api/v1/users/",
     query: {
@@ -67,7 +67,7 @@ export const readUsersApi = (
 export const createUserApi = (
   requestBody: UserCreate,
 ): CancelablePromise<UserPublic> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "POST",
     url: "/api/v1/users/",
     body: requestBody,
@@ -85,7 +85,7 @@ export const createUserApi = (
  * @throws ApiError
  */
 export const readUserMeApi = (): CancelablePromise<UserPublic> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "GET",
     url: "/api/v1/users/me",
   })
@@ -98,7 +98,7 @@ export const readUserMeApi = (): CancelablePromise<UserPublic> => {
  * @throws ApiError
  */
 export const deleteUserMeApi = (): CancelablePromise<Message> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "DELETE",
     url: "/api/v1/users/me",
   })
@@ -113,7 +113,7 @@ export const deleteUserMeApi = (): CancelablePromise<Message> => {
 export const updateUserMeApi = (
   requestBody: UserUpdate,
 ): CancelablePromise<UserPublic> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "PATCH",
     url: "/api/v1/users/me",
     body: requestBody,
@@ -133,7 +133,7 @@ export const updateUserMeApi = (
 export const updatePasswordMeApi = (
   requestBody: UpdatePassword,
 ): CancelablePromise<Message> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "PATCH",
     url: "/api/v1/users/me/password",
     body: requestBody,
@@ -153,7 +153,7 @@ export const updatePasswordMeApi = (
 export const registerUserApi = (
   requestBody: UserRegister,
 ): CancelablePromise<UserPublic> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "POST",
     url: "/api/v1/users/signup",
     body: requestBody,
@@ -175,7 +175,7 @@ export const updateUserApi = (
   userId: string,
   requestBody: UserUpdate,
 ): CancelablePromise<UserPublic> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "PATCH",
     url: "/api/v1/users/{user_id}",
     path: {
@@ -196,7 +196,7 @@ export const updateUserApi = (
  * @throws ApiError
  */
 export const deleteUserApi = (userId: string): CancelablePromise<Message> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "DELETE",
     url: "/api/v1/users/{user_id}",
     path: {
@@ -210,18 +210,18 @@ export const deleteUserApi = (userId: string): CancelablePromise<Message> => {
 
 /**
  * Login Access Token
- * @param formData
+ * @param requestBody
  * @returns LoginResponse Successful Response
  * @throws ApiError
  */
 export const loginAccessTokenApi = (
-  formData: Body_users_login_access_token,
+  requestBody: Body_users_login_access_token,
 ): CancelablePromise<LoginResponse> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "POST",
-    url: "/api/v1/users/login/access-token",
-    formData: formData,
-    mediaType: "application/x-www-form-urlencoded",
+    url: "/api/v1/account/login/access-token",
+    body: requestBody,
+    mediaType: "application/json",
     errors: {
       422: "Validation Error",
     },
@@ -237,7 +237,7 @@ export const loginAccessTokenApi = (
 export const disconnectExistingSessionApi = (
   requestBody: DisconnectRequest,
 ): CancelablePromise<Message> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "POST",
     url: "/api/v1/users/disconnect",
     body: requestBody,
@@ -258,7 +258,7 @@ export const disconnectExistingSessionApi = (
 export const resetPasswordApi = (
   requestBody: NewPassword,
 ): CancelablePromise<Message> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "POST",
     url: "/api/v1/users/reset-password/",
     body: requestBody,

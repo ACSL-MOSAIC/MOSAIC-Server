@@ -1,4 +1,4 @@
-import { type CancelablePromise, type Message, OpenAPI } from "@/client"
+import type { CancelablePromise, Message } from "@/client"
 import { request as __request } from "@/client/core/request.ts"
 import type { RobotCreate, RobotUpdate, RobotsPublic } from "./robot.dto.ts"
 
@@ -13,7 +13,7 @@ export const readRobotsApi = (
   limit?: number,
   skip?: number,
 ): CancelablePromise<RobotsPublic> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "GET",
     url: "/api/v1/robots/",
     query: {
@@ -35,7 +35,7 @@ export const readRobotsApi = (
 export const createRobotApi = (
   requestBody: RobotCreate,
 ): CancelablePromise<RobotsPublic> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "POST",
     url: "/api/v1/robots/",
     body: requestBody,
@@ -57,7 +57,7 @@ export const updateRobotApi = (
   id: string,
   requestBody: RobotUpdate,
 ): CancelablePromise<RobotsPublic> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "PUT",
     url: "/api/v1/robots/{id}",
     path: {
@@ -78,7 +78,7 @@ export const updateRobotApi = (
  * @throws ApiError
  */
 export const deleteRobotApi = (id: string): CancelablePromise<Message> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "DELETE",
     url: "/api/v1/robots/{id}",
     path: {

@@ -6,12 +6,15 @@ import type {
   AxiosResponse,
 } from "axios"
 
-import { ApiError } from "./ApiError"
+import {
+  ApiError,
+  CancelablePromise,
+  OpenAPI,
+  type OpenAPIConfig,
+} from "@/client"
 import type { ApiRequestOptions } from "./ApiRequestOptions"
 import type { ApiResult } from "./ApiResult"
-import { CancelablePromise } from "./CancelablePromise"
 import type { OnCancel } from "./CancelablePromise"
-import type { OpenAPIConfig } from "./OpenAPI"
 
 export const isString = (value: unknown): value is string => {
   return typeof value === "string"
@@ -333,8 +336,8 @@ export const catchErrorCodes = (
  * @throws ApiError
  */
 export const request = <T>(
-  config: OpenAPIConfig,
   options: ApiRequestOptions<T>,
+  config: OpenAPIConfig = OpenAPI,
   axiosClient: AxiosInstance = axios,
 ): CancelablePromise<T> => {
   return new CancelablePromise(async (resolve, reject, onCancel) => {

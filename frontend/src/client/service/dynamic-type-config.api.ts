@@ -1,5 +1,4 @@
 import type { CancelablePromise } from "@/client"
-import { OpenAPI } from "@/client"
 import { request as __request } from "../core/request"
 import type {
   DynamicTypeConfigCreate,
@@ -14,7 +13,7 @@ import type {
  */
 export const readDynamicTypeConfigApi =
   (): CancelablePromise<DynamicTypeConfigPublic> => {
-    return __request(OpenAPI, {
+    return __request({
       method: "GET",
       url: "/api/v1/dynamic-type-config/",
     })
@@ -29,7 +28,7 @@ export const readDynamicTypeConfigApi =
 export const upsertDynamicTypeConfigApi = (
   requestBody: DynamicTypeConfigCreate,
 ): CancelablePromise<DynamicTypeConfigPublic> => {
-  return __request(OpenAPI, {
+  return __request({
     method: "POST",
     url: "/api/v1/dynamic-type-config/",
     body: requestBody,

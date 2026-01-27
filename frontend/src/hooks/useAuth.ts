@@ -1,9 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
-import { useState } from "react"
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query"
+import {useNavigate} from "@tanstack/react-router"
+import {useState} from "react"
 
-import type { ApiError } from "@/client"
-import { OpenAPI } from "@/client/core/OpenAPI"
+import type {ApiError} from "@/client"
+import {OpenAPI} from "@/client/core/OpenAPI"
 import {
   disconnectExistingSessionApi,
   loginAccessTokenApi,
@@ -14,7 +14,7 @@ import type {
   Body_users_login_access_token as AccessToken,
   UserPublic,
 } from "@/client/service/user.dto.ts"
-import { handleError } from "@/utils"
+import {handleError} from "@/utils"
 
 const isLoggedIn = () => {
   return localStorage.getItem("access_token") !== null
@@ -22,12 +22,10 @@ const isLoggedIn = () => {
 
 const useAuth = () => {
   const [error, setError] = useState<string | null>(null)
-  const [existingConnection, setExistingConnection] = useState<{
-    userId: string
-  } | null>(null)
+  const [existingConnection, setExistingConnection] = useState<boolean>(false)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { data: user } = useQuery<UserPublic | null, Error>({
+  const {data: user} = useQuery<UserPublic | null, Error>({
     queryKey: ["currentUser"],
     queryFn: readUserMeApi,
     enabled: isLoggedIn(),
@@ -36,37 +34,37 @@ const useAuth = () => {
   const signUpMutation = useMutation({
     mutationFn: registerUserApi,
     onSuccess: () => {
-      navigate({ to: "/login" })
+      navigate({to: "/login"})
     },
     onError: (err: ApiError) => {
       handleError(err)
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] })
+      queryClient.invalidateQueries({queryKey: ["users"]})
     },
   })
 
   const login = async (data: AccessToken) => {
     const response = await loginAccessTokenApi(data)
 
-    if (response.existing_connection && response.user_id) {
-      setExistingConnection({ userId: response.user_id })
+    if (response.existingConnection) {
+      setExistingConnection(true)
       return response
     }
 
-    localStorage.setItem("access_token", response.access_token)
+    localStorage.setItem("access_token", response.accessToken)
     // OpenAPI 설정에 토큰 설정
-    OpenAPI.TOKEN = response.access_token
+    OpenAPI.TOKEN = response.accessToken
     return response
   }
 
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: (response) => {
-      if (response.existing_connection) {
+      if (response.existingConnection) {
         return
       }
-      navigate({ to: "/" })
+      navigate({to: "/"})
     },
     onError: (err: ApiError) => {
       handleError(err)
@@ -75,10 +73,10 @@ const useAuth = () => {
 
   const disconnectMutation = useMutation({
     mutationFn: async (userId: string) => {
-      return disconnectExistingSessionApi({ user_id: userId })
+      return disconnectExistingSessionApi({user_id: userId})
     },
     onSuccess: () => {
-      setExistingConnection(null)
+      setExistingConnection(false)
       // 재로그인 시도
       const formData = loginMutation.variables
       if (formData) {
@@ -98,7 +96,7 @@ const useAuth = () => {
     // OpenAPI 설정에서 토큰 제거
     OpenAPI.TOKEN = undefined
     queryClient.clear()
-    navigate({ to: "/login" })
+    navigate({to: "/login"})
   }
 
   return {
@@ -113,5 +111,5 @@ const useAuth = () => {
   }
 }
 
-export { isLoggedIn }
+export {isLoggedIn}
 export default useAuth

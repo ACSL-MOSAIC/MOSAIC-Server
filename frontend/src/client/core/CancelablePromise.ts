@@ -18,11 +18,10 @@ export interface OnCancel {
 }
 
 export class CancelablePromise<T> implements Promise<T> {
-  private _isResolved: boolean
-  private _isRejected: boolean
-  private _isCancelled: boolean
   readonly cancelHandlers: (() => void)[]
   readonly promise: Promise<T>
+  private _isResolved: boolean
+  private _isRejected: boolean
   private _resolve?: (value: T | PromiseLike<T>) => void
   private _reject?: (reason?: unknown) => void
 
@@ -80,10 +79,17 @@ export class CancelablePromise<T> implements Promise<T> {
     })
   }
 
+  private _isCancelled: boolean
+
+  public get isCancelled(): boolean {
+    return this._isCancelled
+  }
+
   get [Symbol.toStringTag]() {
     return "Cancellable Promise"
   }
 
+  // biome-ignore lint/suspicious/noThenProperty: <explanation>
   public then<TResult1 = T, TResult2 = never>(
     onFulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null,
     onRejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
@@ -118,9 +124,5 @@ export class CancelablePromise<T> implements Promise<T> {
     }
     this.cancelHandlers.length = 0
     if (this._reject) this._reject(new CancelError("Request aborted"))
-  }
-
-  public get isCancelled(): boolean {
-    return this._isCancelled
   }
 }
