@@ -1,6 +1,6 @@
 import type {WebRTCConnection} from "@/mosaic/webrtc/webrtc-connection.ts"
 
-class SignalingServer {
+export class SignalingServer {
   private ws: WebSocket | null
   private rtcConnections: Map<string, WebRTCConnection>
 

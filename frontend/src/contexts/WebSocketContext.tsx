@@ -8,12 +8,7 @@ import {
   useRef,
   useState,
 } from "react"
-
-// 로봇 정보 타입
-export interface RobotInfo {
-  robot_id: string
-  state: string
-}
+import type {RobotInfo} from "@/mosaic/robot-info.ts"
 
 // 기본 메시지 타입
 export interface WebSocketBaseMessage {
@@ -114,7 +109,6 @@ export type WebSocketMessage =
   | ForceLogoutMessage
 
 export interface WebSocketContextType {
-  robots: RobotInfo[]
   ws: WebSocket | null
   sendMessage: (message: WebSocketMessage) => void
   onMessage: <T extends WebSocketMessage>(
@@ -128,7 +122,6 @@ const WebSocketContext = createContext<WebSocketContextType | null>(null)
 
 export function WebSocketProvider({children}: { children: ReactNode }) {
   const {user, logout: authLogout} = useAuth()
-  const [robots, setRobots] = useState<RobotInfo[]>([])
   const [ws, setWs] = useState<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
   const refreshIntervalRef = useRef<NodeJS.Timeout>()
@@ -155,10 +148,11 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
       console.log("WebSocket 연결됨")
       isConnectingRef.current = false
       setWs(websocket)
+      // TODO: 연결 즉시 인증 로직 수행
       // 연결 즉시 로봇 리스트 요청
-      sendMessage({
-        type: "get_robot_list",
-      })
+      // sendMessage({
+      //   type: "get_robot_list",
+      // })
 
       // 30초마다 ping 메시지 전송
       refreshIntervalRef.current = setInterval(() => {
@@ -181,7 +175,7 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
 
         // 로봇 리스트 처리
         if (data.type === "robot_list") {
-          setRobots(data.robots)
+          // TODO: updateRobotInfo(data.robots)
         }
 
         // 등록된 메시지 핸들러 호출
@@ -293,7 +287,7 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
 
   return (
     <WebSocketContext.Provider
-      value={{robots, ws, sendMessage, onMessage, disconnect}}
+      value={{ws, sendMessage, onMessage, disconnect}}
     >
       {children}
     </WebSocketContext.Provider>
