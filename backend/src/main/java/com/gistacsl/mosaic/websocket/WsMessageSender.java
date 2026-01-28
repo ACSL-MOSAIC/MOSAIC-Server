@@ -6,6 +6,9 @@ import com.gistacsl.mosaic.common.GResponse;
 import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.common.exception.CustomException;
 import com.gistacsl.mosaic.websocket.dto.WsGResponse;
+import com.gistacsl.mosaic.websocket.session.RobotWsSession;
+import com.gistacsl.mosaic.websocket.session.UserWsSession;
+import com.gistacsl.mosaic.websocket.session.WsSessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,21 +24,43 @@ public class WsMessageSender {
     private final ObjectMapper objectMapper;
     private final WsSessionManager wsSessionManager;
 
-    public <R> Mono<Void> convertAndSendWsGResponse(GResponse<R> gResponse, String requestType, UUID targetSessionId) {
+    public <R> Mono<Void> convertAndSendWsGResponseToRobot(GResponse<R> gResponse, String requestType, UUID targetSessionId) {
         return Mono.just(this.gResponseToWsGResponse(requestType, gResponse))
-                .flatMap(wsGResponse -> sendWsGResponse(wsGResponse, targetSessionId));
+                .flatMap(wsGResponse -> sendWsGResponseToRobot(wsGResponse, targetSessionId));
     }
 
-    public <R> Mono<Void> sendWsGResponse(WsGResponse<R> wsGResponse, UUID targetSessionId) {
+    public <R> Mono<Void> sendWsGResponseToRobot(WsGResponse<R> wsGResponse, UUID targetSessionId) {
         log.debug("Sending WebSocket response to session: {}", targetSessionId);
         return this.wsGResponseToWsMessage(wsGResponse)
                 .flatMap((wsMessage) -> {
-                    Optional<WsSession> optionalWsSession = this.wsSessionManager.getSession(targetSessionId);
+                    Optional<RobotWsSession> optionalWsSession = this.wsSessionManager.getRobotSession(targetSessionId);
                     if (optionalWsSession.isEmpty()) {
                         log.warn("WebSocket session not found: {}", targetSessionId);
                         return Mono.error(new CustomException(ResultCode.WEBSOCKET_SESSION_NOT_EXIST));
                     } else {
-                        WsSession wsSession = optionalWsSession.get();
+                        RobotWsSession wsSession = optionalWsSession.get();
+                        wsSession.getSinks().tryEmitNext(wsMessage);
+                        log.debug("WebSocket message sent successfully to session: {}", targetSessionId);
+                    }
+                    return Mono.empty();
+                });
+    }
+
+    public <R> Mono<Void> convertAndSendWsGResponseToUser(GResponse<R> gResponse, String requestType, UUID targetSessionId) {
+        return Mono.just(this.gResponseToWsGResponse(requestType, gResponse))
+                .flatMap(wsGResponse -> sendWsGResponseToUser(wsGResponse, targetSessionId));
+    }
+
+    public <R> Mono<Void> sendWsGResponseToUser(WsGResponse<R> wsGResponse, UUID targetSessionId) {
+        log.debug("Sending WebSocket response to session: {}", targetSessionId);
+        return this.wsGResponseToWsMessage(wsGResponse)
+                .flatMap((wsMessage) -> {
+                    Optional<UserWsSession> optionalWsSession = this.wsSessionManager.getUserSession(targetSessionId);
+                    if (optionalWsSession.isEmpty()) {
+                        log.warn("WebSocket session not found: {}", targetSessionId);
+                        return Mono.error(new CustomException(ResultCode.WEBSOCKET_SESSION_NOT_EXIST));
+                    } else {
+                        UserWsSession wsSession = optionalWsSession.get();
                         wsSession.getSinks().tryEmitNext(wsMessage);
                         log.debug("WebSocket message sent successfully to session: {}", targetSessionId);
                     }

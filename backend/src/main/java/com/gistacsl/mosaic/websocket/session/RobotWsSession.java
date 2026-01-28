@@ -1,4 +1,4 @@
-package com.gistacsl.mosaic.websocket;
+package com.gistacsl.mosaic.websocket.session;
 
 import io.undertow.websockets.core.WebSocketChannel;
 import lombok.Getter;
@@ -12,7 +12,7 @@ import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 
 @Getter
-public class WsSession extends UndertowWebSocketSession {
+public class RobotWsSession extends UndertowWebSocketSession {
     private final UUID sessionId;
     private final Sinks.Many<String> sinks;
     @Setter
@@ -20,7 +20,7 @@ public class WsSession extends UndertowWebSocketSession {
     @Setter
     private Boolean isAuthenticated;
 
-    public WsSession(UUID sessionId, WebSocketChannel channel, HandshakeInfo handshakeInfo, DataBufferFactory bufferFactory) {
+    public RobotWsSession(UUID sessionId, WebSocketChannel channel, HandshakeInfo handshakeInfo, DataBufferFactory bufferFactory) {
         super(channel, handshakeInfo, bufferFactory);
         this.isAuthenticated = true;
         this.sessionId = sessionId;

@@ -1,6 +1,7 @@
 package com.gistacsl.mosaic.websocket.config;
 
-import com.gistacsl.mosaic.websocket.WsSessionManager;
+import com.gistacsl.mosaic.websocket.handler.MosaicUserWsHandler;
+import com.gistacsl.mosaic.websocket.session.WsSessionManager;
 import com.gistacsl.mosaic.websocket.handler.MosaicRobotWsHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -22,12 +23,13 @@ public class WebSocketConfig {
     private final WsSessionManager wsSessionManager;
 
     private final MosaicRobotWsHandler mosaicRobotWsHandler;
+    private final MosaicUserWsHandler mosaicUserWsHandler;
 
     @Bean
     public HandlerMapping handlerMapping() {
         Map<String, WebSocketHandler> map = new HashMap<>();
         map.put("/ws/robot", this.mosaicRobotWsHandler);
-        map.put("/ws/user", this.mosaicRobotWsHandler);
+        map.put("/ws/user", this.mosaicUserWsHandler);
         return new SimpleUrlHandlerMapping(map, 1);
     }
 
