@@ -44,6 +44,7 @@ public class RobotService {
                     .name(req.name())
                     .description(req.description())
                     .status(req.status() != null ? req.status() : RobotStatus.DISCONNECTED)
+                    .authType(req.authType())
                     .build();
 
             return robotRepository.insertRobot(newRobot, txContext);
@@ -68,6 +69,7 @@ public class RobotService {
                             req.name(),
                             req.description(),
                             req.status(),
+                            req.authType(),
                             txContext));
         })).map(pk -> new MessageDto("Robot updated successfully"));
     }
@@ -97,6 +99,7 @@ public class RobotService {
                 entity.getName(),
                 entity.getDescription(),
                 entity.getStatus(),
+                entity.getAuthType(),
                 entity.getOrganizationFk()
         );
     }
