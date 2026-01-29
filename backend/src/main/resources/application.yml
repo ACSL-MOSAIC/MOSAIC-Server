@@ -34,3 +34,5 @@ logging:
     com.gistacsl.mosaic: DEBUG
     org.springframework: DEBUG
     org.springframework.web: DEBUG
+    sun.rmi: INFO
+    javax.management: INFO

@@ -6,8 +6,8 @@ import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.security.jwt.JwtTokenService;
 import com.gistacsl.mosaic.websocket.handler.WsMessageSender;
 import com.gistacsl.mosaic.websocket.session.RobotWsSession;
-import com.gistacsl.mosaic.websocket.dto.AuthorizeDto;
-import com.gistacsl.mosaic.websocket.dto.WsMessageRequest;
+import com.gistacsl.mosaic.websocket.handler.dto.UserAuthorizeWsDto;
+import com.gistacsl.mosaic.websocket.dto.WsMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -22,29 +22,28 @@ public class MosaicRobotAuthorizeHandler {
     private final JwtTokenService jwtTokenService;
     private final WsMessageSender wsMessageSender;
 
-    public Mono<Void> handleWsMessage(WsMessageRequest wsMessageRequest, RobotWsSession wsSession) {
-        AuthorizeDto req = this.objectMapper.convertValue(wsMessageRequest.data(), AuthorizeDto.class);
+    public Mono<Void> handleWsMessage(WsMessage<?> wsMessage, RobotWsSession wsSession) {
+        UserAuthorizeWsDto req = this.objectMapper.convertValue(wsMessage.getData(), UserAuthorizeWsDto.class);
 
         String accessToken = req.accessToken();
 
         if (null == accessToken) {
-            return this.handleAuthorizationFailed(wsMessageRequest, wsSession, ResultCode.AUTHENTICATION_FAILED);
+            return this.handleAuthorizationFailed(wsMessage, wsSession, ResultCode.AUTHENTICATION_FAILED);
         }
 
         UUID userPk;
         try {
             userPk = UUID.randomUUID(); // TODO
         } catch (Exception e) {
-            return handleAuthorizationFailed(wsMessageRequest, wsSession, ResultCode.JWT_TOKEN_UNEXPECTED_ERROR);
+            return handleAuthorizationFailed(wsMessage, wsSession, ResultCode.JWT_TOKEN_UNEXPECTED_ERROR);
         }
         wsSession.setRobotPk(userPk);
         wsSession.setIsAuthenticated(true);
-
-        return wsMessageSender.convertAndSendWsGResponseToRobot(GResponse.toGResponse(ResultCode.SUCCESS), wsMessageRequest.type(), wsSession.getSessionId());
+        return Mono.empty();
     }
 
-    private Mono<Void> handleAuthorizationFailed(WsMessageRequest wsMessageRequest, RobotWsSession wsSession, ResultCode resultCode) {
+    private Mono<Void> handleAuthorizationFailed(WsMessage wsMessageRequest, RobotWsSession wsSession, ResultCode resultCode) {
         GResponse<?> gResponse = GResponse.toGResponse(resultCode);
-        return wsMessageSender.convertAndSendWsGResponseToRobot(gResponse, wsMessageRequest.type(), wsSession.getSessionId());
+        return Mono.empty();
     }
 }

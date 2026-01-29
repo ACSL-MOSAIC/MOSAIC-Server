@@ -28,4 +28,16 @@ public class UserWsSession extends UndertowWebSocketSession {
         this.sinks = Sinks.many().unicast().onBackpressureBuffer(new LinkedBlockingQueue<>());
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof UserWsSession)) {
+            return false;
+        }
+        return this.sessionId.equals(((UserWsSession) obj).getSessionId());
+    }
+
+    public void sendMessage(String message) {
+        this.sinks.tryEmitNext(message);
+    }
+
 }

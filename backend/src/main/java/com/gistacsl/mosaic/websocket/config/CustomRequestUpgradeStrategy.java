@@ -82,6 +82,7 @@ public class CustomRequestUpgradeStrategy implements RequestUpgradeStrategy {
             UUID sessionId = UUID.randomUUID();
             RobotWsSession session = new RobotWsSession(sessionId, webSocketChannel, this.handshakeInfo, this.bufferFactory);
 
+            // TODO: Need to check if there is exist session
             wsSessionManager.addRobotSession(sessionId, session);
 
             UndertowWebSocketHandlerAdapter adapter = new UndertowWebSocketHandlerAdapter(session);

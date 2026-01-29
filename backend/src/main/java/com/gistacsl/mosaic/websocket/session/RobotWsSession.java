@@ -18,6 +18,8 @@ public class RobotWsSession extends UndertowWebSocketSession {
     @Setter
     private UUID robotPk;
     @Setter
+    private UUID organizationFk;
+    @Setter
     private Boolean isAuthenticated;
 
     public RobotWsSession(UUID sessionId, WebSocketChannel channel, HandshakeInfo handshakeInfo, DataBufferFactory bufferFactory) {
@@ -25,6 +27,18 @@ public class RobotWsSession extends UndertowWebSocketSession {
         this.isAuthenticated = true; // TODO
         this.sessionId = sessionId;
         this.sinks = Sinks.many().unicast().onBackpressureBuffer(new LinkedBlockingQueue<>());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof RobotWsSession)) {
+            return false;
+        }
+        return this.sessionId.equals(((RobotWsSession) obj).getSessionId());
+    }
+
+    public void sendMessage(String message) {
+        this.sinks.tryEmitNext(message);
     }
 
 }

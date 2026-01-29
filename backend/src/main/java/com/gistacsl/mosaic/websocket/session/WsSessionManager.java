@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 @Component
 public class WsSessionManager {
@@ -32,6 +33,13 @@ public class WsSessionManager {
         return Optional.ofNullable(this.robotSessionMap.get(sessionId));
     }
 
+    public Optional<RobotWsSession> getRobotSessionByRobotPk(UUID robotPk) {
+        return this.robotSessionMap.values().stream()
+                .filter(RobotWsSession::getIsAuthenticated)
+                .filter(session -> session.getRobotPk().equals(robotPk))
+                .findFirst();
+    }
+
     public void addUserSession(UUID sessionId, UserWsSession session) {
         this.userSessionMap.put(sessionId, session);
     }
@@ -42,5 +50,11 @@ public class WsSessionManager {
 
     public Optional<UserWsSession> getUserSession(UUID sessionId) {
         return Optional.ofNullable(this.userSessionMap.get(sessionId));
+    }
+
+    public Stream<UserWsSession> getUserSessionByOrganizationPk(UUID organizationPk) {
+        return this.userSessionMap.values().stream()
+                .filter(UserWsSession::getIsAuthenticated)
+                .filter(session -> session.getUserAuth().getOrganizationPk().equals(organizationPk));
     }
 }

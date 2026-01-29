@@ -134,4 +134,13 @@ public class RobotRepository {
                         .and(ROBOT.ORGANIZATION_FK.eq(organizationFk)))
                 .onErrorMap(e -> new CustomException(ResultCode.DB_ROBOT_DELETE_FAILED, e));
     }
+
+    public Mono<Integer> updateRobotStatus(RobotStatus status, UUID pk, UUID organizationFk, DSLContext dsl) {
+        return Mono.from(dsl.update(ROBOT)
+                        .set(ROBOT.STATUS, status.name())
+                        .set(ROBOT.UPDATED_AT, OffsetDateTime.now())
+                        .where(ROBOT.PK.eq(pk))
+                        .and(ROBOT.ORGANIZATION_FK.eq(organizationFk)))
+                .onErrorMap(e -> new CustomException(ResultCode.DB_ROBOT_UPDATE_FAILED, e));
+    }
 }

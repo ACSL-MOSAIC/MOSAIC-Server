@@ -50,20 +50,20 @@ public class RobotService {
         })).map(pk -> new MessageDto("Robot added successfully"));
     }
 
-    public Mono<RobotInfoDto.Res> getRobot(UserAuth userAuth, UUID robotId) {
-        return robotRepository.findByPkAndOrganizationFk(robotId, userAuth.getOrganizationPk(), dslContext)
+    public Mono<RobotInfoDto.Res> getRobot(UserAuth userAuth, UUID robotPk) {
+        return robotRepository.findByPkAndOrganizationFk(robotPk, userAuth.getOrganizationPk(), dslContext)
                 .switchIfEmpty(Mono.error(new CustomException(ResultCode.ROBOT_NOT_FOUND)))
                 .map(this::robotEntityToRobotInfoRes);
     }
 
-    public Mono<MessageDto> updateRobot(UserAuth userAuth, UUID robotId, RobotUpdateDto.Req req) {
+    public Mono<MessageDto> updateRobot(UserAuth userAuth, UUID robotPk, RobotUpdateDto.Req req) {
         return Mono.from(dslContext.transactionPublisher(configuration -> {
             DSLContext txContext = configuration.dsl();
 
-            return robotRepository.findByPkAndOrganizationFk(robotId, userAuth.getOrganizationPk(), txContext)
+            return robotRepository.findByPkAndOrganizationFk(robotPk, userAuth.getOrganizationPk(), txContext)
                     .switchIfEmpty(Mono.error(new CustomException(ResultCode.ROBOT_NOT_FOUND)))
                     .flatMap(existingRobot -> robotRepository.updateRobot(
-                            robotId,
+                            robotPk,
                             userAuth.getOrganizationPk(),
                             req.name(),
                             req.description(),
@@ -72,14 +72,23 @@ public class RobotService {
         })).map(pk -> new MessageDto("Robot updated successfully"));
     }
 
-    public Mono<MessageDto> deleteRobot(UserAuth userAuth, UUID robotId) {
+    public Mono<MessageDto> deleteRobot(UserAuth userAuth, UUID robotPk) {
         return Mono.from(dslContext.transactionPublisher(configuration -> {
             DSLContext txContext = configuration.dsl();
 
-            return robotRepository.findByPkAndOrganizationFk(robotId, userAuth.getOrganizationPk(), txContext)
+            return robotRepository.findByPkAndOrganizationFk(robotPk, userAuth.getOrganizationPk(), txContext)
                     .switchIfEmpty(Mono.error(new CustomException(ResultCode.ROBOT_NOT_FOUND)))
-                    .flatMap(existingRobot -> robotRepository.deleteByPkAndOrganizationFk(robotId, userAuth.getOrganizationPk(), txContext));
+                    .flatMap(existingRobot -> robotRepository.deleteByPkAndOrganizationFk(robotPk, userAuth.getOrganizationPk(), txContext));
         })).map(rowsAffected -> new MessageDto("Robot deleted successfully"));
+    }
+
+    public Mono<Void> updateRobotStatus(RobotStatus status, UUID robotPk, UUID organizationPk) {
+        return Mono.from(dslContext.transactionPublisher(configuration -> {
+            DSLContext txContext = configuration.dsl();
+
+            return robotRepository.updateRobotStatus(status, robotPk, organizationPk, txContext)
+                    .switchIfEmpty(Mono.error(new CustomException(ResultCode.ROBOT_NOT_FOUND)));
+        })).then();
     }
 
     private RobotInfoDto.Res robotEntityToRobotInfoRes(RobotEntity entity) {

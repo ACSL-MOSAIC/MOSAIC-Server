@@ -7,13 +7,15 @@ import com.gistacsl.mosaic.common.exception.CustomException;
 import com.gistacsl.mosaic.security.authentication.UserAuth;
 import com.gistacsl.mosaic.security.jwt.JwtTokenService;
 import com.gistacsl.mosaic.websocket.handler.WsMessageSender;
-import com.gistacsl.mosaic.websocket.dto.AuthorizeDto;
-import com.gistacsl.mosaic.websocket.dto.WsMessageRequest;
+import com.gistacsl.mosaic.websocket.handler.dto.UserAuthorizeWsDto;
+import com.gistacsl.mosaic.websocket.dto.WsMessage;
 import com.gistacsl.mosaic.websocket.session.UserWsSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class MosaicUserAuthorizeHandler {
@@ -22,28 +24,35 @@ public class MosaicUserAuthorizeHandler {
     private final JwtTokenService jwtTokenService;
     private final WsMessageSender wsMessageSender;
 
-    public Mono<Void> handleWsMessage(WsMessageRequest wsMessageRequest, UserWsSession wsSession) {
-        AuthorizeDto req = this.objectMapper.convertValue(wsMessageRequest.data(), AuthorizeDto.class);
+    public Mono<Void> handleWsMessage(WsMessage<?> wsMessage, UserWsSession wsSession) {
+        UserAuthorizeWsDto req = this.objectMapper.convertValue(wsMessage.getData(), UserAuthorizeWsDto.class);
 
         String accessToken = req.accessToken();
         if (null == accessToken) {
-            return this.handleAuthorizationFailed(wsMessageRequest, wsSession, ResultCode.AUTHENTICATION_FAILED);
+            this.handleAuthorizationFailed(wsSession, ResultCode.AUTHENTICATION_FAILED);
+            return Mono.empty();
         }
 
         try {
             UserAuth userAuth = this.jwtTokenService.getUserAuthFromToken(accessToken);
             wsSession.setUserAuth(userAuth);
             wsSession.setIsAuthenticated(true);
-            return wsMessageSender.convertAndSendWsGResponseToRobot(GResponse.toGResponse(ResultCode.SUCCESS), wsMessageRequest.type(), wsSession.getSessionId());
+            WsMessage<ResultCode> response = new WsMessage<>(TYPE_PREFIX + ".res", ResultCode.SUCCESS);
+            this.wsMessageSender.sendWsMessageToUser(response, wsSession);
         } catch (CustomException e) {
-            return handleAuthorizationFailed(wsMessageRequest, wsSession, e.getResultCode());
+            this.handleAuthorizationFailed(wsSession, e.getResultCode());
         } catch (Exception e) {
-            return handleAuthorizationFailed(wsMessageRequest, wsSession, ResultCode.JWT_TOKEN_UNEXPECTED_ERROR);
+            this.handleAuthorizationFailed(wsSession, ResultCode.JWT_TOKEN_UNEXPECTED_ERROR);
         }
+        return Mono.empty();
     }
 
-    private Mono<Void> handleAuthorizationFailed(WsMessageRequest wsMessageRequest, UserWsSession wsSession, ResultCode resultCode) {
-        GResponse<?> gResponse = GResponse.toGResponse(resultCode);
-        return wsMessageSender.convertAndSendWsGResponseToRobot(gResponse, wsMessageRequest.type(), wsSession.getSessionId());
+    private void handleAuthorizationFailed(UserWsSession wsSession, ResultCode resultCode) {
+        WsMessage<ResultCode> response = new WsMessage<>(TYPE_PREFIX + ".res", resultCode);
+        try {
+            this.wsMessageSender.sendWsMessageToUser(response, wsSession);
+        } catch (CustomException e) {
+            log.error("Failed to send error response to session: {}", wsSession.getSessionId(), e);
+        }
     }
 }

@@ -4,13 +4,11 @@ import com.gistacsl.mosaic.common.enumerate.SerializableEnum;
 
 public enum RobotStatus implements SerializableEnum {
     READY_TO_CONNECT(0),
-    CONNECTING(1),
-    CONNECTED(2),
-    DISCONNECTING(3),
-    FAILED(4),
-    SHUTTING_DOWN(5),
-    DISCONNECTED(6),
-    REMOVED(7);
+    RTC_CONNECTING(1),
+    RTC_CONNECTED(2),
+    RTC_DISCONNECTING(3),
+    RTC_FAILED(4),
+    DISCONNECTED(5);
 
     private final int value;
 
