@@ -1,4 +1,4 @@
-package com.gistacsl.mosaic.websocket;
+package com.gistacsl.mosaic.websocket.handler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,15 +1,14 @@
-package com.gistacsl.mosaic.websocket.handler;
+package com.gistacsl.mosaic.websocket.handler.robot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.common.exception.CustomException;
 import com.gistacsl.mosaic.common.exception.ICustomException;
-import com.gistacsl.mosaic.websocket.WsMessageSender;
+import com.gistacsl.mosaic.websocket.handler.WsMessageSender;
+import com.gistacsl.mosaic.websocket.session.RobotWsSession;
+import com.gistacsl.mosaic.websocket.session.WsSessionManager;
 import com.gistacsl.mosaic.websocket.dto.WsGResponse;
 import com.gistacsl.mosaic.websocket.dto.WsMessageRequest;
-import com.gistacsl.mosaic.websocket.session.RobotWsSession;
-import com.gistacsl.mosaic.websocket.session.UserWsSession;
-import com.gistacsl.mosaic.websocket.session.WsSessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -22,16 +21,29 @@ import reactor.core.scheduler.Schedulers;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class MosaicUserWsHandler implements WebSocketHandler {
+public class MosaicRobotWsHandler implements WebSocketHandler {
     private final ObjectMapper objectMapper;
-    private final MosaicUserAuthorizeHandler mosaicUserAuthorizeHandler;
+    private final MosaicRobotAuthorizeHandler mosaicRobotAuthorizeHandler;
+    private final MosaicRobotSignalingHandler mosaicRobotSignalingHandler;
 
     private final WsMessageSender wsMessageSender;
     private final WsSessionManager wsSessionManager;
 
+    public Mono<Void> handleWsMessageRequest(WsMessageRequest wsMessageRequest, RobotWsSession wsSession) {
+        String prefix = wsMessageRequest.type().split("\\.")[0];
+        return switch (prefix) {
+            case "ping" -> Mono.empty();
+            case MosaicRobotAuthorizeHandler.TYPE_PREFIX ->
+                    this.mosaicRobotAuthorizeHandler.handleWsMessage(wsMessageRequest, wsSession);
+            case MosaicRobotSignalingHandler.TYPE_PREFIX ->
+                    this.mosaicRobotSignalingHandler.handleWsMessage(wsMessageRequest, wsSession);
+            default -> Mono.error(new CustomException(ResultCode.UNKNOWN_WEBSOCKET_REQUEST_TYPE));
+        };
+    }
+
     @Override
     public Mono<Void> handle(WebSocketSession session) {
-        UserWsSession wsSession = (UserWsSession) session;
+        RobotWsSession wsSession = (RobotWsSession) session;
         Sinks.Many<String> sinks = wsSession.getSinks();
 
         Mono<Void> output = wsSession.send(sinks.asFlux()
@@ -51,47 +63,38 @@ public class MosaicUserWsHandler implements WebSocketHandler {
                     }
                 })
                 .<WsMessageRequest>handle((wsMessageRequest, synchronousSink) -> {
-                    if (!wsMessageRequest.type().equals(MosaicUserAuthorizeHandler.TYPE_PREFIX) && false == wsSession.getIsAuthenticated()) {
+                    if (!wsMessageRequest.type().equals(MosaicRobotAuthorizeHandler.TYPE_PREFIX) && false == wsSession.getIsAuthenticated()) {
                         this.handleError(wsMessageRequest, new CustomException(ResultCode.AUTHENTICATION_FAILED), wsSession);
                         // Continue processing - don't break the stream
                     } else {
                         synchronousSink.next(wsMessageRequest);
                     }
                 })
-                .doOnNext(wsMessageRequest -> {
-                    String prefix = wsMessageRequest.type().split("\\.")[0];
-                    Mono<Void> handleMono = switch (prefix) {
-                        case "ping" -> Mono.empty();
-                        case MosaicUserAuthorizeHandler.TYPE_PREFIX ->
-                                this.mosaicUserAuthorizeHandler.handleWsMessage(wsMessageRequest, wsSession);
-                        default -> Mono.error(new CustomException(ResultCode.UNKNOWN_WEBSOCKET_REQUEST_TYPE));
-                    };
-                    handleMono
-                            .onErrorResume(throwable -> {
-                                // Handle error but don't break the WebSocket connection
-                                if (throwable instanceof CustomException e) {
-                                    if (ResultCode.WEBSOCKET_SESSION_NOT_EXIST != e.getResultCode()) {
-                                        MosaicUserWsHandler.this.handleError(wsMessageRequest, e, wsSession);
-                                    }
-                                } else {
-                                    MosaicUserWsHandler.this.handleError(wsMessageRequest, new CustomException(ResultCode.UNKNOWN_EXCEPTION_OCCURRED, throwable), wsSession);
+                .doOnNext(wsMessageRequest -> this.handleWsMessageRequest(wsMessageRequest, wsSession)
+                        .onErrorResume(throwable -> {
+                            // Handle error but don't break the WebSocket connection
+                            if (throwable instanceof CustomException e) {
+                                if (ResultCode.WEBSOCKET_SESSION_NOT_EXIST != e.getResultCode()) {
+                                    MosaicRobotWsHandler.this.handleError(wsMessageRequest, e, wsSession);
                                 }
-                                return Mono.empty();
-                            })
-                            .subscribeOn(Schedulers.boundedElastic())
-                            .subscribe();
-                })
+                            } else {
+                                MosaicRobotWsHandler.this.handleError(wsMessageRequest, new CustomException(ResultCode.UNKNOWN_EXCEPTION_OCCURRED, throwable), wsSession);
+                            }
+                            return Mono.empty();
+                        })
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .subscribe())
                 .onErrorContinue((e, o) ->
                         this.handleError((WsMessageRequest) o, new CustomException(ResultCode.UNKNOWN_EXCEPTION_OCCURRED, e), wsSession)
                 )
                 .then();
 
         return Mono.zip(output, input)
-                .doOnTerminate(() -> this.wsSessionManager.removeUserSession(wsSession.getSessionId()))
+                .doOnTerminate(() -> this.wsSessionManager.removeRobotSession(wsSession.getSessionId()))
                 .then();
     }
 
-    private void handleError(WsMessageRequest wsMessageRequestWithId, ICustomException e, UserWsSession wsSession) {
+    private void handleError(WsMessageRequest wsMessageRequestWithId, ICustomException e, RobotWsSession wsSession) {
         log.error("WebSocket error occurred: {} for session: {}", e.getResultCode(), wsSession.getSessionId(), e);
 
         WsGResponse<?> wsGResponse = WsGResponse.builder()

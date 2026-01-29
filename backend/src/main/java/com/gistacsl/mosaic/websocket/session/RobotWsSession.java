@@ -16,13 +16,13 @@ public class RobotWsSession extends UndertowWebSocketSession {
     private final UUID sessionId;
     private final Sinks.Many<String> sinks;
     @Setter
-    private UUID userPk;
+    private UUID robotPk;
     @Setter
     private Boolean isAuthenticated;
 
     public RobotWsSession(UUID sessionId, WebSocketChannel channel, HandshakeInfo handshakeInfo, DataBufferFactory bufferFactory) {
         super(channel, handshakeInfo, bufferFactory);
-        this.isAuthenticated = true;
+        this.isAuthenticated = true; // TODO
         this.sessionId = sessionId;
         this.sinks = Sinks.many().unicast().onBackpressureBuffer(new LinkedBlockingQueue<>());
     }

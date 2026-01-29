@@ -1,8 +1,8 @@
 package com.gistacsl.mosaic.websocket.config;
 
-import com.gistacsl.mosaic.websocket.handler.MosaicUserWsHandler;
+import com.gistacsl.mosaic.websocket.handler.user.MosaicUserWsHandler;
 import com.gistacsl.mosaic.websocket.session.WsSessionManager;
-import com.gistacsl.mosaic.websocket.handler.MosaicRobotWsHandler;
+import com.gistacsl.mosaic.websocket.handler.robot.MosaicRobotWsHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
