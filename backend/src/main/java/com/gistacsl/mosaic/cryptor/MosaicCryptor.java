@@ -1,4 +1,4 @@
-package com.gistacsl.mosaic.security.jwt.cryptor;
+package com.gistacsl.mosaic.cryptor;
 
 import javax.crypto.Cipher;
 import java.security.GeneralSecurityException;
