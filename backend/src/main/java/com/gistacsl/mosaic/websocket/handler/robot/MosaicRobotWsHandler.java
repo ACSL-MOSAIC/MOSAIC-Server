@@ -3,6 +3,8 @@ package com.gistacsl.mosaic.websocket.handler.robot;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.common.exception.CustomException;
+import com.gistacsl.mosaic.robot.RobotService;
+import com.gistacsl.mosaic.robot.enumerate.RobotStatus;
 import com.gistacsl.mosaic.websocket.handler.WsMessageSender;
 import com.gistacsl.mosaic.websocket.session.RobotWsSession;
 import com.gistacsl.mosaic.websocket.session.WsSessionManager;
@@ -27,6 +29,7 @@ public class MosaicRobotWsHandler implements WebSocketHandler {
 
     private final WsMessageSender wsMessageSender;
     private final WsSessionManager wsSessionManager;
+    private final RobotService robotService;
 
     public Mono<Void> handleWsMessageRequest(WsMessage wsMessage, RobotWsSession wsSession) {
         String prefix = wsMessage.getType().split("\\.")[0];
@@ -97,7 +100,19 @@ public class MosaicRobotWsHandler implements WebSocketHandler {
                 .then();
 
         return Mono.zip(output, input)
-                .doOnTerminate(() -> this.wsSessionManager.removeRobotSession(wsSession.getSessionId()))
+                .publishOn(Schedulers.boundedElastic())
+                .doOnTerminate(() -> {
+                    this.wsSessionManager.removeRobotSession(wsSession.getSessionId());
+
+                    // Update robot status to DISCONNECTED if authenticated
+                    if (wsSession.getRobotPk() != null && wsSession.getOrganizationFk() != null) {
+                        this.robotService.updateRobotStatus(
+                                RobotStatus.DISCONNECTED,
+                                wsSession.getRobotPk(),
+                                wsSession.getOrganizationFk()
+                        ).subscribe();
+                    }
+                })
                 .then();
     }
 

@@ -8,12 +8,13 @@ import com.gistacsl.mosaic.websocket.handler.robot.dto.RobotAuthorizeWsDto;
 import com.gistacsl.mosaic.websocket.session.RobotWsSession;
 import reactor.core.publisher.Mono;
 
-@RobotAuthHandler(RobotAuthType.NO_AUTHORIZATION)
-public class NoAuthorizationHandler implements MosaicBaseAuthHandler {
+@RobotAuthHandler(RobotAuthType.SIMPLE_TOKEN)
+public class SimpleTokenHandler implements MosaicBaseAuthHandler {
 
     @Override
     public Mono<Void> handleMessage(RobotAuthorizeWsDto<?> message, RobotEntity robot, RobotWsSession session) {
-        session.authenticated(robot.getPk(), robot.getOrganizationFk());
+        // TODO
+//        session.authenticated(robot.getPk(), robot.getOrganizationFk());
         return Mono.empty();
     }
 }

@@ -8,7 +8,8 @@ public enum RobotStatus implements SerializableEnum {
     RTC_CONNECTED(2),
     RTC_DISCONNECTING(3),
     RTC_FAILED(4),
-    DISCONNECTED(5);
+    DISCONNECTED(5),
+    WS_CONNECTED(6);
 
     private final int value;
 

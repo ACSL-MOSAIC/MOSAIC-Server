@@ -99,10 +99,6 @@ public class RobotService {
         })).then();
     }
 
-    public Mono<RobotAuthType> getAuthType(UUID robotPk) {
-        return this.robotRepository.findAuthTypeByPk(robotPk, dslContext);
-    }
-
     private RobotInfoDto.Res robotEntityToRobotInfoRes(RobotEntity entity) {
         return new RobotInfoDto.Res(
                 entity.getPk(),
