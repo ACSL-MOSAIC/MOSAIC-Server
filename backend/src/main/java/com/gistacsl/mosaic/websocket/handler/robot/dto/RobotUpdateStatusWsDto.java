@@ -1,4 +1,4 @@
-package com.gistacsl.mosaic.websocket.handler.dto;
+package com.gistacsl.mosaic.websocket.handler.robot.dto;
 
 import com.gistacsl.mosaic.robot.enumerate.RobotStatus;
 

@@ -1,13 +1,12 @@
 package com.gistacsl.mosaic.websocket.handler.user;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gistacsl.mosaic.common.GResponse;
 import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.common.exception.CustomException;
 import com.gistacsl.mosaic.security.authentication.UserAuth;
 import com.gistacsl.mosaic.security.jwt.JwtTokenService;
 import com.gistacsl.mosaic.websocket.handler.WsMessageSender;
-import com.gistacsl.mosaic.websocket.handler.dto.UserAuthorizeWsDto;
+import com.gistacsl.mosaic.websocket.handler.user.dto.UserAuthorizeWsDto;
 import com.gistacsl.mosaic.websocket.dto.WsMessage;
 import com.gistacsl.mosaic.websocket.session.UserWsSession;
 import lombok.RequiredArgsConstructor;
@@ -35,8 +34,7 @@ public class MosaicUserAuthorizeHandler {
 
         try {
             UserAuth userAuth = this.jwtTokenService.getUserAuthFromToken(accessToken);
-            wsSession.setUserAuth(userAuth);
-            wsSession.setIsAuthenticated(true);
+            wsSession.authenticated(userAuth);
             WsMessage<ResultCode> response = new WsMessage<>(TYPE_PREFIX + ".res", ResultCode.SUCCESS);
             this.wsMessageSender.sendWsMessageToUser(response, wsSession);
         } catch (CustomException e) {

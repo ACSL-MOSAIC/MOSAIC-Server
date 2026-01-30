@@ -16,9 +16,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class UserWsSession extends UndertowWebSocketSession {
     private final UUID sessionId;
     private final Sinks.Many<String> sinks;
-    @Setter
     private UserAuth userAuth;
-    @Setter
     private Boolean isAuthenticated;
 
     public UserWsSession(UUID sessionId, WebSocketChannel channel, HandshakeInfo handshakeInfo, DataBufferFactory bufferFactory) {
@@ -26,6 +24,11 @@ public class UserWsSession extends UndertowWebSocketSession {
         this.isAuthenticated = true; // TODO
         this.sessionId = sessionId;
         this.sinks = Sinks.many().unicast().onBackpressureBuffer(new LinkedBlockingQueue<>());
+    }
+
+    public void authenticated(UserAuth userAuth) {
+        this.userAuth = userAuth;
+        this.isAuthenticated = true;
     }
 
     @Override

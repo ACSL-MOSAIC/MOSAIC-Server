@@ -9,6 +9,7 @@ import com.gistacsl.mosaic.robot.dto.RobotAddDto;
 import com.gistacsl.mosaic.robot.dto.RobotInfoDto;
 import com.gistacsl.mosaic.robot.dto.RobotListDto;
 import com.gistacsl.mosaic.robot.dto.RobotUpdateDto;
+import com.gistacsl.mosaic.robot.enumerate.RobotAuthType;
 import com.gistacsl.mosaic.robot.enumerate.RobotStatus;
 import com.gistacsl.mosaic.security.authentication.UserAuth;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +58,11 @@ public class RobotService {
                 .map(this::robotEntityToRobotInfoRes);
     }
 
+    public Mono<RobotEntity> getRobotEntity(UUID robotPk) {
+        return robotRepository.findByPk(robotPk, dslContext)
+                .switchIfEmpty(Mono.error(new CustomException(ResultCode.ROBOT_NOT_FOUND)));
+    }
+
     public Mono<MessageDto> updateRobot(UserAuth userAuth, UUID robotPk, RobotUpdateDto.Req req) {
         return Mono.from(dslContext.transactionPublisher(configuration -> {
             DSLContext txContext = configuration.dsl();
@@ -91,6 +97,10 @@ public class RobotService {
             return robotRepository.updateRobotStatus(status, robotPk, organizationPk, txContext)
                     .switchIfEmpty(Mono.error(new CustomException(ResultCode.ROBOT_NOT_FOUND)));
         })).then();
+    }
+
+    public Mono<RobotAuthType> getAuthType(UUID robotPk) {
+        return this.robotRepository.findAuthTypeByPk(robotPk, dslContext);
     }
 
     private RobotInfoDto.Res robotEntityToRobotInfoRes(RobotEntity entity) {
