@@ -1,5 +1,7 @@
 package com.gistacsl.mosaic.websocket.config;
 
+import com.gistacsl.mosaic.websocket.dto.WsMessage;
+import com.gistacsl.mosaic.websocket.handler.WsMessageSender;
 import com.gistacsl.mosaic.websocket.session.RobotWsSession;
 import com.gistacsl.mosaic.websocket.session.UserWsSession;
 import com.gistacsl.mosaic.websocket.session.WsSessionManager;
@@ -29,9 +31,11 @@ import java.util.function.Supplier;
 public class CustomRequestUpgradeStrategy implements RequestUpgradeStrategy {
 
     private final WsSessionManager wsSessionManager;
+    private final WsMessageSender wsMessageSender;
 
-    public CustomRequestUpgradeStrategy(WsSessionManager wsSessionManager) {
+    public CustomRequestUpgradeStrategy(WsSessionManager wsSessionManager, WsMessageSender wsMessageSender) {
         this.wsSessionManager = wsSessionManager;
+        this.wsMessageSender = wsMessageSender;
     }
 
     @Override
@@ -46,7 +50,7 @@ public class CustomRequestUpgradeStrategy implements RequestUpgradeStrategy {
         return exchange.getResponse().setComplete().then(Mono.deferContextual((contextView) -> {
             WebSocketConnectionCallback callback;
             if (httpExchange.getRequestURI().startsWith("/ws/robot")) {
-                callback = new CustomRobotWSConnectionCallBack(this.wsSessionManager, handshakeInfo, ContextWebSocketHandler.decorate(webSocketHandler, contextView), bufferFactory);
+                callback = new CustomRobotWSConnectionCallBack(this.wsSessionManager, this.wsMessageSender, handshakeInfo, ContextWebSocketHandler.decorate(webSocketHandler, contextView), bufferFactory);
             } else {
                 callback = new CustomUserWSConnectionCallBack(this.wsSessionManager, handshakeInfo, ContextWebSocketHandler.decorate(webSocketHandler, contextView), bufferFactory);
             }
@@ -64,13 +68,15 @@ public class CustomRequestUpgradeStrategy implements RequestUpgradeStrategy {
 
     private static class CustomRobotWSConnectionCallBack implements WebSocketConnectionCallback {
         private final WsSessionManager wsSessionManager;
+        private final WsMessageSender wsMessageSender;
 
         private final HandshakeInfo handshakeInfo;
         private final WebSocketHandler handler;
         private final DataBufferFactory bufferFactory;
 
-        CustomRobotWSConnectionCallBack(WsSessionManager wsSessionManager, HandshakeInfo handshakeInfo, WebSocketHandler handler, DataBufferFactory bufferFactory) {
+        CustomRobotWSConnectionCallBack(WsSessionManager wsSessionManager, WsMessageSender wsMessageSender, HandshakeInfo handshakeInfo, WebSocketHandler handler, DataBufferFactory bufferFactory) {
             this.wsSessionManager = wsSessionManager;
+            this.wsMessageSender = wsMessageSender;
 
             this.handshakeInfo = handshakeInfo;
             this.handler = handler;
@@ -88,6 +94,15 @@ public class CustomRequestUpgradeStrategy implements RequestUpgradeStrategy {
             webSocketChannel.getReceiveSetter().set(adapter);
             webSocketChannel.resumeReceives();
             this.handler.handle(session).checkpoint(webSocketHttpExchange.getRequestURI() + " [UndertowRequestUpgradeStrategy]").subscribe(session);
+        }
+
+        private void requestAuthorization(RobotWsSession session) {
+            WsMessage<Void> wsMessage = new WsMessage<>("authorize.req", null);
+            try {
+                this.wsMessageSender.sendWsMessageToRobot(wsMessage, session);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -116,6 +131,9 @@ public class CustomRequestUpgradeStrategy implements RequestUpgradeStrategy {
             UndertowWebSocketHandlerAdapter adapter = new UndertowWebSocketHandlerAdapter(session);
             webSocketChannel.getReceiveSetter().set(adapter);
             webSocketChannel.resumeReceives();
+
+            this.requestAuthorization(session);
+            
             this.handler.handle(session).checkpoint(webSocketHttpExchange.getRequestURI() + " [UndertowRequestUpgradeStrategy]").subscribe(session);
         }
     }
