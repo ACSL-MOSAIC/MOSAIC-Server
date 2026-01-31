@@ -33,7 +33,7 @@ public class WsSessionManager {
         return Optional.ofNullable(this.robotSessionMap.get(sessionId));
     }
 
-    public Optional<RobotWsSession> getRobotSessionByRobotPk(UUID robotPk) {
+    public Optional<RobotWsSession> getAuthenticatedRobotSessionByRobotPk(UUID robotPk) {
         return this.robotSessionMap.values().stream()
                 .filter(RobotWsSession::getIsAuthenticated)
                 .filter(session -> session.getRobotPk().equals(robotPk))
@@ -50,6 +50,12 @@ public class WsSessionManager {
 
     public Optional<UserWsSession> getUserSession(UUID sessionId) {
         return Optional.ofNullable(this.userSessionMap.get(sessionId));
+    }
+
+    public Optional<UserWsSession> getUserSessionByUserPk(UUID userPk) {
+        return this.userSessionMap.values().stream()
+                .filter(session -> session.getUserAuth().getUserPk().equals(userPk))
+                .findFirst();
     }
 
     public Stream<UserWsSession> getUserSessionByOrganizationPk(UUID organizationPk) {

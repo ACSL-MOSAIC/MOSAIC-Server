@@ -22,7 +22,7 @@ public class WebRTCSessionManager {
 
     public WebRTCSession createNewSession(UUID userSessionId, UUID robotPk) throws CustomException {
         // Ownership between robot and user must be checked before creating a session
-        RobotWsSession robotWsSession = wsSessionManager.getRobotSessionByRobotPk(robotPk)
+        RobotWsSession robotWsSession = wsSessionManager.getAuthenticatedRobotSessionByRobotPk(robotPk)
                 .orElseThrow(() -> new CustomException(ResultCode.ROBOT_WS_SESSION_NOT_EXIST));
         UserWsSession userWsSession = wsSessionManager.getUserSession(userSessionId)
                 .orElseThrow(() -> new CustomException(ResultCode.USER_WS_SESSION_NOT_EXIST));

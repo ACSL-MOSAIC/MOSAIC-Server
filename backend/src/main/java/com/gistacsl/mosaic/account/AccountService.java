@@ -14,6 +14,8 @@ import com.gistacsl.mosaic.repository.entity.UserEntity;
 import com.gistacsl.mosaic.security.authentication.UserAuth;
 import com.gistacsl.mosaic.security.jwt.AccessToken;
 import com.gistacsl.mosaic.security.jwt.dto.JwtPayload;
+import com.gistacsl.mosaic.websocket.session.UserWsSession;
+import com.gistacsl.mosaic.websocket.session.WsSessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -29,11 +32,15 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AccountService {
     private final DSLContext dslContext;
+    private final PasswordEncoder passwordEncoder;
+
     private final UserRepository userRepository;
     private final TabRepository tabRepository;
     private final OrganizationRepository organizationRepository;
+
+    private final WsSessionManager wsSessionManager;
+
     private final AccessToken accessToken;
-    private final PasswordEncoder passwordEncoder;
 
     public Mono<LoginDto.Res> login(LoginDto.Req req) {
         return userRepository.findByEmail(req.username(), dslContext)
@@ -63,8 +70,13 @@ public class AccountService {
     }
 
     public Mono<MessageDto> disconnect(UserAuth userAuth) {
-        // TODO: Implement WebSocket session disconnection logic
-        log.info("User {} requested disconnect", userAuth.getUserPk());
+        Optional<UserWsSession> optionalUserWsSession = this.wsSessionManager.getUserSessionByUserPk(userAuth.getUserPk());
+        if (optionalUserWsSession.isPresent()) {
+            UserWsSession userWsSession = optionalUserWsSession.get();
+            this.wsSessionManager.removeUserSession(userWsSession.getSessionId());
+            return userWsSession.close()
+                    .then(Mono.just(new MessageDto("Session disconnected successfully")));
+        }
         return Mono.just(new MessageDto("Session disconnected successfully"));
     }
 
