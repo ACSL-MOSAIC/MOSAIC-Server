@@ -3,6 +3,8 @@ package com.gistacsl.mosaic.websocket.handler.robot;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.common.exception.CustomException;
+import com.gistacsl.mosaic.robot.RobotService;
+import com.gistacsl.mosaic.robot.enumerate.RobotStatus;
 import com.gistacsl.mosaic.websocket.handler.WsMessageSender;
 import com.gistacsl.mosaic.websocket.session.RobotWsSession;
 import com.gistacsl.mosaic.websocket.session.WsSessionManager;
@@ -27,8 +29,9 @@ public class MosaicRobotWsHandler implements WebSocketHandler {
 
     private final WsMessageSender wsMessageSender;
     private final WsSessionManager wsSessionManager;
+    private final RobotService robotService;
 
-    public Mono<Void> handleWsMessageRequest(WsMessage wsMessage, RobotWsSession wsSession) {
+    public Mono<Void> handleWsMessageRequest(WsMessage<?> wsMessage, RobotWsSession wsSession) {
         String prefix = wsMessage.getType().split("\\.")[0];
         return switch (prefix) {
             case "ping" -> Mono.empty();
@@ -57,14 +60,14 @@ public class MosaicRobotWsHandler implements WebSocketHandler {
                         WsMessage<?> wsMessage = this.objectMapper.readValue(payload, WsMessage.class);
                         synchronousSink.next(wsMessage);
                     } catch (Exception e) {
-                        WsMessage<ResultCode> wsMessage = new WsMessage<>("unknown", ResultCode.INVALID_FORMAT);
+                        WsMessage<ResultCode> wsMessage = new WsMessage<>("unknown.res", ResultCode.INVALID_FORMAT);
                         this.handleError(wsMessage, e, wsSession);
                         // Continue processing - don't break the stream
                     }
                 })
                 .<WsMessage<?>>handle((wsMessage, synchronousSink) -> {
                     if (!wsMessage.getType().equals(MosaicRobotAuthorizeHandler.TYPE_PREFIX) && false == wsSession.getIsAuthenticated()) {
-                        WsMessage<ResultCode> newWsMessage = new WsMessage<>(wsMessage.getType(), ResultCode.AUTHENTICATION_FAILED);
+                        WsMessage<ResultCode> newWsMessage = new WsMessage<>(wsMessage.getType() + ".res", ResultCode.AUTHENTICATION_FAILED);
                         this.handleError(newWsMessage, new CustomException(ResultCode.AUTHENTICATION_FAILED), wsSession);
                         // Continue processing - don't break the stream
                     } else {
@@ -80,7 +83,7 @@ public class MosaicRobotWsHandler implements WebSocketHandler {
                                     this.handleError(newWsMessage, e, wsSession);
                                 }
                             } else {
-                                WsMessage<ResultCode> newWsMessage = new WsMessage<>(wsMessage.getType(), ResultCode.UNKNOWN_EXCEPTION_OCCURRED);
+                                WsMessage<ResultCode> newWsMessage = new WsMessage<>(wsMessage.getType() + ".res", ResultCode.UNKNOWN_EXCEPTION_OCCURRED);
                                 this.handleError(newWsMessage, new CustomException(ResultCode.UNKNOWN_EXCEPTION_OCCURRED, throwable), wsSession);
                             }
                             return Mono.empty();
@@ -90,14 +93,26 @@ public class MosaicRobotWsHandler implements WebSocketHandler {
                 .onErrorContinue((e, o) ->
                         {
                             WsMessage<?> wsMessage = (WsMessage<?>) o;
-                            WsMessage<ResultCode> newWsMessage = new WsMessage<>(wsMessage.getType(), ResultCode.UNKNOWN_EXCEPTION_OCCURRED);
+                            WsMessage<ResultCode> newWsMessage = new WsMessage<>(wsMessage.getType() + ".res", ResultCode.UNKNOWN_EXCEPTION_OCCURRED);
                             this.handleError(newWsMessage, new CustomException(ResultCode.UNKNOWN_EXCEPTION_OCCURRED, e), wsSession);
                         }
                 )
                 .then();
 
         return Mono.zip(output, input)
-                .doOnTerminate(() -> this.wsSessionManager.removeRobotSession(wsSession.getSessionId()))
+                .publishOn(Schedulers.boundedElastic())
+                .doOnTerminate(() -> {
+                    this.wsSessionManager.removeRobotSession(wsSession.getSessionId());
+
+                    // Update robot status to DISCONNECTED if authenticated
+                    if (wsSession.getRobotPk() != null && wsSession.getOrganizationFk() != null) {
+                        this.robotService.updateRobotStatus(
+                                RobotStatus.DISCONNECTED,
+                                wsSession.getRobotPk(),
+                                wsSession.getOrganizationFk()
+                        ).subscribe();
+                    }
+                })
                 .then();
     }
 

@@ -5,9 +5,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.KeyGenerator;
+import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
@@ -58,5 +60,28 @@ public class KeyEncryptionService {
     public String decryptPrivateKey(String encryptedPrivateKey) throws GeneralSecurityException {
         byte[] decoded = Base64.getDecoder().decode(encryptedPrivateKey);
         return MosaicCryptor.decrypt(AES_TRANSFORMATION, aesKey, decoded);
+    }
+
+    /**
+     * Encrypt data using AES
+     */
+    public byte[] encrypt(byte[] data) throws GeneralSecurityException {
+        return MosaicCryptor.encrypt(AES_TRANSFORMATION, aesKey, data);
+    }
+
+    /**
+     * Decrypt data using AES
+     */
+    public String decrypt(byte[] encryptedData) throws GeneralSecurityException {
+        return MosaicCryptor.decrypt(AES_TRANSFORMATION, aesKey, encryptedData);
+    }
+
+    /**
+     * Generate HMAC-SHA256 signature
+     */
+    public byte[] generateHmac(byte[] data) throws NoSuchAlgorithmException, InvalidKeyException {
+        Mac hmac = Mac.getInstance("HmacSHA256");
+        hmac.init(aesKey);
+        return hmac.doFinal(data);
     }
 }
