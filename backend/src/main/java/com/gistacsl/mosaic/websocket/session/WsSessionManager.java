@@ -4,6 +4,7 @@ import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketSession;
 
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,7 +38,7 @@ public class WsSessionManager {
         return this.robotSessionMap.values().stream()
                 .filter(RobotWsSession::getIsAuthenticated)
                 .filter(session -> session.getRobotPk().equals(robotPk))
-                .findFirst();
+                .max(Comparator.comparing(RobotWsSession::getAuthenticatedAt));
     }
 
     public void addUserSession(UUID sessionId, UserWsSession session) {

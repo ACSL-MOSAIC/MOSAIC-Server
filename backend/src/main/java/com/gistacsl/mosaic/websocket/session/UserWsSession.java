@@ -21,7 +21,7 @@ public class UserWsSession extends UndertowWebSocketSession {
 
     public UserWsSession(UUID sessionId, WebSocketChannel channel, HandshakeInfo handshakeInfo, DataBufferFactory bufferFactory) {
         super(channel, handshakeInfo, bufferFactory);
-        this.isAuthenticated = true; // TODO
+        this.isAuthenticated = false;
         this.sessionId = sessionId;
         this.sinks = Sinks.many().unicast().onBackpressureBuffer(new LinkedBlockingQueue<>());
     }

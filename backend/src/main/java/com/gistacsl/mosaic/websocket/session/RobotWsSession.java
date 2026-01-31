@@ -8,6 +8,7 @@ import org.springframework.web.reactive.socket.HandshakeInfo;
 import org.springframework.web.reactive.socket.adapter.UndertowWebSocketSession;
 import reactor.core.publisher.Sinks;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -15,21 +16,26 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class RobotWsSession extends UndertowWebSocketSession {
     private final UUID sessionId;
     private final Sinks.Many<String> sinks;
+    private final OffsetDateTime connectedAt;
     private UUID robotPk;
     private UUID organizationFk;
+    private OffsetDateTime authenticatedAt;
     private Boolean isAuthenticated;
 
     public RobotWsSession(UUID sessionId, WebSocketChannel channel, HandshakeInfo handshakeInfo, DataBufferFactory bufferFactory) {
         super(channel, handshakeInfo, bufferFactory);
-        this.isAuthenticated = true; // TODO
+        this.isAuthenticated = false;
         this.sessionId = sessionId;
         this.sinks = Sinks.many().unicast().onBackpressureBuffer(new LinkedBlockingQueue<>());
+        this.connectedAt = OffsetDateTime.now();
+        this.authenticatedAt = OffsetDateTime.now();
     }
 
     public void authenticated(UUID robotPk, UUID organizationFk) {
         this.robotPk = robotPk;
         this.organizationFk = organizationFk;
         this.isAuthenticated = true;
+        this.authenticatedAt = OffsetDateTime.now();
     }
 
     @Override
