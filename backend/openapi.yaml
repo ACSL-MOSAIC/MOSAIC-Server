@@ -25,6 +25,8 @@ tags:
     description: Robot device management
   - name: robots auth
     description: Robot authentication management
+  - name: ice-servers
+    description: ICE (STUN/TURN) servers configuration for WebRTC connections
 
 components:
   securitySchemes:
@@ -444,6 +446,26 @@ components:
       required:
         - data
         - count
+
+    # ICE Server schemas
+    IceServerPublic:
+      type: object
+      properties:
+        urls:
+          type: string
+        username:
+          type: string
+          nullable: true
+        credential:
+          type: string
+          nullable: true
+      required:
+        - urls
+
+    IceServersPublic:
+      type: array
+      items:
+        $ref: '#/components/schemas/IceServerPublic'
 
     # Private schemas
     PrivateUserCreate:
@@ -1334,3 +1356,21 @@ paths:
           description: Robot not found
         '400':
           description: Robot does not use simple token auth
+
+  # ICE Servers endpoints
+  /ice-servers:
+    get:
+      tags:
+        - ice-servers
+      summary: Get ICE servers
+      description: Get list of ICE (STUN/TURN) servers for WebRTC connections
+      operationId: getIceServers
+      security:
+        - BearerAuth: [ ]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IceServersPublic'
