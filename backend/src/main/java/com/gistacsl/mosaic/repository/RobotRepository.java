@@ -3,6 +3,7 @@ package com.gistacsl.mosaic.repository;
 import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.common.exception.CustomException;
 import com.gistacsl.mosaic.repository.entity.RobotEntity;
+import com.gistacsl.mosaic.robot.enumerate.RobotAuthType;
 import com.gistacsl.mosaic.robot.enumerate.RobotStatus;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
@@ -24,6 +25,7 @@ public class RobotRepository {
                         .set(ROBOT.PK, robot.getPk())
                         .set(ROBOT.ORGANIZATION_FK, robot.getOrganizationFk())
                         .set(ROBOT.STATUS, robot.getStatus().name())
+                        .set(ROBOT.AUTH_TYPE, robot.getAuthType().name())
                         .set(ROBOT.NAME, robot.getName())
                         .set(ROBOT.DESCRIPTION, robot.getDescription())
                         .set(ROBOT.CREATED_AT, robot.getCreatedAt())
@@ -34,16 +36,16 @@ public class RobotRepository {
     }
 
     /*
-    select pk, organization_fk, status, name, description, created_at, updated_at
+    select pk, organization_fk, status, auth_type, name, description, created_at, updated_at
     from robot
     where pk = ? and organization_fk = ?
-    order by created_at desc
      */
     public Mono<RobotEntity> findByPkAndOrganizationFk(UUID pk, UUID organizationFk, DSLContext dsl) {
         return Mono.from(dsl.select(
                                 ROBOT.PK,
                                 ROBOT.ORGANIZATION_FK,
                                 ROBOT.STATUS,
+                                ROBOT.AUTH_TYPE,
                                 ROBOT.NAME,
                                 ROBOT.DESCRIPTION,
                                 ROBOT.CREATED_AT,
@@ -56,6 +58,7 @@ public class RobotRepository {
                         .pk(record.get(ROBOT.PK))
                         .organizationFk(record.get(ROBOT.ORGANIZATION_FK))
                         .status(RobotStatus.valueOf(record.get(ROBOT.STATUS)))
+                        .authType(RobotAuthType.valueOf(record.get(ROBOT.AUTH_TYPE)))
                         .name(record.get(ROBOT.NAME))
                         .description(record.get(ROBOT.DESCRIPTION))
                         .createdAt(record.get(ROBOT.CREATED_AT))
@@ -64,7 +67,37 @@ public class RobotRepository {
     }
 
     /*
-    select pk, organization_fk, status, name, description, created_at, updated_at
+    select pk, organization_fk, status, auth_type, name, description, created_at, updated_at
+    from robot
+    where pk = ?
+     */
+    public Mono<RobotEntity> findByPk(UUID pk, DSLContext dsl) {
+        return Mono.from(dsl.select(
+                                ROBOT.PK,
+                                ROBOT.ORGANIZATION_FK,
+                                ROBOT.STATUS,
+                                ROBOT.AUTH_TYPE,
+                                ROBOT.NAME,
+                                ROBOT.DESCRIPTION,
+                                ROBOT.CREATED_AT,
+                                ROBOT.UPDATED_AT)
+                        .from(ROBOT)
+                        .where(ROBOT.PK.eq(pk)))
+                .onErrorMap(e -> new CustomException(ResultCode.DB_ROBOT_READ_FAILED, e))
+                .map(record -> RobotEntity.builder()
+                        .pk(record.get(ROBOT.PK))
+                        .organizationFk(record.get(ROBOT.ORGANIZATION_FK))
+                        .status(RobotStatus.valueOf(record.get(ROBOT.STATUS)))
+                        .authType(RobotAuthType.valueOf(record.get(ROBOT.AUTH_TYPE)))
+                        .name(record.get(ROBOT.NAME))
+                        .description(record.get(ROBOT.DESCRIPTION))
+                        .createdAt(record.get(ROBOT.CREATED_AT))
+                        .updatedAt(record.get(ROBOT.UPDATED_AT))
+                        .build());
+    }
+
+    /*
+    select pk, organization_fk, status, auth_type, name, description, created_at, updated_at
     from robot
     where organization_fk = ?
     order by created_at desc
@@ -75,6 +108,7 @@ public class RobotRepository {
                                 ROBOT.PK,
                                 ROBOT.ORGANIZATION_FK,
                                 ROBOT.STATUS,
+                                ROBOT.AUTH_TYPE,
                                 ROBOT.NAME,
                                 ROBOT.DESCRIPTION,
                                 ROBOT.CREATED_AT,
@@ -89,6 +123,7 @@ public class RobotRepository {
                         .pk(record.get(ROBOT.PK))
                         .organizationFk(record.get(ROBOT.ORGANIZATION_FK))
                         .status(RobotStatus.valueOf(record.get(ROBOT.STATUS)))
+                        .authType(RobotAuthType.valueOf(record.get(ROBOT.AUTH_TYPE)))
                         .name(record.get(ROBOT.NAME))
                         .description(record.get(ROBOT.DESCRIPTION))
                         .createdAt(record.get(ROBOT.CREATED_AT))
@@ -107,7 +142,7 @@ public class RobotRepository {
                 .map(record -> record.get(0, Integer.class));
     }
 
-    public Mono<UUID> updateRobot(UUID pk, UUID organizationFk, String name, String description, RobotStatus status, DSLContext dsl) {
+    public Mono<UUID> updateRobot(UUID pk, UUID organizationFk, String name, String description, RobotStatus status, RobotAuthType authType, DSLContext dsl) {
         var updateStep = dsl.update(ROBOT)
                 .set(ROBOT.UPDATED_AT, OffsetDateTime.now());
 
@@ -119,6 +154,9 @@ public class RobotRepository {
         }
         if (status != null) {
             updateStep = updateStep.set(ROBOT.STATUS, status.name());
+        }
+        if (authType != null) {
+            updateStep = updateStep.set(ROBOT.AUTH_TYPE, authType.name());
         }
 
         return Mono.from(updateStep
@@ -133,5 +171,25 @@ public class RobotRepository {
                         .where(ROBOT.PK.eq(pk))
                         .and(ROBOT.ORGANIZATION_FK.eq(organizationFk)))
                 .onErrorMap(e -> new CustomException(ResultCode.DB_ROBOT_DELETE_FAILED, e));
+    }
+
+    public Mono<Integer> updateRobotStatus(RobotStatus status, UUID pk, UUID organizationFk, DSLContext dsl) {
+        return Mono.from(dsl.update(ROBOT)
+                        .set(ROBOT.STATUS, status.name())
+                        .set(ROBOT.UPDATED_AT, OffsetDateTime.now())
+                        .where(ROBOT.PK.eq(pk))
+                        .and(ROBOT.ORGANIZATION_FK.eq(organizationFk)))
+                .onErrorMap(e -> new CustomException(ResultCode.DB_ROBOT_UPDATE_FAILED, e));
+    }
+
+    /*
+    select auth_type from robot where pk = ?
+     */
+    public Mono<RobotAuthType> findAuthTypeByPk(UUID pk, DSLContext dsl) {
+        return Mono.from(dsl.select(ROBOT.AUTH_TYPE)
+                        .from(ROBOT)
+                        .where(ROBOT.PK.eq(pk)))
+                .onErrorMap(e -> new CustomException(ResultCode.DB_ROBOT_READ_FAILED, e))
+                .map(record -> RobotAuthType.valueOf(record.get(ROBOT.AUTH_TYPE)));
     }
 }

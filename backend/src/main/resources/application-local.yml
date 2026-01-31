@@ -16,3 +16,9 @@ file:
   storage:
     base-path: ./local-storage
     occupancy-map-path: ./local-storage/occupancy-maps
+
+mosaic:
+  security:
+    # This encryption key is only used for local development
+    # DO NOT USE THIS IN PRODUCTION
+    encryption-key: 1tcmum10T0aSvjd01iZ/9Vr04nB2GoJIo9gXCLHJKaE=

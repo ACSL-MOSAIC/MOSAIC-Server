@@ -23,6 +23,10 @@ tags:
     description: Occupancy map management for robot navigation
   - name: robots
     description: Robot device management
+  - name: robots auth
+    description: Robot authentication management
+  - name: ice-servers
+    description: ICE (STUN/TURN) servers configuration for WebRTC connections
 
 components:
   securitySchemes:
@@ -264,6 +268,24 @@ components:
         - data
         - count
 
+    # Robot Auth schemas
+    SimpleTokenRequest:
+      type: object
+      properties:
+        robot_id:
+          type: string
+          format: uuid
+      required:
+        - robot_id
+
+    SimpleTokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+      required:
+        - token
+
     # Dashboard/Tab schemas
     TabInfo:
       type: object
@@ -424,6 +446,26 @@ components:
       required:
         - data
         - count
+
+    # ICE Server schemas
+    IceServerPublic:
+      type: object
+      properties:
+        urls:
+          type: string
+        username:
+          type: string
+          nullable: true
+        credential:
+          type: string
+          nullable: true
+      required:
+        - urls
+
+    IceServersPublic:
+      type: array
+      items:
+        $ref: '#/components/schemas/IceServerPublic'
 
     # Private schemas
     PrivateUserCreate:
@@ -1287,3 +1329,48 @@ paths:
           description: Not enough permissions
         '404':
           description: Robot not found
+
+  /robots/auth/simple-token:
+    post:
+      tags:
+        - robots auth
+      summary: Generate simple token
+      description: Generate authentication token for robot with simple token auth type
+      operationId: generateSimpleToken
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimpleTokenRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleTokenResponse'
+        '404':
+          description: Robot not found
+        '400':
+          description: Robot does not use simple token auth
+
+  # ICE Servers endpoints
+  /ice-servers:
+    get:
+      tags:
+        - ice-servers
+      summary: Get ICE servers
+      description: Get list of ICE (STUN/TURN) servers for WebRTC connections
+      operationId: getIceServers
+      security:
+        - BearerAuth: [ ]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IceServersPublic'
