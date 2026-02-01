@@ -50,8 +50,8 @@ public class OrganizationUserService {
                             .email(req.email())
                             .fullName(req.fullName())
                             .hashedPassword(passwordEncoder.encode(req.password()))
-                            .isActive(req.isVerified() != null ? req.isVerified() : false)
-                            .isOrganizationAdmin(false)
+                            .isActive(true)
+                            .isOrganizationAdmin(req.isOrganizationAdmin())
                             .createdAt(now)
                             .updatedAt(now)
                             .build();
@@ -72,7 +72,6 @@ public class OrganizationUserService {
                     return userRepository.updateUser(
                             req.id(),
                             userAuth.getOrganizationPk(),
-                            req.email(),
                             req.password() != null ? passwordEncoder.encode(req.password()) : null,
                             req.isActive(),
                             req.isOrganizationAdmin(),

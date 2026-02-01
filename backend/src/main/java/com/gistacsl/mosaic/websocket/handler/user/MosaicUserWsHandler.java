@@ -29,7 +29,7 @@ public class MosaicUserWsHandler implements WebSocketHandler {
     private final WsMessageSender wsMessageSender;
     private final WsSessionManager wsSessionManager;
 
-    public Mono<Void> handleWsMessageRequest(WsMessage wsMessage, UserWsSession wsSession) {
+    public Mono<Void> handleWsMessageRequest(WsMessage<?> wsMessage, UserWsSession wsSession) {
         String prefix = wsMessage.getType().split("\\.")[0];
         return switch (prefix) {
             case "ping" -> Mono.empty();

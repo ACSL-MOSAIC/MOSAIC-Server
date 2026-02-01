@@ -1,11 +1,9 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Controller, type SubmitHandler, useForm } from "react-hook-form"
+import {useMutation, useQueryClient} from "@tanstack/react-query"
+import {Controller, type SubmitHandler, useForm} from "react-hook-form"
 
-import type { ApiError } from "@/client/core/ApiError"
-import { createUserApi } from "@/client/service/user.api.ts"
-import type { UserCreate } from "@/client/service/user.dto.ts"
+import type {ApiError} from "@/client/core/ApiError"
 import useCustomToast from "@/hooks/useCustomToast"
-import { emailPattern, handleError } from "@/utils"
+import {emailPattern, handleError} from "@/utils"
 import {
   Button,
   DialogActionTrigger,
@@ -15,9 +13,9 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react"
-import { useState } from "react"
-import { FaPlus } from "react-icons/fa"
-import { Checkbox } from "../ui/checkbox"
+import {useState} from "react"
+import {FaPlus} from "react-icons/fa"
+import {Checkbox} from "../ui/checkbox"
 import {
   DialogBody,
   DialogCloseTrigger,
@@ -27,38 +25,40 @@ import {
   DialogRoot,
   DialogTrigger,
 } from "../ui/dialog"
-import { Field } from "../ui/field"
+import {Field} from "../ui/field"
+import type {OrganizationCreateUserDto} from "@/client/service/organization-user.dto.ts"
+import {createOrganizationUserApi} from "@/client/service/organization-user.api.ts"
 
-interface UserCreateForm extends UserCreate {
-  confirm_password: string
+interface UserCreateForm extends OrganizationCreateUserDto {
+  confirmPassword: string
 }
 
 const AddUser = () => {
   const [isOpen, setIsOpen] = useState(false)
   const queryClient = useQueryClient()
-  const { showSuccessToast } = useCustomToast()
+  const {showSuccessToast} = useCustomToast()
   const {
     control,
     register,
     handleSubmit,
     reset,
     getValues,
-    formState: { errors, isValid, isSubmitting },
+    formState: {errors, isValid, isSubmitting},
   } = useForm<UserCreateForm>({
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
       email: "",
-      full_name: "",
+      fullName: "",
       password: "",
-      confirm_password: "",
-      is_superuser: false,
-      is_active: true,
+      confirmPassword: "",
+      isOrganizationAdmin: false,
     },
   })
 
   const mutation = useMutation({
-    mutationFn: (data: UserCreate) => createUserApi(data),
+    mutationFn: (data: OrganizationCreateUserDto) =>
+      createOrganizationUserApi(data),
     onSuccess: () => {
       showSuccessToast("User created successfully.")
       reset()
@@ -68,24 +68,29 @@ const AddUser = () => {
       handleError(err)
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] })
+      queryClient.invalidateQueries({queryKey: ["users"]})
     },
   })
 
   const onSubmit: SubmitHandler<UserCreateForm> = (data) => {
-    mutation.mutate(data)
+    mutation.mutate({
+      email: data.email,
+      fullName: data.fullName,
+      password: data.password,
+      isOrganizationAdmin: data.isOrganizationAdmin,
+    })
   }
 
   return (
     <DialogRoot
-      size={{ base: "xs", md: "md" }}
+      size={{base: "xs", md: "md"}}
       placement="center"
       open={isOpen}
-      onOpenChange={({ open }) => setIsOpen(open)}
+      onOpenChange={({open}) => setIsOpen(open)}
     >
       <DialogTrigger asChild>
         <Button value="add-user" my={4}>
-          <FaPlus fontSize="16px" />
+          <FaPlus fontSize="16px"/>
           Add User
         </Button>
       </DialogTrigger>
@@ -117,13 +122,13 @@ const AddUser = () => {
               </Field>
 
               <Field
-                invalid={!!errors.full_name}
-                errorText={errors.full_name?.message}
+                invalid={!!errors.fullName}
+                errorText={errors.fullName?.message}
                 label="Full Name"
               >
                 <Input
                   id="name"
-                  {...register("full_name")}
+                  {...register("fullName")}
                   placeholder="Full name"
                   type="text"
                 />
@@ -151,13 +156,13 @@ const AddUser = () => {
 
               <Field
                 required
-                invalid={!!errors.confirm_password}
-                errorText={errors.confirm_password?.message}
+                invalid={!!errors.confirmPassword}
+                errorText={errors.confirmPassword?.message}
                 label="Confirm Password"
               >
                 <Input
-                  id="confirm_password"
-                  {...register("confirm_password", {
+                  id="confirmPassword"
+                  {...register("confirmPassword", {
                     required: "Please confirm your password",
                     validate: (value) =>
                       value === getValues().password ||
@@ -172,14 +177,14 @@ const AddUser = () => {
             <Flex mt={4} direction="column" gap={4}>
               <Controller
                 control={control}
-                name="is_superuser"
-                render={({ field }) => (
+                name="isOrganizationAdmin"
+                render={({field}) => (
                   <Field disabled={field.disabled} colorPalette="teal">
                     <Checkbox
                       checked={field.value}
-                      onCheckedChange={({ checked }) => field.onChange(checked)}
+                      onCheckedChange={({checked}) => field.onChange(checked)}
                     >
-                      Is superuser?
+                      Is Organization Admin?
                     </Checkbox>
                   </Field>
                 )}
@@ -207,7 +212,7 @@ const AddUser = () => {
             </Button>
           </DialogFooter>
         </form>
-        <DialogCloseTrigger />
+        <DialogCloseTrigger/>
       </DialogContent>
     </DialogRoot>
   )

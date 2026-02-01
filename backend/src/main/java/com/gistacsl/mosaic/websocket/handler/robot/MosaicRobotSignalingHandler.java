@@ -20,6 +20,7 @@ public class MosaicRobotSignalingHandler {
     public static final String TYPE_PREFIX = "signaling";
     public static final String TYPE_SEND_SDP_ANSWER = TYPE_PREFIX + ".send_sdp_answer";
     public static final String TYPE_EXCHANGE_ICE_CANDIDATE = TYPE_PREFIX + ".exchange_ice_candidate";
+    public static final String TYPE_CLOSE_CONNECTION = TYPE_PREFIX + ".close_connection";
 
     private final ObjectMapper objectMapper;
     private final WsMessageSender wsMessageSender;

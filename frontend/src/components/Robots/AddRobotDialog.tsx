@@ -1,23 +1,25 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useRef, useState } from "react"
-import { type SubmitHandler, useForm } from "react-hook-form"
+import {useMutation, useQueryClient} from "@tanstack/react-query"
+import {useRef, useState} from "react"
+import {type SubmitHandler, useForm} from "react-hook-form"
 
 import {
   Button,
   DialogActionTrigger,
   DialogTitle,
-  HStack,
   Input,
+  NativeSelectField,
+  NativeSelectRoot,
   Text,
   VStack,
 } from "@chakra-ui/react"
-import { FaPlus, FaRandom } from "react-icons/fa"
+import {FaPlus} from "react-icons/fa"
 
-import type { ApiError } from "@/client/core/ApiError"
-import { createRobotApi } from "@/client/service/robot.api.ts"
-import type { RobotCreate } from "@/client/service/robot.dto.ts"
+import type {ApiError} from "@/client/core/ApiError"
+import {addRobotApi} from "@/client/service/robot.api.ts"
+import type {RobotAddDto} from "@/client/service/robot.dto.ts"
+import {ROBOT_AUTH_TYPES} from "@/client/service/robot.dto.ts"
 import useCustomToast from "@/hooks/useCustomToast"
-import { handleError } from "@/utils"
+import {handleError} from "@/utils"
 import {
   DialogBody,
   DialogCloseTrigger,
@@ -27,36 +29,31 @@ import {
   DialogRoot,
   DialogTrigger,
 } from "../ui/dialog"
-import { Field } from "../ui/field"
+import {Field} from "../ui/field"
 
-const AddRobot = () => {
+const AddRobotDialog = () => {
   const [isOpen, setIsOpen] = useState(false)
   const dialogContentRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
-  const { showSuccessToast } = useCustomToast()
+  const {showSuccessToast} = useCustomToast()
   const {
     register,
     handleSubmit,
     reset,
-    setValue,
-    formState: { errors, isValid, isSubmitting },
-  } = useForm<RobotCreate>({
+    formState: {errors, isValid, isSubmitting},
+  } = useForm<RobotAddDto>({
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
-      id: "",
       name: "",
       description: "",
+      status: 5, // DISCONNECTED
+      authType: 0,
     },
   })
 
-  const handleGenerateUUID = () => {
-    const newUUID = crypto.randomUUID()
-    setValue("id", newUUID)
-  }
-
   const mutation = useMutation({
-    mutationFn: (data: RobotCreate) => createRobotApi(data),
+    mutationFn: (data: RobotAddDto) => addRobotApi(data),
     onSuccess: () => {
       showSuccessToast("Robot created successfully.")
       reset()
@@ -66,24 +63,24 @@ const AddRobot = () => {
       handleError(err)
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["robots"] })
+      queryClient.invalidateQueries({queryKey: ["robots"]})
     },
   })
 
-  const onSubmit: SubmitHandler<RobotCreate> = (data) => {
+  const onSubmit: SubmitHandler<RobotAddDto> = (data) => {
     mutation.mutate(data)
   }
 
   return (
     <DialogRoot
-      size={{ base: "xs", md: "md" }}
+      size={{base: "xs", md: "md"}}
       placement="center"
       open={isOpen}
-      onOpenChange={({ open }) => setIsOpen(open)}
+      onOpenChange={({open}) => setIsOpen(open)}
     >
       <DialogTrigger asChild>
         <Button value="add-robot" my={4}>
-          <FaPlus fontSize="16px" />
+          <FaPlus fontSize="16px"/>
           Add Robot
         </Button>
       </DialogTrigger>
@@ -95,30 +92,6 @@ const AddRobot = () => {
           <DialogBody>
             <Text mb={4}>Fill in the details to add a new robot.</Text>
             <VStack gap={4}>
-              <Field
-                required
-                invalid={!!errors.id}
-                errorText={errors.id?.message}
-                label="ID"
-              >
-                <HStack alignItems="stretch" width="100%">
-                  <Input
-                    id="id"
-                    {...register("id")}
-                    placeholder="Enter custom ID (uuid format)"
-                    type="text"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleGenerateUUID}
-                  >
-                    <FaRandom />
-                  </Button>
-                </HStack>
-              </Field>
-
               <Field
                 required
                 invalid={!!errors.name}
@@ -147,6 +120,27 @@ const AddRobot = () => {
                   type="text"
                 />
               </Field>
+              <Field
+                invalid={!!errors.authType}
+                errorText={errors.authType?.message}
+                label="Auth Type"
+              >
+                <NativeSelectRoot>
+                  <NativeSelectField
+                    id="authType"
+                    {...register("authType", {
+                      required: "Auth Type is required.",
+                      valueAsNumber: true,
+                    })}
+                  >
+                    {ROBOT_AUTH_TYPES.map((authType) => (
+                      <option key={authType.value} value={authType.value}>
+                        {authType.label}
+                      </option>
+                    ))}
+                  </NativeSelectField>
+                </NativeSelectRoot>
+              </Field>
             </VStack>
           </DialogBody>
 
@@ -170,10 +164,10 @@ const AddRobot = () => {
             </Button>
           </DialogFooter>
         </form>
-        <DialogCloseTrigger />
+        <DialogCloseTrigger/>
       </DialogContent>
     </DialogRoot>
   )
 }
 
-export default AddRobot
+export default AddRobotDialog

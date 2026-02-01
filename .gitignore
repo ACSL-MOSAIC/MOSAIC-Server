@@ -6,3 +6,5 @@ node_modules/
 /playwright/.cache/
 .idea
 /.DS_Store
+local-storage/
+frontend-legacy/

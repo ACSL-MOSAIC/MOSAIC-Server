@@ -100,27 +100,6 @@ public class OccupancyMapRepository {
                 .map(record -> record.get(0, Integer.class));
     }
 
-    public Mono<UUID> updateOccupancyMap(UUID pk, UUID organizationFk, String name, String pgmFilePath, String yamlFilePath, DSLContext dsl) {
-        var updateStep = dsl.update(OCCUPANCY_MAP)
-                .set(OCCUPANCY_MAP.UPDATED_AT, OffsetDateTime.now());
-
-        if (name != null) {
-            updateStep = updateStep.set(OCCUPANCY_MAP.NAME, name);
-        }
-        if (pgmFilePath != null) {
-            updateStep = updateStep.set(OCCUPANCY_MAP.PGM_FILE_PATH, pgmFilePath);
-        }
-        if (yamlFilePath != null) {
-            updateStep = updateStep.set(OCCUPANCY_MAP.YAML_FILE_PATH, yamlFilePath);
-        }
-
-        return Mono.from(updateStep
-                        .where(OCCUPANCY_MAP.PK.eq(pk))
-                        .and(OCCUPANCY_MAP.ORGANIZATION_FK.eq(organizationFk)))
-                .onErrorMap(e -> new CustomException(ResultCode.DB_OCCUPANCY_MAP_UPDATE_FAILED, e))
-                .map(rowsAffected -> pk);
-    }
-
     public Mono<Integer> deleteByPkAndOrganizationFk(UUID pk, UUID organizationFk, DSLContext dsl) {
         return Mono.from(dsl.deleteFrom(OCCUPANCY_MAP)
                         .where(OCCUPANCY_MAP.PK.eq(pk))

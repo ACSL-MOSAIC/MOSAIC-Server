@@ -3,10 +3,10 @@ import {Container, Heading} from "@chakra-ui/react"
 import {createFileRoute} from "@tanstack/react-router"
 
 export const Route = createFileRoute("/_layout/dashboard")({
-  component: ConnectPage,
+  component: DashboardPage,
 })
 
-function ConnectPage() {
+function DashboardPage() {
   const {user} = useAuth()
 
   if (!user) {
@@ -21,7 +21,11 @@ function ConnectPage() {
 
   return (
     <>
-      <Container maxW="full" py={4}/>
+      <Container maxW="full" py={4}>
+        <Heading size="lg" mb={8}>
+          개발하즈아~!
+        </Heading>
+      </Container>
     </>
   )
 }

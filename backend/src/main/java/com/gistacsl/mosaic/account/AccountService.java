@@ -80,14 +80,14 @@ public class AccountService {
         return Mono.just(new MessageDto("Session disconnected successfully"));
     }
 
-    public Mono<SignupDto.Res> signup(SignupDto.Req req) {
+    public Mono<MessageDto> signup(SignupDto.Req req) {
         return userRepository.findByEmail(req.email(), dslContext)
-                .flatMap(existingUser -> Mono.<SignupDto.Res>error(
+                .flatMap(existingUser -> Mono.<MessageDto>error(
                         new CustomException(ResultCode.USER_ALREADY_EXISTS)))
                 .switchIfEmpty(Mono.defer(() -> this.createOrganizationAndUserAndTab(req)));
     }
 
-    private Mono<SignupDto.Res> createOrganizationAndUserAndTab(SignupDto.Req req) {
+    private Mono<MessageDto> createOrganizationAndUserAndTab(SignupDto.Req req) {
         OffsetDateTime now = OffsetDateTime.now();
 
         return Mono.from(dslContext.transactionPublisher(configuration -> {
@@ -95,14 +95,8 @@ public class AccountService {
             return this.createOrganization(req.email(), now, txContext)
                     .flatMap(organization -> createDefaultTab(organization, now, txContext)
                             .flatMap(tab -> createUser(req, organization, true, now, txContext))
-                            .map(user -> new SignupDto.Res(
-                                    user.getPk(),
-                                    user.getEmail(),
-                                    user.getIsActive(),
-                                    user.getIsOrganizationAdmin(),
-                                    user.getFullName()
-                            )));
-        }));
+                            .map(user -> new MessageDto("User created successfully")));
+        })).thenReturn(new MessageDto("User created successfully"));
     }
 
     private Mono<OrganizationEntity> createOrganization(String email, OffsetDateTime now, DSLContext txContext) {

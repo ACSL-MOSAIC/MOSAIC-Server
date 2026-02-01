@@ -5,7 +5,6 @@ import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.common.exception.CustomException;
 import com.gistacsl.mosaic.occupancy_map.dto.OccupancyMapDto;
 import com.gistacsl.mosaic.occupancy_map.dto.OccupancyMapListDto;
-import com.gistacsl.mosaic.occupancy_map.dto.OccupancyMapUpdateDto;
 import com.gistacsl.mosaic.repository.OccupancyMapRepository;
 import com.gistacsl.mosaic.repository.entity.OccupancyMapEntity;
 import com.gistacsl.mosaic.security.authentication.UserAuth;
@@ -16,6 +15,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
@@ -44,7 +45,7 @@ public class OccupancyMapService {
                         .map(maps -> new OccupancyMapListDto.Res(maps, count)));
     }
 
-    public Mono<OccupancyMapDto.Res> createOccupancyMap(
+    public Mono<MessageDto> createOccupancyMap(
             UserAuth userAuth,
             String name,
             Mono<FilePart> pgmFile,
@@ -71,9 +72,7 @@ public class OccupancyMapService {
                                 .build();
 
                         return occupancyMapRepository.insertOccupancyMap(entity, txContext)
-                                .flatMap(pk -> occupancyMapRepository.findByPkAndOrganizationFk(
-                                        pk, userAuth.getOrganizationPk(), txContext))
-                                .map(this::entityToDto);
+                                .map(pk -> new MessageDto("Occupancy map added successfully"));
                     }));
         }));
     }
@@ -82,24 +81,6 @@ public class OccupancyMapService {
         return occupancyMapRepository.findByPkAndOrganizationFk(id, userAuth.getOrganizationPk(), dslContext)
                 .switchIfEmpty(Mono.error(new CustomException(ResultCode.OCCUPANCY_MAP_NOT_FOUND)))
                 .map(this::entityToDto);
-    }
-
-    public Mono<MessageDto> updateOccupancyMap(UserAuth userAuth, UUID id, OccupancyMapUpdateDto.Req req) {
-        return Mono.from(dslContext.transactionPublisher(configuration -> {
-            DSLContext txContext = configuration.dsl();
-
-            return occupancyMapRepository.findByPkAndOrganizationFk(id, userAuth.getOrganizationPk(), txContext)
-                    .switchIfEmpty(Mono.error(new CustomException(ResultCode.OCCUPANCY_MAP_NOT_FOUND)))
-                    .flatMap(existing -> occupancyMapRepository.updateOccupancyMap(
-                            id,
-                            userAuth.getOrganizationPk(),
-                            req.name(),
-                            req.pgmFilePath(),
-                            req.yamlFilePath(),
-                            txContext
-                    ))
-                    .map(pk -> new MessageDto("Occupancy map updated successfully"));
-        }));
     }
 
     public Mono<MessageDto> deleteOccupancyMap(UserAuth userAuth, UUID id) {
@@ -146,13 +127,13 @@ public class OccupancyMapService {
                              ZipOutputStream zos = new ZipOutputStream(baos)) {
 
                             // Add PGM file
-                            ZipEntry pgmEntry = new ZipEntry(Paths.get(entity.getPgmFilePath()).getFileName().toString());
+                            ZipEntry pgmEntry = new ZipEntry(entity.getName() + ".pgm");
                             zos.putNextEntry(pgmEntry);
                             zos.write(pgmBytes);
                             zos.closeEntry();
 
                             // Add YAML file
-                            ZipEntry yamlEntry = new ZipEntry(Paths.get(entity.getYamlFilePath()).getFileName().toString());
+                            ZipEntry yamlEntry = new ZipEntry(entity.getName() + ".yaml");
                             zos.putNextEntry(yamlEntry);
                             zos.write(yamlBytes);
                             zos.closeEntry();
@@ -160,7 +141,7 @@ public class OccupancyMapService {
                             zos.finish();
                             return baos.toByteArray();
                         }
-                    });
+                    }).subscribeOn(Schedulers.boundedElastic());
                 }));
     }
 
@@ -177,28 +158,33 @@ public class OccupancyMapService {
 
     private Mono<Void> saveFile(Mono<FilePart> filePart, Path destination) {
         return Mono.fromCallable(() -> {
-            Files.createDirectories(destination.getParent());
-            return destination;
-        }).flatMap(path -> filePart.flatMap(fp -> fp.transferTo(path)));
+                    Files.createDirectories(destination.getParent());
+                    return destination;
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(path -> filePart.flatMap(fp -> fp.transferTo(path)));
     }
 
     private Mono<byte[]> readFile(String filePath) {
         return Mono.fromCallable(() -> {
-            Path path = Paths.get(filePath);
-            if (!Files.exists(path)) {
-                throw new CustomException(ResultCode.OCCUPANCY_MAP_NOT_FOUND);
-            }
-            return Files.readAllBytes(path);
-        });
+                    Path path = Paths.get(filePath);
+                    if (!Files.exists(path)) {
+                        throw new CustomException(ResultCode.OCCUPANCY_MAP_NOT_FOUND);
+                    }
+                    return Files.readAllBytes(path);
+                })
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     private Mono<Void> deleteFileIfExists(String filePath) {
         return Mono.fromCallable(() -> {
-            Path path = Paths.get(filePath);
-            if (Files.exists(path)) {
-                Files.delete(path);
-            }
-            return null;
-        }).then();
+                    Path path = Paths.get(filePath);
+                    if (Files.exists(path)) {
+                        Files.delete(path);
+                    }
+                    return null;
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .then();
     }
 }
