@@ -1,9 +1,13 @@
-export type Message = {
+export type MessageDto = {
   message: string
 }
 
-export type ValidationError = {
-  loc: Array<string | number>
-  msg: string
-  type: string
+export type PageDto<T> = {
+  data: Array<T>
+  count: number
+}
+
+export type GlobalDto<T> = {
+  resultCode: number
+  resultData: T
 }

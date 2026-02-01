@@ -1,4 +1,4 @@
-export type ApiRequestOptions<T = unknown> = {
+export type ApiRequestOptions = {
   readonly body?: any
   readonly cookies?: Record<string, unknown>
   readonly errors?: Record<number | string, string>
@@ -16,7 +16,6 @@ export type ApiRequestOptions<T = unknown> = {
   readonly path?: Record<string, unknown>
   readonly query?: Record<string, unknown>
   readonly responseHeader?: string
-  readonly responseTransformer?: (data: unknown) => Promise<T>
   readonly responseType?: "arraybuffer" | "blob" | "json" | "text" | "stream"
   readonly url: string
 }

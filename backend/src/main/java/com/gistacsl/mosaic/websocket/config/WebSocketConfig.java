@@ -1,7 +1,9 @@
 package com.gistacsl.mosaic.websocket.config;
 
-import com.gistacsl.mosaic.websocket.WsSessionManager;
-import com.gistacsl.mosaic.websocket.handler.MosaicRobotWsHandler;
+import com.gistacsl.mosaic.websocket.handler.WsMessageSender;
+import com.gistacsl.mosaic.websocket.handler.user.MosaicUserWsHandler;
+import com.gistacsl.mosaic.websocket.session.WsSessionManager;
+import com.gistacsl.mosaic.websocket.handler.robot.MosaicRobotWsHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,14 +22,16 @@ import java.util.Map;
 public class WebSocketConfig {
 
     private final WsSessionManager wsSessionManager;
+    private final WsMessageSender wsMessageSender;
 
     private final MosaicRobotWsHandler mosaicRobotWsHandler;
+    private final MosaicUserWsHandler mosaicUserWsHandler;
 
     @Bean
     public HandlerMapping handlerMapping() {
         Map<String, WebSocketHandler> map = new HashMap<>();
         map.put("/ws/robot", this.mosaicRobotWsHandler);
-        map.put("/ws/user", this.mosaicRobotWsHandler);
+        map.put("/ws/user", this.mosaicUserWsHandler);
         return new SimpleUrlHandlerMapping(map, 1);
     }
 
@@ -38,7 +42,7 @@ public class WebSocketConfig {
 
     @Bean
     public WebSocketService webSocketService() {
-        return new HandshakeWebSocketService(new CustomRequestUpgradeStrategy(this.wsSessionManager));
+        return new HandshakeWebSocketService(new CustomRequestUpgradeStrategy(this.wsSessionManager, this.wsMessageSender));
     }
 
 }

@@ -1,36 +1,61 @@
-import type { CancelablePromise } from "@/client/core/CancelablePromise.ts"
-import { request as __request } from "@/client/core/request.ts"
-import type { DashboardCreate, DashboardPublic } from "./dashboard.dto.ts"
+import type {CancelablePromise} from "@/client/core/CancelablePromise.ts"
+import {request as __request} from "@/client/core/request.ts"
+import type {
+  TabAddDto,
+  TabConfigDto, TabConfigUpdateDto,
+  TabInfoDto,
+  TabNameUpdateDto
+} from "./dashboard.dto.ts"
 
 /**
- * Read Dashboard
- * 현재 사용자의 대시보드 설정 조회
- * @returns DashboardPublic Successful Response
+ * Read Tab List
+ * @returns TabInfoDto[] Successful Response
  * @throws ApiError
  */
-export const readDashboardApi = (): CancelablePromise<DashboardPublic> => {
+export const getTabListApi = (): CancelablePromise<TabInfoDto[]> => {
   return __request({
     method: "GET",
-    url: "/api/v1/dashboard/",
+    url: "/api/v1/dashboard",
   })
 }
 
-/**
- * 대시보드 설정 upsert (있으면 업데이트, 없으면 생성)
- * @param requestBody
- * @returns DashboardPublic Successful Response
- * @throws ApiError
- */
-export const upsertDashboardApi = (
-  requestBody: DashboardCreate,
-): CancelablePromise<DashboardPublic> => {
+export const addTabApi = (tabAddDto: TabAddDto): CancelablePromise<void> => {
   return __request({
     method: "POST",
-    url: "/api/v1/dashboard/",
-    body: requestBody,
+    url: "/api/v1/dashboard",
+    body: tabAddDto,
     mediaType: "application/json",
-    errors: {
-      422: "Validation Error",
-    },
+  })
+}
+
+export const getTabConfigApi = (tabId: string): CancelablePromise<TabConfigDto> => {
+  return __request({
+    method: "GET",
+    url: `/api/v1/dashboard/${tabId}`,
+  })
+}
+
+export const updateTabNameApi = (tabId: string, tabNameUpdateDto: TabNameUpdateDto): CancelablePromise<void> => {
+  return __request({
+    method: "PUT",
+    url: `/api/v1/dashboard/${tabId}`,
+    body: tabNameUpdateDto,
+    mediaType: "application/json",
+  })
+}
+
+export const updateTabConfigApi = (tabId: string, tabConfigUpdateDto: TabConfigUpdateDto): CancelablePromise<void> => {
+  return __request({
+    method: "PUT",
+    url: `/api/v1/dashboard/${tabId}`,
+    body: tabConfigUpdateDto,
+    mediaType: "application/json",
+  })
+}
+
+export const deleteTabApi = (tabId: string): CancelablePromise<void> => {
+  return __request({
+    method: "DELETE",
+    url: `/api/v1/dashboard/${tabId}`,
   })
 }

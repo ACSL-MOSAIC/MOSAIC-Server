@@ -1,7 +1,10 @@
 package com.gistacsl.mosaic.websocket.config;
 
-import com.gistacsl.mosaic.websocket.WsSession;
-import com.gistacsl.mosaic.websocket.WsSessionManager;
+import com.gistacsl.mosaic.websocket.dto.WsMessage;
+import com.gistacsl.mosaic.websocket.handler.WsMessageSender;
+import com.gistacsl.mosaic.websocket.session.RobotWsSession;
+import com.gistacsl.mosaic.websocket.session.UserWsSession;
+import com.gistacsl.mosaic.websocket.session.WsSessionManager;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.websockets.WebSocketConnectionCallback;
 import io.undertow.websockets.WebSocketProtocolHandshakeHandler;
@@ -28,9 +31,11 @@ import java.util.function.Supplier;
 public class CustomRequestUpgradeStrategy implements RequestUpgradeStrategy {
 
     private final WsSessionManager wsSessionManager;
+    private final WsMessageSender wsMessageSender;
 
-    public CustomRequestUpgradeStrategy(WsSessionManager wsSessionManager) {
+    public CustomRequestUpgradeStrategy(WsSessionManager wsSessionManager, WsMessageSender wsMessageSender) {
         this.wsSessionManager = wsSessionManager;
+        this.wsMessageSender = wsMessageSender;
     }
 
     @Override
@@ -43,7 +48,12 @@ public class CustomRequestUpgradeStrategy implements RequestUpgradeStrategy {
         HandshakeInfo handshakeInfo = handshakeInfoFactory.get();
         DataBufferFactory bufferFactory = exchange.getResponse().bufferFactory();
         return exchange.getResponse().setComplete().then(Mono.deferContextual((contextView) -> {
-            CustomWebSocketConnectionCallBack callback = new CustomWebSocketConnectionCallBack(this.wsSessionManager, handshakeInfo, ContextWebSocketHandler.decorate(webSocketHandler, contextView), bufferFactory);
+            WebSocketConnectionCallback callback;
+            if (httpExchange.getRequestURI().startsWith("/ws/robot")) {
+                callback = new CustomRobotWSConnectionCallBack(this.wsSessionManager, this.wsMessageSender, handshakeInfo, ContextWebSocketHandler.decorate(webSocketHandler, contextView), bufferFactory);
+            } else {
+                callback = new CustomUserWSConnectionCallBack(this.wsSessionManager, this.wsMessageSender, handshakeInfo, ContextWebSocketHandler.decorate(webSocketHandler, contextView), bufferFactory);
+            }
 
             try {
                 (new WebSocketProtocolHandshakeHandler(handshakes, callback)).handleRequest(httpExchange);
@@ -56,15 +66,17 @@ public class CustomRequestUpgradeStrategy implements RequestUpgradeStrategy {
         }));
     }
 
-    private static class CustomWebSocketConnectionCallBack implements WebSocketConnectionCallback {
+    private static class CustomRobotWSConnectionCallBack implements WebSocketConnectionCallback {
         private final WsSessionManager wsSessionManager;
+        private final WsMessageSender wsMessageSender;
 
         private final HandshakeInfo handshakeInfo;
         private final WebSocketHandler handler;
         private final DataBufferFactory bufferFactory;
 
-        CustomWebSocketConnectionCallBack(WsSessionManager wsSessionManager, HandshakeInfo handshakeInfo, WebSocketHandler handler, DataBufferFactory bufferFactory) {
+        CustomRobotWSConnectionCallBack(WsSessionManager wsSessionManager, WsMessageSender wsMessageSender, HandshakeInfo handshakeInfo, WebSocketHandler handler, DataBufferFactory bufferFactory) {
             this.wsSessionManager = wsSessionManager;
+            this.wsMessageSender = wsMessageSender;
 
             this.handshakeInfo = handshakeInfo;
             this.handler = handler;
@@ -74,14 +86,69 @@ public class CustomRequestUpgradeStrategy implements RequestUpgradeStrategy {
         @Override
         public void onConnect(WebSocketHttpExchange webSocketHttpExchange, WebSocketChannel webSocketChannel) {
             UUID sessionId = UUID.randomUUID();
-            WsSession session = new WsSession(sessionId, webSocketChannel, this.handshakeInfo, this.bufferFactory);
+            RobotWsSession session = new RobotWsSession(sessionId, webSocketChannel, this.handshakeInfo, this.bufferFactory);
 
-            wsSessionManager.addSession(sessionId, session);
+            wsSessionManager.addRobotSession(sessionId, session);
+            this.requestAuthorization(session);
 
             UndertowWebSocketHandlerAdapter adapter = new UndertowWebSocketHandlerAdapter(session);
             webSocketChannel.getReceiveSetter().set(adapter);
             webSocketChannel.resumeReceives();
             this.handler.handle(session).checkpoint(webSocketHttpExchange.getRequestURI() + " [UndertowRequestUpgradeStrategy]").subscribe(session);
+        }
+
+        private void requestAuthorization(RobotWsSession session) {
+            WsMessage<Void> wsMessage = new WsMessage<>("authorize.req", null);
+            try {
+                this.wsMessageSender.sendWsMessageToRobot(wsMessage, session);
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static class CustomUserWSConnectionCallBack implements WebSocketConnectionCallback {
+        private final WsSessionManager wsSessionManager;
+        private final WsMessageSender wsMessageSender;
+
+        private final HandshakeInfo handshakeInfo;
+        private final WebSocketHandler handler;
+        private final DataBufferFactory bufferFactory;
+
+        CustomUserWSConnectionCallBack(WsSessionManager wsSessionManager, WsMessageSender wsMessageSender, HandshakeInfo handshakeInfo, WebSocketHandler handler, DataBufferFactory bufferFactory) {
+            this.wsSessionManager = wsSessionManager;
+            this.wsMessageSender = wsMessageSender;
+
+            this.handshakeInfo = handshakeInfo;
+            this.handler = handler;
+            this.bufferFactory = bufferFactory;
+        }
+
+        @Override
+        public void onConnect(WebSocketHttpExchange webSocketHttpExchange, WebSocketChannel webSocketChannel) {
+            UUID sessionId = UUID.randomUUID();
+            UserWsSession session = new UserWsSession(sessionId, webSocketChannel, this.handshakeInfo, this.bufferFactory);
+
+            wsSessionManager.addUserSession(sessionId, session);
+
+            UndertowWebSocketHandlerAdapter adapter = new UndertowWebSocketHandlerAdapter(session);
+            webSocketChannel.getReceiveSetter().set(adapter);
+            webSocketChannel.resumeReceives();
+
+            this.requestAuthorization(session);
+
+            this.handler.handle(session).checkpoint(webSocketHttpExchange.getRequestURI() + " [UndertowRequestUpgradeStrategy]").subscribe(session);
+        }
+
+        private void requestAuthorization(UserWsSession session) {
+            WsMessage<Void> wsMessage = new WsMessage<>("authorize.req", null);
+            try {
+                this.wsMessageSender.sendWsMessageToUser(wsMessage, session);
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
         }
     }
 }

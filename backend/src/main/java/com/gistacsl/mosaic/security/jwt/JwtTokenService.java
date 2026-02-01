@@ -3,7 +3,7 @@ package com.gistacsl.mosaic.security.jwt;
 import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.common.exception.CustomException;
 import com.gistacsl.mosaic.security.authentication.UserAuth;
-import com.gistacsl.mosaic.security.jwt.cryptor.MosaicKey;
+import com.gistacsl.mosaic.cryptor.MosaicKeyService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
@@ -17,14 +17,14 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class JwtTokenService {
-    private final MosaicKey mosaicKey;
+    private final MosaicKeyService mosaicKeyService;
     private final AccessToken accessToken;
     private final RefreshToken refreshToken;
 
     public UserAuth getUserAuthFromToken(String token) throws Exception {
         Claims payload;
         try {
-            payload = accessToken.getTokenPayload(token, mosaicKey.getPublicKey());
+            payload = accessToken.getTokenPayload(token, mosaicKeyService.getPublicKey(MosaicKeyService.PURPOSE_JWT));
 
             String userPk = accessToken.getUserPk(payload);
             String organizationPk = accessToken.getOrganizePk(payload);

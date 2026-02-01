@@ -2,7 +2,7 @@ package com.gistacsl.mosaic.security.jwt;
 
 import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.common.exception.CustomException;
-import com.gistacsl.mosaic.security.jwt.cryptor.MosaicKey;
+import com.gistacsl.mosaic.cryptor.MosaicKeyService;
 import com.gistacsl.mosaic.security.jwt.dto.JwtPayload;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.DecodingException;
@@ -16,7 +16,7 @@ import java.util.Date;
 @Component
 @RequiredArgsConstructor
 public class RefreshToken extends JsonWebToken {
-    private final MosaicKey mosaicKey;
+    private final MosaicKeyService mosaicKeyService;
 
     @Value("${jwt.refresh-token.expiration-time}")
     private long refresh_token_validation_time;
@@ -36,7 +36,7 @@ public class RefreshToken extends JsonWebToken {
         Claims claims = this.makePayload(jwtPayload);
 
         try {
-            return super.doGenerateToken(claims, refresh_token_validation_time, mosaicKey.getPrivateKey());
+            return super.doGenerateToken(claims, refresh_token_validation_time, mosaicKeyService.getPrivateKey(MosaicKeyService.PURPOSE_JWT));
         } catch (Exception e) {
             throw new CustomException(ResultCode.REFRESH_TOKEN_GENERATION_FAILED);
         }
@@ -44,7 +44,7 @@ public class RefreshToken extends JsonWebToken {
 
     public Claims getRefreshTokenPayload(String token) throws CustomException {
         try {
-            return super.getTokenPayload(token, mosaicKey.getPublicKey());
+            return super.getTokenPayload(token, mosaicKeyService.getPublicKey(MosaicKeyService.PURPOSE_JWT));
         } catch (ExpiredJwtException e) {
             throw new CustomException(ResultCode.REFRESH_TOKEN_EXPIRED);
         } catch (SignatureException e) {

@@ -18,9 +18,15 @@ spring:
 
 jwt:
   access-token:
-    expiration-time: 3600000  # 1 hour in milliseconds (1000 * 60 * 60)
+    expiration-time: 15552000000  # 1 hour in milliseconds (1000 * 60 * 60) // TODO: fe does not have refresh logic yet
   refresh-token:
     expiration-time: 15552000000  # 6 months in milliseconds (1000 * 60 * 60 * 24 * 180)
+
+mosaic:
+  security:
+    # AES-256 encryption key for private key storage (Base64 encoded)
+    # Generate using KeyEncryptionService.generateAESKey()
+    encryption-key: --------NOT_A_VALID_KEY--------
 
 # File storage paths (overridable by profiles)
 file:
@@ -34,3 +40,5 @@ logging:
     com.gistacsl.mosaic: DEBUG
     org.springframework: DEBUG
     org.springframework.web: DEBUG
+    sun.rmi: INFO
+    javax.management: INFO

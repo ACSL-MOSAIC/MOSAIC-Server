@@ -47,7 +47,7 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                         .pathMatchers("/api/v1/account/login/access-token").permitAll()
                         .pathMatchers("/api/v1/account/signup").permitAll()
-                        .pathMatchers("/api/v1/organization/**").hasRole("ORGANIZATION_ADMIN") // TODO: Need to handle if other manager get rid out of the role.
+                        .pathMatchers("/api/v1/organization/**").hasRole("ORGANIZATION_ADMIN")
                         .pathMatchers("/api/**").authenticated()
                 )
                 .addFilterAt(new BearerTokenAuthenticationFilter(jwtTokenService), SecurityWebFiltersOrder.AUTHENTICATION)

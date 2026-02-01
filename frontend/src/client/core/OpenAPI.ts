@@ -4,7 +4,7 @@ import type {ApiRequestOptions} from "./ApiRequestOptions"
 
 type Headers = Record<string, string>
 type Middleware<T> = (value: T) => T | Promise<T>
-type Resolver<T> = (options: ApiRequestOptions<T>) => Promise<T>
+type Resolver<T> = (options: ApiRequestOptions) => Promise<T>
 
 export class Interceptors<T> {
   _fns: Middleware<T>[]
@@ -41,11 +41,6 @@ export type OpenAPIConfig = {
   }
 }
 
-const responseMiddleware = (response: AxiosResponse) => {
-  response.data = response.data.resultData
-  return response
-}
-
 export const OpenAPI: OpenAPIConfig = {
   BASE: getBackendUrl(),
   CREDENTIALS: "include",
@@ -61,5 +56,3 @@ export const OpenAPI: OpenAPIConfig = {
     response: new Interceptors(),
   },
 }
-
-OpenAPI.interceptors.response.use(responseMiddleware)

@@ -1,5 +1,6 @@
 package com.gistacsl.mosaic.repository.entity;
 
+import com.gistacsl.mosaic.robot.enumerate.RobotAuthType;
 import com.gistacsl.mosaic.robot.enumerate.RobotStatus;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,6 +18,8 @@ public class RobotEntity {
     private UUID organizationFk;
     @Builder.Default
     private RobotStatus status = RobotStatus.DISCONNECTED;
+    @Builder.Default
+    private RobotAuthType authType = RobotAuthType.NO_AUTHORIZATION;
     private String name;
     private String description;
 

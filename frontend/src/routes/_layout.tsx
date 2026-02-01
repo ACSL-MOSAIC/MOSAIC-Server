@@ -1,11 +1,10 @@
-import {WebSocketProvider} from "@/contexts/WebSocketContext"
+import {WebSocketProvider} from "@/contexts/WebSocketProvider"
 import {Flex} from "@chakra-ui/react"
 import {Outlet, createFileRoute, redirect} from "@tanstack/react-router"
 
 import Navbar from "@/components/Common/Navbar"
 import Sidebar from "@/components/Common/Sidebar"
 import {isLoggedIn} from "@/hooks/useAuth"
-import {MosaicProvider} from "@/contexts/MosaicContext.tsx"
 
 export const Route = createFileRoute("/_layout")({
   component: Layout,
@@ -21,15 +20,13 @@ export const Route = createFileRoute("/_layout")({
 function Layout() {
   return (
     <WebSocketProvider>
-      <MosaicProvider>
-        <Flex>
-          <Sidebar/>
-          <Flex flex="1" flexDir="column">
-            <Navbar/>
-            <Outlet/>
-          </Flex>
+      <Flex>
+        <Sidebar/>
+        <Flex flex="1" flexDir="column">
+          <Navbar/>
+          <Outlet/>
         </Flex>
-      </MosaicProvider>
+      </Flex>
     </WebSocketProvider>
   )
 }

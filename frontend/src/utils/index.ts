@@ -1,4 +1,4 @@
-import type { ApiError } from "../client"
+import type {ApiError} from "../client"
 import useCustomToast from "../hooks/useCustomToast.ts"
 
 export const emailPattern = {
@@ -32,7 +32,7 @@ export const confirmPasswordRules = (
 ) => {
   const rules: any = {
     validate: (value: string) => {
-      const password = getValues().password || getValues().new_password
+      const password = getValues().password || getValues().newPassword
       return value === password ? true : "The passwords do not match"
     },
   }
@@ -45,7 +45,7 @@ export const confirmPasswordRules = (
 }
 
 export const handleError = (err: ApiError) => {
-  const { showErrorToast } = useCustomToast()
+  const {showErrorToast} = useCustomToast()
   const errDetail = (err.body as any)?.detail
   let errorMessage = errDetail || "Something went wrong."
   if (Array.isArray(errDetail) && errDetail.length > 0) {
