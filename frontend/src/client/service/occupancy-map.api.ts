@@ -1,8 +1,6 @@
 import type {CancelablePromise, MessageDto, PageDto} from "@/client"
 import {request as __request} from "@/client/core/request.ts"
-import type {
-  OccupancyMapDto
-} from "./occupancy-map.dto.ts"
+import type {OccupancyMapDto} from "./occupancy-map.dto.ts"
 
 /**
  * Retrieve occupancy maps.
@@ -47,6 +45,7 @@ export const createOccupancyMapApi = (
     method: "POST",
     url: "/api/v1/occupancy_map",
     body: formData,
+    mediaType: "multipart/form-data",
   })
 }
 
@@ -100,6 +99,9 @@ export const getOccupancyMapPgmApi = (id: string): CancelablePromise<Blob> => {
       id: id,
     },
     responseType: "blob",
+    headers: {
+      Accept: "application/octet-stream",
+    },
   })
 }
 
@@ -117,6 +119,9 @@ export const getOccupancyMapYamlApi = (id: string): CancelablePromise<Blob> => {
       id: id,
     },
     responseType: "blob",
+    headers: {
+      Accept: "application/x-yaml",
+    },
   })
 }
 
@@ -136,5 +141,8 @@ export const downloadOccupancyMapApi = (
       id: id,
     },
     responseType: "blob",
+    headers: {
+      Accept: "application/zip",
+    },
   })
 }

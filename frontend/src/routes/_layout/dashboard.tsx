@@ -3,10 +3,10 @@ import {Container, Heading} from "@chakra-ui/react"
 import {createFileRoute} from "@tanstack/react-router"
 
 export const Route = createFileRoute("/_layout/dashboard")({
-  component: ConnectPage,
+  component: DashboardPage,
 })
 
-function ConnectPage() {
+function DashboardPage() {
   const {user} = useAuth()
 
   if (!user) {

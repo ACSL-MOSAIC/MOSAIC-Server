@@ -8,36 +8,35 @@ import {
   Input,
   Text,
 } from "@chakra-ui/react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
-import { type SubmitHandler, useForm } from "react-hook-form"
-import { FiCopy } from "react-icons/fi"
+import {useMutation, useQueryClient} from "@tanstack/react-query"
+import {useState} from "react"
+import {type SubmitHandler, useForm} from "react-hook-form"
+import {FiCopy} from "react-icons/fi"
 
-import type { ApiError } from "@/client"
-import { updateUserMeApi } from "@/client/service/user.api.ts"
-import type { UserPublic, UserUpdate } from "@/client/service/user.dto.ts"
+import type {ApiError} from "@/client"
+import {updateUserMeApi} from "@/client/service/user.api.ts"
+import type {UserUpdateMeDto} from "@/client/service/user.dto.ts"
 import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
-import { emailPattern, handleError } from "@/utils"
-import { Field } from "../ui/field"
+import {handleError} from "@/utils"
+import {Field} from "../ui/field"
 
 const UserInformation = () => {
   const queryClient = useQueryClient()
-  const { showSuccessToast } = useCustomToast()
+  const {showSuccessToast} = useCustomToast()
   const [editMode, setEditMode] = useState(false)
-  const { user: currentUser } = useAuth()
+  const {user: currentUser} = useAuth()
   const {
     register,
     handleSubmit,
     reset,
     getValues,
-    formState: { isSubmitting, errors, isDirty },
-  } = useForm<UserPublic>({
+    formState: {isSubmitting, isDirty},
+  } = useForm<UserUpdateMeDto>({
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
-      full_name: currentUser?.full_name,
-      email: currentUser?.email,
+      fullName: currentUser?.fullName,
     },
   })
 
@@ -58,7 +57,7 @@ const UserInformation = () => {
     },
   })
 
-  const onSubmit: SubmitHandler<UserUpdate> = async (data) => {
+  const onSubmit: SubmitHandler<UserUpdateMeDto> = async (data) => {
     mutation.mutate(data)
   }
 
@@ -85,14 +84,14 @@ const UserInformation = () => {
           User Information
         </Heading>
         <Box
-          w={{ sm: "full", md: "l" }}
+          w={{base: "100%", md: "md"}}
           as="form"
           onSubmit={handleSubmit(onSubmit)}
         >
           <Field label="Full name">
             {editMode ? (
               <Input
-                {...register("full_name", { maxLength: 30 })}
+                {...register("fullName", {maxLength: 30})}
                 type="text"
                 size="md"
               />
@@ -100,34 +99,23 @@ const UserInformation = () => {
               <Text
                 fontSize="md"
                 py={2}
-                color={!currentUser?.full_name ? "gray" : "inherit"}
+                color={!currentUser?.fullName ? "gray" : "inherit"}
                 truncate
                 maxW="sm"
               >
-                {currentUser?.full_name || "N/A"}
+                {currentUser?.fullName || "N/A"}
               </Text>
             )}
           </Field>
-          <Field
-            mt={4}
-            label="Email"
-            invalid={!!errors.email}
-            errorText={errors.email?.message}
-          >
-            {editMode ? (
-              <Input
-                {...register("email", {
-                  required: "Email is required",
-                  pattern: emailPattern,
-                })}
-                type="email"
-                size="md"
-              />
-            ) : (
-              <Text fontSize="md" py={2} truncate maxW="sm">
-                {currentUser?.email}
-              </Text>
-            )}
+          <Field mt={4} label="Email">
+            <Text fontSize="md" py={2} color="gray.600">
+              {currentUser?.email}
+            </Text>
+          </Field>
+          <Field mt={4} label="Role">
+            <Text fontSize="md" py={2} color="gray.600">
+              {currentUser?.isOrganizationAdmin ? "Admin" : "User"}
+            </Text>
           </Field>
           <Field mt={4} label="User ID">
             <HStack alignItems="center" gap={2}>
@@ -141,7 +129,7 @@ const UserInformation = () => {
                 onClick={handleCopyUserId}
                 p={1}
               >
-                <FiCopy size={14} />
+                <FiCopy size={14}/>
               </Button>
             </HStack>
           </Field>
@@ -151,7 +139,7 @@ const UserInformation = () => {
               onClick={toggleEditMode}
               type={editMode ? "button" : "submit"}
               loading={editMode ? isSubmitting : false}
-              disabled={editMode ? !isDirty || !getValues("email") : false}
+              disabled={editMode ? !isDirty || !getValues("fullName") : false}
             >
               {editMode ? "Save" : "Edit"}
             </Button>

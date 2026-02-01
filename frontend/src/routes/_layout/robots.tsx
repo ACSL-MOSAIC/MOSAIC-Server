@@ -1,12 +1,9 @@
-import {
-  Container,
-  Heading,
-} from "@chakra-ui/react"
+import {Container, Heading} from "@chakra-ui/react"
 import {createFileRoute} from "@tanstack/react-router"
 import {z} from "zod"
 
-import AddRobot from "@/components/Robots/AddRobot"
-import {RobotsTable} from "@/components/Robots/RobotsTable.tsx";
+import AddRobotDialog from "@/components/Robots/AddRobotDialog.tsx"
+import {RobotsTable} from "@/components/Robots/RobotsTable.tsx"
 
 const robotsSearchSchema = z.object({
   page: z.number().catch(1),
@@ -23,7 +20,7 @@ function Robots() {
       <Heading size="lg" pt={12}>
         Robots Management
       </Heading>
-      <AddRobot/>
+      <AddRobotDialog/>
       <RobotsTable/>
     </Container>
   )

@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
@@ -125,13 +127,13 @@ public class OccupancyMapService {
                              ZipOutputStream zos = new ZipOutputStream(baos)) {
 
                             // Add PGM file
-                            ZipEntry pgmEntry = new ZipEntry(Paths.get(entity.getPgmFilePath()).getFileName().toString());
+                            ZipEntry pgmEntry = new ZipEntry(entity.getName() + ".pgm");
                             zos.putNextEntry(pgmEntry);
                             zos.write(pgmBytes);
                             zos.closeEntry();
 
                             // Add YAML file
-                            ZipEntry yamlEntry = new ZipEntry(Paths.get(entity.getYamlFilePath()).getFileName().toString());
+                            ZipEntry yamlEntry = new ZipEntry(entity.getName() + ".yaml");
                             zos.putNextEntry(yamlEntry);
                             zos.write(yamlBytes);
                             zos.closeEntry();
@@ -139,7 +141,7 @@ public class OccupancyMapService {
                             zos.finish();
                             return baos.toByteArray();
                         }
-                    });
+                    }).subscribeOn(Schedulers.boundedElastic());
                 }));
     }
 
@@ -156,28 +158,33 @@ public class OccupancyMapService {
 
     private Mono<Void> saveFile(Mono<FilePart> filePart, Path destination) {
         return Mono.fromCallable(() -> {
-            Files.createDirectories(destination.getParent());
-            return destination;
-        }).flatMap(path -> filePart.flatMap(fp -> fp.transferTo(path)));
+                    Files.createDirectories(destination.getParent());
+                    return destination;
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(path -> filePart.flatMap(fp -> fp.transferTo(path)));
     }
 
     private Mono<byte[]> readFile(String filePath) {
         return Mono.fromCallable(() -> {
-            Path path = Paths.get(filePath);
-            if (!Files.exists(path)) {
-                throw new CustomException(ResultCode.OCCUPANCY_MAP_NOT_FOUND);
-            }
-            return Files.readAllBytes(path);
-        });
+                    Path path = Paths.get(filePath);
+                    if (!Files.exists(path)) {
+                        throw new CustomException(ResultCode.OCCUPANCY_MAP_NOT_FOUND);
+                    }
+                    return Files.readAllBytes(path);
+                })
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     private Mono<Void> deleteFileIfExists(String filePath) {
         return Mono.fromCallable(() -> {
-            Path path = Paths.get(filePath);
-            if (Files.exists(path)) {
-                Files.delete(path);
-            }
-            return null;
-        }).then();
+                    Path path = Paths.get(filePath);
+                    if (Files.exists(path)) {
+                        Files.delete(path);
+                    }
+                    return null;
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .then();
     }
 }

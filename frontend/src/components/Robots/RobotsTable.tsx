@@ -1,17 +1,13 @@
-import {
-  Box,
-  EmptyState,
-  Flex,
-  Table,
-  VStack,
-} from "@chakra-ui/react"
+import {Box, EmptyState, Flex, Table, VStack} from "@chakra-ui/react"
 import {useQuery} from "@tanstack/react-query"
 import {useNavigate} from "@tanstack/react-router"
 import {useState} from "react"
 import {FiCopy, FiSearch} from "react-icons/fi"
 
-import {readRobotsApi} from "@/client/service/robot.api.ts"
+import {getRobotListApi} from "@/client/service/robot.api.ts"
+import {ROBOT_AUTH_TYPES, ROBOT_STATUSES} from "@/client/service/robot.dto.ts"
 import {RobotActionsMenu} from "@/components/Common/RobotActionsMenu"
+import GenerateSimpleTokenDialog from "@/components/Robots/GenerateSimpleTokenDialog.tsx"
 import PendingRobots from "@/components/Pending/PendingRobots"
 import {
   PaginationItems,
@@ -20,15 +16,13 @@ import {
   PaginationRoot,
 } from "@/components/ui/pagination.tsx"
 import useCustomToast from "@/hooks/useCustomToast"
-import {Route} from "@/routes/_layout/robots.tsx";
-import {convertRobotStatusToString} from "@/utils/robot-status.ts";
-
+import {Route} from "@/routes/_layout/robots.tsx"
 
 const PER_PAGE = 5
 
 function getRobotsQueryOptions({page}: { page: number }) {
   return {
-    queryFn: () => readRobotsApi(PER_PAGE, (page - 1) * PER_PAGE),
+    queryFn: () => getRobotListApi(PER_PAGE, (page - 1) * PER_PAGE),
     queryKey: ["robots", {page}],
   }
 }
@@ -91,6 +85,7 @@ export function RobotsTable() {
             <Table.ColumnHeader w="sm">ID</Table.ColumnHeader>
             <Table.ColumnHeader w="sm">Name</Table.ColumnHeader>
             <Table.ColumnHeader w="sm">Status</Table.ColumnHeader>
+            <Table.ColumnHeader w="sm">Auth Type</Table.ColumnHeader>
             <Table.ColumnHeader w="sm">Description</Table.ColumnHeader>
             <Table.ColumnHeader w="sm">Actions</Table.ColumnHeader>
           </Table.Row>
@@ -116,7 +111,17 @@ export function RobotsTable() {
                 {robot.name}
               </Table.Cell>
               <Table.Cell truncate maxW="sm">
-                {convertRobotStatusToString(robot.status)}
+                {ROBOT_STATUSES.find((s) => s.value === robot.status)?.label ||
+                  "Unknown"}
+              </Table.Cell>
+              <Table.Cell truncate maxW="sm">
+                <Box display="flex" alignItems="center" gap={2}>
+                  {ROBOT_AUTH_TYPES.find((a) => a.value === robot.authType)
+                    ?.label || "Unknown"}
+                  {robot.authType === 1 && (
+                    <GenerateSimpleTokenDialog robot={robot}/>
+                  )}
+                </Box>
               </Table.Cell>
               <Table.Cell
                 color={!robot.description ? "gray" : "inherit"}

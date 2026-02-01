@@ -119,7 +119,13 @@ const PreviewOccupancyMap = ({occupancyMap}: PreviewOccupancyMapProps) => {
       size={{base: "md", md: "lg"}}
       placement="center"
       open={isOpen}
-      onOpenChange={({open}) => setIsOpen(open)}
+      onOpenChange={({open}) => {
+        setIsOpen(open)
+        if (!open) {
+          setPgmMapData(null)
+          setYamlMapData(null)
+        }
+      }}
     >
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">

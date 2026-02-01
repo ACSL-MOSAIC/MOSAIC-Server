@@ -1,10 +1,10 @@
-import { Button, DialogTitle, Text } from "@chakra-ui/react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { FiTrash2 } from "react-icons/fi"
+import {Button, DialogTitle, Text} from "@chakra-ui/react"
+import {useMutation, useQueryClient} from "@tanstack/react-query"
+import {useState} from "react"
+import {useForm} from "react-hook-form"
+import {FiTrash2} from "react-icons/fi"
 
-import { deleteRobotApi } from "@/client/service/robot.api.ts"
+import {deleteRobotApi} from "@/client/service/robot.api.ts"
 import {
   DialogActionTrigger,
   DialogBody,
@@ -17,13 +17,13 @@ import {
 } from "@/components/ui/dialog"
 import useCustomToast from "@/hooks/useCustomToast"
 
-const DeleteRobot = ({ id }: { id: string }) => {
+const DeleteRobotDialog = ({id}: { id: string }) => {
   const [isOpen, setIsOpen] = useState(false)
   const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const {showSuccessToast, showErrorToast} = useCustomToast()
   const {
     handleSubmit,
-    formState: { isSubmitting },
+    formState: {isSubmitting},
   } = useForm()
 
   const mutation = useMutation({
@@ -46,22 +46,22 @@ const DeleteRobot = ({ id }: { id: string }) => {
 
   return (
     <DialogRoot
-      size={{ base: "xs", md: "md" }}
+      size={{base: "xs", md: "md"}}
       placement="center"
       role="alertdialog"
       open={isOpen}
-      onOpenChange={({ open }) => setIsOpen(open)}
+      onOpenChange={({open}) => setIsOpen(open)}
     >
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm" colorPalette="red">
-          <FiTrash2 fontSize="16px" />
+          <FiTrash2 fontSize="16px"/>
           Delete Robot
         </Button>
       </DialogTrigger>
 
       <DialogContent>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <DialogCloseTrigger />
+          <DialogCloseTrigger/>
           <DialogHeader>
             <DialogTitle>Delete Robot</DialogTitle>
           </DialogHeader>
@@ -97,4 +97,4 @@ const DeleteRobot = ({ id }: { id: string }) => {
   )
 }
 
-export default DeleteRobot
+export default DeleteRobotDialog

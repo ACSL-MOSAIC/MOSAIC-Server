@@ -5,14 +5,14 @@ import ChangePassword from "@/components/UserSettings/ChangePassword"
 import UserInformation from "@/components/UserSettings/UserInformation"
 import useAuth from "@/hooks/useAuth"
 
+export const Route = createFileRoute("/_layout/settings")({
+  component: UserSettings,
+})
+
 const tabsConfig = [
   {value: "my-profile", title: "My profile", component: UserInformation},
   {value: "password", title: "Password", component: ChangePassword},
 ]
-
-export const Route = createFileRoute("/_layout/settings")({
-  component: UserSettings,
-})
 
 function UserSettings() {
   const {user: currentUser} = useAuth()

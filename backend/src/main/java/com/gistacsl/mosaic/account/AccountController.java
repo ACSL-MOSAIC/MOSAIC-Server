@@ -27,12 +27,12 @@ public class AccountController {
     @PostMapping("/disconnect")
     public Mono<GResponse<MessageDto>> disconnect() {
         return UserAuth.getUserAuthFromSecurityContextHolder()
-                .flatMap(userAuth -> accountService.disconnect(userAuth))
+                .flatMap(accountService::disconnect)
                 .map(GResponse::toGResponse);
     }
 
     @PostMapping("/signup")
-    public Mono<GResponse<SignupDto.Res>> signup(@RequestBody SignupDto.Req req) {
+    public Mono<GResponse<MessageDto>> signup(@RequestBody SignupDto.Req req) {
         return accountService.signup(req)
                 .map(GResponse::toGResponse);
     }

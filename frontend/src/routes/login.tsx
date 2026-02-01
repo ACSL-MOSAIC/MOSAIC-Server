@@ -1,16 +1,16 @@
 import {Button, Container, Image, Input} from "@chakra-ui/react"
 import {createFileRoute, redirect} from "@tanstack/react-router"
+import type React from "react"
 import {useState} from "react"
 import {FiLock, FiMail} from "react-icons/fi"
 
-import type {Body_users_login_access_token as AccessToken} from "@/client/service/user.dto.ts"
 import {Field} from "@/components/ui/field"
 import {InputGroup} from "@/components/ui/input-group"
 import {PasswordInput} from "@/components/ui/password-input"
 import useAuth, {isLoggedIn} from "@/hooks/useAuth"
 import {emailPattern} from "@/utils"
-// @ts-ignore
 import Logo from "/assets/images/acsl-logo.svg"
+import type {AccountLoginReqDto} from "@/client/service/account.dto.ts"
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const {loginMutation, disconnectMutation, error, resetError} = useAuth()
-  const [formData, setFormData] = useState<AccessToken>({
+  const [formData, setFormData] = useState<AccountLoginReqDto>({
     username: "",
     password: "",
   })
@@ -64,13 +64,13 @@ function Login() {
 
     try {
       const response = await loginMutation.mutateAsync(formData)
-      if (response.existingConnection && response.user_id) {
+      if (response.existingConnection) {
         if (
           window.confirm(
             "이미 다른 기기에서 로그인되어 있습니다. 기존 연결을 해제하고 로그인하시겠습니까?",
           )
         ) {
-          await disconnectMutation.mutateAsync(response.user_id)
+          await disconnectMutation.mutateAsync()
           await loginMutation.mutateAsync(formData)
         }
       }

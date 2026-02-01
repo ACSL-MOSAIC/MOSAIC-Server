@@ -1,20 +1,21 @@
-import axios from "axios"
 import type {
   AxiosError,
   AxiosInstance,
   AxiosRequestConfig,
   AxiosResponse,
 } from "axios"
+import axios from "axios"
 
 import {
   ApiError,
   CancelablePromise,
+  type GlobalDto,
   OpenAPI,
   type OpenAPIConfig,
 } from "@/client"
-import type { ApiRequestOptions } from "./ApiRequestOptions"
-import type { ApiResult } from "./ApiResult"
-import type { OnCancel } from "./CancelablePromise"
+import type {ApiRequestOptions} from "./ApiRequestOptions"
+import type {ApiResult} from "./ApiResult"
+import type {OnCancel} from "./CancelablePromise"
 
 export const isString = (value: unknown): value is string => {
   return typeof value === "string"
@@ -119,10 +120,10 @@ export const getFormData = (
   return undefined
 }
 
-type Resolver<T> = (options: ApiRequestOptions<T>) => Promise<T>
+type Resolver<T> = (options: ApiRequestOptions) => Promise<T>
 
 export const resolve = async <T>(
-  options: ApiRequestOptions<T>,
+  options: ApiRequestOptions,
   resolver?: T | Resolver<T>,
 ): Promise<T | undefined> => {
   if (typeof resolver === "function") {
@@ -131,9 +132,9 @@ export const resolve = async <T>(
   return resolver
 }
 
-export const getHeaders = async <T>(
+export const getHeaders = async (
   config: OpenAPIConfig,
-  options: ApiRequestOptions<T>,
+  options: ApiRequestOptions,
 ): Promise<Record<string, string>> => {
   const [token, username, password, additionalHeaders] = await Promise.all([
     // @ts-ignore
@@ -198,7 +199,7 @@ export const getRequestBody = (options: ApiRequestOptions): unknown => {
 
 export const sendRequest = async <T>(
   config: OpenAPIConfig,
-  options: ApiRequestOptions<T>,
+  options: ApiRequestOptions,
   url: string,
   body: unknown,
   formData: FormData | undefined,
@@ -248,11 +249,23 @@ export const getResponseHeader = (
   return undefined
 }
 
-export const getResponseBody = (response: AxiosResponse<unknown>): unknown => {
+export const getResultCode = <T>(
+  response: AxiosResponse<GlobalDto<T>>,
+): number | null => {
   if (response.status !== 204) {
-    return response.data
+    return response.data.resultCode
   }
-  return undefined
+  return null
+}
+
+export const getResultData = <T>(
+  options: ApiRequestOptions,
+  response: AxiosResponse<GlobalDto<T>>,
+): T => {
+  if (options.responseType === "blob") {
+    return response.data as unknown as T
+  }
+  return response.data.resultData
 }
 
 export const catchErrorCodes = (
@@ -313,7 +326,7 @@ export const catchErrorCodes = (
     const errorStatusText = result.statusText ?? "unknown"
     const errorBody = (() => {
       try {
-        return JSON.stringify(result.body, null, 2)
+        return JSON.stringify(result.resultData, null, 2)
       } catch (e) {
         return undefined
       }
@@ -336,7 +349,7 @@ export const catchErrorCodes = (
  * @throws ApiError
  */
 export const request = <T>(
-  options: ApiRequestOptions<T>,
+  options: ApiRequestOptions,
   config: OpenAPIConfig = OpenAPI,
   axiosClient: AxiosInstance = axios,
 ): CancelablePromise<T> => {
@@ -348,7 +361,7 @@ export const request = <T>(
       const headers = await getHeaders(config, options)
 
       if (!onCancel.isCancelled) {
-        let response = await sendRequest<T>(
+        let response = await sendRequest<GlobalDto<T>>(
           config,
           options,
           url,
@@ -363,28 +376,25 @@ export const request = <T>(
           response = await fn(response)
         }
 
-        const responseBody = getResponseBody(response)
+        const resultCode = getResultCode(response)
+        const resultData = getResultData(options, response)
         const responseHeader = getResponseHeader(
           response,
           options.responseHeader,
         )
-
-        let transformedBody = responseBody
-        if (options.responseTransformer && isSuccess(response.status)) {
-          transformedBody = await options.responseTransformer(responseBody)
-        }
 
         const result: ApiResult = {
           url,
           ok: isSuccess(response.status),
           status: response.status,
           statusText: response.statusText,
-          body: responseHeader ?? transformedBody,
+          resultData: responseHeader ?? resultData,
+          resultCode: resultCode ?? 10000,
         }
 
         catchErrorCodes(options, result)
 
-        resolve(result.body)
+        resolve(result.resultData)
       }
     } catch (error) {
       reject(error)

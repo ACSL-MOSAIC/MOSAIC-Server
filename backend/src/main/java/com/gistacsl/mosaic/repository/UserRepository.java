@@ -17,40 +17,40 @@ public class UserRepository {
 
     public Mono<UserEntity> findByEmail(String email, DSLContext dslContext) {
         return Mono.from(
-                dslContext.selectFrom(USERS)
-                        .where(USERS.EMAIL.eq(email))
-        ).onErrorMap(e -> new CustomException(ResultCode.DB_USER_READ_FAILED, e))
-        .map(record -> UserEntity.builder()
-                .pk(record.getPk())
-                .organizationFk(record.getOrganizationFk())
-                .isActive(record.getIsActive())
-                .isOrganizationAdmin(record.getIsOrganizationAdmin())
-                .email(record.getEmail())
-                .fullName(record.getFullName())
-                .createdAt(record.getCreatedAt())
-                .updatedAt(record.getUpdatedAt())
-                .hashedPassword(record.getHashedPassword())
-                .build()
-        );
+                        dslContext.selectFrom(USERS)
+                                .where(USERS.EMAIL.eq(email))
+                ).onErrorMap(e -> new CustomException(ResultCode.DB_USER_READ_FAILED, e))
+                .map(record -> UserEntity.builder()
+                        .pk(record.getPk())
+                        .organizationFk(record.getOrganizationFk())
+                        .isActive(record.getIsActive())
+                        .isOrganizationAdmin(record.getIsOrganizationAdmin())
+                        .email(record.getEmail())
+                        .fullName(record.getFullName())
+                        .createdAt(record.getCreatedAt())
+                        .updatedAt(record.getUpdatedAt())
+                        .hashedPassword(record.getHashedPassword())
+                        .build()
+                );
     }
 
     public Mono<UserEntity> findByPk(java.util.UUID pk, DSLContext dslContext) {
         return Mono.from(
-                dslContext.selectFrom(USERS)
-                        .where(USERS.PK.eq(pk))
-        ).onErrorMap(e -> new CustomException(ResultCode.DB_USER_READ_FAILED, e))
-        .map(record -> UserEntity.builder()
-                .pk(record.getPk())
-                .organizationFk(record.getOrganizationFk())
-                .isActive(record.getIsActive())
-                .isOrganizationAdmin(record.getIsOrganizationAdmin())
-                .email(record.getEmail())
-                .fullName(record.getFullName())
-                .createdAt(record.getCreatedAt())
-                .updatedAt(record.getUpdatedAt())
-                .hashedPassword(record.getHashedPassword())
-                .build()
-        );
+                        dslContext.selectFrom(USERS)
+                                .where(USERS.PK.eq(pk))
+                ).onErrorMap(e -> new CustomException(ResultCode.DB_USER_READ_FAILED, e))
+                .map(record -> UserEntity.builder()
+                        .pk(record.getPk())
+                        .organizationFk(record.getOrganizationFk())
+                        .isActive(record.getIsActive())
+                        .isOrganizationAdmin(record.getIsOrganizationAdmin())
+                        .email(record.getEmail())
+                        .fullName(record.getFullName())
+                        .createdAt(record.getCreatedAt())
+                        .updatedAt(record.getUpdatedAt())
+                        .hashedPassword(record.getHashedPassword())
+                        .build()
+                );
     }
 
     public Mono<Integer> updatePassword(java.util.UUID pk, String hashedPassword, DSLContext dslContext) {
@@ -89,39 +89,38 @@ public class UserRepository {
 
     public Mono<Integer> countByOrganizationFk(UUID organizationFk, DSLContext dslContext) {
         return Mono.from(
-                dslContext.selectCount()
-                        .from(USERS)
-                        .where(USERS.ORGANIZATION_FK.eq(organizationFk))
-        ).onErrorMap(e -> new CustomException(ResultCode.DB_USER_READ_FAILED, e))
-        .map(record -> record.value1());
+                        dslContext.selectCount()
+                                .from(USERS)
+                                .where(USERS.ORGANIZATION_FK.eq(organizationFk))
+                ).onErrorMap(e -> new CustomException(ResultCode.DB_USER_READ_FAILED, e))
+                .map(record -> record.value1());
     }
 
     public Flux<UserEntity> findAllByOrganizationFk(UUID organizationFk, int skip, int limit, DSLContext dslContext) {
         return Flux.from(
-                dslContext.selectFrom(USERS)
-                        .where(USERS.ORGANIZATION_FK.eq(organizationFk))
-                        .orderBy(USERS.CREATED_AT.desc())
-                        .offset(skip)
-                        .limit(limit)
-        ).onErrorMap(e -> new CustomException(ResultCode.DB_USER_READ_FAILED, e))
-        .map(record -> UserEntity.builder()
-                .pk(record.getPk())
-                .organizationFk(record.getOrganizationFk())
-                .isActive(record.getIsActive())
-                .isOrganizationAdmin(record.getIsOrganizationAdmin())
-                .email(record.getEmail())
-                .fullName(record.getFullName())
-                .createdAt(record.getCreatedAt())
-                .updatedAt(record.getUpdatedAt())
-                .hashedPassword(record.getHashedPassword())
-                .build()
-        );
+                        dslContext.selectFrom(USERS)
+                                .where(USERS.ORGANIZATION_FK.eq(organizationFk))
+                                .orderBy(USERS.CREATED_AT.desc())
+                                .offset(skip)
+                                .limit(limit)
+                ).onErrorMap(e -> new CustomException(ResultCode.DB_USER_READ_FAILED, e))
+                .map(record -> UserEntity.builder()
+                        .pk(record.getPk())
+                        .organizationFk(record.getOrganizationFk())
+                        .isActive(record.getIsActive())
+                        .isOrganizationAdmin(record.getIsOrganizationAdmin())
+                        .email(record.getEmail())
+                        .fullName(record.getFullName())
+                        .createdAt(record.getCreatedAt())
+                        .updatedAt(record.getUpdatedAt())
+                        .hashedPassword(record.getHashedPassword())
+                        .build()
+                );
     }
 
     public Mono<Integer> updateUser(
             UUID pk,
             UUID organizationFk,
-            String email,
             String hashedPassword,
             Boolean isActive,
             Boolean isOrganizationAdmin,
@@ -131,9 +130,6 @@ public class UserRepository {
         var query = dslContext.update(USERS)
                 .set(USERS.UPDATED_AT, java.time.OffsetDateTime.now());
 
-        if (email != null) {
-            query = query.set(USERS.EMAIL, email);
-        }
         if (hashedPassword != null) {
             query = query.set(USERS.HASHED_PASSWORD, hashedPassword);
         }

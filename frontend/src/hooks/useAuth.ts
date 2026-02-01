@@ -4,17 +4,15 @@ import {useState} from "react"
 
 import type {ApiError} from "@/client"
 import {OpenAPI} from "@/client/core/OpenAPI"
-import {
-  disconnectExistingSessionApi,
-  loginAccessTokenApi,
-  readUserMeApi,
-  registerUserApi,
-} from "@/client/service/user.api.ts"
-import type {
-  Body_users_login_access_token as AccessToken,
-  UserPublic,
-} from "@/client/service/user.dto.ts"
+import {getUserMeApi} from "@/client/service/user.api.ts"
+import type {UserDto} from "@/client/service/user.dto.ts"
 import {handleError} from "@/utils"
+import {
+  disconnectApi,
+  loginApi,
+  signupApi,
+} from "@/client/service/account.api.ts"
+import type {AccountLoginReqDto} from "@/client/service/account.dto.ts"
 
 const isLoggedIn = () => {
   return localStorage.getItem("access_token") !== null
@@ -25,14 +23,14 @@ const useAuth = () => {
   const [existingConnection, setExistingConnection] = useState<boolean>(false)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const {data: user} = useQuery<UserPublic | null, Error>({
+  const {data: user} = useQuery<UserDto | null, Error>({
     queryKey: ["currentUser"],
-    queryFn: readUserMeApi,
+    queryFn: getUserMeApi,
     enabled: isLoggedIn(),
   })
 
   const signUpMutation = useMutation({
-    mutationFn: registerUserApi,
+    mutationFn: signupApi,
     onSuccess: () => {
       navigate({to: "/login"})
     },
@@ -44,8 +42,8 @@ const useAuth = () => {
     },
   })
 
-  const login = async (data: AccessToken) => {
-    const response = await loginAccessTokenApi(data)
+  const login = async (data: AccountLoginReqDto) => {
+    const response = await loginApi(data)
 
     if (response.existingConnection) {
       setExistingConnection(true)
@@ -72,17 +70,15 @@ const useAuth = () => {
   })
 
   const disconnectMutation = useMutation({
-    mutationFn: async (userId: string) => {
-      return disconnectExistingSessionApi({user_id: userId})
-    },
+    mutationFn: disconnectApi,
     onSuccess: () => {
       setExistingConnection(false)
       // 재로그인 시도
-      const formData = loginMutation.variables
-      if (formData) {
+      const reqData = loginMutation.variables
+      if (reqData) {
         // 잠시 대기 후 재로그인 시도
         setTimeout(() => {
-          loginMutation.mutate(formData)
+          loginMutation.mutate(reqData)
         }, 1000)
       }
     },
@@ -91,12 +87,12 @@ const useAuth = () => {
     },
   })
 
-  const logout = () => {
+  const logout = async () => {
     localStorage.removeItem("access_token")
     // OpenAPI 설정에서 토큰 제거
     OpenAPI.TOKEN = undefined
     queryClient.clear()
-    navigate({to: "/login"})
+    await navigate({to: "/login"})
   }
 
   return {

@@ -6,7 +6,6 @@ public class UserUpdateDto {
 
     public record Req(
             UUID id,
-            String email,
             String password,
             Boolean isActive,
             Boolean isOrganizationAdmin,

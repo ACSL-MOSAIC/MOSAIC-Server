@@ -1,12 +1,11 @@
 import useAuth from "@/hooks/useAuth"
 import {getBackendWsUrl} from "@/utils/envs.ts"
+import {type ReactNode, useEffect, useRef, useState} from "react"
 import {
-  type ReactNode,
-  useEffect,
-  useRef,
-  useState,
-} from "react"
-import {type RobotInfo, WebSocketContext, type WebSocketMessage} from "./WebSocketContext";
+  type RobotInfo,
+  WebSocketContext,
+  type WebSocketMessage,
+} from "./WebSocketContext"
 
 export function WebSocketProvider({children}: { children: ReactNode }) {
   const {user, logout: authLogout} = useAuth()
@@ -19,10 +18,10 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
     new Map(),
   )
 
-  const logout = () => {
+  const logout = async () => {
     console.log("로그아웃 처리 중...")
     disconnect()
-    authLogout()
+    await authLogout()
   }
 
   const connectWebSocket = () => {
@@ -48,14 +47,14 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
       }, 30000)
     }
 
-    websocket.onmessage = (event) => {
+    websocket.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data)
         // console.log("WebSocket 메시지 수신:", data)
 
         if (data.type === "force_logout") {
           console.log("강제 로그아웃 메시지 수신:", data.message)
-          logout()
+          await logout()
           return
         }
 
@@ -63,8 +62,8 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
           sendMessage({
             type: "authorize",
             data: {
-              "accessToken": accessToken
-            }
+              accessToken: accessToken,
+            },
           })
         }
 

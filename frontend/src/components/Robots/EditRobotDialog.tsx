@@ -3,19 +3,25 @@ import {
   ButtonGroup,
   DialogActionTrigger,
   Input,
+  NativeSelectField,
+  NativeSelectRoot,
   Text,
   VStack,
 } from "@chakra-ui/react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
-import { type SubmitHandler, useForm } from "react-hook-form"
-import { FaExchangeAlt } from "react-icons/fa"
+import {useMutation, useQueryClient} from "@tanstack/react-query"
+import {useState} from "react"
+import {type SubmitHandler, useForm} from "react-hook-form"
+import {FaExchangeAlt} from "react-icons/fa"
 
-import type { ApiError } from "@/client"
-import { updateRobotApi } from "@/client/service/robot.api.ts"
-import type { RobotPublic } from "@/client/service/robot.dto.ts"
+import type {ApiError} from "@/client"
+import {updateRobotApi} from "@/client/service/robot.api.ts"
+import type {
+  RobotInfoDto,
+  RobotUpdateDto,
+} from "@/client/service/robot.dto.ts"
+import {ROBOT_AUTH_TYPES} from "@/client/service/robot.dto.ts"
 import useCustomToast from "@/hooks/useCustomToast"
-import { handleError } from "@/utils"
+import {handleError} from "@/utils"
 import {
   DialogBody,
   DialogCloseTrigger,
@@ -26,27 +32,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog"
-import { Field } from "../ui/field"
+import {Field} from "../ui/field"
 
 interface EditRobotProps {
-  robot: RobotPublic
+  robot: RobotInfoDto
 }
 
-interface RobotUpdateForm {
-  name: string
-  description?: string
-}
-
-const EditRobot = ({ robot }: EditRobotProps) => {
+const EditRobotDialog = ({robot}: EditRobotProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const queryClient = useQueryClient()
-  const { showSuccessToast } = useCustomToast()
+  const {showSuccessToast} = useCustomToast()
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
-  } = useForm<RobotUpdateForm>({
+    formState: {errors, isSubmitting},
+  } = useForm<RobotUpdateDto>({
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
@@ -56,7 +57,7 @@ const EditRobot = ({ robot }: EditRobotProps) => {
   })
 
   const mutation = useMutation({
-    mutationFn: (data: RobotUpdateForm) => updateRobotApi(robot.id, data),
+    mutationFn: (data: RobotUpdateDto) => updateRobotApi(robot.id, data),
     onSuccess: () => {
       showSuccessToast("Robot updated successfully.")
       reset()
@@ -66,24 +67,24 @@ const EditRobot = ({ robot }: EditRobotProps) => {
       handleError(err)
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["robots"] })
+      queryClient.invalidateQueries({queryKey: ["robots"]})
     },
   })
 
-  const onSubmit: SubmitHandler<RobotUpdateForm> = async (data) => {
+  const onSubmit: SubmitHandler<RobotUpdateDto> = async (data) => {
     mutation.mutate(data)
   }
 
   return (
     <DialogRoot
-      size={{ base: "xs", md: "md" }}
+      size={{base: "xs", md: "md"}}
       placement="center"
       open={isOpen}
-      onOpenChange={({ open }) => setIsOpen(open)}
+      onOpenChange={({open}) => setIsOpen(open)}
     >
       <DialogTrigger asChild>
         <Button variant="ghost">
-          <FaExchangeAlt fontSize="16px" />
+          <FaExchangeAlt fontSize="16px"/>
           Edit Robot
         </Button>
       </DialogTrigger>
@@ -123,6 +124,28 @@ const EditRobot = ({ robot }: EditRobotProps) => {
                   type="text"
                 />
               </Field>
+
+              <Field
+                invalid={!!errors.authType}
+                errorText={errors.authType?.message}
+                label="Auth Type"
+              >
+                <NativeSelectRoot>
+                  <NativeSelectField
+                    id="authType"
+                    {...register("authType", {
+                      required: "Auth Type is required.",
+                      valueAsNumber: true,
+                    })}
+                  >
+                    {ROBOT_AUTH_TYPES.map((authType) => (
+                      <option key={authType.value} value={authType.value}>
+                        {authType.label}
+                      </option>
+                    ))}
+                  </NativeSelectField>
+                </NativeSelectRoot>
+              </Field>
             </VStack>
           </DialogBody>
 
@@ -143,10 +166,10 @@ const EditRobot = ({ robot }: EditRobotProps) => {
             </ButtonGroup>
           </DialogFooter>
         </form>
-        <DialogCloseTrigger />
+        <DialogCloseTrigger/>
       </DialogContent>
     </DialogRoot>
   )
 }
 
-export default EditRobot
+export default EditRobotDialog
