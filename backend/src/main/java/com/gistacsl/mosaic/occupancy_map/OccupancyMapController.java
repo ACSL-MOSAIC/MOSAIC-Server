@@ -4,7 +4,6 @@ import com.gistacsl.mosaic.common.GResponse;
 import com.gistacsl.mosaic.common.dto.MessageDto;
 import com.gistacsl.mosaic.occupancy_map.dto.OccupancyMapDto;
 import com.gistacsl.mosaic.occupancy_map.dto.OccupancyMapListDto;
-import com.gistacsl.mosaic.occupancy_map.dto.OccupancyMapUpdateDto;
 import com.gistacsl.mosaic.security.authentication.UserAuth;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -40,7 +39,7 @@ public class OccupancyMapController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Mono<GResponse<OccupancyMapDto.Res>> createOccupancyMap(
+    public Mono<GResponse<MessageDto>> createOccupancyMap(
             @RequestPart("name") String name,
             @RequestPart("pgm_file") Mono<FilePart> pgmFile,
             @RequestPart("yaml_file") Mono<FilePart> yamlFile
@@ -54,16 +53,6 @@ public class OccupancyMapController {
     public Mono<GResponse<OccupancyMapDto.Res>> getOccupancyMap(@PathVariable UUID id) {
         return UserAuth.getUserAuthFromSecurityContextHolder()
                 .flatMap(userAuth -> occupancyMapService.getOccupancyMap(userAuth, id))
-                .map(GResponse::toGResponse);
-    }
-
-    @PutMapping("/{id}")
-    public Mono<GResponse<MessageDto>> updateOccupancyMap(
-            @PathVariable UUID id,
-            @RequestBody OccupancyMapUpdateDto.Req req
-    ) {
-        return UserAuth.getUserAuthFromSecurityContextHolder()
-                .flatMap(userAuth -> occupancyMapService.updateOccupancyMap(userAuth, id, req))
                 .map(GResponse::toGResponse);
     }
 

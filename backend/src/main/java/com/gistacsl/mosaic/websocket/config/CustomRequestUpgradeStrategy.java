@@ -52,7 +52,7 @@ public class CustomRequestUpgradeStrategy implements RequestUpgradeStrategy {
             if (httpExchange.getRequestURI().startsWith("/ws/robot")) {
                 callback = new CustomRobotWSConnectionCallBack(this.wsSessionManager, this.wsMessageSender, handshakeInfo, ContextWebSocketHandler.decorate(webSocketHandler, contextView), bufferFactory);
             } else {
-                callback = new CustomUserWSConnectionCallBack(this.wsSessionManager, handshakeInfo, ContextWebSocketHandler.decorate(webSocketHandler, contextView), bufferFactory);
+                callback = new CustomUserWSConnectionCallBack(this.wsSessionManager, this.wsMessageSender, handshakeInfo, ContextWebSocketHandler.decorate(webSocketHandler, contextView), bufferFactory);
             }
 
             try {
@@ -89,6 +89,7 @@ public class CustomRequestUpgradeStrategy implements RequestUpgradeStrategy {
             RobotWsSession session = new RobotWsSession(sessionId, webSocketChannel, this.handshakeInfo, this.bufferFactory);
 
             wsSessionManager.addRobotSession(sessionId, session);
+            this.requestAuthorization(session);
 
             UndertowWebSocketHandlerAdapter adapter = new UndertowWebSocketHandlerAdapter(session);
             webSocketChannel.getReceiveSetter().set(adapter);
@@ -101,6 +102,7 @@ public class CustomRequestUpgradeStrategy implements RequestUpgradeStrategy {
             try {
                 this.wsMessageSender.sendWsMessageToRobot(wsMessage, session);
             } catch (Exception e) {
+                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         }
@@ -108,13 +110,15 @@ public class CustomRequestUpgradeStrategy implements RequestUpgradeStrategy {
 
     private static class CustomUserWSConnectionCallBack implements WebSocketConnectionCallback {
         private final WsSessionManager wsSessionManager;
+        private final WsMessageSender wsMessageSender;
 
         private final HandshakeInfo handshakeInfo;
         private final WebSocketHandler handler;
         private final DataBufferFactory bufferFactory;
 
-        CustomUserWSConnectionCallBack(WsSessionManager wsSessionManager, HandshakeInfo handshakeInfo, WebSocketHandler handler, DataBufferFactory bufferFactory) {
+        CustomUserWSConnectionCallBack(WsSessionManager wsSessionManager, WsMessageSender wsMessageSender, HandshakeInfo handshakeInfo, WebSocketHandler handler, DataBufferFactory bufferFactory) {
             this.wsSessionManager = wsSessionManager;
+            this.wsMessageSender = wsMessageSender;
 
             this.handshakeInfo = handshakeInfo;
             this.handler = handler;
@@ -133,8 +137,18 @@ public class CustomRequestUpgradeStrategy implements RequestUpgradeStrategy {
             webSocketChannel.resumeReceives();
 
             this.requestAuthorization(session);
-            
+
             this.handler.handle(session).checkpoint(webSocketHttpExchange.getRequestURI() + " [UndertowRequestUpgradeStrategy]").subscribe(session);
+        }
+
+        private void requestAuthorization(UserWsSession session) {
+            WsMessage<Void> wsMessage = new WsMessage<>("authorize.req", null);
+            try {
+                this.wsMessageSender.sendWsMessageToUser(wsMessage, session);
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
         }
     }
 }

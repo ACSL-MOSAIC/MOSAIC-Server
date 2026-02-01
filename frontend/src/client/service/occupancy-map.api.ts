@@ -1,8 +1,7 @@
-import type { CancelablePromise, Message } from "@/client"
-import { request as __request } from "@/client/core/request.ts"
+import type {CancelablePromise, MessageDto, PageDto} from "@/client"
+import {request as __request} from "@/client/core/request.ts"
 import type {
-  OccupancyMapPublic,
-  OccupancyMapsPublic,
+  OccupancyMapDto
 } from "./occupancy-map.dto.ts"
 
 /**
@@ -12,40 +11,16 @@ import type {
  * @returns OccupancyMapsPublic Successful Response
  * @throws ApiError
  */
-export const readOccupancyMapsApi = (
+export const getOccupancyMapsListApi = (
   skip?: number,
   limit?: number,
-): CancelablePromise<OccupancyMapsPublic> => {
+): CancelablePromise<PageDto<OccupancyMapDto>> => {
   return __request({
     method: "GET",
-    url: "/api/v1/occupancy_map/",
+    url: "/api/v1/occupancy_map",
     query: {
       skip: skip,
       limit: limit,
-    },
-    errors: {
-      422: "Validation Error",
-    },
-  })
-}
-
-/**
- * Get occupancy map by ID.
- * @param id
- * @returns OccupancyMapPublic Successful Response
- * @throws ApiError
- */
-export const readOccupancyMapApi = (
-  id: string,
-): CancelablePromise<OccupancyMapPublic> => {
-  return __request({
-    method: "GET",
-    url: "/api/v1/occupancy_map/{id}",
-    path: {
-      id: id,
-    },
-    errors: {
-      422: "Validation Error",
     },
   })
 }
@@ -55,14 +30,14 @@ export const readOccupancyMapApi = (
  * @param name
  * @param pgmFile
  * @param yamlFile
- * @returns OccupancyMapPublic Successful Response
+ * @returns MessageDto Successful Response
  * @throws ApiError
  */
 export const createOccupancyMapApi = (
   name: string,
   pgmFile: File,
   yamlFile: File,
-): CancelablePromise<OccupancyMapPublic> => {
+): CancelablePromise<MessageDto> => {
   const formData = new FormData()
   formData.append("name", name)
   formData.append("pgm_file", pgmFile)
@@ -70,11 +45,78 @@ export const createOccupancyMapApi = (
 
   return __request({
     method: "POST",
-    url: "/api/v1/occupancy_map/",
+    url: "/api/v1/occupancy_map",
     body: formData,
-    errors: {
-      422: "Validation Error",
+  })
+}
+
+/**
+ * Get occupancy map by ID.
+ * @param id
+ * @returns OccupancyMapDto Successful Response
+ * @throws ApiError
+ */
+export const getOccupancyMapApi = (
+  id: string,
+): CancelablePromise<OccupancyMapDto> => {
+  return __request({
+    method: "GET",
+    url: "/api/v1/occupancy_map/{id}",
+    path: {
+      id: id,
     },
+  })
+}
+
+/**
+ * Delete an occupancy map.
+ * @param id
+ * @returns Message Successful Response
+ * @throws ApiError
+ */
+export const deleteOccupancyMapApi = (
+  id: string,
+): CancelablePromise<MessageDto> => {
+  return __request({
+    method: "DELETE",
+    url: "/api/v1/occupancy_map/{id}",
+    path: {
+      id: id,
+    },
+  })
+}
+
+/**
+ * Get PGM file of occupancy map.
+ * @param id
+ * @returns Blob Successful Response
+ * @throws ApiError
+ */
+export const getOccupancyMapPgmApi = (id: string): CancelablePromise<Blob> => {
+  return __request({
+    method: "GET",
+    url: "/api/v1/occupancy_map/{id}/pgm",
+    path: {
+      id: id,
+    },
+    responseType: "blob",
+  })
+}
+
+/**
+ * Get YAML file of occupancy map.
+ * @param id
+ * @returns Blob Successful Response
+ * @throws ApiError
+ */
+export const getOccupancyMapYamlApi = (id: string): CancelablePromise<Blob> => {
+  return __request({
+    method: "GET",
+    url: "/api/v1/occupancy_map/{id}/yaml",
+    path: {
+      id: id,
+    },
+    responseType: "blob",
   })
 }
 
@@ -94,69 +136,5 @@ export const downloadOccupancyMapApi = (
       id: id,
     },
     responseType: "blob",
-    errors: {
-      422: "Validation Error",
-    },
-  })
-}
-
-/**
- * Delete an occupancy map.
- * @param id
- * @returns Message Successful Response
- * @throws ApiError
- */
-export const deleteOccupancyMapApi = (
-  id: string,
-): CancelablePromise<Message> => {
-  return __request({
-    method: "DELETE",
-    url: "/api/v1/occupancy_map/{id}",
-    path: {
-      id: id,
-    },
-    errors: {
-      422: "Validation Error",
-    },
-  })
-}
-
-/**
- * Get PGM file of occupancy map.
- * @param id
- * @returns Blob Successful Response
- * @throws ApiError
- */
-export const getOccupancyMapPgmApi = (id: string): CancelablePromise<Blob> => {
-  return __request({
-    method: "GET",
-    url: "/api/v1/occupancy_map/{id}/pgm",
-    path: {
-      id: id,
-    },
-    responseType: "blob",
-    errors: {
-      422: "Validation Error",
-    },
-  })
-}
-
-/**
- * Get YAML file of occupancy map.
- * @param id
- * @returns Blob Successful Response
- * @throws ApiError
- */
-export const getOccupancyMapYamlApi = (id: string): CancelablePromise<Blob> => {
-  return __request({
-    method: "GET",
-    url: "/api/v1/occupancy_map/{id}/yaml",
-    path: {
-      id: id,
-    },
-    responseType: "blob",
-    errors: {
-      422: "Validation Error",
-    },
   })
 }

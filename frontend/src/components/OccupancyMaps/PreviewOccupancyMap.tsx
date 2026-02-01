@@ -8,14 +8,14 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { FiEye } from "react-icons/fi"
+import {useCallback, useEffect, useRef, useState} from "react"
+import {FiEye} from "react-icons/fi"
 
 import {
   getOccupancyMapPgmApi,
   getOccupancyMapYamlApi,
 } from "@/client/service/occupancy-map.api.ts"
-import type { OccupancyMapPublic } from "@/client/service/occupancy-map.dto.ts"
+import type {OccupancyMapDto} from "@/client/service/occupancy-map.dto.ts"
 import {
   DialogActionTrigger,
   DialogBody,
@@ -27,20 +27,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import useCustomToast from "@/hooks/useCustomToast"
-import { type PgmMapData, loadPgmMap } from "@/utils/load-pgm-map.ts"
-import { type YamlMapData, loadYamlMap } from "@/utils/load-yaml-map.ts"
+import {type PgmMapData, loadPgmMap} from "@/utils/load-pgm-map.ts"
+import {type YamlMapData, loadYamlMap} from "@/utils/load-yaml-map.ts"
 
 interface PreviewOccupancyMapProps {
-  occupancyMap: OccupancyMapPublic
+  occupancyMap: OccupancyMapDto
 }
 
-const PreviewOccupancyMap = ({ occupancyMap }: PreviewOccupancyMapProps) => {
+const PreviewOccupancyMap = ({occupancyMap}: PreviewOccupancyMapProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [pgmMapData, setPgmMapData] = useState<PgmMapData | null>(null)
   const [yamlMapData, setYamlMapData] = useState<YamlMapData | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const { showErrorToast } = useCustomToast()
+  const {showErrorToast} = useCustomToast()
 
   const loadMapData = useCallback(async () => {
     setIsLoading(true)
@@ -116,14 +116,14 @@ const PreviewOccupancyMap = ({ occupancyMap }: PreviewOccupancyMapProps) => {
 
   return (
     <DialogRoot
-      size={{ base: "md", md: "lg" }}
+      size={{base: "md", md: "lg"}}
       placement="center"
       open={isOpen}
-      onOpenChange={({ open }) => setIsOpen(open)}
+      onOpenChange={({open}) => setIsOpen(open)}
     >
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
-          <FiEye />
+          <FiEye/>
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -133,7 +133,7 @@ const PreviewOccupancyMap = ({ occupancyMap }: PreviewOccupancyMapProps) => {
         <DialogBody>
           {isLoading ? (
             <Flex justifyContent="center" alignItems="center" minH="300px">
-              <Spinner size="xl" />
+              <Spinner size="xl"/>
             </Flex>
           ) : (
             <VStack gap={4} alignItems="stretch">
@@ -201,7 +201,7 @@ occupied_thresh: ${yamlMapData.occupied_thresh}`}
             </Button>
           </DialogActionTrigger>
         </DialogFooter>
-        <DialogCloseTrigger />
+        <DialogCloseTrigger/>
       </DialogContent>
     </DialogRoot>
   )

@@ -21,7 +21,11 @@ function ConnectPage() {
 
   return (
     <>
-      <Container maxW="full" py={4}/>
+      <Container maxW="full" py={4}>
+        <Heading size="lg" mb={8}>
+          개발하즈아~!
+        </Heading>
+      </Container>
     </>
   )
 }

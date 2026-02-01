@@ -1,4 +1,4 @@
-import type {CancelablePromise, Message} from "@/client"
+import type {CancelablePromise, MessageDto} from "@/client"
 import {request as __request} from "@/client/core/request.ts"
 import type {
   Body_users_login_access_token,
@@ -25,7 +25,7 @@ export const createUserPrivateApi = (
 ): CancelablePromise<UserPublic> => {
   return __request({
     method: "POST",
-    url: "/api/v1/private/users/",
+    url: "/api/v1/private/users",
     body: requestBody,
     mediaType: "application/json",
     errors: {
@@ -47,7 +47,7 @@ export const readUsersApi = (
 ): CancelablePromise<UsersPublic> => {
   return __request({
     method: "GET",
-    url: "/api/v1/users/",
+    url: "/api/v1/users",
     query: {
       skip: skip,
       limit: limit,
@@ -69,7 +69,7 @@ export const createUserApi = (
 ): CancelablePromise<UserPublic> => {
   return __request({
     method: "POST",
-    url: "/api/v1/users/",
+    url: "/api/v1/users",
     body: requestBody,
     mediaType: "application/json",
     errors: {
@@ -97,7 +97,7 @@ export const readUserMeApi = (): CancelablePromise<UserPublic> => {
  * @returns Message Successful Response
  * @throws ApiError
  */
-export const deleteUserMeApi = (): CancelablePromise<Message> => {
+export const deleteUserMeApi = (): CancelablePromise<MessageDto> => {
   return __request({
     method: "DELETE",
     url: "/api/v1/users/me",
@@ -132,7 +132,7 @@ export const updateUserMeApi = (
  */
 export const updatePasswordMeApi = (
   requestBody: UpdatePassword,
-): CancelablePromise<Message> => {
+): CancelablePromise<MessageDto> => {
   return __request({
     method: "PATCH",
     url: "/api/v1/users/me/password",
@@ -195,7 +195,7 @@ export const updateUserApi = (
  * @returns Message Successful Response
  * @throws ApiError
  */
-export const deleteUserApi = (userId: string): CancelablePromise<Message> => {
+export const deleteUserApi = (userId: string): CancelablePromise<MessageDto> => {
   return __request({
     method: "DELETE",
     url: "/api/v1/users/{user_id}",
@@ -236,7 +236,7 @@ export const loginAccessTokenApi = (
  */
 export const disconnectExistingSessionApi = (
   requestBody: DisconnectRequest,
-): CancelablePromise<Message> => {
+): CancelablePromise<MessageDto> => {
   return __request({
     method: "POST",
     url: "/api/v1/users/disconnect",
@@ -257,10 +257,10 @@ export const disconnectExistingSessionApi = (
  */
 export const resetPasswordApi = (
   requestBody: NewPassword,
-): CancelablePromise<Message> => {
+): CancelablePromise<MessageDto> => {
   return __request({
     method: "POST",
-    url: "/api/v1/users/reset-password/",
+    url: "/api/v1/users/reset-password",
     body: requestBody,
     mediaType: "application/json",
     errors: {

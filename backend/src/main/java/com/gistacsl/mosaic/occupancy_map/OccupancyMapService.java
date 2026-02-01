@@ -5,7 +5,6 @@ import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.common.exception.CustomException;
 import com.gistacsl.mosaic.occupancy_map.dto.OccupancyMapDto;
 import com.gistacsl.mosaic.occupancy_map.dto.OccupancyMapListDto;
-import com.gistacsl.mosaic.occupancy_map.dto.OccupancyMapUpdateDto;
 import com.gistacsl.mosaic.repository.OccupancyMapRepository;
 import com.gistacsl.mosaic.repository.entity.OccupancyMapEntity;
 import com.gistacsl.mosaic.security.authentication.UserAuth;
@@ -44,7 +43,7 @@ public class OccupancyMapService {
                         .map(maps -> new OccupancyMapListDto.Res(maps, count)));
     }
 
-    public Mono<OccupancyMapDto.Res> createOccupancyMap(
+    public Mono<MessageDto> createOccupancyMap(
             UserAuth userAuth,
             String name,
             Mono<FilePart> pgmFile,
@@ -71,9 +70,7 @@ public class OccupancyMapService {
                                 .build();
 
                         return occupancyMapRepository.insertOccupancyMap(entity, txContext)
-                                .flatMap(pk -> occupancyMapRepository.findByPkAndOrganizationFk(
-                                        pk, userAuth.getOrganizationPk(), txContext))
-                                .map(this::entityToDto);
+                                .map(pk -> new MessageDto("Occupancy map added successfully"));
                     }));
         }));
     }
@@ -82,24 +79,6 @@ public class OccupancyMapService {
         return occupancyMapRepository.findByPkAndOrganizationFk(id, userAuth.getOrganizationPk(), dslContext)
                 .switchIfEmpty(Mono.error(new CustomException(ResultCode.OCCUPANCY_MAP_NOT_FOUND)))
                 .map(this::entityToDto);
-    }
-
-    public Mono<MessageDto> updateOccupancyMap(UserAuth userAuth, UUID id, OccupancyMapUpdateDto.Req req) {
-        return Mono.from(dslContext.transactionPublisher(configuration -> {
-            DSLContext txContext = configuration.dsl();
-
-            return occupancyMapRepository.findByPkAndOrganizationFk(id, userAuth.getOrganizationPk(), txContext)
-                    .switchIfEmpty(Mono.error(new CustomException(ResultCode.OCCUPANCY_MAP_NOT_FOUND)))
-                    .flatMap(existing -> occupancyMapRepository.updateOccupancyMap(
-                            id,
-                            userAuth.getOrganizationPk(),
-                            req.name(),
-                            req.pgmFilePath(),
-                            req.yamlFilePath(),
-                            txContext
-                    ))
-                    .map(pk -> new MessageDto("Occupancy map updated successfully"));
-        }));
     }
 
     public Mono<MessageDto> deleteOccupancyMap(UserAuth userAuth, UUID id) {

@@ -1,6 +1,6 @@
-import type { CancelablePromise, Message } from "@/client"
-import { request as __request } from "@/client/core/request.ts"
-import type { RobotCreate, RobotUpdate, RobotsPublic } from "./robot.dto.ts"
+import type {CancelablePromise, MessageDto} from "@/client"
+import {request as __request} from "@/client/core/request.ts"
+import type {RobotCreate, RobotUpdate, RobotsPublic} from "./robot.dto.ts"
 
 /**
  * Retrieve robots.
@@ -15,7 +15,7 @@ export const readRobotsApi = (
 ): CancelablePromise<RobotsPublic> => {
   return __request({
     method: "GET",
-    url: "/api/v1/robots/",
+    url: "/api/v1/robots",
     query: {
       skip: skip,
       limit: limit,
@@ -37,7 +37,7 @@ export const createRobotApi = (
 ): CancelablePromise<RobotsPublic> => {
   return __request({
     method: "POST",
-    url: "/api/v1/robots/",
+    url: "/api/v1/robots",
     body: requestBody,
     mediaType: "application/json",
     errors: {
@@ -77,7 +77,7 @@ export const updateRobotApi = (
  * @returns Message Successful Response
  * @throws ApiError
  */
-export const deleteRobotApi = (id: string): CancelablePromise<Message> => {
+export const deleteRobotApi = (id: string): CancelablePromise<MessageDto> => {
   return __request({
     method: "DELETE",
     url: "/api/v1/robots/{id}",

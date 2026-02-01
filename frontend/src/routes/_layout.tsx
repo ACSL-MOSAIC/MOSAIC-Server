@@ -1,10 +1,10 @@
-import { WebSocketProvider } from "@/contexts/WebSocketContext"
-import { Flex } from "@chakra-ui/react"
-import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
+import {WebSocketProvider} from "@/contexts/WebSocketProvider"
+import {Flex} from "@chakra-ui/react"
+import {Outlet, createFileRoute, redirect} from "@tanstack/react-router"
 
 import Navbar from "@/components/Common/Navbar"
 import Sidebar from "@/components/Common/Sidebar"
-import { isLoggedIn } from "@/hooks/useAuth"
+import {isLoggedIn} from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout")({
   component: Layout,
@@ -21,10 +21,10 @@ function Layout() {
   return (
     <WebSocketProvider>
       <Flex>
-        <Sidebar />
+        <Sidebar/>
         <Flex flex="1" flexDir="column">
-          <Navbar />
-          <Outlet />
+          <Navbar/>
+          <Outlet/>
         </Flex>
       </Flex>
     </WebSocketProvider>

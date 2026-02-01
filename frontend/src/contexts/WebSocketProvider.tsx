@@ -2,134 +2,16 @@ import useAuth from "@/hooks/useAuth"
 import {getBackendWsUrl} from "@/utils/envs.ts"
 import {
   type ReactNode,
-  createContext,
-  useContext,
   useEffect,
   useRef,
   useState,
 } from "react"
-
-// 로봇 정보 타입
-export interface RobotInfo {
-  robot_id: string
-  state: string
-}
-
-// 기본 메시지 타입
-export interface WebSocketBaseMessage {
-  type: string
-  user_id?: string
-  robot_id?: string
-}
-
-// 에러 메시지 타입
-export interface WebSocketErrorMessage extends WebSocketBaseMessage {
-  type: "error"
-  error: string
-  detail?: string
-}
-
-// 로봇 리스트 요청/응답 타입
-export interface GetRobotListMessage extends WebSocketBaseMessage {
-  type: "get_robot_list"
-}
-
-export interface RobotListMessage extends WebSocketBaseMessage {
-  type: "robot_list"
-  robots: RobotInfo[]
-}
-
-// SDP Offer/Answer 타입
-export interface SendSdpOfferMessage extends WebSocketBaseMessage {
-  type: "send_sdp_offer"
-  robot_id: string
-  sdp_offer: string
-}
-
-export interface ReceiveSdpOfferMessage extends WebSocketBaseMessage {
-  type: "receive_sdp_offer"
-  user_id: string
-  robot_id: string
-  sdp_offer: string
-}
-
-export interface SendSdpAnswerMessage extends WebSocketBaseMessage {
-  type: "send_sdp_answer"
-  user_id: string
-  robot_id: string
-  sdp_answer: string
-}
-
-export interface ReceiveSdpAnswerMessage extends WebSocketBaseMessage {
-  type: "receive_sdp_answer"
-  user_id: string
-  robot_id: string
-  sdp_answer: string
-}
-
-// ICE Candidate 타입
-export interface SendIceCandidateMessage extends WebSocketBaseMessage {
-  type: "send_ice_candidate"
-  robot_id: string
-  ice_candidate: {
-    candidate: string
-    sdpMid: string | null
-    sdpMLineIndex: number | null
-  }
-}
-
-export interface ReceiveIceCandidateMessage extends WebSocketBaseMessage {
-  type: "receive_ice_candidate"
-  user_id: string
-  robot_id: string
-  ice_candidate: {
-    candidate: string
-    sdpMid: string | null
-    sdpMLineIndex: number | null
-  }
-}
-
-export interface SendClosePeerConnectionMessage extends WebSocketBaseMessage {
-  type: "send_close_peer_connection"
-  robot_id: string
-}
-
-export interface ForceLogoutMessage extends WebSocketBaseMessage {
-  type: "force_logout"
-  message: string
-}
-
-// 모든 메시지 타입을 유니온 타입으로 정의
-export type WebSocketMessage =
-  | GetRobotListMessage
-  | RobotListMessage
-  | SendSdpOfferMessage
-  | ReceiveSdpOfferMessage
-  | SendSdpAnswerMessage
-  | ReceiveSdpAnswerMessage
-  | SendIceCandidateMessage
-  | ReceiveIceCandidateMessage
-  | WebSocketErrorMessage
-  | SendClosePeerConnectionMessage
-  | ForceLogoutMessage
-
-export interface WebSocketContextType {
-  robots: RobotInfo[]
-  ws: WebSocket | null
-  sendMessage: (message: WebSocketMessage) => void
-  onMessage: <T extends WebSocketMessage>(
-    type: T["type"],
-    callback: (data: T) => void,
-  ) => () => void
-  disconnect: () => void
-}
-
-const WebSocketContext = createContext<WebSocketContextType | null>(null)
+import {type RobotInfo, WebSocketContext, type WebSocketMessage} from "./WebSocketContext";
 
 export function WebSocketProvider({children}: { children: ReactNode }) {
   const {user, logout: authLogout} = useAuth()
   const [robots, setRobots] = useState<RobotInfo[]>([])
-  const [ws, setWs] = useState<WebSocket | null>(null)
+  const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
   const refreshIntervalRef = useRef<NodeJS.Timeout>()
   const isConnectingRef = useRef(false)
@@ -145,6 +27,8 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
 
   const connectWebSocket = () => {
     if (isConnectingRef.current || !user?.id) return
+    const accessToken = localStorage.getItem("access_token")
+    if (!accessToken) return
 
     isConnectingRef.current = true
 
@@ -154,11 +38,7 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
     websocket.onopen = () => {
       console.log("WebSocket 연결됨")
       isConnectingRef.current = false
-      setWs(websocket)
-      // 연결 즉시 로봇 리스트 요청
-      sendMessage({
-        type: "get_robot_list",
-      })
+      wsRef.current = websocket
 
       // 30초마다 ping 메시지 전송
       refreshIntervalRef.current = setInterval(() => {
@@ -177,6 +57,15 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
           console.log("강제 로그아웃 메시지 수신:", data.message)
           logout()
           return
+        }
+
+        if (data.type === "authorize.req") {
+          sendMessage({
+            type: "authorize",
+            data: {
+              "accessToken": accessToken
+            }
+          })
         }
 
         // 로봇 리스트 처리
@@ -202,7 +91,7 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
     websocket.onclose = (event) => {
       console.log("WebSocket 연결 종료:", event.code, event.reason)
       isConnectingRef.current = false
-      setWs(null)
+      wsRef.current = null
 
       if (refreshIntervalRef.current) {
         clearInterval(refreshIntervalRef.current)
@@ -218,11 +107,12 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
   }
 
   const sendMessage = (message: WebSocketMessage) => {
+    const ws = wsRef.current
     if (ws?.readyState === WebSocket.OPEN) {
-      // console.log("WebSocket 메시지 전송:", message)
+      console.log("WebSocket 메시지 전송:", message)
       ws.send(JSON.stringify(message))
     } else {
-      // console.error("WebSocket이 연결되어 있지 않습니다.")
+      console.error("WebSocket이 연결되어 있지 않습니다., ", ws?.readyState)
     }
   }
 
@@ -245,21 +135,21 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
   }
 
   const disconnect = () => {
-    if (ws) {
-      ws.close(1000, "User logged out")
+    if (wsRef.current) {
+      wsRef.current.close(1000, "User logged out")
     }
   }
 
   useEffect(() => {
-    if (user?.id && !ws && !isConnectingRef.current) {
+    if (user?.id && !wsRef.current && !isConnectingRef.current) {
       connectWebSocket()
     } else {
       disconnect()
     }
 
     return () => {
-      if (ws) {
-        ws.close(1000, "Component unmounting")
+      if (wsRef.current) {
+        wsRef.current.close(1000, "Component unmounting")
       }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current)
@@ -271,17 +161,10 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
   }, [user?.id])
 
   useEffect(() => {
-    if (ws?.readyState === WebSocket.OPEN) {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       if (refreshIntervalRef.current) {
         clearInterval(refreshIntervalRef.current)
       }
-
-      refreshIntervalRef.current = setInterval(() => {
-        // console.log("1초마다 로봇 리스트 갱신")
-        sendMessage({
-          type: "get_robot_list",
-        })
-      }, 1000)
     }
 
     return () => {
@@ -289,21 +172,13 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
         clearInterval(refreshIntervalRef.current)
       }
     }
-  }, [ws?.readyState])
+  }, [wsRef.current?.readyState])
 
   return (
     <WebSocketContext.Provider
-      value={{robots, ws, sendMessage, onMessage, disconnect}}
+      value={{robots, sendMessage, onMessage, disconnect}}
     >
       {children}
     </WebSocketContext.Provider>
   )
-}
-
-export function useWebSocket() {
-  const context = useContext(WebSocketContext)
-  if (!context) {
-    throw new Error("useWebSocket must be used within a WebSocketProvider")
-  }
-  return context
 }

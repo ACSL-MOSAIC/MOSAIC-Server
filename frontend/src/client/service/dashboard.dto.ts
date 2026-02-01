@@ -1,15 +1,22 @@
-export type DashboardCreate = {
-  dashboard_config?: {
-    [key: string]: unknown
-  }
+export type TabInfoDto = {
+  id: string,
+  name: string
 }
 
-export type DashboardPublic = {
-  dashboard_config?: {
-    [key: string]: unknown
-  }
-  dashboard_id: string
-  user_id: string
-  created_at: string
-  updated_at: string
+export type TabAddDto = {
+  name: string
+}
+
+export type TabConfigDto = {
+  id: string,
+  name: string,
+  widgets: string,
+}
+
+export type TabNameUpdateDto = {
+  name: string
+}
+
+export type TabConfigUpdateDto = {
+  tabConfig: string
 }

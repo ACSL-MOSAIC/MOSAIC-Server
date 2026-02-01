@@ -7,7 +7,7 @@ export type RobotCreate = {
 export type RobotPublic = {
   name: string
   description?: string | null
-  status?: RobotStatus
+  status: RobotStatus
   id: string
   owner_id: string
 }
@@ -17,12 +17,7 @@ export type RobotsPublic = {
   count: number
 }
 
-export type RobotStatus =
-  | "READY_TO_CONNECT"
-  | "CONNECTING"
-  | "CONNECTED"
-  | "DISCONNECTED"
-  | "REMOVED"
+export type RobotStatus = number
 
 export type RobotUpdate = {
   name?: string | null
