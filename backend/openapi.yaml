@@ -394,20 +394,6 @@ components:
         - pgm_file_path
         - yaml_file_path
 
-    OccupancyMapUpdate:
-      type: object
-      properties:
-        name:
-          type: string
-        pgm_file_path:
-          type: string
-        yaml_file_path:
-          type: string
-      required:
-        - name
-        - pgm_file_path
-        - yaml_file_path
-
     OccupancyMapPublic:
       type: object
       properties:
@@ -730,7 +716,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserPublic'
+                $ref: '#/components/schemas/Message'
         '400':
           description: User already exists
 
@@ -1008,7 +994,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OccupancyMapPublic'
+                $ref: '#/components/schemas/Message'
         '400':
           description: Map already exists or invalid file extension
         '500':
@@ -1037,39 +1023,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OccupancyMapPublic'
-        '403':
-          description: Unauthorized
-        '404':
-          description: Map not found
-
-    put:
-      tags:
-        - occupancy_map
-      summary: Update occupancy map
-      description: Update occupancy map information
-      operationId: updateOccupancyMap
-      security:
-        - BearerAuth: [ ]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/OccupancyMapUpdate'
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Message'
         '403':
           description: Unauthorized
         '404':
