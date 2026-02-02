@@ -1,4 +1,4 @@
-import {MosaicContext} from "@/contexts/MosaicContext.tsx"
+import {MosaicContext} from "@/contexts/MosaicContext.ts"
 import {useContext} from "react"
 
 export function useMosaicWebRTCConnection() {

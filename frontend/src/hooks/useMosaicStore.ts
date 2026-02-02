@@ -1,5 +1,5 @@
 import {useContext} from "react"
-import {MosaicContext} from "@/contexts/MosaicContext.tsx"
+import {MosaicContext} from "@/contexts/MosaicContext.ts"
 import type {RobotConnector} from "@/mosaic"
 
 export function useMosaicStore() {

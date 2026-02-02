@@ -1,5 +1,5 @@
 import {useContext} from "react"
-import {MosaicContext} from "@/contexts/MosaicContext.tsx"
+import {MosaicContext} from "@/contexts/MosaicContext.ts"
 
 export function useRobotInfo() {
   const context = useContext(MosaicContext)
