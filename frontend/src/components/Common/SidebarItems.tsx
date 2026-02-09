@@ -29,7 +29,8 @@ const SidebarItems = ({onClose}: SidebarItemsProps) => {
   const {user} = useAuth()
   const [fold, setFold] = useState(true)
 
-  const finalItems: Item[] = user?.isOrganizationAdmin
+  const isPersonalUser = user?.email === user?.organizationName
+  const finalItems: Item[] = user?.isOrganizationAdmin && !isPersonalUser
     ? [...items, {icon: FiUsers, title: "Admin", path: "/admin"}]
     : items
 

@@ -7,7 +7,9 @@ import com.gistacsl.mosaic.organization.user.dto.UserCreateDto;
 import com.gistacsl.mosaic.organization.user.dto.UserDeleteDto;
 import com.gistacsl.mosaic.organization.user.dto.UserListDto;
 import com.gistacsl.mosaic.organization.user.dto.UserUpdateDto;
+import com.gistacsl.mosaic.repository.OrganizationRepository;
 import com.gistacsl.mosaic.repository.UserRepository;
+import com.gistacsl.mosaic.repository.entity.OrganizationEntity;
 import com.gistacsl.mosaic.repository.entity.UserEntity;
 import com.gistacsl.mosaic.security.authentication.UserAuth;
 import com.gistacsl.mosaic.user.dto.UserDto;
@@ -27,15 +29,18 @@ import java.util.UUID;
 public class OrganizationUserService {
     private final DSLContext dslContext;
     private final UserRepository userRepository;
+    private final OrganizationRepository organizationRepository;
     private final PasswordEncoder passwordEncoder;
 
     public Mono<UserListDto.Res> listUsers(UserAuth userAuth, int skip, int limit) {
-        return userRepository.countByOrganizationFk(userAuth.getOrganizationPk(), dslContext)
-                .flatMap(count -> userRepository.findAllByOrganizationFk(
-                                userAuth.getOrganizationPk(), skip, limit, dslContext)
-                        .map(this::entityToDto)
-                        .collectList()
-                        .map(users -> new UserListDto.Res(users, count)));
+        return organizationRepository.findByPk(userAuth.getOrganizationPk(), dslContext)
+                .switchIfEmpty(Mono.error(new CustomException(ResultCode.ORGANIZATION_NOT_FOUND)))
+                .flatMap(organization -> userRepository.countByOrganizationFk(userAuth.getOrganizationPk(), dslContext)
+                        .flatMap(count -> userRepository.findAllByOrganizationFk(
+                                        userAuth.getOrganizationPk(), skip, limit, dslContext)
+                                .map(user -> entityToDto(user, organization))
+                                .collectList()
+                                .map(users -> new UserListDto.Res(users, count))));
     }
 
     public Mono<MessageDto> createUser(UserAuth userAuth, UserCreateDto.Req req) {
@@ -98,13 +103,14 @@ public class OrganizationUserService {
                 });
     }
 
-    private UserDto.Res entityToDto(UserEntity entity) {
+    private UserDto.Res entityToDto(UserEntity entity, OrganizationEntity organization) {
         return new UserDto.Res(
                 entity.getPk(),
                 entity.getEmail(),
                 entity.getIsActive(),
                 entity.getIsOrganizationAdmin(),
                 entity.getFullName(),
+                organization.getName(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

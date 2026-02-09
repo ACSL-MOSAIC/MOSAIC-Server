@@ -56,13 +56,22 @@ components:
         is_active:
           type: boolean
           default: true
-        is_superuser:
+        is_organization_admin:
           type: boolean
           default: false
         full_name:
           type: string
           maxLength: 255
           nullable: true
+        organization_name:
+          type: string
+          maxLength: 255
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
       required:
         - email
 

@@ -4,6 +4,7 @@ export type UserDto = {
   isActive: boolean
   isOrganizationAdmin: boolean
   fullName: string
+  organizationName: string
   createdAt: string
   updatedAt: string
 }

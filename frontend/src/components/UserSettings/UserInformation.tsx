@@ -26,6 +26,7 @@ const UserInformation = () => {
   const {showSuccessToast} = useCustomToast()
   const [editMode, setEditMode] = useState(false)
   const {user: currentUser} = useAuth()
+  const isPersonalUser = currentUser?.email === currentUser?.organizationName
   const {
     register,
     handleSubmit,
@@ -112,11 +113,20 @@ const UserInformation = () => {
               {currentUser?.email}
             </Text>
           </Field>
-          <Field mt={4} label="Role">
-            <Text fontSize="md" py={2} color="gray.600">
-              {currentUser?.isOrganizationAdmin ? "Admin" : "User"}
-            </Text>
-          </Field>
+          {!isPersonalUser && (
+            <>
+              <Field mt={4} label="Role">
+                <Text fontSize="md" py={2} color="gray.600">
+                  {currentUser?.isOrganizationAdmin ? "Admin" : "User"}
+                </Text>
+              </Field>
+              <Field mt={4} label="Organization Name">
+                <Text fontSize="md" py={2} color="gray.600">
+                  {currentUser?.organizationName}
+                </Text>
+              </Field>
+            </>
+          )}
           <Field mt={4} label="User ID">
             <HStack alignItems="center" gap={2}>
               <Text fontSize="md" py={2} color="gray.600" fontFamily="mono">
