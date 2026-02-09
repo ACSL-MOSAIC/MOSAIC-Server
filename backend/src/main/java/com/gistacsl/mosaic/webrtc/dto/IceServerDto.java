@@ -1,4 +1,4 @@
-package com.gistacsl.mosaic.ice_server.dto;
+package com.gistacsl.mosaic.webrtc.dto;
 
 public class IceServerDto {
 

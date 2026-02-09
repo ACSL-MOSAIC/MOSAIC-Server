@@ -12,6 +12,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static com.gistacsl.mosaic.jooq.Tables.ROBOT;
@@ -83,6 +84,36 @@ public class RobotRepository {
                                 ROBOT.UPDATED_AT)
                         .from(ROBOT)
                         .where(ROBOT.PK.eq(pk)))
+                .onErrorMap(e -> new CustomException(ResultCode.DB_ROBOT_READ_FAILED, e))
+                .map(record -> RobotEntity.builder()
+                        .pk(record.get(ROBOT.PK))
+                        .organizationFk(record.get(ROBOT.ORGANIZATION_FK))
+                        .status(RobotStatus.valueOf(record.get(ROBOT.STATUS)))
+                        .authType(RobotAuthType.valueOf(record.get(ROBOT.AUTH_TYPE)))
+                        .name(record.get(ROBOT.NAME))
+                        .description(record.get(ROBOT.DESCRIPTION))
+                        .createdAt(record.get(ROBOT.CREATED_AT))
+                        .updatedAt(record.get(ROBOT.UPDATED_AT))
+                        .build());
+    }
+
+    /*
+    select pk, organization_fk, status, auth_type, name, description, created_at, updated_at
+    from robot
+    where pk in (?, ?, ...)
+     */
+    public Flux<RobotEntity> findByPkIn(List<UUID> pks, DSLContext dsl) {
+        return Flux.from(dsl.select(
+                                ROBOT.PK,
+                                ROBOT.ORGANIZATION_FK,
+                                ROBOT.STATUS,
+                                ROBOT.AUTH_TYPE,
+                                ROBOT.NAME,
+                                ROBOT.DESCRIPTION,
+                                ROBOT.CREATED_AT,
+                                ROBOT.UPDATED_AT)
+                        .from(ROBOT)
+                        .where(ROBOT.PK.in(pks)))
                 .onErrorMap(e -> new CustomException(ResultCode.DB_ROBOT_READ_FAILED, e))
                 .map(record -> RobotEntity.builder()
                         .pk(record.get(ROBOT.PK))
