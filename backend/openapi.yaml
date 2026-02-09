@@ -25,8 +25,8 @@ tags:
     description: Robot device management
   - name: robots auth
     description: Robot authentication management
-  - name: ice-servers
-    description: ICE (STUN/TURN) servers configuration for WebRTC connections
+  - name: webrtc
+    description: WebRTC connection and ICE servers management
 
 components:
   securitySchemes:
@@ -452,6 +452,42 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/IceServerPublic'
+
+    # WebRTC schemas
+    WebRTCConnectionRequest:
+      type: object
+      properties:
+        robot_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          minItems: 1
+      required:
+        - robot_ids
+
+    RobotSession:
+      type: object
+      properties:
+        robot_id:
+          type: string
+          format: uuid
+        rtc_session_id:
+          type: string
+          format: uuid
+      required:
+        - robot_id
+        - rtc_session_id
+
+    WebRTCConnectionResponse:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RobotSession'
+      required:
+        - sessions
 
     # Private schemas
     PrivateUserCreate:
@@ -1310,11 +1346,11 @@ paths:
         '400':
           description: Robot does not use simple token auth
 
-  # ICE Servers endpoints
-  /ice-servers:
+  # WebRTC endpoints
+  /webrtc/ice-servers:
     get:
       tags:
-        - ice-servers
+        - webrtc
       summary: Get ICE servers
       description: Get list of ICE (STUN/TURN) servers for WebRTC connections
       operationId: getIceServers
@@ -1327,3 +1363,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IceServersPublic'
+
+  /webrtc/connection:
+    post:
+      tags:
+        - webrtc
+      summary: Create WebRTC connection
+      description: Create a new WebRTC connection with specified robots
+      operationId: createWebRTCConnection
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebRTCConnectionRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebRTCConnectionResponse'
+        '400':
+          description: Invalid request
+        '404':
+          description: Robot not found
