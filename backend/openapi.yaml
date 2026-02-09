@@ -688,7 +688,7 @@ paths:
       tags:
         - account
       summary: Login
-      description: OAuth2 compatible token login
+      description: OAuth2 compatible token login for individual users
       operationId: login
       requestBody:
         required: true
@@ -713,6 +713,42 @@ paths:
                 $ref: '#/components/schemas/LoginResponse'
         '400':
           description: Incorrect email/password or inactive user
+
+  /account/login/organization/access-token:
+    post:
+      tags:
+        - account
+      summary: Login with Organization
+      description: Login for organization users with organization name
+      operationId: loginWithOrganization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                organization_name:
+                  type: string
+              required:
+                - username
+                - password
+                - organization_name
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Incorrect credentials or inactive user
+        '404':
+          description: Organization or user not found
 
   /account/disconnect:
     post:

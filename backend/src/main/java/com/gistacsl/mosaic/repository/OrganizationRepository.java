@@ -38,4 +38,18 @@ public class OrganizationRepository {
                 .build()
         );
     }
+
+    public Mono<OrganizationEntity> findByName(String name, DSLContext dslContext) {
+        return Mono.from(
+                dslContext.selectFrom(ORGANIZATION)
+                        .where(ORGANIZATION.NAME.eq(name))
+        ).onErrorMap(e -> new CustomException(ResultCode.DB_ORGANIZATION_READ_FAILED, e))
+        .map(record -> OrganizationEntity.builder()
+                .pk(record.getPk())
+                .name(record.getName())
+                .createdAt(record.getCreatedAt())
+                .updatedAt(record.getUpdatedAt())
+                .build()
+        );
+    }
 }
