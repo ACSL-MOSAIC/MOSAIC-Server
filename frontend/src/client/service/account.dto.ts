@@ -8,6 +8,17 @@ export type AccountLoginResDto = {
   existingConnection: boolean
 }
 
+export type OrganizationLoginReqDto = {
+  username: string
+  password: string
+  organizationName: string
+}
+
+export type OrganizationLoginResDto = {
+  accessToken: string
+  existingConnection: boolean
+}
+
 export type AccountSignupDto = {
   email: string
   password: string

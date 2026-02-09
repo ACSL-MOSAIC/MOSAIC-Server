@@ -1,4 +1,4 @@
-import { Container, Flex, Image, Input, Text } from "@chakra-ui/react"
+import { Container, Flex, Heading, Image, Input, Text } from "@chakra-ui/react"
 import {
   Link as RouterLink,
   createFileRoute,
@@ -7,7 +7,7 @@ import {
 import { type SubmitHandler, useForm } from "react-hook-form"
 import { FiLock, FiUser } from "react-icons/fi"
 
-import type { UserRegister } from "@/client/service/user.dto.ts"
+import type { AccountSignupDto } from "@/client/service/account.dto.ts"
 import { Button } from "@/components/ui/button"
 import { Field } from "@/components/ui/field"
 import { InputGroup } from "@/components/ui/input-group"
@@ -27,8 +27,8 @@ export const Route = createFileRoute("/signup")({
   },
 })
 
-interface UserRegisterForm extends UserRegister {
-  confirm_password: string
+interface SignupForm extends AccountSignupDto {
+  confirmPassword: string
 }
 
 function SignUp() {
@@ -38,19 +38,20 @@ function SignUp() {
     handleSubmit,
     getValues,
     formState: { errors, isSubmitting },
-  } = useForm<UserRegisterForm>({
+  } = useForm<SignupForm>({
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
       email: "",
-      full_name: "",
+      fullName: "",
       password: "",
-      confirm_password: "",
+      confirmPassword: "",
     },
   })
 
-  const onSubmit: SubmitHandler<UserRegisterForm> = (data) => {
-    signUpMutation.mutate(data)
+  const onSubmit: SubmitHandler<SignupForm> = (data) => {
+    const { confirmPassword, ...signupData } = data
+    signUpMutation.mutate(signupData)
   }
 
   return (
@@ -72,17 +73,20 @@ function SignUp() {
             height="auto"
             maxW="2xs"
             alignSelf="center"
-            mb={4}
+            mb={2}
           />
+          <Heading size="xl" textAlign="center" mb={6}>
+            Sign Up
+          </Heading>
           <Field
-            invalid={!!errors.full_name}
-            errorText={errors.full_name?.message}
+            invalid={!!errors.fullName}
+            errorText={errors.fullName?.message}
           >
             <InputGroup w="100%" startElement={<FiUser />}>
               <Input
-                id="full_name"
+                id="fullName"
                 minLength={3}
-                {...register("full_name", {
+                {...register("fullName", {
                   required: "Full Name is required",
                 })}
                 placeholder="Full Name"
@@ -112,16 +116,16 @@ function SignUp() {
             errors={errors}
           />
           <PasswordInput
-            type="confirm_password"
+            type="confirmPassword"
             startElement={<FiLock />}
-            {...register("confirm_password", confirmPasswordRules(getValues))}
+            {...register("confirmPassword", confirmPasswordRules(getValues))}
             placeholder="Confirm Password"
             errors={errors}
           />
           <Button variant="solid" type="submit" loading={isSubmitting}>
             Sign Up
           </Button>
-          <Text>
+          <Text textAlign="center">
             Already have an account?{" "}
             <RouterLink to="/login" className="main-link">
               Log In

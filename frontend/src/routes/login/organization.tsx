@@ -1,8 +1,8 @@
-import {Button, Container, Image, Input} from "@chakra-ui/react"
-import {createFileRoute, redirect} from "@tanstack/react-router"
+import {Button, Container, Heading, Image, Input, Text} from "@chakra-ui/react"
+import {createFileRoute, Link as RouterLink, redirect} from "@tanstack/react-router"
 import type React from "react"
 import {useState} from "react"
-import {FiLock, FiMail} from "react-icons/fi"
+import {FiLock, FiMail, FiUsers} from "react-icons/fi"
 
 import {Field} from "@/components/ui/field"
 import {InputGroup} from "@/components/ui/input-group"
@@ -10,10 +10,10 @@ import {PasswordInput} from "@/components/ui/password-input"
 import useAuth, {isLoggedIn} from "@/hooks/useAuth"
 import {emailPattern} from "@/utils"
 import Logo from "/assets/images/acsl-logo.svg"
-import type {AccountLoginReqDto} from "@/client/service/account.dto.ts"
+import type {OrganizationLoginReqDto} from "@/client/service/account.dto.ts"
 
-export const Route = createFileRoute("/login")({
-  component: Login,
+export const Route = createFileRoute("/login/organization")({
+  component: OrganizationLogin,
   beforeLoad: async () => {
     if (isLoggedIn()) {
       throw redirect({
@@ -23,20 +23,26 @@ export const Route = createFileRoute("/login")({
   },
 })
 
-function Login() {
-  const {loginMutation, disconnectMutation, error, resetError} = useAuth()
-  const [formData, setFormData] = useState<AccountLoginReqDto>({
+function OrganizationLogin() {
+  const {loginWithOrganizationMutation, disconnectMutation, error, resetError} = useAuth()
+  const [formData, setFormData] = useState<OrganizationLoginReqDto>({
     username: "",
     password: "",
+    organizationName: "",
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<{
     username?: string
     password?: string
+    organizationName?: string
   }>({})
 
   const validateForm = () => {
-    const newErrors: { username?: string; password?: string } = {}
+    const newErrors: {
+      username?: string
+      password?: string
+      organizationName?: string
+    } = {}
 
     if (!formData.username) {
       newErrors.username = "Username is required"
@@ -48,6 +54,10 @@ function Login() {
       newErrors.password = "Password is required"
     } else if (formData.password.length < 8) {
       newErrors.password = "Password must be at least 8 characters"
+    }
+
+    if (!formData.organizationName) {
+      newErrors.organizationName = "Organization name is required"
     }
 
     setErrors(newErrors)
@@ -63,7 +73,7 @@ function Login() {
     resetError()
 
     try {
-      const response = await loginMutation.mutateAsync(formData)
+      const response = await loginWithOrganizationMutation.mutateAsync(formData)
       if (response.existingConnection) {
         if (
           window.confirm(
@@ -71,7 +81,7 @@ function Login() {
           )
         ) {
           await disconnectMutation.mutateAsync()
-          await loginMutation.mutateAsync(formData)
+          await loginWithOrganizationMutation.mutateAsync(formData)
         }
       }
     } catch (error) {
@@ -106,8 +116,23 @@ function Login() {
         height="auto"
         maxW="2xs"
         alignSelf="center"
-        mb={4}
+        mb={2}
       />
+      <Heading size="xl" textAlign="center" mb={6}>
+        Organization Log In
+      </Heading>
+      <Field invalid={!!errors.organizationName} errorText={errors.organizationName}>
+        <InputGroup w="100%" startElement={<FiUsers/>}>
+          <Input
+            id="organizationName"
+            name="organizationName"
+            value={formData.organizationName}
+            onChange={handleChange}
+            placeholder="Organization Name"
+            type="text"
+          />
+        </InputGroup>
+      </Field>
       <Field invalid={!!errors.username} errorText={errors.username || !!error}>
         <InputGroup w="100%" startElement={<FiMail/>}>
           <Input
@@ -132,6 +157,12 @@ function Login() {
       <Button variant="solid" type="submit" loading={isSubmitting} size="md">
         Log In
       </Button>
+      <Text textAlign="center">
+        Personal account?{" "}
+        <RouterLink to="/login" className="main-link">
+          Log in here
+        </RouterLink>
+      </Text>
     </Container>
   )
 }

@@ -10,9 +10,13 @@ import {handleError} from "@/utils"
 import {
   disconnectApi,
   loginApi,
+  loginWithOrganizationApi,
   signupApi,
 } from "@/client/service/account.api.ts"
-import type {AccountLoginReqDto} from "@/client/service/account.dto.ts"
+import type {
+  AccountLoginReqDto,
+  OrganizationLoginReqDto,
+} from "@/client/service/account.dto.ts"
 
 const isLoggedIn = () => {
   return localStorage.getItem("access_token") !== null
@@ -51,7 +55,6 @@ const useAuth = () => {
     }
 
     localStorage.setItem("access_token", response.accessToken)
-    // OpenAPI 설정에 토큰 설정
     OpenAPI.TOKEN = response.accessToken
     return response
   }
@@ -69,18 +72,36 @@ const useAuth = () => {
     },
   })
 
+  const loginWithOrganization = async (data: OrganizationLoginReqDto) => {
+    const response = await loginWithOrganizationApi(data)
+
+    if (response.existingConnection) {
+      setExistingConnection(true)
+      return response
+    }
+
+    localStorage.setItem("access_token", response.accessToken)
+    OpenAPI.TOKEN = response.accessToken
+    return response
+  }
+
+  const loginWithOrganizationMutation = useMutation({
+    mutationFn: loginWithOrganization,
+    onSuccess: (response) => {
+      if (response.existingConnection) {
+        return
+      }
+      navigate({to: "/"})
+    },
+    onError: (err: ApiError) => {
+      handleError(err)
+    },
+  })
+
   const disconnectMutation = useMutation({
     mutationFn: disconnectApi,
     onSuccess: () => {
       setExistingConnection(false)
-      // 재로그인 시도
-      const reqData = loginMutation.variables
-      if (reqData) {
-        // 잠시 대기 후 재로그인 시도
-        setTimeout(() => {
-          loginMutation.mutate(reqData)
-        }, 1000)
-      }
     },
     onError: (err: ApiError) => {
       handleError(err)
@@ -98,6 +119,7 @@ const useAuth = () => {
   return {
     signUpMutation,
     loginMutation,
+    loginWithOrganizationMutation,
     disconnectMutation,
     logout,
     user,
