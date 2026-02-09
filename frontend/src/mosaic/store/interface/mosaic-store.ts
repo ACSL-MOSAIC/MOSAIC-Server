@@ -1,17 +1,18 @@
 import type {RobotConnector} from "@/mosaic"
+import {ConnectionSubscribable} from "./connection-subscribable.ts"
 
-export abstract class MosaicStore {
+export abstract class MosaicStore extends ConnectionSubscribable {
   protected static dataType: string
 
   protected robotConnector: RobotConnector
 
   constructor(robotConnector: RobotConnector) {
+    super()
     this.robotConnector = robotConnector
   }
 
   public static getDataType(): string {
-    // TODO: implement
-    throw new Error("Not implemented")
+    return this.dataType
   }
 
   public abstract getStoreType():
@@ -21,7 +22,6 @@ export abstract class MosaicStore {
     | "media"
 
   public getRobotConnector(): RobotConnector {
-    // TODO: implement
-    throw new Error("Not implemented")
+    return this.robotConnector
   }
 }
