@@ -126,7 +126,7 @@ package "StoreManager" {
   
   class StoreFactory {
     -storeFactories: Map<string, (robotConnector: RobotConnector) => MosaicStore>
-    +registerMosaicStore<T extends MosaicStore>(StoreClass: new () => T): void
+    +registerMosaicStore<T extends MosaicStore>(StoreClass: new (robotConnector: RobotConnector) => T): void
     +createStore(connectorType: string, robotConnector: RobotConnector): MosaicStore | null
   }
   
