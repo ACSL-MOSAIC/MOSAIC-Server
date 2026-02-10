@@ -17,5 +17,8 @@ export abstract class SendableStore<V> extends MosaicStore {
     if (this.dataChannel && this.dataChannel.readyState === "open") {
       this.dataChannel.send(data)
     } 
+    else{
+      console.warn("SendableStore DataChannel is not open!")
+    }
   }
 }
