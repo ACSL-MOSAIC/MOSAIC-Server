@@ -110,7 +110,7 @@ package "StoreManager" {
     -mosaicStores: RobotConnectorRefMap<MosaicStore>
     +getOrCreateStore(robotConnector: RobotConnector, robotConfig: RobotConfig): MosaicStore
     +releaseStore(robotConnector: RobotConnector): void
-    -resolveConnectorType(robotConnector: RobotConnector): string
+    -resolveConnectorType(robotConnector: RobotConnector, robotConfig: RobotConfig): string
   }
     
   class RobotConnectorRefMap<V> {
