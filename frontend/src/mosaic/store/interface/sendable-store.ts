@@ -10,10 +10,12 @@ export abstract class SendableStore<V> extends MosaicStore {
   public abstract add(data: V): void
 
   public setDataChannel(channel: RTCDataChannel): void {
-    // TODO: implement
+    this.dataChannel = channel
   }
 
   protected sendData(data: string): void {
-    // TODO: implement
+    if (this.dataChannel && this.dataChannel.readyState === "open") {
+      this.dataChannel.send(data)
+    } 
   }
 }

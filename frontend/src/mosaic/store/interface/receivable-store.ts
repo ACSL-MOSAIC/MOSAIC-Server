@@ -13,19 +13,23 @@ export abstract class ReceivableStore extends MosaicStore {
   }
 
   public isParallelReceivable(): boolean {
-    // TODO: implement
-    throw new Error("Not implemented")
+    return (this.constructor as typeof ReceivableStore).isParallelReceivable
   }
 
   public subscribe(
     subscriber: (data: ArrayBuffer) => Promise<void>,
   ): UnsubscribeFunction {
-    // TODO: implement
-    throw new Error("Not implemented")
+    const id = crypto.randomUUID()
+    this.subscriberList.set(id, subscriber)
+    this.onSubscriberAdded(subscriber)
+    return () => this.removeSubscriber(id)
   }
 
   public async notifySubscribers(data: ArrayBuffer): Promise<void> {
-    // TODO: implement
+    const promises = Array.from(this.subscriberList.values()).map((sub) =>
+      sub(data),
+    )
+    await Promise.all(promises)
   }
 
   public abstract onSubscriberAdded(subscriber: Subscriber): void
@@ -33,6 +37,10 @@ export abstract class ReceivableStore extends MosaicStore {
   public abstract onSubscriberRemoved(subscriber: Subscriber): void
 
   private removeSubscriber(subscriberId: string): void {
-    // TODO: implement
+    const subscriber = this.subscriberList.get(subscriberId)
+    if (subscriber) {
+      this.subscriberList.delete(subscriberId)
+      this.onSubscriberRemoved(subscriber)
+    }
   }
 }
