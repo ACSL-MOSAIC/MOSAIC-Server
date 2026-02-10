@@ -26,7 +26,8 @@ export abstract class ReceivableStore extends MosaicStore {
   }
 
   public async notifySubscribers(data: ArrayBuffer): Promise<void> {
-    const promises = Array.from(this.subscriberList.values()).map(async (sub) => {
+    const promises = Array.from(this.subscriberList.values()).map(
+      async (sub) => {
       // error 발생 시 전체 중단 방지
       try {
         await sub(data);
@@ -34,7 +35,6 @@ export abstract class ReceivableStore extends MosaicStore {
         console.error("ReceivableStore Subscriber notification failed:", error);
       }
     });
-    
     await Promise.all(promises);
   }
 
