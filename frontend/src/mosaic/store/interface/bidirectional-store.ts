@@ -13,20 +13,31 @@ export abstract class BidirectionalStore<V> extends MosaicStore {
   }
 
   public isParallelReceivable(): boolean {
-    // TODO: implement
-    throw new Error("Not implemented")
+    return (this.constructor as typeof BidirectionalStore).isParallelReceivable
   }
 
   public subscribe(
     subscriber: (data: ArrayBuffer) => Promise<void>,
   ): UnsubscribeFunction {
-    // TODO: implement
-    throw new Error("Not implemented")
+    const id = crypto.randomUUID()
+    this.subscriberList.set(id, subscriber)
+    this.onSubscriberAdded(subscriber)
+    return () => this.removeSubscriber(id)
   }
 
   public async notifySubscribers(data: ArrayBuffer): Promise<void> {
-    // TODO: implement
+    const promises = Array.from(this.subscriberList.values()).map(
+      async (sub) => {
+        try {
+          await sub(data)
+        } catch (error) {
+          console.error("BidirectionalStore Subscriber notification failed:", error)
+        }
+      },
+    )
+    await Promise.all(promises)
   }
+  
 
   public abstract onSubscriberAdded(subscriber: Subscriber): void
 
@@ -35,14 +46,24 @@ export abstract class BidirectionalStore<V> extends MosaicStore {
   public abstract add(data: V): void
 
   public setDataChannel(channel: RTCDataChannel): void {
-    // TODO: implement
+    this.dataChannel = channel
   }
 
   protected sendData(data: string): void {
-    // TODO: implement
+    if (this.dataChannel && this.dataChannel.readyState === "open") {
+      this.dataChannel.send(data)
+    } else {
+      console.warn(
+        "BidirectionalStore DataChannel is not open, cannot send data",
+      )
+    }
   }
 
   private removeSubscriber(subscriberId: string): void {
-    // TODO: implement
+    const subscriber = this.subscriberList.get(subscriberId)
+    if (subscriber) {
+      this.subscriberList.delete(subscriberId)
+      this.onSubscriberRemoved(subscriber)
+    }
   }
 }

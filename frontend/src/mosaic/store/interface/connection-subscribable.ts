@@ -11,45 +11,53 @@ export abstract class ConnectionSubscribable {
   public onBeforeConnected(
     subscriber: (robotId: string) => void,
   ): UnsubscribeFunction {
-    // TODO: implement
-    throw new Error("Not implemented")
+    const id = crypto.randomUUID()
+    this.beforeConnectedSubscriberList.set(id, subscriber)
+    return () => this.beforeConnectedSubscriberList.delete(id)
   }
 
   public onAfterConnected(
     subscriber: (robotId: string) => void,
   ): UnsubscribeFunction {
-    // TODO: implement
-    throw new Error("Not implemented")
+    const id = crypto.randomUUID()
+    this.afterConnectedSubscriberList.set(id, subscriber)
+    return () => this.afterConnectedSubscriberList.delete(id)
   }
 
   public onAfterDisconnected(
     subscriber: (robotId: string) => void,
   ): UnsubscribeFunction {
-    // TODO: implement
-    throw new Error("Not implemented")
+    const id = crypto.randomUUID()
+    this.afterDisconnectedSubscriberList.set(id, subscriber)
+    return () => this.afterDisconnectedSubscriberList.delete(id)
   }
 
   public onAfterConnectionFailed(
     subscriber: (robotId: string) => void,
   ): UnsubscribeFunction {
-    // TODO: implement
-    throw new Error("Not implemented")
+    const id = crypto.randomUUID()
+    this.afterConnectionFailedSubscriberList.set(id, subscriber)
+    return () => this.afterConnectionFailedSubscriberList.delete(id)
   }
 
   public notifyBeforeConnected(robotId: string): void {
-    // TODO: implement
+    this.beforeConnectedSubscriberList.forEach((sub) => sub(robotId))
+    this.beforeConnected(robotId)
   }
 
   public notifyAfterConnected(robotId: string): void {
-    // TODO: implement
+    this.afterConnectedSubscriberList.forEach((sub) => sub(robotId))
+    this.afterConnected(robotId)
   }
 
   public notifyAfterDisconnected(robotId: string): void {
-    // TODO: implement
+    this.afterDisconnectedSubscriberList.forEach((sub) => sub(robotId))
+    this.afterDisconnected(robotId)
   }
 
   public notifyAfterConnectionFailed(robotId: string): void {
-    // TODO: implement
+    this.afterConnectionFailedSubscriberList.forEach((sub) => sub(robotId))
+    this.afterConnectionFailed(robotId)
   }
 
   protected abstract beforeConnected(robotId: string): void
