@@ -48,14 +48,14 @@ export class StoreManager {
     robotConnector: RobotConnector,
     robotConfig: RobotConfig,
   ): MosaicStore {
-    // 이미 존재하는 스토어면 ref count만 증가
+    // If store already exists, only increment ref count
     const existing = this.mosaicStores.get(robotConnector)
     if (existing !== undefined) {
       this.mosaicStores.incrementRefCount(robotConnector)
       return existing
     }
 
-    // 존재하지 않을 시 새로 생성, connector type 결정
+    // If not found, create new store and resolve connector type
     const connectorType = this.resolveConnectorType(
       robotConnector,
       robotConfig,
@@ -73,7 +73,7 @@ export class StoreManager {
     const store = this.mosaicStores.get(robotConnector)
     if (store === undefined) return
 
-    // ref count 감소, 0이 되면 스토어 삭제
+    // Decrement ref count; remove store when it reaches 0
     this.mosaicStores.decrementRefCount(robotConnector)
     if (this.mosaicStores.getRefCount(robotConnector) === 0) {
       this.mosaicStores.delete(robotConnector)

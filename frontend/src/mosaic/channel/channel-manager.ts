@@ -23,13 +23,13 @@ export class ChannelManager {
     const robotId = channelRequirement.robotConnector.robotId
     const list = this.channelRequirements.get(robotId)
     if (list === undefined) return
-    // 해당 robotId의 channelRequirements 배열에서 인자로 들어온 channelRequirement 제거
+    // Remove the given channelRequirement from the array for this robotId
     const next = list.filter((req) => req !== channelRequirement)
-    // 제거 후 배열이 비어있으면 robotId에 해당하는 channelRequirements 맵에서 삭제
+    // If the array is empty after removal, delete the robotId entry from the map
     if (next.length === 0) {
       this.channelRequirements.delete(robotId)
     } else {
-      // 아닐 시 다시 set으로 저장
+      // Otherwise save the updated array back
       this.channelRequirements.set(robotId, next)
     }
   }
