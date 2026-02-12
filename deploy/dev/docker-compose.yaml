@@ -15,7 +15,7 @@ services:
       - SPRING_R2DBC_USERNAME=${POSTGRES_USER?Variable not set}
       - SPRING_R2DBC_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - SPRING_FLYWAY_URL=jdbc:postgresql://mosaic-db:5432/mosaic
-      - SPRINT_FLYWAY_USER=${POSTGRES_USER?Variable not set}
+      - SPRING_FLYWAY_USER=${POSTGRES_USER?Variable not set}
       - SPRING_FLYWAY_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - MOSAIC_SECURITY_ENCRYPTION_KEY=${MOSAIC_SECURITY_ENCRYPTION_KEY?Variable not set}
     ports:
