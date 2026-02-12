@@ -1,6 +1,7 @@
 package com.gistacsl.mosaic.account;
 
 import com.gistacsl.mosaic.account.dto.LoginDto;
+import com.gistacsl.mosaic.account.dto.OrganizationLoginDto;
 import com.gistacsl.mosaic.account.dto.SignupDto;
 import com.gistacsl.mosaic.common.dto.MessageDto;
 import com.gistacsl.mosaic.common.enumerate.ResultCode;
@@ -45,6 +46,8 @@ public class AccountService {
     public Mono<LoginDto.Res> login(LoginDto.Req req) {
         return userRepository.findByEmail(req.username(), dslContext)
                 .switchIfEmpty(Mono.error(new CustomException(ResultCode.USER_NOT_FOUND)))
+                .flatMap(user -> validatePersonalUserOrganization(user)
+                        .thenReturn(user))
                 .flatMap(user -> {
                     if (!user.getIsActive()) {
                         return Mono.error(new CustomException(ResultCode.USER_NOT_ACTIVE));
@@ -67,6 +70,59 @@ public class AccountService {
                         return Mono.error(e);
                     }
                 });
+    }
+
+    private Mono<Void> validatePersonalUserOrganization(UserEntity user) {
+        return organizationRepository.findByPk(user.getOrganizationFk(), dslContext)
+                .switchIfEmpty(Mono.error(new CustomException(ResultCode.ORGANIZATION_NOT_FOUND)))
+                .flatMap(organization -> {
+                    // Check if organization name matches user email (personal user)
+                    if (!organization.getName().equals(user.getEmail())) {
+                        return Mono.error(new CustomException(ResultCode.ACCESS_DENIED));
+                    }
+
+                    // Check if user is organization admin
+                    if (!user.getIsOrganizationAdmin()) {
+                        return Mono.error(new CustomException(ResultCode.ACCESS_DENIED));
+                    }
+
+                    return Mono.empty();
+                });
+    }
+
+    public Mono<OrganizationLoginDto.Res> loginWithOrganization(OrganizationLoginDto.Req req) {
+        return organizationRepository.findByName(req.organizationName(), dslContext)
+                .switchIfEmpty(Mono.error(new CustomException(ResultCode.ORGANIZATION_NOT_FOUND)))
+                .flatMap(organization -> userRepository.findByEmail(req.username(), dslContext)
+                        .switchIfEmpty(Mono.error(new CustomException(ResultCode.USER_NOT_FOUND)))
+                        .flatMap(user -> {
+                            // Check if user belongs to the specified organization
+                            if (!user.getOrganizationFk().equals(organization.getPk())) {
+                                return Mono.error(new CustomException(ResultCode.USER_NOT_FOUND));
+                            }
+
+                            if (!user.getIsActive()) {
+                                return Mono.error(new CustomException(ResultCode.USER_NOT_ACTIVE));
+                            }
+
+                            if (!passwordEncoder.matches(req.password(), user.getHashedPassword())) {
+                                return Mono.error(new CustomException(ResultCode.INVALID_PASSWORD));
+                            }
+
+                            JwtPayload jwtPayload = new JwtPayload(
+                                    user.getPk().toString(),
+                                    user.getOrganizationFk().toString(),
+                                    user.getIsOrganizationAdmin() ? "ROLE_ORGANIZATION_ADMIN" : "ROLE_USER"
+                            );
+
+                            try {
+                                String token = accessToken.issueToken(jwtPayload);
+                                return Mono.just(new OrganizationLoginDto.Res(token, false));
+                            } catch (CustomException e) {
+                                return Mono.error(e);
+                            }
+                        })
+                );
     }
 
     public Mono<MessageDto> disconnect(UserAuth userAuth) {

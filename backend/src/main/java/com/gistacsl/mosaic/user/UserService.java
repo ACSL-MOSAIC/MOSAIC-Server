@@ -3,7 +3,9 @@ package com.gistacsl.mosaic.user;
 import com.gistacsl.mosaic.common.dto.MessageDto;
 import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.common.exception.CustomException;
+import com.gistacsl.mosaic.repository.OrganizationRepository;
 import com.gistacsl.mosaic.repository.UserRepository;
+import com.gistacsl.mosaic.repository.entity.OrganizationEntity;
 import com.gistacsl.mosaic.repository.entity.UserEntity;
 import com.gistacsl.mosaic.security.authentication.UserAuth;
 import com.gistacsl.mosaic.user.dto.UpdatePasswordDto;
@@ -22,12 +24,15 @@ import reactor.core.publisher.Mono;
 public class UserService {
     private final DSLContext dslContext;
     private final UserRepository userRepository;
+    private final OrganizationRepository organizationRepository;
     private final PasswordEncoder passwordEncoder;
 
     public Mono<UserDto.Res> getCurrentUser(UserAuth userAuth) {
         return userRepository.findByPk(userAuth.getUserPk(), dslContext)
                 .switchIfEmpty(Mono.error(new CustomException(ResultCode.USER_NOT_FOUND)))
-                .map(this::entityToDto);
+                .flatMap(user -> organizationRepository.findByPk(user.getOrganizationFk(), dslContext)
+                        .switchIfEmpty(Mono.error(new CustomException(ResultCode.ORGANIZATION_NOT_FOUND)))
+                        .map(organization -> entityToDto(user, organization)));
     }
 
     public Mono<MessageDto> updateCurrentUser(UserAuth userAuth, UserUpdateMeDto.Req req) {
@@ -59,13 +64,14 @@ public class UserService {
                 .map(count -> new MessageDto("Password updated successfully"));
     }
 
-    private UserDto.Res entityToDto(UserEntity entity) {
+    private UserDto.Res entityToDto(UserEntity entity, OrganizationEntity organization) {
         return new UserDto.Res(
                 entity.getPk(),
                 entity.getEmail(),
                 entity.getIsActive(),
                 entity.getIsOrganizationAdmin(),
                 entity.getFullName(),
+                organization.getName(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

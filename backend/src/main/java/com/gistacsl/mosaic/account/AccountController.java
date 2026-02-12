@@ -1,6 +1,7 @@
 package com.gistacsl.mosaic.account;
 
 import com.gistacsl.mosaic.account.dto.LoginDto;
+import com.gistacsl.mosaic.account.dto.OrganizationLoginDto;
 import com.gistacsl.mosaic.account.dto.SignupDto;
 import com.gistacsl.mosaic.common.GResponse;
 import com.gistacsl.mosaic.common.dto.MessageDto;
@@ -21,6 +22,12 @@ public class AccountController {
     @PostMapping(value = "/login/access-token")
     public Mono<GResponse<LoginDto.Res>> login(@RequestBody LoginDto.Req req) {
         return accountService.login(req)
+                .map(GResponse::toGResponse);
+    }
+
+    @PostMapping(value = "/login/organization/access-token")
+    public Mono<GResponse<OrganizationLoginDto.Res>> loginWithOrganization(@RequestBody OrganizationLoginDto.Req req) {
+        return accountService.loginWithOrganization(req)
                 .map(GResponse::toGResponse);
     }
 

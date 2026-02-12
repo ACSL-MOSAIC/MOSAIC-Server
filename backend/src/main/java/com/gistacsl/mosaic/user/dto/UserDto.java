@@ -11,6 +11,7 @@ public class UserDto {
             Boolean isActive,
             Boolean isOrganizationAdmin,
             String fullName,
+            String organizationName,
             OffsetDateTime createdAt,
             OffsetDateTime updatedAt
     ) {

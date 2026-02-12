@@ -4,6 +4,8 @@ import type {
   AccountLoginReqDto,
   AccountLoginResDto,
   AccountSignupDto,
+  OrganizationLoginReqDto,
+  OrganizationLoginResDto,
 } from "./account.dto.ts"
 
 export const loginApi = (
@@ -12,6 +14,17 @@ export const loginApi = (
   return __request({
     method: "POST",
     url: "/api/v1/account/login/access-token",
+    body: requestBody,
+    mediaType: "application/json",
+  })
+}
+
+export const loginWithOrganizationApi = (
+  requestBody: OrganizationLoginReqDto,
+): CancelablePromise<OrganizationLoginResDto> => {
+  return __request({
+    method: "POST",
+    url: "/api/v1/account/login/organization/access-token",
     body: requestBody,
     mediaType: "application/json",
   })

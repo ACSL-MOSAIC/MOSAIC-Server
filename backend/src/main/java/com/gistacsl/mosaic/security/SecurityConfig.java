@@ -46,6 +46,7 @@ public class SecurityConfig {
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                         .pathMatchers("/api/v1/account/login/access-token").permitAll()
+                        .pathMatchers("/api/v1/account/login/organization/access-token").permitAll()
                         .pathMatchers("/api/v1/account/signup").permitAll()
                         .pathMatchers("/api/v1/organization/**").hasRole("ORGANIZATION_ADMIN")
                         .pathMatchers("/api/**").authenticated()
