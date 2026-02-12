@@ -1,0 +1,90 @@
+name: Deploy MOSAIC Infra to Production Server
+
+on:
+  push:
+    tags:
+      - 'prod-infra-v*'
+
+jobs:
+  prepare-infra:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set environment variables
+        run: |
+          echo "SERVER_HOST=${{ vars.PROD_SERVER_HOST }}" >> $GITHUB_ENV
+          echo "SERVER_USER=${{ vars.PROD_SERVER_USER }}" >> $GITHUB_ENV
+          echo "DEPLOY_PATH=${{ vars.PROD_DEPLOY_PATH }}" >> $GITHUB_ENV
+          
+          echo "COMPOSE_FILE=docker-compose.yaml" >> $GITHUB_ENV
+          echo "NGINX_FILE=nginx.conf" >> $GITHUB_ENV
+
+      - name: Copy docker-compose file to server
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+          source: "deploy/prod/${{ env.COMPOSE_FILE }}"
+          target: ${{ env.DEPLOY_PATH }}
+
+      - name: Copy nginx.conf file to server
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+          source: "deploy/prod/${{ env.NGINX_FILE }}"
+          target: "/tmp/"
+
+      - name: Setup nginx configuration
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+          script: |
+            sudo mv /tmp/deploy/prod/${{ env.NGINX_FILE }} /etc/nginx/sites-available/mosaic
+            sudo ln -sf /etc/nginx/sites-available/mosaic /etc/nginx/sites-enabled/mosaic
+
+            sudo nginx -t
+            sudo systemctl reload nginx
+
+      - name: Rename docker-compose file on server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+          script: |
+            cd ${{ env.DEPLOY_PATH }}
+            mv deploy/prod/${{ env.COMPOSE_FILE }} ./docker-compose.yml
+
+      - name: Restart docker compose
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+          script: |
+            cd ${{ env.DEPLOY_PATH }}
+
+            sudo docker compose stop
+            sudo docker compose up -d
+
+      - name: Setup mosaic server folders
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+          script: |
+            cd ${{ env.DEPLOY_PATH }}
+            
+            mkdir -p storage
+            mkdir -p logs
+            sudo chmod -R 777 storage
+            sudo chmod -R 777 logs

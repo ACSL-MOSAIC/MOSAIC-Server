@@ -1,0 +1,4 @@
+file:
+  storage:
+    base-path: /mosaic-server/storage
+    occupancy-map-path: /mosaic-server/storage/occupancy-maps

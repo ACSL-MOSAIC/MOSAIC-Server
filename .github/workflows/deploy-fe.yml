@@ -1,0 +1,94 @@
+name: Deploy MOSAIC Frontend to AWS ECR and Server
+
+on:
+  push:
+    tags:
+      - 'dev-fe-v*'
+      - 'prod-fe-v*'
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: mosaic/mosaic-server
+
+jobs:
+  build-and-push-then-deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      image-uri: ${{ steps.build-info.outputs.image-uri }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set environment variables
+        run: |
+          if [[ ${{ github.ref_name }} == dev-* ]]; then
+            echo "ENVIRONMENT=dev" >> $GITHUB_ENV
+            echo "SERVER_HOST=${{ vars.DEV_SERVER_HOST }}" >> $GITHUB_ENV
+            echo "SERVER_USER=${{ vars.DEV_SERVER_USER }}" >> $GITHUB_ENV
+            echo "DEPLOY_PATH=${{ vars.DEV_DEPLOY_PATH }}" >> $GITHUB_ENV
+          else
+            echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+            echo "SERVER_HOST=${{ vars.PROD_SERVER_HOST }}" >> $GITHUB_ENV
+            echo "SERVER_USER=${{ vars.PROD_SERVER_USER }}" >> $GITHUB_ENV
+            echo "DEPLOY_PATH=${{ vars.PROD_DEPLOY_PATH }}" >> $GITHUB_ENV
+          fi
+          echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set Registry env var
+        run: |
+          echo "REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+
+      - name: Build Docker image
+        run: |
+          cd frontend
+          if [[ ${{ env.ENVIRONMENT }} == dev ]]; then
+            docker build \
+              --build-arg VITE_ENVIRONMENT=dev \
+              --build-arg VITE_API_URL=https://api-dev-mosaic.acslgcs.com \
+              --build-arg VITE_WEBSOCKET_URL=wss://api-dev-mosaic.acslgcs.com \
+              -t $ECR_REPOSITORY:$IMAGE_TAG .
+          else
+            docker build \
+              --build-arg VITE_ENVIRONMENT=prod \
+              --build-arg VITE_API_URL=https://api-mosaic.acslgcs.com \
+              --build-arg VITE_WEBSOCKET_URL=wss://api-mosaic.acslgcs.com \
+              -t $ECR_REPOSITORY:$IMAGE_TAG .
+          fi
+          docker tag $ECR_REPOSITORY:$IMAGE_TAG $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Push to ECR
+        run: |
+          docker push $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Set Image URI env var
+        run: |
+          echo "IMAGE_URI=$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ startsWith(github.ref_name, 'dev-') && secrets.DEV_SERVER_SSH_KEY || secrets.PROD_SERVER_SSH_KEY }}
+          script: |
+            cd ${{ env.DEPLOY_PATH }}
+            aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin $REGISTRY
+            
+            sudo docker pull ${{ env.IMAGE_URI }}
+            sudo docker tag mosaic-fe:latest mosaic-fe:previous || true
+            sudo docker compose stop mosaic-fe
+            sudo docker rmi mosaic-fe:latest || true            
+            sudo docker tag ${{ env.IMAGE_URI }} mosaic-fe:latest
+            sudo docker compose up -d mosaic-fe
