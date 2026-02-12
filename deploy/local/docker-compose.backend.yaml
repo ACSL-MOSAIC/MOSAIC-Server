@@ -1,5 +1,5 @@
 services:
-  db:
+  mosaic-db:
     image: postgres:17
     restart: always
     volumes:
@@ -20,5 +20,3 @@ volumes:
 networks:
   mosaic-net:
     driver: bridge
-  proxy:
-    external: true

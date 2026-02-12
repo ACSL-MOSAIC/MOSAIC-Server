@@ -1,0 +1,55 @@
+services:
+  mosaic-be:
+    image: mosaic-be:latest
+    volumes:
+      - ./storage:/mosaic-server/storage
+      - ./logs:/mosaic-server/logs
+    env_file:
+      .env
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
+      - POSTGRES_USER=${POSTGRES_USER?Variable not set}
+      - POSTGRES_DB=${POSTGRES_DB?Variable not set}
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_R2DBC_URL=r2dbc:postgresql://mosaic-db:5432/mosaic
+      - SPRING_R2DBC_USERNAME=${POSTGRES_USER?Variable not set}
+      - SPRING_R2DBC_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
+      - SPRING_FLYWAY_URL=jdbc:postgresql://mosaic-db:5432/mosaic
+      - SPRINT_FLYWAY_USER=${POSTGRES_USER?Variable not set}
+      - SPRING_FLYWAY_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
+      - MOSAIC_SECURITY_ENCRYPTION_KEY=${MOSAIC_SECURITY_ENCRYPTION_KEY?Variable not set}
+    ports:
+      - "9001:9001"
+    networks:
+      - mosaic-net
+
+  mosaic-fe:
+    image: mosaic-fe:latest
+    ports:
+      - "8080:80"
+    networks:
+      - mosaic-net
+
+  mosaic-db:
+    image: postgres:17
+    restart: always
+    volumes:
+      - mosaic-db-data:/var/lib/postgresql/data/pgdata
+    env_file:
+      - .env
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
+      - POSTGRES_USER=${POSTGRES_USER?Variable not set}
+      - POSTGRES_DB=${POSTGRES_DB?Variable not set}
+    ports:
+      - "5432:5432"
+    networks:
+      - mosaic-net
+
+volumes:
+  mosaic-db-data:
+
+networks:
+  mosaic-net:
+    driver: bridge
