@@ -90,6 +90,20 @@ export interface ForceLogoutMessage extends WebSocketBaseMessage {
   message: string
 }
 
+export interface PingMessage extends WebSocketBaseMessage {
+  type: "ping.ping"
+  data: {
+    pingId: string
+  }
+}
+
+export interface PongMessage extends WebSocketBaseMessage {
+  type: "ping.pong"
+  data: {
+    pingId: string
+  }
+}
+
 // 모든 메시지 타입을 유니온 타입으로 정의
 export type WebSocketMessage =
   | AuthorizeMessage
@@ -103,6 +117,8 @@ export type WebSocketMessage =
   | ReceiveIceCandidateMessage
   | SendClosePeerConnectionMessage
   | ForceLogoutMessage
+  | PingMessage
+  | PongMessage
 
 export interface WebSocketContextType {
   robots: RobotInfo[]

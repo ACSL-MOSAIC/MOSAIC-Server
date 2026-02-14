@@ -67,6 +67,15 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
           })
         }
 
+        if (data.type === "ping.ping") {
+          sendMessage({
+            type: "ping.pong",
+            data: {
+              pingId: data.data.pingId,
+            }
+          })
+        }
+
         // 로봇 리스트 처리
         if (data.type === "robot_list") {
           setRobots(data.robots)
