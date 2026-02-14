@@ -5,7 +5,8 @@ autonumber
 
 actor User
 participant "WidgetComponent" as WidgetComponent
-participant "MosaicStore" as MosaicStore
+participant "SendableStore" as SendableStore
+participant "RTCDataChannel" as RTCDataChannel
 participant "Robot" as Robot
 
 == 데이터 송신 ==
@@ -15,25 +16,32 @@ activate WidgetComponent
 
 WidgetComponent -[#black]> WidgetComponent: 입력 데이터 처리
 
-WidgetComponent -[#red]> MosaicStore: add(data)
-activate MosaicStore
-note right of MosaicStore: Store에 데이터 추가
+WidgetComponent -[#red]> SendableStore: add(data)
+activate SendableStore
+note right of SendableStore: Store에 데이터 추가
 
 == Store 내부 처리 ==
 
-MosaicStore -[#black]> MosaicStore: 데이터 변환 및 sendData(data)
+SendableStore -[#black]> SendableStore: 데이터 변환
 
-MosaicStore --[#blue]> WidgetComponent: 완료
-deactivate MosaicStore
+
+SendableStore -[#red]> RTCDataChannel: sendData(data)
+activate RTCDataChannel
+note right of RTCDataChannel: setDataChannel()로\n저장된 채널 사용
+
+RTCDataChannel -[#red]> Robot: 센서 제어 명령 전달
+activate Robot
+note right of Robot: WebRTC DataChannel을 통해\n직접 로봇에 전달
+
+Robot --[#blue]> RTCDataChannel: 완료
+deactivate Robot
+
+RTCDataChannel --[#blue]> SendableStore: 전송 완료
+deactivate RTCDataChannel
+
+SendableStore --[#blue]> WidgetComponent: 완료
+deactivate SendableStore
 
 WidgetComponent --[#blue]> User: UI 피드백
 deactivate WidgetComponent
-
-MosaicStore -[#red]> Robot: 센서 제어 명령 전달
-activate Robot
-note right of Robot: DataChannel을 통해\n직접 로봇에 전달
-
-Robot --[#blue]> MosaicStore: 완료
-deactivate Robot
-
 @enduml

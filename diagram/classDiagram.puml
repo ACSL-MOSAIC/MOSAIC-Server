@@ -56,7 +56,6 @@ package "Context Layer" {
     <<Context>>
     -storeManager: StoreManager
     -channelManager: ChannelManager
-    -robotConnectionManager: RobotConnectionManager
     -webrtcConnectionManager: WebRTCConnectionManager
     -robotInfos: RobotInfo[]
     +getOrCreateStore(robotConnector: RobotConnector): MosaicStore
