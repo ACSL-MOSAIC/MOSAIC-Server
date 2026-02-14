@@ -64,4 +64,12 @@ public class WsSessionManager {
                 .filter(UserWsSession::getIsAuthenticated)
                 .filter(session -> session.getUserAuth().getOrganizationPk().equals(organizationPk));
     }
+
+    public Stream<RobotWsSession> getAllRobotSessions() {
+        return this.robotSessionMap.values().stream();
+    }
+
+    public Stream<UserWsSession> getAllUserSessions() {
+        return this.userSessionMap.values().stream();
+    }
 }

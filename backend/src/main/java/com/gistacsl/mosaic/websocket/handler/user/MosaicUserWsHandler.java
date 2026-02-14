@@ -25,6 +25,7 @@ public class MosaicUserWsHandler implements WebSocketHandler {
     private final ObjectMapper objectMapper;
     private final MosaicUserAuthorizeHandler mosaicUserAuthorizeHandler;
     private final MosaicUserSignalingHandler mosaicUserSignalingHandler;
+    private final MosaicUserPingPongHandler mosaicUserPingPongHandler;
 
     private final WsMessageSender wsMessageSender;
     private final WsSessionManager wsSessionManager;
@@ -32,7 +33,8 @@ public class MosaicUserWsHandler implements WebSocketHandler {
     public Mono<Void> handleWsMessageRequest(WsMessage<?> wsMessage, UserWsSession wsSession) {
         String prefix = wsMessage.getType().split("\\.")[0];
         return switch (prefix) {
-            case "ping" -> Mono.empty();
+            case MosaicUserPingPongHandler.TYPE_PREFIX ->
+                    this.mosaicUserPingPongHandler.handleWsMessage(wsMessage, wsSession);
             case MosaicUserAuthorizeHandler.TYPE_PREFIX ->
                     this.mosaicUserAuthorizeHandler.handleWsMessage(wsMessage, wsSession);
             case MosaicUserSignalingHandler.TYPE_PREFIX ->

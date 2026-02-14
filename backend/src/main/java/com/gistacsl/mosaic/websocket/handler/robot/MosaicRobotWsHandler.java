@@ -26,6 +26,7 @@ public class MosaicRobotWsHandler implements WebSocketHandler {
     private final MosaicRobotAuthorizeHandler mosaicRobotAuthorizeHandler;
     private final MosaicRobotSignalingHandler mosaicRobotSignalingHandler;
     private final MosaicRobotStatusHandler mosaicRobotStatusHandler;
+    private final MosaicRobotPingPongHandler mosaicRobotPingPongHandler;
 
     private final WsMessageSender wsMessageSender;
     private final WsSessionManager wsSessionManager;
@@ -34,7 +35,8 @@ public class MosaicRobotWsHandler implements WebSocketHandler {
     public Mono<Void> handleWsMessageRequest(WsMessage<?> wsMessage, RobotWsSession wsSession) {
         String prefix = wsMessage.getType().split("\\.")[0];
         return switch (prefix) {
-            case "ping" -> Mono.empty();
+            case MosaicRobotPingPongHandler.TYPE_PREFIX ->
+                    this.mosaicRobotPingPongHandler.handleWsMessage(wsMessage, wsSession);
             case MosaicRobotAuthorizeHandler.TYPE_PREFIX ->
                     this.mosaicRobotAuthorizeHandler.handleWsMessage(wsMessage, wsSession);
             case MosaicRobotSignalingHandler.TYPE_PREFIX ->
