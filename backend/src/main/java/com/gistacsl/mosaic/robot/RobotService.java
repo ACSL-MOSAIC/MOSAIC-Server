@@ -9,13 +9,13 @@ import com.gistacsl.mosaic.robot.dto.RobotAddDto;
 import com.gistacsl.mosaic.robot.dto.RobotInfoDto;
 import com.gistacsl.mosaic.robot.dto.RobotListDto;
 import com.gistacsl.mosaic.robot.dto.RobotUpdateDto;
-import com.gistacsl.mosaic.robot.enumerate.RobotAuthType;
 import com.gistacsl.mosaic.robot.enumerate.RobotStatus;
 import com.gistacsl.mosaic.security.authentication.UserAuth;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;
@@ -97,6 +97,10 @@ public class RobotService {
             return robotRepository.updateRobotStatus(status, robotPk, organizationPk, txContext)
                     .switchIfEmpty(Mono.error(new CustomException(ResultCode.ROBOT_NOT_FOUND)));
         })).then();
+    }
+
+    public Flux<RobotEntity> getAllRobots() {
+        return robotRepository.findAll(dslContext);
     }
 
     private RobotInfoDto.Res robotEntityToRobotInfoRes(RobotEntity entity) {

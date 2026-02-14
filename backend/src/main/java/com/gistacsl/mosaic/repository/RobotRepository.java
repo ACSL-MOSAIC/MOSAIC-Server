@@ -223,4 +223,32 @@ public class RobotRepository {
                 .onErrorMap(e -> new CustomException(ResultCode.DB_ROBOT_READ_FAILED, e))
                 .map(record -> RobotAuthType.valueOf(record.get(ROBOT.AUTH_TYPE)));
     }
+
+    /*
+    select pk, organization_fk, status, auth_type, name, description, created_at, updated_at
+    from robot
+     */
+    public Flux<RobotEntity> findAll(DSLContext dsl) {
+        return Flux.from(dsl.select(
+                                ROBOT.PK,
+                                ROBOT.ORGANIZATION_FK,
+                                ROBOT.STATUS,
+                                ROBOT.AUTH_TYPE,
+                                ROBOT.NAME,
+                                ROBOT.DESCRIPTION,
+                                ROBOT.CREATED_AT,
+                                ROBOT.UPDATED_AT)
+                        .from(ROBOT))
+                .onErrorMap(e -> new CustomException(ResultCode.DB_ROBOT_READ_FAILED, e))
+                .map(record -> RobotEntity.builder()
+                        .pk(record.get(ROBOT.PK))
+                        .organizationFk(record.get(ROBOT.ORGANIZATION_FK))
+                        .status(RobotStatus.valueOf(record.get(ROBOT.STATUS)))
+                        .authType(RobotAuthType.valueOf(record.get(ROBOT.AUTH_TYPE)))
+                        .name(record.get(ROBOT.NAME))
+                        .description(record.get(ROBOT.DESCRIPTION))
+                        .createdAt(record.get(ROBOT.CREATED_AT))
+                        .updatedAt(record.get(ROBOT.UPDATED_AT))
+                        .build());
+    }
 }
