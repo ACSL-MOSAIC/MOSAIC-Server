@@ -1,23 +1,32 @@
-import type {RobotConfig, RTCConnectionState} from "@/mosaic/index.ts"
+import type {RobotConfig, RobotStatus} from "@/mosaic/index.ts"
 
 export class RobotInfo {
   private readonly _id: string
   private readonly _name: string
   private readonly _wsConnected: boolean
-  private readonly _rtcStates: RTCConnectionState
-  private readonly _robotConfigs: RobotConfig | null
+  private readonly _status: RobotStatus
 
   public constructor(
     id: string,
     name: string,
     wsConnected: boolean,
-    rtcStates: RTCConnectionState,
+    rtcStates: RobotStatus,
     robotConfigs: RobotConfig | null,
   ) {
     this._id = id
     this._name = name
     this._wsConnected = wsConnected
-    this._rtcStates = rtcStates
+    this._status = rtcStates
+    this._robotConfigs = robotConfigs
+  }
+
+  private _robotConfigs: RobotConfig | null
+
+  get robotConfigs(): RobotConfig | null {
+    return this._robotConfigs
+  }
+
+  set robotConfigs(robotConfigs: RobotConfig) {
     this._robotConfigs = robotConfigs
   }
 
@@ -33,11 +42,7 @@ export class RobotInfo {
     return this._wsConnected
   }
 
-  get rtcStates(): RTCConnectionState {
-    return this._rtcStates
-  }
-
-  get robotConfigs(): RobotConfig | null {
-    return this._robotConfigs
+  get status(): RobotStatus {
+    return this._status
   }
 }

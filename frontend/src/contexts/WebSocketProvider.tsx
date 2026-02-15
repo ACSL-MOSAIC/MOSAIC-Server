@@ -1,22 +1,22 @@
 import useAuth from "@/hooks/useAuth"
 import {getBackendWsUrl} from "@/utils/envs.ts"
-import {type ReactNode, useEffect, useRef, useState} from "react"
+import {type ReactNode, useEffect, useRef} from "react"
 import {
-  type RobotInfo,
+  type ExtractDataByType,
   WebSocketContext,
-  type WebSocketMessage,
+  type WsBaseMessage,
+  type WsMessages,
 } from "./WebSocketContext"
 
 export function WebSocketProvider({children}: { children: ReactNode }) {
   const {user, logout: authLogout} = useAuth()
-  const [robots, setRobots] = useState<RobotInfo[]>([])
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
   const refreshIntervalRef = useRef<NodeJS.Timeout>()
   const isConnectingRef = useRef(false)
-  const messageHandlersRef = useRef<Map<string, ((data: any) => void)[]>>(
-    new Map(),
-  )
+  const messageHandlersRef = useRef<
+    Map<string, (data: any) => void | Promise<void>>
+  >(new Map())
 
   const logout = async () => {
     console.log("로그아웃 처리 중...")
@@ -29,92 +29,98 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
     const accessToken = localStorage.getItem("access_token")
     if (!accessToken) return
 
+    registerDefaultHandlers(accessToken)
+
     isConnectingRef.current = true
 
     const wsURL = getBackendWsUrl()
     const websocket = new WebSocket(`${wsURL}/ws/user`)
 
     websocket.onopen = () => {
-      console.log("WebSocket 연결됨")
-      isConnectingRef.current = false
-      wsRef.current = websocket
-
-      // 30초마다 ping 메시지 전송
-      refreshIntervalRef.current = setInterval(() => {
-        if (websocket.readyState === WebSocket.OPEN) {
-          websocket.send(JSON.stringify({type: "ping"}))
-        }
-      }, 30000)
+      wsOnOpen(websocket)
     }
+    websocket.onmessage = wsOnMessage
+    websocket.onerror = wsOnError
+    websocket.onclose = wsOnClose
+  }
 
-    websocket.onmessage = async (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        // console.log("WebSocket 메시지 수신:", data)
+  const wsOnOpen = (websocket: WebSocket) => {
+    console.log("WebSocket 연결됨")
+    isConnectingRef.current = false
+    wsRef.current = websocket
 
-        if (data.type === "force_logout") {
-          console.log("강제 로그아웃 메시지 수신:", data.message)
-          await logout()
-          return
-        }
-
-        if (data.type === "authorize.req") {
-          sendMessage({
-            type: "authorize",
-            data: {
-              accessToken: accessToken,
-            },
-          })
-        }
-
-        if (data.type === "ping.ping") {
-          sendMessage({
-            type: "ping.pong",
-            data: {
-              pingId: data.data.pingId,
-            }
-          })
-        }
-
-        // 로봇 리스트 처리
-        if (data.type === "robot_list") {
-          setRobots(data.robots)
-        }
-
-        // 등록된 메시지 핸들러 호출
-        const handlers = messageHandlersRef.current.get(data.type)
-        if (handlers) {
-          handlers.forEach((handler) => handler(data))
-        }
-      } catch (error) {
-        console.error("WebSocket 메시지 처리 중 오류:", error)
+    refreshIntervalRef.current = setInterval(() => {
+      if (websocket.readyState === WebSocket.OPEN) {
+        websocket.send(JSON.stringify({type: "ping"}))
       }
-    }
+    }, 30000)
+  }
 
-    websocket.onerror = (error) => {
-      console.error("WebSocket 에러:", error)
-      isConnectingRef.current = false
-    }
+  const wsOnMessage = async (event: MessageEvent<string>) => {
+    try {
+      const message: WsBaseMessage = JSON.parse(event.data)
+      // console.log("WebSocket 메시지 수신:", message)
 
-    websocket.onclose = (event) => {
-      console.log("WebSocket 연결 종료:", event.code, event.reason)
-      isConnectingRef.current = false
-      wsRef.current = null
-
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current)
+      const handler = messageHandlersRef.current.get(message.type)
+      if (handler) {
+        const result = handler(message.data)
+        if (result instanceof Promise) {
+          await result
+        }
       }
-
-      if (event.code !== 1000 && event.code !== 1006) {
-        reconnectTimeoutRef.current = setTimeout(() => {
-          console.log("WebSocket 재연결 시도...")
-          connectWebSocket()
-        }, 5000)
-      }
+    } catch (error) {
+      console.error("WebSocket 메시지 처리 중 오류:", error)
     }
   }
 
-  const sendMessage = (message: WebSocketMessage) => {
+  const wsOnError = (error: Event) => {
+    console.error("WebSocket 에러:", error)
+    isConnectingRef.current = false
+  }
+
+  const wsOnClose = (event: CloseEvent) => {
+    console.log("WebSocket 연결 종료:", event.code, event.reason)
+    isConnectingRef.current = false
+    wsRef.current = null
+
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current)
+    }
+
+    if (event.code !== 1000 && event.code !== 1006) {
+      reconnectTimeoutRef.current = setTimeout(() => {
+        console.log("WebSocket 재연결 시도...")
+        connectWebSocket()
+      }, 5000)
+    }
+  }
+
+  const registerDefaultHandlers = (accessToken: string) => {
+    onMessage("ping.ping", (data) => {
+      sendMessage({
+        type: "ping.pong",
+        data: {
+          pingId: data.pingId,
+        },
+      })
+    })
+
+    onMessage("authorize.req", () => {
+      sendMessage({
+        type: "authorize",
+        data: {
+          accessToken: accessToken,
+        },
+      })
+    })
+
+    onMessage("force_logout", async (data) => {
+      console.log("강제 로그아웃 메시지 수신:", data.message)
+      await logout()
+    })
+  }
+
+  const sendMessage = (message: WsMessages) => {
     const ws = wsRef.current
     if (ws?.readyState === WebSocket.OPEN) {
       console.log("WebSocket 메시지 전송:", message)
@@ -124,21 +130,20 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
     }
   }
 
-  const onMessage = <T extends WebSocketMessage>(
-    type: T["type"],
-    callback: (data: T) => void,
+  const onMessage = <T extends WsMessages["type"]>(
+    type: T,
+    callback: (data: ExtractDataByType<T>) => void | Promise<void>,
   ) => {
-    const handlers = messageHandlersRef.current.get(type) || []
-    handlers.push(callback as (data: any) => void)
-    messageHandlersRef.current.set(type, handlers)
+    const handler = messageHandlersRef.current.get(type)
+    if (!handler) {
+      messageHandlersRef.current.set(
+        type,
+        callback as (data: any) => void | Promise<void>,
+      )
+    }
 
     return () => {
-      const handlers = messageHandlersRef.current.get(type) || []
-      const index = handlers.indexOf(callback as (data: any) => void)
-      if (index > -1) {
-        handlers.splice(index, 1)
-        messageHandlersRef.current.set(type, handlers)
-      }
+      messageHandlersRef.current.delete(type)
     }
   }
 
@@ -183,9 +188,7 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
   }, [wsRef.current?.readyState])
 
   return (
-    <WebSocketContext.Provider
-      value={{robots, sendMessage, onMessage, disconnect}}
-    >
+    <WebSocketContext.Provider value={{sendMessage, onMessage, disconnect}}>
       {children}
     </WebSocketContext.Provider>
   )

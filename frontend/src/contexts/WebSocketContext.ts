@@ -1,132 +1,112 @@
-import {
-  createContext,
-} from "react"
+import {createContext} from "react"
 
-// 로봇 정보 타입
 export interface RobotInfo {
   robot_id: string
   state: string
 }
 
-// 기본 메시지 타입
-export interface WebSocketBaseMessage {
-  type: string
+export type WsBaseMessage<T extends string = string, D = any> = {
+  type: T
+  data: D
 }
 
-export interface AuthorizeMessage extends WebSocketBaseMessage {
-  type: "authorize"
-  data: {
-    accessToken: string
-  }
+export type WsAuthorizeDto = {
+  accessToken: string
 }
 
-// 로봇 리스트 요청/응답 타입
-export interface GetRobotListMessage extends WebSocketBaseMessage {
-  type: "get_robot_list"
-}
+export type WsGetRobotListDto = Record<string, never> // 빈 객체
 
-export interface RobotListMessage extends WebSocketBaseMessage {
-  type: "robot_list"
+export type WsRobotListDto = {
   robots: RobotInfo[]
 }
 
-// SDP Offer/Answer 타입
-export interface SendSdpOfferMessage extends WebSocketBaseMessage {
-  type: "send_sdp_offer"
+export type WsSendSdpOfferDto = {
   robot_id: string
   sdp_offer: string
 }
 
-export interface ReceiveSdpOfferMessage extends WebSocketBaseMessage {
-  type: "receive_sdp_offer"
+export type WsReceiveSdpOfferDto = {
   user_id: string
   robot_id: string
   sdp_offer: string
 }
 
-export interface SendSdpAnswerMessage extends WebSocketBaseMessage {
-  type: "send_sdp_answer"
+export type WsSendSdpAnswerDto = {
   user_id: string
   robot_id: string
   sdp_answer: string
 }
 
-export interface ReceiveSdpAnswerMessage extends WebSocketBaseMessage {
-  type: "receive_sdp_answer"
+export type WsReceiveSdpAnswerDto = {
   user_id: string
   robot_id: string
   sdp_answer: string
 }
 
-// ICE Candidate 타입
-export interface SendIceCandidateMessage extends WebSocketBaseMessage {
-  type: "send_ice_candidate"
-  robot_id: string
-  ice_candidate: {
-    candidate: string
-    sdpMid: string | null
-    sdpMLineIndex: number | null
-  }
+export type IceCandidate = {
+  candidate: string
+  sdpMid: string | null
+  sdpMLineIndex: number | null
 }
 
-export interface ReceiveIceCandidateMessage extends WebSocketBaseMessage {
-  type: "receive_ice_candidate"
+export type WsSendIceCandidateDto = {
+  robot_id: string
+  ice_candidate: IceCandidate
+}
+
+export type WsReceiveIceCandidateDto = {
   user_id: string
   robot_id: string
-  ice_candidate: {
-    candidate: string
-    sdpMid: string | null
-    sdpMLineIndex: number | null
-  }
+  ice_candidate: IceCandidate
 }
 
-export interface SendClosePeerConnectionMessage extends WebSocketBaseMessage {
-  type: "send_close_peer_connection"
+export type WsSendClosePeerConnectionDto = {
   robot_id: string
 }
 
-export interface ForceLogoutMessage extends WebSocketBaseMessage {
-  type: "force_logout"
+export type WsForceLogoutDto = {
   message: string
 }
 
-export interface PingMessage extends WebSocketBaseMessage {
-  type: "ping.ping"
-  data: {
-    pingId: string
-  }
+export type WsPingDto = {
+  pingId: string
 }
 
-export interface PongMessage extends WebSocketBaseMessage {
-  type: "ping.pong"
-  data: {
-    pingId: string
-  }
+export type WsPongDto = {
+  pingId: string
 }
 
-// 모든 메시지 타입을 유니온 타입으로 정의
-export type WebSocketMessage =
-  | AuthorizeMessage
-  | GetRobotListMessage
-  | RobotListMessage
-  | SendSdpOfferMessage
-  | ReceiveSdpOfferMessage
-  | SendSdpAnswerMessage
-  | ReceiveSdpAnswerMessage
-  | SendIceCandidateMessage
-  | ReceiveIceCandidateMessage
-  | SendClosePeerConnectionMessage
-  | ForceLogoutMessage
-  | PingMessage
-  | PongMessage
+export type WsMessages =
+  | WsBaseMessage<"authorize.req", void>
+  | WsBaseMessage<"authorize", WsAuthorizeDto>
+  | WsBaseMessage<"get_robot_list", WsGetRobotListDto>
+  | WsBaseMessage<"robot_list", WsRobotListDto>
+  | WsBaseMessage<"send_sdp_offer", WsSendSdpOfferDto>
+  | WsBaseMessage<"receive_sdp_offer", WsReceiveSdpOfferDto>
+  | WsBaseMessage<"send_sdp_answer", WsSendSdpAnswerDto>
+  | WsBaseMessage<"receive_sdp_answer", WsReceiveSdpAnswerDto>
+  | WsBaseMessage<"send_ice_candidate", WsSendIceCandidateDto>
+  | WsBaseMessage<"receive_ice_candidate", WsReceiveIceCandidateDto>
+  | WsBaseMessage<"send_close_peer_connection", WsSendClosePeerConnectionDto>
+  | WsBaseMessage<"force_logout", WsForceLogoutDto>
+  | WsBaseMessage<"ping.ping", WsPingDto>
+  | WsBaseMessage<"ping.pong", WsPongDto>
+
+export type ExtractMessageByType<T extends WsMessages["type"]> = Extract<
+  WsMessages,
+  { type: T }
+>
+
+export type ExtractDataByType<T extends WsMessages["type"]> =
+  ExtractMessageByType<T>["data"]
 
 export interface WebSocketContextType {
-  robots: RobotInfo[]
-  sendMessage: (message: WebSocketMessage) => void
-  onMessage: <T extends WebSocketMessage>(
-    type: T["type"],
-    callback: (data: T) => void,
+  sendMessage: (message: WsMessages) => void
+  onMessage: <T extends WsMessages["type"]>(
+    type: T,
+    callback: (data: ExtractDataByType<T>) => void | Promise<void>,
   ) => () => void
+
   disconnect: () => void
 }
 
