@@ -20,17 +20,19 @@ export class SignalingServer {
     this.registerSignalingWsMessageListener()
   }
 
+  // TODO: when does this method called?
   public setRtcConnection(rtcConnection: WebRTCConnection): void {
     // TODO: what if rtcConnectionId already exists?
-    this.rtcConnections.set(rtcConnection.getRtcConnectionId(), rtcConnection)
+    this.rtcConnections.set(rtcConnection.rtcConnectionId, rtcConnection)
+    rtcConnection.signalingServer = this
   }
 
-  public async sendSdpOffer(
+  public sendSdpOffer(
     rtcConnectionId: string,
     offer: RTCSessionDescriptionInit,
-  ): Promise<void> {
+  ): void {
     if (!offer.sdp) {
-      return Promise.reject("SDP offer is empty")
+      throw new Error("SDP offer is missing")
     }
 
     this.sendWsMessage({
@@ -42,10 +44,10 @@ export class SignalingServer {
     })
   }
 
-  public async sendIceCandidate(
+  public sendIceCandidate(
     rtcConnectionId: string,
     candidate: RTCIceCandidate,
-  ): Promise<void> {
+  ): void {
     this.sendWsMessage({
       type: "signaling.exchange_ice_candidate",
       data: {
@@ -59,7 +61,7 @@ export class SignalingServer {
     })
   }
 
-  public async sendCloseConnection(rtcConnectionId: string): Promise<void> {
+  public sendCloseConnection(rtcConnectionId: string): void {
     this.sendWsMessage({
       type: "signaling.close_connection",
       data: {rtcConnectionId: rtcConnectionId},

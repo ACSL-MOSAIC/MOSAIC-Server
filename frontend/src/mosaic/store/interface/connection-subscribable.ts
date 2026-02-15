@@ -60,11 +60,19 @@ export abstract class ConnectionSubscribable {
     this.afterConnectionFailed(robotId)
   }
 
-  protected abstract beforeConnected(robotId: string): void
+  // Can be overridden by subclasses
+  protected beforeConnected(_robotId: string): void {
+  }
 
-  protected abstract afterConnected(robotId: string): void
+  // Can be overridden by subclasses
+  protected afterConnected(_robotId: string): void {
+  }
 
-  protected abstract afterDisconnected(robotId: string): void
+  // Can be overridden by subclasses
+  protected afterDisconnected(_robotId: string): void {
+  }
 
-  protected abstract afterConnectionFailed(robotId: string): void
+  // Can be overridden by subclasses
+  protected afterConnectionFailed(_robotId: string): void {
+  }
 }
