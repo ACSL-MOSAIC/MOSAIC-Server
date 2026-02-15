@@ -39,13 +39,17 @@ public class RobotService {
         return Mono.from(dslContext.transactionPublisher(configuration -> {
             DSLContext txContext = configuration.dsl();
 
+            UUID robotPk = UUID.randomUUID();
+            String connectorConfig = String.format("{\"id\":\"%s\",\"connectors\":[]}", robotPk);
+
             RobotEntity newRobot = RobotEntity.builder()
-                    .pk(UUID.randomUUID())
+                    .pk(robotPk)
                     .organizationFk(userAuth.getOrganizationPk())
                     .name(req.name())
                     .description(req.description())
                     .status(req.status() != null ? req.status() : RobotStatus.DISCONNECTED)
                     .authType(req.authType())
+                    .connectorConfig(connectorConfig)
                     .build();
 
             return robotRepository.insertRobot(newRobot, txContext);

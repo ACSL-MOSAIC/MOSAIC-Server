@@ -22,6 +22,7 @@ public class RobotEntity {
     private RobotAuthType authType = RobotAuthType.NO_AUTHORIZATION;
     private String name;
     private String description;
+    private String connectorConfig;
 
     @Builder.Default
     private OffsetDateTime createdAt = OffsetDateTime.now();

@@ -1,7 +1,6 @@
 [
   {
     "id": "a200_0000",
-    "name": "ClearPath A200 Robot",
     "connectors": [
       {
         "connector_id": "front_camera",
