@@ -9,6 +9,7 @@ public class RobotUpdateDto {
             String name,
             String description,
             RobotStatus status,
-            RobotAuthType authType
+            RobotAuthType authType,
+            String connectorConfig
     ) {}
 }

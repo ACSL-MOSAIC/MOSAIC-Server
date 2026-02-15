@@ -40,7 +40,9 @@ public class RobotService {
             DSLContext txContext = configuration.dsl();
 
             UUID robotPk = UUID.randomUUID();
-            String connectorConfig = String.format("{\"id\":\"%s\",\"connectors\":[]}", robotPk);
+            String connectorConfig = req.connectorConfig() != null
+                    ? req.connectorConfig()
+                    : String.format("{\"id\":\"%s\",\"connectors\":[]}", robotPk);
 
             RobotEntity newRobot = RobotEntity.builder()
                     .pk(robotPk)
@@ -80,6 +82,7 @@ public class RobotService {
                             req.description(),
                             req.status(),
                             req.authType(),
+                            req.connectorConfig(),
                             txContext));
         })).map(pk -> new MessageDto("Robot updated successfully"));
     }

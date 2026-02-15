@@ -227,6 +227,10 @@ components:
           nullable: true
         status:
           $ref: '#/components/schemas/RobotStatus'
+        connector_config:
+          type: string
+          description: JSON string of connector configuration
+          nullable: true
       required:
         - name
 
@@ -248,6 +252,10 @@ components:
           nullable: true
         status:
           $ref: '#/components/schemas/RobotStatus'
+        connector_config:
+          type: string
+          description: JSON string of connector configuration
+          nullable: true
 
     RobotInfo:
       allOf:

@@ -7,6 +7,7 @@ import com.gistacsl.mosaic.robot.enumerate.RobotAuthType;
 import com.gistacsl.mosaic.robot.enumerate.RobotStatus;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.jooq.JSON;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -173,7 +174,7 @@ public class RobotRepository {
                 .map(record -> record.get(0, Integer.class));
     }
 
-    public Mono<UUID> updateRobot(UUID pk, UUID organizationFk, String name, String description, RobotStatus status, RobotAuthType authType, DSLContext dsl) {
+    public Mono<UUID> updateRobot(UUID pk, UUID organizationFk, String name, String description, RobotStatus status, RobotAuthType authType, String connectorConfig, DSLContext dsl) {
         var updateStep = dsl.update(ROBOT)
                 .set(ROBOT.UPDATED_AT, OffsetDateTime.now());
 
@@ -188,6 +189,9 @@ public class RobotRepository {
         }
         if (authType != null) {
             updateStep = updateStep.set(ROBOT.AUTH_TYPE, authType.name());
+        }
+        if (connectorConfig != null) {
+            updateStep = updateStep.set(ROBOT.CONNECTOR_CONFIG, JSON.valueOf(connectorConfig));
         }
 
         return Mono.from(updateStep
