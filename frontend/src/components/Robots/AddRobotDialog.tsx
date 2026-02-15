@@ -10,6 +10,7 @@ import {
   NativeSelectField,
   NativeSelectRoot,
   Text,
+  Textarea,
   VStack,
 } from "@chakra-ui/react"
 import {FaPlus} from "react-icons/fa"
@@ -49,6 +50,7 @@ const AddRobotDialog = () => {
       description: "",
       status: 5, // DISCONNECTED
       authType: 0,
+      connectorConfig: undefined,
     },
   })
 
@@ -140,6 +142,31 @@ const AddRobotDialog = () => {
                     ))}
                   </NativeSelectField>
                 </NativeSelectRoot>
+              </Field>
+              <Field
+                invalid={!!errors.connectorConfig}
+                errorText={errors.connectorConfig?.message}
+                label="Connector Config (JSON)"
+                helperText="Optional: Leave empty to use default config"
+              >
+                <Textarea
+                  id="connectorConfig"
+                  {...register("connectorConfig", {
+                    validate: (value) => {
+                      if (!value) return true
+                      try {
+                        JSON.parse(value)
+                        return true
+                      } catch {
+                        return "Invalid JSON format"
+                      }
+                    },
+                  })}
+                  placeholder='{"id":"","connectors":[]}'
+                  rows={4}
+                  fontFamily="monospace"
+                  fontSize="sm"
+                />
               </Field>
             </VStack>
           </DialogBody>

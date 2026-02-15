@@ -21,6 +21,7 @@ export type RobotAddDto = {
   description: string
   status: RobotStatus
   authType: RobotAuthType
+  connectorConfig: string
 }
 
 export type RobotUpdateDto = {
@@ -28,6 +29,7 @@ export type RobotUpdateDto = {
   description?: string | null
   status?: RobotStatus | null
   authType?: RobotAuthType | null
+  connectorConfig?: string | null
 }
 
 export type RobotConfigDto = {
