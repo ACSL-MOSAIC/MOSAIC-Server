@@ -484,9 +484,12 @@ components:
         rtc_session_id:
           type: string
           format: uuid
+        status:
+          $ref: '#/components/schemas/RobotStatus'
       required:
         - robot_id
         - rtc_session_id
+        - status
 
     WebRTCConnectionResponse:
       type: object

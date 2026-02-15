@@ -1,6 +1,6 @@
 import type {CancelablePromise, MessageDto, PageDto} from "@/client"
 import {request as __request} from "@/client/core/request.ts"
-import type {RobotInfoDto, RobotAddDto, RobotUpdateDto} from "./robot.dto.ts"
+import type {RobotAddDto, RobotInfoDto, RobotUpdateDto} from "./robot.dto.ts"
 
 export const getRobotListApi = (
   limit?: number,
