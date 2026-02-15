@@ -90,7 +90,6 @@ export interface ConnectorConfig {
 }
 
 export interface RobotConfig {
-  id: string
   connectors: ConnectorConfig[]
 }
 

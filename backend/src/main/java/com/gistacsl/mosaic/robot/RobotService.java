@@ -43,7 +43,7 @@ public class RobotService {
             UUID robotPk = UUID.randomUUID();
             String connectorConfig = req.connectorConfig() != null
                     ? req.connectorConfig()
-                    : String.format("{\"id\":\"%s\",\"connectors\":[]}", robotPk);
+                    : "{\"connectors\":[]}";
 
             RobotEntity newRobot = RobotEntity.builder()
                     .pk(robotPk)

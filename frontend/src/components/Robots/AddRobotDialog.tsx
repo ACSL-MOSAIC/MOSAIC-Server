@@ -162,7 +162,7 @@ const AddRobotDialog = () => {
                       }
                     },
                   })}
-                  placeholder='{"id":"","connectors":[]}'
+                  placeholder='{"connectors":[]}'
                   rows={4}
                   fontFamily="monospace"
                   fontSize="sm"

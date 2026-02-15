@@ -101,12 +101,7 @@ const EditRobotDialog = ({robot}: EditRobotProps) => {
     const submitData = {
       ...data,
       connectorConfig: data.connectorConfig
-        ? (() => {
-          const parsed = JSON.parse(data.connectorConfig)
-          // Ensure ID is not modified - overwrite with original robot ID
-          parsed.id = robot.id
-          return JSON.stringify(parsed)
-        })()
+        ? JSON.stringify(JSON.parse(data.connectorConfig))
         : data.connectorConfig,
     }
     mutation.mutate(submitData)
@@ -196,18 +191,14 @@ const EditRobotDialog = ({robot}: EditRobotProps) => {
                     validate: (value) => {
                       if (!value) return true
                       try {
-                        const parsed = JSON.parse(value)
-                        // Validate that ID field matches the robot's ID
-                        if (parsed.id !== robot.id) {
-                          return "ID field must match the robot's ID"
-                        }
+                        JSON.parse(value)
                         return true
                       } catch {
                         return "Invalid JSON format"
                       }
                     },
                   })}
-                  placeholder='{"id":"","connectors":[]}'
+                  placeholder='{"connectors":[]}'
                   rows={4}
                   fontFamily="monospace"
                   fontSize="sm"
