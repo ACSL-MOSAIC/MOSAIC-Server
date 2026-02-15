@@ -69,6 +69,20 @@ public class RobotRepository {
     }
 
     /*
+    select connector_config
+    from robot
+    where pk = ? and organization_fk = ?
+     */
+    public Mono<String> findConnectorConfigByPkAndOrganizationFk(UUID pk, UUID organizationFk, DSLContext dsl) {
+        return Mono.from(dsl.select(ROBOT.CONNECTOR_CONFIG)
+                        .from(ROBOT)
+                        .where(ROBOT.PK.eq(pk))
+                        .and(ROBOT.ORGANIZATION_FK.eq(organizationFk)))
+                .onErrorMap(e -> new CustomException(ResultCode.DB_ROBOT_READ_FAILED, e))
+                .map(record -> record.get(ROBOT.CONNECTOR_CONFIG).data());
+    }
+
+    /*
     select pk, organization_fk, status, auth_type, name, description, created_at, updated_at
     from robot
     where pk = ?

@@ -285,6 +285,15 @@ components:
         - data
         - count
 
+    RobotConfig:
+      type: object
+      properties:
+        connector_config:
+          type: string
+          description: JSON string of connector configuration
+      required:
+        - connector_config
+
     # Robot Auth schemas
     SimpleTokenRequest:
       type: object
@@ -1370,6 +1379,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Message'
+        '400':
+          description: Not enough permissions
+        '404':
+          description: Robot not found
+
+  /robots/{id}/config:
+    get:
+      tags:
+        - robots
+      summary: Get robot connector config
+      description: Get connector configuration of a robot
+      operationId: getRobotConfig
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RobotConfig'
         '400':
           description: Not enough permissions
         '404':

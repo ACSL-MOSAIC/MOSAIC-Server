@@ -9,6 +9,7 @@ import {ROBOT_AUTH_TYPES} from "@/client/service/robot.dto.ts"
 import {RobotActionsMenu} from "@/components/Common/RobotActionsMenu"
 import PendingRobots from "@/components/Pending/PendingRobots"
 import GenerateSimpleTokenDialog from "@/components/Robots/GenerateSimpleTokenDialog.tsx"
+import PreviewRobotConfig from "@/components/Robots/PreviewRobotConfig.tsx"
 import {
   PaginationItems,
   PaginationNextTrigger,
@@ -82,6 +83,7 @@ export function RobotsTable() {
             <Table.ColumnHeader w="sm">Status</Table.ColumnHeader>
             <Table.ColumnHeader w="sm">Auth Type</Table.ColumnHeader>
             <Table.ColumnHeader w="sm">Description</Table.ColumnHeader>
+            <Table.ColumnHeader w="sm">Config</Table.ColumnHeader>
             <Table.ColumnHeader w="sm">Actions</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
@@ -124,6 +126,9 @@ export function RobotsTable() {
                 maxW="30%"
               >
                 {robot.description || "N/A"}
+              </Table.Cell>
+              <Table.Cell>
+                <PreviewRobotConfig robot={robot}/>
               </Table.Cell>
               <Table.Cell>
                 <RobotActionsMenu robot={robot}/>

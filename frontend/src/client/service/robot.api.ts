@@ -1,6 +1,11 @@
 import type {CancelablePromise, MessageDto, PageDto} from "@/client"
 import {request as __request} from "@/client/core/request.ts"
-import type {RobotAddDto, RobotInfoDto, RobotUpdateDto} from "./robot.dto.ts"
+import type {
+  RobotAddDto,
+  RobotConfigDto,
+  RobotInfoDto,
+  RobotUpdateDto,
+} from "./robot.dto.ts"
 
 export const getRobotListApi = (
   limit?: number,
@@ -37,6 +42,24 @@ export const getRobotApi = (id: string): CancelablePromise<RobotInfoDto> => {
   return __request({
     method: "GET",
     url: "/api/v1/robots/{id}",
+    path: {
+      id: id,
+    },
+  })
+}
+
+/**
+ * Get robot connector config.
+ * @param id Robot ID
+ * @returns RobotConfigDto Successful Response
+ * @throws ApiError
+ */
+export const getRobotConfigApi = (
+  id: string,
+): CancelablePromise<RobotConfigDto> => {
+  return __request({
+    method: "GET",
+    url: "/api/v1/robots/{id}/config",
     path: {
       id: id,
     },

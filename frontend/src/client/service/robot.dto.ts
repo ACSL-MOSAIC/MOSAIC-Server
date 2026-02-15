@@ -29,3 +29,7 @@ export type RobotUpdateDto = {
   status?: RobotStatus | null
   authType?: RobotAuthType | null
 }
+
+export type RobotConfigDto = {
+  connectorConfig: string
+}
