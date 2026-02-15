@@ -1,80 +1,21 @@
+import type {
+  WsAuthorizeDto,
+  WsBaseMessage,
+  WsForceLogoutDto,
+  WsGetRobotListDto,
+  WsPingPongDto,
+  WsRobotListDto,
+} from "@/contexts/ws.dto.ts"
+import type {
+  WsReceiveIceCandidateDto,
+  WsReceiveSdpAnswerDto,
+  WsReceiveSdpOfferDto,
+  WsSendClosePeerConnectionDto,
+  WsSendIceCandidateDto,
+  WsSendSdpAnswerDto,
+  WsSendSdpOfferDto,
+} from "@/mosaic/webrtc/signaling.dto.ts"
 import {createContext} from "react"
-
-export interface RobotInfo {
-  robot_id: string
-  state: string
-}
-
-export type WsBaseMessage<T extends string = string, D = any> = {
-  type: T
-  data: D
-}
-
-export type WsAuthorizeDto = {
-  accessToken: string
-}
-
-export type WsGetRobotListDto = Record<string, never> // 빈 객체
-
-export type WsRobotListDto = {
-  robots: RobotInfo[]
-}
-
-export type WsSendSdpOfferDto = {
-  robot_id: string
-  sdp_offer: string
-}
-
-export type WsReceiveSdpOfferDto = {
-  user_id: string
-  robot_id: string
-  sdp_offer: string
-}
-
-export type WsSendSdpAnswerDto = {
-  user_id: string
-  robot_id: string
-  sdp_answer: string
-}
-
-export type WsReceiveSdpAnswerDto = {
-  user_id: string
-  robot_id: string
-  sdp_answer: string
-}
-
-export type IceCandidate = {
-  candidate: string
-  sdpMid: string | null
-  sdpMLineIndex: number | null
-}
-
-export type WsSendIceCandidateDto = {
-  robot_id: string
-  ice_candidate: IceCandidate
-}
-
-export type WsReceiveIceCandidateDto = {
-  user_id: string
-  robot_id: string
-  ice_candidate: IceCandidate
-}
-
-export type WsSendClosePeerConnectionDto = {
-  robot_id: string
-}
-
-export type WsForceLogoutDto = {
-  message: string
-}
-
-export type WsPingDto = {
-  pingId: string
-}
-
-export type WsPongDto = {
-  pingId: string
-}
 
 export type WsMessages =
   | WsBaseMessage<"authorize.req", void>
@@ -89,8 +30,8 @@ export type WsMessages =
   | WsBaseMessage<"receive_ice_candidate", WsReceiveIceCandidateDto>
   | WsBaseMessage<"send_close_peer_connection", WsSendClosePeerConnectionDto>
   | WsBaseMessage<"force_logout", WsForceLogoutDto>
-  | WsBaseMessage<"ping.ping", WsPingDto>
-  | WsBaseMessage<"ping.pong", WsPongDto>
+  | WsBaseMessage<"ping.ping", WsPingPongDto>
+  | WsBaseMessage<"ping.pong", WsPingPongDto>
 
 export type ExtractMessageByType<T extends WsMessages["type"]> = Extract<
   WsMessages,
