@@ -6,15 +6,19 @@ import {
   NativeSelectField,
   NativeSelectRoot,
   Text,
+  Textarea,
   VStack,
 } from "@chakra-ui/react"
 import {useMutation, useQueryClient} from "@tanstack/react-query"
-import {useState} from "react"
+import {useEffect, useState} from "react"
 import {type SubmitHandler, useForm} from "react-hook-form"
 import {FaExchangeAlt} from "react-icons/fa"
 
 import type {ApiError} from "@/client"
-import {updateRobotApi} from "@/client/service/robot.api.ts"
+import {
+  getRobotConfigApi,
+  updateRobotApi,
+} from "@/client/service/robot.api.ts"
 import type {
   RobotInfoDto,
   RobotUpdateDto,
@@ -46,6 +50,7 @@ const EditRobotDialog = ({robot}: EditRobotProps) => {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: {errors, isSubmitting},
   } = useForm<RobotUpdateDto>({
     mode: "onBlur",
@@ -53,8 +58,28 @@ const EditRobotDialog = ({robot}: EditRobotProps) => {
     defaultValues: {
       ...robot,
       description: robot.description ?? undefined,
+      connectorConfig: undefined,
     },
   })
+
+  // Load connector config when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      getRobotConfigApi(robot.id)
+        .then((response) => {
+          // Format JSON with indentation for display
+          const formattedConfig = JSON.stringify(
+            JSON.parse(response.connectorConfig),
+            null,
+            2,
+          )
+          setValue("connectorConfig", formattedConfig)
+        })
+        .catch((error) => {
+          console.error("Failed to load connector config:", error)
+        })
+    }
+  }, [isOpen, robot.id, setValue])
 
   const mutation = useMutation({
     mutationFn: (data: RobotUpdateDto) => updateRobotApi(robot.id, data),
@@ -72,7 +97,14 @@ const EditRobotDialog = ({robot}: EditRobotProps) => {
   })
 
   const onSubmit: SubmitHandler<RobotUpdateDto> = async (data) => {
-    mutation.mutate(data)
+    // Stringify connector config without formatting before sending
+    const submitData = {
+      ...data,
+      connectorConfig: data.connectorConfig
+        ? JSON.stringify(JSON.parse(data.connectorConfig))
+        : data.connectorConfig,
+    }
+    mutation.mutate(submitData)
   }
 
   return (
@@ -145,6 +177,32 @@ const EditRobotDialog = ({robot}: EditRobotProps) => {
                     ))}
                   </NativeSelectField>
                 </NativeSelectRoot>
+              </Field>
+
+              <Field
+                invalid={!!errors.connectorConfig}
+                errorText={errors.connectorConfig?.message}
+                label="Connector Config (JSON)"
+                helperText="Optional: Leave empty to use default config"
+              >
+                <Textarea
+                  id="connectorConfig"
+                  {...register("connectorConfig", {
+                    validate: (value) => {
+                      if (!value) return true
+                      try {
+                        JSON.parse(value)
+                        return true
+                      } catch {
+                        return "Invalid JSON format"
+                      }
+                    },
+                  })}
+                  placeholder='{"connectors":[]}'
+                  rows={4}
+                  fontFamily="monospace"
+                  fontSize="sm"
+                />
               </Field>
             </VStack>
           </DialogBody>

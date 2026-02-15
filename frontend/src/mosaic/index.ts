@@ -1,3 +1,18 @@
+export type MosaicDataType =
+  | "media"
+  | "byte-r2u"
+  | "byte-r2u-p"
+  | "byte-u2r"
+  | "byte-u2r-p"
+  | "string-r2u"
+  | "string-r2u-p"
+  | "string-u2r"
+  | "string-u2r-p"
+  | "json-r2u"
+  | "json-r2u-p"
+  | "json-u2r"
+  | "json-u2r-p"
+
 // TODO: Define WidgetType
 export type WidgetType = string
 
@@ -11,21 +26,44 @@ export interface WidgetPositionConfig {
 export class RobotConnector {
   public robotId: string
   public connectorId: string
-  public parallel?: number
+  public dataType: MosaicDataType
+  public parallelNum: number
 
-  constructor(robotId: string, connectorId: string, parallel?: number) {
+  constructor(
+    robotId: string,
+    connectorId: string,
+    dataType: MosaicDataType,
+    parallelNum = 1,
+  ) {
     this.robotId = robotId
     this.connectorId = connectorId
-    this.parallel = parallel
+    this.dataType = dataType
+    this.parallelNum = parallelNum
+  }
+
+  public static fromConnectorConfig(connectorConfig: ConnectorConfig) {
+    if (connectorConfig.dataType.endsWith("-p")) {
+      return new RobotConnector(
+        connectorConfig.connectorId,
+        connectorConfig.connectorId,
+        connectorConfig.dataType,
+        connectorConfig.params?.parallelNum,
+      )
+    }
+    return new RobotConnector(
+      connectorConfig.connectorId,
+      connectorConfig.connectorId,
+      connectorConfig.dataType,
+    )
   }
 
   public static deserialize(serialized: string): RobotConnector {
-    const [robotId, connectorId] = serialized.split(":")
-    return new RobotConnector(robotId, connectorId)
+    const [robotId, connectorId, dataType] = serialized.split(":")
+    return new RobotConnector(robotId, connectorId, dataType as MosaicDataType)
   }
 
   public serialize(): string {
-    return `${this.robotId}:${this.connectorId}`
+    return `${this.robotId}:${this.connectorId}:${this.dataType}`
   }
 }
 
@@ -46,15 +84,26 @@ export interface DashboardConfig {
 
 export interface ConnectorConfig {
   connectorId: string
-  dataType: string
+  connectorType: string
+  dataType: MosaicDataType
   params: any
 }
 
 export interface RobotConfig {
-  id: string
-  name: string
   connectors: ConnectorConfig[]
 }
+
+export const ROBOT_STATUSES = [
+  {value: 0, label: "Ready to Connect"},
+  {value: 1, label: "RTC Connecting"},
+  {value: 2, label: "RTC Connected"},
+  {value: 3, label: "RTC Disconnecting"},
+  {value: 4, label: "RTC Failed"},
+  {value: 5, label: "Disconnected"},
+  {value: 6, label: "WS Connected"},
+] as const
+
+export type RobotStatus = (typeof ROBOT_STATUSES)[number]["value"]
 
 export enum RTCConnectionState {
   DISCONNECTED = 0,

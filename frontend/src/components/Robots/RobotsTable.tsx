@@ -5,10 +5,11 @@ import {useState} from "react"
 import {FiCopy, FiSearch} from "react-icons/fi"
 
 import {getRobotListApi} from "@/client/service/robot.api.ts"
-import {ROBOT_AUTH_TYPES, ROBOT_STATUSES} from "@/client/service/robot.dto.ts"
+import {ROBOT_AUTH_TYPES} from "@/client/service/robot.dto.ts"
 import {RobotActionsMenu} from "@/components/Common/RobotActionsMenu"
-import GenerateSimpleTokenDialog from "@/components/Robots/GenerateSimpleTokenDialog.tsx"
 import PendingRobots from "@/components/Pending/PendingRobots"
+import GenerateSimpleTokenDialog from "@/components/Robots/GenerateSimpleTokenDialog.tsx"
+import PreviewRobotConfig from "@/components/Robots/PreviewRobotConfig.tsx"
 import {
   PaginationItems,
   PaginationNextTrigger,
@@ -16,16 +17,10 @@ import {
   PaginationRoot,
 } from "@/components/ui/pagination.tsx"
 import useCustomToast from "@/hooks/useCustomToast"
+import {ROBOT_STATUSES} from "@/mosaic"
 import {Route} from "@/routes/_layout/robots.tsx"
 
 const PER_PAGE = 5
-
-function getRobotsQueryOptions({page}: { page: number }) {
-  return {
-    queryFn: () => getRobotListApi(PER_PAGE, (page - 1) * PER_PAGE),
-    queryKey: ["robots", {page}],
-  }
-}
 
 export function RobotsTable() {
   const navigate = useNavigate({from: Route.fullPath})
@@ -34,7 +29,8 @@ export function RobotsTable() {
   const {showSuccessToast} = useCustomToast()
 
   const {data, isLoading, isPlaceholderData} = useQuery({
-    ...getRobotsQueryOptions({page}),
+    queryFn: () => getRobotListApi(PER_PAGE, (page - 1) * PER_PAGE),
+    queryKey: ["robots", {page}],
     placeholderData: (prevData) => prevData,
   })
 
@@ -87,6 +83,7 @@ export function RobotsTable() {
             <Table.ColumnHeader w="sm">Status</Table.ColumnHeader>
             <Table.ColumnHeader w="sm">Auth Type</Table.ColumnHeader>
             <Table.ColumnHeader w="sm">Description</Table.ColumnHeader>
+            <Table.ColumnHeader w="sm">Config</Table.ColumnHeader>
             <Table.ColumnHeader w="sm">Actions</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
@@ -129,6 +126,9 @@ export function RobotsTable() {
                 maxW="30%"
               >
                 {robot.description || "N/A"}
+              </Table.Cell>
+              <Table.Cell>
+                <PreviewRobotConfig robot={robot}/>
               </Table.Cell>
               <Table.Cell>
                 <RobotActionsMenu robot={robot}/>

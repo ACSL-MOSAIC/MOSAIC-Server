@@ -3,6 +3,7 @@ package com.gistacsl.mosaic.robot;
 import com.gistacsl.mosaic.common.GResponse;
 import com.gistacsl.mosaic.common.dto.MessageDto;
 import com.gistacsl.mosaic.robot.dto.RobotAddDto;
+import com.gistacsl.mosaic.robot.dto.RobotConfigDto;
 import com.gistacsl.mosaic.robot.dto.RobotInfoDto;
 import com.gistacsl.mosaic.robot.dto.RobotListDto;
 import com.gistacsl.mosaic.robot.dto.RobotUpdateDto;
@@ -48,6 +49,13 @@ public class RobotController {
     public Mono<GResponse<RobotInfoDto.Res>> getRobot(@PathVariable UUID id) {
         return UserAuth.getUserAuthFromSecurityContextHolder()
                 .flatMap(userAuth -> robotService.getRobot(userAuth, id))
+                .map(GResponse::toGResponse);
+    }
+
+    @GetMapping("/{id}/config")
+    public Mono<GResponse<RobotConfigDto.Res>> getRobotConfig(@PathVariable UUID id) {
+        return UserAuth.getUserAuthFromSecurityContextHolder()
+                .flatMap(userAuth -> robotService.getRobotConfig(userAuth, id))
                 .map(GResponse::toGResponse);
     }
 

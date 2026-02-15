@@ -1,6 +1,9 @@
+import type {RobotStatus} from "@/mosaic"
+
 export type RobotSessionDto = {
   robotId: string
   rtcSessionId: string
+  status: RobotStatus
 }
 
 export type WebRTCConnectionReqDto = {

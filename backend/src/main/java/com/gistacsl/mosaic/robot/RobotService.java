@@ -6,6 +6,7 @@ import com.gistacsl.mosaic.common.exception.CustomException;
 import com.gistacsl.mosaic.repository.RobotRepository;
 import com.gistacsl.mosaic.repository.entity.RobotEntity;
 import com.gistacsl.mosaic.robot.dto.RobotAddDto;
+import com.gistacsl.mosaic.robot.dto.RobotConfigDto;
 import com.gistacsl.mosaic.robot.dto.RobotInfoDto;
 import com.gistacsl.mosaic.robot.dto.RobotListDto;
 import com.gistacsl.mosaic.robot.dto.RobotUpdateDto;
@@ -39,13 +40,19 @@ public class RobotService {
         return Mono.from(dslContext.transactionPublisher(configuration -> {
             DSLContext txContext = configuration.dsl();
 
+            UUID robotPk = UUID.randomUUID();
+            String connectorConfig = req.connectorConfig() != null
+                    ? req.connectorConfig()
+                    : "{\"connectors\":[]}";
+
             RobotEntity newRobot = RobotEntity.builder()
-                    .pk(UUID.randomUUID())
+                    .pk(robotPk)
                     .organizationFk(userAuth.getOrganizationPk())
                     .name(req.name())
                     .description(req.description())
                     .status(req.status() != null ? req.status() : RobotStatus.DISCONNECTED)
                     .authType(req.authType())
+                    .connectorConfig(connectorConfig)
                     .build();
 
             return robotRepository.insertRobot(newRobot, txContext);
@@ -56,6 +63,12 @@ public class RobotService {
         return robotRepository.findByPkAndOrganizationFk(robotPk, userAuth.getOrganizationPk(), dslContext)
                 .switchIfEmpty(Mono.error(new CustomException(ResultCode.ROBOT_NOT_FOUND)))
                 .map(this::robotEntityToRobotInfoRes);
+    }
+
+    public Mono<RobotConfigDto.Res> getRobotConfig(UserAuth userAuth, UUID robotPk) {
+        return robotRepository.findConnectorConfigByPkAndOrganizationFk(robotPk, userAuth.getOrganizationPk(), dslContext)
+                .switchIfEmpty(Mono.error(new CustomException(ResultCode.ROBOT_NOT_FOUND)))
+                .map(RobotConfigDto.Res::new);
     }
 
     public Mono<RobotEntity> getRobotEntity(UUID robotPk) {
@@ -76,6 +89,7 @@ public class RobotService {
                             req.description(),
                             req.status(),
                             req.authType(),
+                            req.connectorConfig(),
                             txContext));
         })).map(pk -> new MessageDto("Robot updated successfully"));
     }

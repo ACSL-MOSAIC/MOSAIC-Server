@@ -82,7 +82,8 @@ public class WebRTCService {
 
                             return new WebRTCConnectionDto.RobotSession(
                                     robot.getPk(),
-                                    session.getSessionId()
+                                    session.getSessionId(),
+                                    robot.getStatus()
                             );
                         }))
                         .collectList()

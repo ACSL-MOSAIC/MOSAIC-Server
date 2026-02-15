@@ -81,12 +81,12 @@ package "Context Layer" {
   
   struct RobotConfig {
     +id: string
-    +name: string
     +connectors: ConnectorConfig[]
   }
   
   struct ConnectorConfig {
     +connectorId: string
+    +connectorType: string
     +dataType: string
     +params: any
   }
