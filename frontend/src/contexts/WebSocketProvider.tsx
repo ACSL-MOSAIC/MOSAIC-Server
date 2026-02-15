@@ -1,10 +1,10 @@
+import type {WsBaseMessage} from "@/contexts/ws.dto.ts"
 import useAuth from "@/hooks/useAuth"
 import {getBackendWsUrl} from "@/utils/envs.ts"
 import {type ReactNode, useEffect, useRef} from "react"
 import {
   type ExtractDataByType,
   WebSocketContext,
-  type WsBaseMessage,
   type WsMessages,
 } from "./WebSocketContext"
 
@@ -112,6 +112,15 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
           accessToken: accessToken,
         },
       })
+    })
+
+    onMessage("authorize.res", (resultCode) => {
+      if (resultCode === 100) {
+        console.log("Authorization completed")
+      } else {
+        console.error("Authorization failed", resultCode)
+        disconnect()
+      }
     })
 
     onMessage("force_logout", async (data) => {

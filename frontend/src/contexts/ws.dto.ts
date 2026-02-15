@@ -12,6 +12,8 @@ export type WsAuthorizeDto = {
   accessToken: string
 }
 
+export type WsAuthorizeResDto = number
+
 export type WsGetRobotListDto = Record<string, never> // 빈 객체
 
 export type WsRobotListDto = {

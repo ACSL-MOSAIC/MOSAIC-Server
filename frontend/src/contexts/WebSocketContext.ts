@@ -1,5 +1,6 @@
 import type {
   WsAuthorizeDto,
+  WsAuthorizeResDto,
   WsBaseMessage,
   WsForceLogoutDto,
   WsGetRobotListDto,
@@ -7,31 +8,26 @@ import type {
   WsRobotListDto,
 } from "@/contexts/ws.dto.ts"
 import type {
-  WsReceiveIceCandidateDto,
-  WsReceiveSdpAnswerDto,
-  WsReceiveSdpOfferDto,
-  WsSendClosePeerConnectionDto,
-  WsSendIceCandidateDto,
+  WsClosePeerConnectionDto,
+  WsExchangeIceCandidateDto,
   WsSendSdpAnswerDto,
   WsSendSdpOfferDto,
 } from "@/mosaic/webrtc/signaling.dto.ts"
 import {createContext} from "react"
 
 export type WsMessages =
-  | WsBaseMessage<"authorize.req", void>
-  | WsBaseMessage<"authorize", WsAuthorizeDto>
-  | WsBaseMessage<"get_robot_list", WsGetRobotListDto>
-  | WsBaseMessage<"robot_list", WsRobotListDto>
-  | WsBaseMessage<"send_sdp_offer", WsSendSdpOfferDto>
-  | WsBaseMessage<"receive_sdp_offer", WsReceiveSdpOfferDto>
-  | WsBaseMessage<"send_sdp_answer", WsSendSdpAnswerDto>
-  | WsBaseMessage<"receive_sdp_answer", WsReceiveSdpAnswerDto>
-  | WsBaseMessage<"send_ice_candidate", WsSendIceCandidateDto>
-  | WsBaseMessage<"receive_ice_candidate", WsReceiveIceCandidateDto>
-  | WsBaseMessage<"send_close_peer_connection", WsSendClosePeerConnectionDto>
-  | WsBaseMessage<"force_logout", WsForceLogoutDto>
   | WsBaseMessage<"ping.ping", WsPingPongDto>
   | WsBaseMessage<"ping.pong", WsPingPongDto>
+  | WsBaseMessage<"authorize.req", void>
+  | WsBaseMessage<"authorize", WsAuthorizeDto>
+  | WsBaseMessage<"authorize.res", WsAuthorizeResDto>
+  | WsBaseMessage<"signaling.send_sdp_offer", WsSendSdpOfferDto>
+  | WsBaseMessage<"signaling.send_sdp_answer", WsSendSdpAnswerDto>
+  | WsBaseMessage<"signaling.exchange_ice_candidate", WsExchangeIceCandidateDto>
+  | WsBaseMessage<"signaling.close_connection", WsClosePeerConnectionDto>
+  | WsBaseMessage<"get_robot_list", WsGetRobotListDto>
+  | WsBaseMessage<"robot_list", WsRobotListDto>
+  | WsBaseMessage<"force_logout", WsForceLogoutDto>
 
 export type ExtractMessageByType<T extends WsMessages["type"]> = Extract<
   WsMessages,
