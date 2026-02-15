@@ -1,20 +1,24 @@
-import {type ReactNode, useRef, useState, useMemo, useCallback} from "react"
-import {ChannelManager} from "@/mosaic/channel/channel-manager.ts"
-import {WebRTCConnectionManager} from "@/mosaic/webrtc/webrtc-connection-manager.ts"
-import type {RobotInfo} from "@/mosaic/robot-info.ts"
-import {useWebSocket} from "@/hooks/useWebSocket.ts"
 import {MosaicContext} from "@/contexts/MosaicContext.ts"
+import {useWebSocket} from "@/hooks/useWebSocket.ts"
+import {ChannelManager} from "@/mosaic/channel/channel-manager.ts"
+import type {RobotInfo} from "@/mosaic/robot-info.ts"
 import {StoreManager} from "@/mosaic/store/store-manager.ts"
+import {SignalingServer} from "@/mosaic/webrtc/signaling-server.ts"
+import {WebRTCConnectionManager} from "@/mosaic/webrtc/webrtc-connection-manager.ts"
+import {type ReactNode, useCallback, useMemo, useRef, useState} from "react"
 
 export function MosaicProvider({children}: { children: ReactNode }) {
+  const {sendWsMessage, onWsMessage} = useWebSocket()
+
   const [robotInfos, setRobotInfos] = useState<RobotInfo[]>([])
   const storeManagerRef = useRef(new StoreManager())
   const channelManagerRef = useRef(new ChannelManager())
-  const webrtcConnectionManagerRef = useRef(new WebRTCConnectionManager())
+  const signalingServerRef = useRef(new SignalingServer(sendWsMessage, onWsMessage))
+  const webrtcConnectionManagerRef = useRef(
+    new WebRTCConnectionManager(signalingServerRef.current),
+  )
 
-  const {onMessage} = useWebSocket()
-
-  onMessage("get_robot_list", (_data) => {
+  onWsMessage("get_robot_list", (_data) => {
     // TODO
     setRobotInfos([])
   })

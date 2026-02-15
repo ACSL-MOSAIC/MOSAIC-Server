@@ -1,9 +1,10 @@
-import type {MosaicStore} from "@/mosaic/store/interface/mosaic-store.ts"
 import type {ChannelRequirement} from "@/mosaic/channel"
-import type {ConnectorRequirement} from "@/mosaic/webrtc/index.ts"
+import type {BidirectionalStore} from "@/mosaic/store/interface/bidirectional-store.ts"
+import type {MosaicStore} from "@/mosaic/store/interface/mosaic-store.ts"
 import type {ReceivableStore} from "@/mosaic/store/interface/receivable-store.ts"
 import type {SendableStore} from "@/mosaic/store/interface/sendable-store.ts"
-import type {BidirectionalStore} from "@/mosaic/store/interface/bidirectional-store.ts"
+import type {ConnectorRequirement} from "@/mosaic/webrtc/index.ts"
+import {IceCandidate} from "@/mosaic/webrtc/signaling.dto.ts"
 
 export class WebRTCConnection {
   private rtcConnectionId: string
@@ -32,10 +33,10 @@ export class WebRTCConnection {
   public getPeerConnection(): RTCPeerConnection | null {
   }
 
-  public receiveSdpAnswer(data): Promise<void> {
+  public async receiveSdpAnswer(sdpAnswer: string): Promise<void> {
   }
 
-  public receiveIceCandidate(data): Promise<void> {
+  public async receiveIceCandidate(iceCandidate: IceCandidate): Promise<void> {
   }
 
   private beforeConnection(): ConnectorRequirement[] {

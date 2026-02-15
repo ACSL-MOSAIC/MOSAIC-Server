@@ -37,14 +37,17 @@ export type ExtractMessageByType<T extends WsMessages["type"]> = Extract<
 export type ExtractDataByType<T extends WsMessages["type"]> =
   ExtractMessageByType<T>["data"]
 
-export interface WebSocketContextType {
-  sendMessage: (message: WsMessages) => void
-  onMessage: <T extends WsMessages["type"]>(
-    type: T,
-    callback: (data: ExtractDataByType<T>) => void | Promise<void>,
-  ) => () => void
+export type SendWsMessageType = (message: WsMessages) => void
 
-  disconnect: () => void
+export type OnWsMessageType = <T extends WsMessages["type"]>(
+  type: T,
+  callback: (data: ExtractDataByType<T>) => void | Promise<void>,
+) => () => void
+
+export interface WebSocketContextType {
+  sendWsMessage: SendWsMessageType
+  onWsMessage: OnWsMessageType
+  disconnectWs: () => void
 }
 
 export const WebSocketContext = createContext<WebSocketContextType | null>(null)
