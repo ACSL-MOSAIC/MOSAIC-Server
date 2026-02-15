@@ -87,6 +87,7 @@ package "Context Layer" {
   
   struct ConnectorConfig {
     +connectorId: string
+    +connectorType: string
     +dataType: string
     +params: any
   }
