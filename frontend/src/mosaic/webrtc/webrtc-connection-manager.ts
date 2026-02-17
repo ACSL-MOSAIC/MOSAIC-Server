@@ -1,8 +1,8 @@
-import type {RobotConnector} from "@/mosaic"
-import {createWebRTCConnectionApi} from "@/client/service/webrtc.api.ts"
-import type {ChannelRequirement} from "@/mosaic/channel"
-import type {SignalingServer} from "@/mosaic/webrtc/signaling-server.ts"
-import {WebRTCConnection} from "@/mosaic/webrtc/webrtc-connection.ts"
+import { createWebRTCConnectionApi } from "@/client/service/webrtc.api.ts"
+import type { RobotConnector } from "@/mosaic"
+import type { ChannelRequirement } from "@/mosaic/channel"
+import type { SignalingServer } from "@/mosaic/webrtc/signaling-server.ts"
+import { WebRTCConnection } from "@/mosaic/webrtc/webrtc-connection.ts"
 
 export class WebRTCConnectionManager {
   private readonly signalingServer: SignalingServer
@@ -34,8 +34,10 @@ export class WebRTCConnectionManager {
     const connection = this.connections.get(robotId)
     if (!connection) {
       return
-    } 
+    }
+
     connection.disconnect()
+    this.signalingServer.removeRtcConnection(connection.rtcConnectionId)
     this.connections.delete(robotId)
   }
 
@@ -44,13 +46,11 @@ export class WebRTCConnectionManager {
   }
 
   public removeDataChannel(robotConnector: RobotConnector): void {
-    console.warn(
-      `[${robotConnector.serialize()}] removeDataChannel is not implemented yet`,
-    )
+    // 하위 클래스 구현 후 다시 수정 예정
   }
 
   private async prepareRtcConnection(robotId: string): Promise<string> {
-    const response = await createWebRTCConnectionApi({robotIds: [robotId]})
+    const response = await createWebRTCConnectionApi({ robotIds: [robotId] })
     const targetSession =
       response.sessions.find((session) => session.robotId === robotId) ??
       response.sessions[0]
