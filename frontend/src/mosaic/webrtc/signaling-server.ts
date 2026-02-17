@@ -6,7 +6,7 @@ import type {
   WsExchangeIceCandidateDto,
   WsSendSdpAnswerDto,
 } from "@/mosaic/webrtc/signaling.dto.ts"
-import type {WebRTCConnection} from "@/mosaic/webrtc/webrtc-connection.ts"
+import type { WebRTCConnection } from "@/mosaic/webrtc/webrtc-connection.ts"
 
 export class SignalingServer {
   private readonly sendWsMessage: SendWsMessageType
@@ -20,11 +20,23 @@ export class SignalingServer {
     this.registerSignalingWsMessageListener()
   }
 
-  // TODO: when does this method called?
   public setRtcConnection(rtcConnection: WebRTCConnection): void {
-    // TODO: what if rtcConnectionId already exists?
+    const existingConnection = this.rtcConnections.get(
+      rtcConnection.rtcConnectionId,
+    )
+    if (existingConnection && existingConnection !== rtcConnection) {
+      console.warn(
+        `[${rtcConnection.rtcConnectionId}] Existing WebRTC connection will be replaced`,
+      )
+      existingConnection.disconnect()
+    }
+
     this.rtcConnections.set(rtcConnection.rtcConnectionId, rtcConnection)
     rtcConnection.signalingServer = this
+  }
+
+  public removeRtcConnection(rtcConnectionId: string): void {
+    this.rtcConnections.delete(rtcConnectionId)
   }
 
   public sendSdpOffer(
@@ -64,27 +76,31 @@ export class SignalingServer {
   public sendCloseConnection(rtcConnectionId: string): void {
     this.sendWsMessage({
       type: "signaling.close_connection",
-      data: {rtcConnectionId: rtcConnectionId},
+      data: { rtcConnectionId: rtcConnectionId },
     })
   }
 
   private async receiveIceCandidate(
     data: WsExchangeIceCandidateDto,
   ): Promise<void> {
-    const {rtcConnectionId, iceCandidate} = data
+    const { rtcConnectionId, iceCandidate } = data
     const webRtcConnection = this.rtcConnections.get(rtcConnectionId)
     if (!webRtcConnection) {
-      console.warn("Received ICE candidate for unknown WebRTC connection")
+      console.warn(
+        `[${rtcConnectionId}] Received ICE candidate for unknown WebRTC connection`,
+      )
       return
     }
     await webRtcConnection.receiveIceCandidate(iceCandidate)
   }
 
   private async receiveSdpAnswer(data: WsSendSdpAnswerDto): Promise<void> {
-    const {rtcConnectionId, sdpAnswer} = data
+    const { rtcConnectionId, sdpAnswer } = data
     const webRtcConnection = this.rtcConnections.get(rtcConnectionId)
     if (!webRtcConnection) {
-      console.warn("Received SDP answer for unknown WebRTC connection")
+      console.warn(
+        `[${rtcConnectionId}] Received SDP answer for unknown WebRTC connection`,
+      )
       return
     }
     await webRtcConnection.receiveSdpAnswer(sdpAnswer)
