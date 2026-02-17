@@ -2,7 +2,7 @@ import type {RobotConnector} from "@/mosaic"
 import {ConnectionSubscribable} from "./connection-subscribable.ts"
 
 export abstract class MosaicStore extends ConnectionSubscribable {
-  protected dataType = "undefined"
+  protected static dataType: string
 
   protected robotConnector: RobotConnector
 
@@ -11,7 +11,7 @@ export abstract class MosaicStore extends ConnectionSubscribable {
     this.robotConnector = robotConnector
   }
 
-  public getDataType(): string {
+  public static getDataType(): string {
     return this.dataType
   }
 

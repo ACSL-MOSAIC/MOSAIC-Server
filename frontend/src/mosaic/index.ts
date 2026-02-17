@@ -3,15 +3,15 @@ export type MosaicDataType =
   | "byte-r2u"
   | "byte-r2u-p"
   | "byte-u2r"
-  | "byte-bi"
+  | "byte-u2r-p"
   | "string-r2u"
   | "string-r2u-p"
   | "string-u2r"
-  | "string-bi"
+  | "string-u2r-p"
   | "json-r2u"
   | "json-r2u-p"
   | "json-u2r"
-  | "json-bi"
+  | "json-u2r-p"
 
 // TODO: Define WidgetType
 export type WidgetType = string

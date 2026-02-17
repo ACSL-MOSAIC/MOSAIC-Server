@@ -4,15 +4,15 @@ import {FaUserAstronaut} from "react-icons/fa"
 import {FiLogOut, FiUser} from "react-icons/fi"
 
 import useAuth from "@/hooks/useAuth"
-import {useWebSocket} from "@/hooks/useWebSocket.ts"
 import {MenuContent, MenuItem, MenuRoot, MenuTrigger} from "../ui/menu"
+import {useWebSocket} from "@/hooks/useWebSocket.ts";
 
 const UserMenu = () => {
   const {user, logout} = useAuth()
-  const {disconnectWs} = useWebSocket()
+  const {disconnect} = useWebSocket()
 
   const handleLogout = async () => {
-    disconnectWs()
+    disconnect()
     logout()
   }
 
@@ -24,7 +24,7 @@ const UserMenu = () => {
           <MenuTrigger asChild p={2}>
             <Button data-testid="user-menu" variant="solid" maxW="sm" truncate>
               <FaUserAstronaut fontSize="16"/>
-              <Text>{user?.fullName || "User"}</Text>
+              <Text>{user?.full_name || "User"}</Text>
             </Button>
           </MenuTrigger>
 

@@ -4,11 +4,16 @@ import {MosaicStore} from "./mosaic-store.ts"
 type Subscriber = (data: ArrayBuffer) => Promise<void>
 
 export abstract class BidirectionalStore<V> extends MosaicStore {
+  protected static isParallelReceivable = false
   protected dataChannel: RTCDataChannel | null = null
   private subscriberList: Map<string, Subscriber> = new Map()
 
   public getStoreType(): "bidirectional" {
     return "bidirectional"
+  }
+
+  public isParallelReceivable(): boolean {
+    return (this.constructor as typeof BidirectionalStore).isParallelReceivable
   }
 
   public subscribe(
@@ -26,26 +31,19 @@ export abstract class BidirectionalStore<V> extends MosaicStore {
         try {
           await sub(data)
         } catch (error) {
-          console.error(
-            "BidirectionalStore Subscriber notification failed:",
-            error,
-          )
+          console.error("BidirectionalStore Subscriber notification failed:", error)
         }
       },
     )
     await Promise.all(promises)
   }
+  
 
-  // Can be overridden by subclasses
-  public onSubscriberAdded(_subscriber: Subscriber): void {
-  }
+  public abstract onSubscriberAdded(subscriber: Subscriber): void
 
-  // Can be overridden by subclasses
-  public onSubscriberRemoved(_subscriber: Subscriber): void {
-  }
+  public abstract onSubscriberRemoved(subscriber: Subscriber): void
 
-  // Needs to be implemented by subclasses
-  public abstract send(data: V): void
+  public abstract add(data: V): void
 
   public setDataChannel(channel: RTCDataChannel): void {
     this.dataChannel = channel

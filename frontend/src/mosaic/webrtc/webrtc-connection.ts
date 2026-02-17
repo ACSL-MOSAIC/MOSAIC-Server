@@ -1,372 +1,91 @@
-import type {ChannelRequirement} from "@/mosaic/channel"
-import type {BidirectionalStore} from "@/mosaic/store/interface/bidirectional-store.ts"
 import type {MosaicStore} from "@/mosaic/store/interface/mosaic-store.ts"
+import type {ChannelRequirement} from "@/mosaic/channel"
+import type {ConnectorRequirement} from "@/mosaic/webrtc/index.ts"
 import type {ReceivableStore} from "@/mosaic/store/interface/receivable-store.ts"
 import type {SendableStore} from "@/mosaic/store/interface/sendable-store.ts"
-import type {ConnectorRequirement} from "@/mosaic/webrtc/index.ts"
-import type {SignalingServer} from "@/mosaic/webrtc/signaling-server.ts"
-import type {IceCandidate} from "@/mosaic/webrtc/signaling.dto.ts"
+import type {BidirectionalStore} from "@/mosaic/store/interface/bidirectional-store.ts"
 
 export class WebRTCConnection {
-  private readonly _rtcConnectionId: string
-  private readonly robotId: string
+  private rtcConnectionId: string
+  private robotId: string
+  private signalingServer: SignalingServer
   private peerConnection: RTCPeerConnection | null
-  private channelRequirements: ChannelRequirement[] = []
-  private connectorRequirements: ConnectorRequirement[] = []
-  private relatedStores: MosaicStore[] = []
-  private dataChannels: Map<string, RTCDataChannel> = new Map()
-  private mediaStreams: Map<string, MediaStream> = new Map()
+  private dataChannels: Map<string, RTCDataChannel>
+  private relatedStores: Map<string, MosaicStore>
+  private mediaStreams: Map<string, MediaStream>
 
-  constructor(rtcConnectionId: string, robotId: string) {
-    this._rtcConnectionId = rtcConnectionId
-    this.robotId = robotId
-    this.peerConnection = null
+  public WebRTCConnection(rtcConnectionId: string, robotId: string) {
   }
 
-  get rtcConnectionId(): string {
-    return this._rtcConnectionId
-  }
-
-  private _signalingServer: SignalingServer | null = null
-
-  set signalingServer(value: SignalingServer) {
-    this._signalingServer = value
+  public getRtcConnectionId(): string {
   }
 
   public createConnection(channelRequirements: ChannelRequirement[]): void {
-    this.channelRequirements = channelRequirements
-
-    this.beforeConnection()
-    this.peerConnection = this.createPeerConnection()
-    this.setupConnectors()
   }
 
-  public async startConnection(): Promise<void> {
-    if (!this.peerConnection) {
-      return Promise.reject("Peer connection is not initialized yet!")
-    }
-    if (!this._signalingServer) {
-      return Promise.reject("Signaling server is not initialized yet!")
-    }
-
-    const sdpOffer = await this.createSdpOffer()
-    await this.peerConnection.setLocalDescription(sdpOffer)
-    this._signalingServer.sendSdpOffer(this._rtcConnectionId, sdpOffer)
+  public startConnection(): Promise<void> {
   }
 
   public disconnect(): void {
-    // TODO: 딱히 시퀀스 없음. 적당히 만들기
   }
 
-  // 필요시 getter 추가하기
-  // public getPeerConnection(): RTCPeerConnection | null {
-  // }
-
-  public async receiveSdpAnswer(sdpAnswerStr: string): Promise<void> {
-    if (!this.peerConnection) {
-      return Promise.reject("Peer connection is not initialized yet!")
-    }
-    const sdpAnswer = this.resolveSdpAnswer(sdpAnswerStr)
-
-    try {
-      await this.peerConnection.setRemoteDescription(sdpAnswer)
-    } catch (error) {
-      console.error(
-        `[${this.robotId}] Failed to set remote description:`,
-        error,
-      )
-      return Promise.reject(error)
-    }
+  public getPeerConnection(): RTCPeerConnection | null {
   }
 
-  public async receiveIceCandidate(iceCandidate: IceCandidate): Promise<void> {
-    if (!this.peerConnection) {
-      return Promise.reject("Peer connection is not initialized yet!")
-    }
-    const rtcIceCandidate = this.resolveIceCandidate(iceCandidate)
-    try {
-      await this.peerConnection.addIceCandidate(rtcIceCandidate)
-    } catch (error) {
-      console.error(`[${this.robotId}] Failed to add ICE candidate:`, error)
-      return Promise.reject(error)
-    }
+  public receiveSdpAnswer(data): Promise<void> {
   }
 
-  private beforeConnection() {
-    // reorganize connectorRequirements based on channelRequirements
+  public receiveIceCandidate(data): Promise<void> {
+  }
 
-    // Initializing variables
-    this.relatedStores = []
-    this.connectorRequirements = []
-
-    for (const channelRequirement of this.channelRequirements) {
-      const {robotConnector, store} = channelRequirement
-      this.relatedStores.push(store)
-
-      const connectorRequirement = this.connectorRequirements.find(
-        (cr) => cr.robotConnector.serialize() === robotConnector.serialize(),
-      )
-      if (connectorRequirement) {
-        connectorRequirement.stores.push(store)
-      } else {
-        this.connectorRequirements.push({robotConnector, stores: [store]})
-      }
-    }
-
-    // validate if fit with robotConnector.dataType and storeType
-    for (const connectorRequirement of this.connectorRequirements) {
-      const {robotConnector, stores} = connectorRequirement
-      const dataType = robotConnector.dataType
-      const direction = dataType.split("-")[1]
-
-      let flag = false
-
-      if (dataType === "media") {
-        flag = stores.every((store) => store.getStoreType() === "media")
-      } else if (dataType.endsWith("-p")) {
-        flag = stores.every((store) => {
-          if (store.getStoreType() !== "receivable") {
-            return false
-          }
-          const receivableStore = store as ReceivableStore
-          return receivableStore.isParallelReceivable
-        })
-      } else {
-        if (direction === "r2u") {
-          flag = stores.every((store) => store.getStoreType() === "receivable")
-        } else if (direction === "u2r") {
-          flag = stores.every((store) => store.getStoreType() === "sendable")
-        } else if (direction === "bi") {
-          flag = stores.every(
-            (store) => store.getStoreType() === "bidirectional",
-          )
-        }
-      }
-
-      if (!flag) {
-        console.error(
-          `[${this.robotId}] Connector requirement is not valid:`,
-          connectorRequirement,
-        )
-        throw new Error("Connector requirement is not valid!")
-      }
-    }
-
-    for (const store of this.relatedStores) {
-      store.notifyBeforeConnected(this.robotId)
-    }
+  private beforeConnection(): ConnectorRequirement[] {
   }
 
   private createPeerConnection(): RTCPeerConnection {
-    // TODO: 서버로부터 ice servers 정보를 받아야 합니다.
-    //  ps. MosaicProvider 또는 WebRTCConnectionManager 에서 미리 받아두는 편이 나을지도?
-    //  (실시간으로 수정되는 값이 아니니). WebRTCConnectionManager 에서 createConnection 때 받는것도 괜찮은듯
-    const configuration = {
-      iceServers: [],
-    }
-    const peerConnection = new RTCPeerConnection(configuration)
-    this.peerConnection = peerConnection
-    peerConnection.onicecandidate = this.onicecandidate.bind(this)
-    peerConnection.onconnectionstatechange =
-      this.onconnectionstatechange.bind(this)
-    peerConnection.ontrack = this.ontrack.bind(this)
-    return peerConnection
-  }
-
-  private setupConnectors(): void {
-    for (const {robotConnector, stores} of this.connectorRequirements) {
-      if (robotConnector.dataType === "media") {
-        // TODO: setup media
-        // TODO: 시퀀스 안만듦. 레거시쪽 media store 보기 귀찮아서 안만들었던 기억 있음
-        //  우선 DC 먼저
-      } else if (robotConnector.dataType.endsWith("-p")) {
-        for (let i = 0; i < robotConnector.parallelNum; i++) {
-          const dc = this.createDataChannel(
-            `${robotConnector.connectorId}-${i}`,
-          )
-          this.dataChannels.set(dc.label, dc)
-          this.setupReceivableChannel(dc, stores as ReceivableStore[])
-        }
-      } else {
-        const dc = this.createDataChannel(robotConnector.connectorId)
-        this.dataChannels.set(dc.label, dc)
-
-        const dataType = robotConnector.dataType.replace("-p", "")
-        const direction = dataType.split("-")[1]
-        if (direction === "r2u") {
-          this.setupReceivableChannel(dc, stores as ReceivableStore[])
-        } else if (direction === "u2r") {
-          this.setupSendableChannel(dc, stores as SendableStore<any>[])
-        } else if (direction === "bi") {
-          this.setupBidirectionalChannel(
-            dc,
-            stores as BidirectionalStore<any>[],
-          )
-        }
-      }
-    }
   }
 
   private createDataChannel(connectorId: string): RTCDataChannel {
-    if (!this.peerConnection) {
-      throw new Error("Peer connection is not initialized yet!")
-    }
-    const dc = this.peerConnection.createDataChannel(connectorId)
-    this.dataChannels.set(connectorId, dc)
-    return dc
   }
 
   private setupReceivableChannel(
     dc: RTCDataChannel,
-    stores: ReceivableStore[],
+    store: ReceivableStore,
   ): void {
-    dc.onmessage = async (event) => {
-      try {
-        const arrayBuffer = await this.convertDcEventToArrayBuffer(event)
-        const notify = stores.map((store) =>
-          store.notifySubscribers(arrayBuffer),
-        )
-        await Promise.all(notify)
-      } catch (error) {
-        console.error(
-          `[${this.robotId}][${dc.label}] Failed to process received data:`,
-          error,
-        )
-      }
-    }
   }
 
   private setupSendableChannel(
     dc: RTCDataChannel,
-    stores: SendableStore<any>[],
+    store: SendableStore<any>,
   ): void {
-    dc.onopen = () => {
-      for (const store of stores) {
-        store.setDataChannel(dc)
-      }
-    }
   }
 
   private setupBidirectionalChannel(
     dc: RTCDataChannel,
-    stores: BidirectionalStore<any>[],
+    store: BidirectionalStore<any>,
   ): void {
-    dc.onopen = () => {
-      for (const store of stores) {
-        store.setDataChannel(dc)
-      }
-    }
-    dc.onmessage = async (event) => {
-      try {
-        const arrayBuffer = await this.convertDcEventToArrayBuffer(event)
-        const notify = stores.map((store) =>
-          store.notifySubscribers(arrayBuffer),
-        )
-        await Promise.all(notify)
-      } catch (error) {
-        console.error(
-          `[${this.robotId}][${dc.label}] Failed to process received data:`,
-          error,
-        )
-      }
-    }
   }
 
-  private async convertDcEventToArrayBuffer(
-    event: MessageEvent,
-  ): Promise<ArrayBuffer> {
-    const data = event.data
-
-    if (data instanceof Blob) {
-      return await data.arrayBuffer()
-    }
-    return data
-  }
-
-  private async createSdpOffer(): Promise<RTCSessionDescriptionInit> {
-    if (!this.peerConnection) {
-      return Promise.reject("Peer connection is not initialized yet!")
-    }
-
-    // count required media streams (we aren't sure if these logics are required)
-    const numMediaStreams = this.connectorRequirements.filter(
-      (cr) => cr.robotConnector.dataType === "media",
-    ).length
-
-    for (let index = 0; index < numMediaStreams; index++) {
-      this.peerConnection.addTransceiver("video")
-    }
-    return this.peerConnection.createOffer()
+  private createSdpOffer(): Promise<RTCSessionDescriptionInit> {
   }
 
   private onicecandidate(event: RTCPeerConnectionIceEvent): void {
-    if (!event.candidate) return
-
-    this._signalingServer?.sendIceCandidate(
-      this._rtcConnectionId,
-      event.candidate,
-    )
   }
 
   private onconnectionstatechange(): void {
-    const state = this.peerConnection?.connectionState
-    console.log(`[${this.robotId}] Connection state changed to ${state}`)
-
-    if (state === "connected") {
-      this.onConnectionConnected()
-    } else if (state === "disconnected") {
-      this.onConnectionDisconnected()
-    } else if (state === "failed") {
-      this.onConnectionFailed()
-    }
-  }
-
-  private ontrack(event: RTCTrackEvent): void {
-    console.log(
-      `Received remote track id: ${event.track.id}, 
-      stream id: ${event.streams?.[0]?.id} 
-      kind: ${event.track.kind}`,
-    )
-
-    if (event.track.kind !== "video" || !event.streams?.[0]) {
-      console.log(
-        `[${this.robotId}] Video track is not of kind video or has no stream`,
-      )
-      return
-    }
-
-    const stream = event.streams[0]
-    this.mediaStreams.set(stream.id, stream)
-
-    // TODO: need to connect to the store
   }
 
   private onConnectionConnected(): void {
-    for (const store of this.relatedStores) {
-      store.notifyAfterConnected(this.robotId)
-    }
   }
 
   private onConnectionDisconnected(): void {
-    for (const store of this.relatedStores) {
-      store.notifyAfterDisconnected(this.robotId)
-    }
   }
 
   private onConnectionFailed(): void {
-    for (const store of this.relatedStores) {
-      store.notifyAfterConnectionFailed(this.robotId)
-    }
   }
 
-  private resolveSdpAnswer(sdpAnswer: string): RTCSessionDescriptionInit {
-    return new RTCSessionDescription({
-      type: "answer",
-      sdp: sdpAnswer,
-    })
+  private resolveSdpAnswer(data): RTCSessionDescriptionInit {
   }
 
-  private resolveIceCandidate(iceCandidate: IceCandidate): RTCIceCandidate {
-    return new RTCIceCandidate(iceCandidate)
+  private resolveIceCandidate(data): RTCIceCandidate {
   }
 }

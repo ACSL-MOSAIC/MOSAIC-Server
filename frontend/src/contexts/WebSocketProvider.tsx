@@ -1,12 +1,10 @@
-import type {WsBaseMessage} from "@/contexts/ws.dto.ts"
 import useAuth from "@/hooks/useAuth"
 import {getBackendWsUrl} from "@/utils/envs.ts"
 import {type ReactNode, useEffect, useRef} from "react"
 import {
   type ExtractDataByType,
-  type OnWsMessageType,
-  type SendWsMessageType,
   WebSocketContext,
+  type WsBaseMessage,
   type WsMessages,
 } from "./WebSocketContext"
 
@@ -22,7 +20,7 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
 
   const logout = async () => {
     console.log("로그아웃 처리 중...")
-    disconnectWs()
+    disconnect()
     await authLogout()
   }
 
@@ -98,8 +96,8 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
   }
 
   const registerDefaultHandlers = (accessToken: string) => {
-    onWsMessage("ping.ping", (data) => {
-      sendWsMessage({
+    onMessage("ping.ping", (data) => {
+      sendMessage({
         type: "ping.pong",
         data: {
           pingId: data.pingId,
@@ -107,8 +105,8 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
       })
     })
 
-    onWsMessage("authorize.req", () => {
-      sendWsMessage({
+    onMessage("authorize.req", () => {
+      sendMessage({
         type: "authorize",
         data: {
           accessToken: accessToken,
@@ -116,22 +114,13 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
       })
     })
 
-    onWsMessage("authorize.res", (resultCode) => {
-      if (resultCode === 100) {
-        console.log("Authorization completed")
-      } else {
-        console.error("Authorization failed", resultCode)
-        disconnectWs()
-      }
-    })
-
-    onWsMessage("force_logout", async (data) => {
+    onMessage("force_logout", async (data) => {
       console.log("강제 로그아웃 메시지 수신:", data.message)
       await logout()
     })
   }
 
-  const sendWsMessage: SendWsMessageType = (message: WsMessages) => {
+  const sendMessage = (message: WsMessages) => {
     const ws = wsRef.current
     if (ws?.readyState === WebSocket.OPEN) {
       console.log("WebSocket 메시지 전송:", message)
@@ -141,7 +130,7 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
     }
   }
 
-  const onWsMessage: OnWsMessageType = <T extends WsMessages["type"]>(
+  const onMessage = <T extends WsMessages["type"]>(
     type: T,
     callback: (data: ExtractDataByType<T>) => void | Promise<void>,
   ) => {
@@ -158,7 +147,7 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
     }
   }
 
-  const disconnectWs = () => {
+  const disconnect = () => {
     if (wsRef.current) {
       wsRef.current.close(1000, "User logged out")
     }
@@ -168,7 +157,7 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
     if (user?.id && !wsRef.current && !isConnectingRef.current) {
       connectWebSocket()
     } else {
-      disconnectWs()
+      disconnect()
     }
 
     return () => {
@@ -199,9 +188,7 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
   }, [wsRef.current?.readyState])
 
   return (
-    <WebSocketContext.Provider
-      value={{sendWsMessage, onWsMessage, disconnectWs}}
-    >
+    <WebSocketContext.Provider value={{sendMessage, onMessage, disconnect}}>
       {children}
     </WebSocketContext.Provider>
   )

@@ -79,7 +79,7 @@ note right of WebRTCConnection
 RTCPeerConnection 생성 및 저장
 onicecandidate 이벤트 등록
 onconnectionstatechange 등록
-ontrack 이벤트 등록
+ondatachannel 이벤트 등록
 end note
 
 == MediaStream, DataChannel 생성 및 콜백 등록 ==
@@ -107,8 +107,9 @@ loop 각 ConnectorRequirement
             WebRTCConnection <[#blue]- WebRTCConnection --: RTCDataChannel 반환
 
             WebRTCConnection -[#red]> WebRTCConnection ++: setupSendableChannel(RTCDataChannel, SendableStore)
-            WebRTCConnection -> RTCDataChannel: onopen 이벤트 등록
-            note over WebRTCConnection, RTCDataChannel: onopen 시 SendableStore 의 setDataChannel(RTCDataChannel) 호출
+            WebRTCConnection -[#red]> MosaicStore: SendableStore 의 setDataChannel(RTCDataChannel) 호출
+            MosaicStore -> MosaicStore: RTCDataChannel 저장
+            MosaicStore -[#blue]> WebRTCConnection: 완료
             WebRTCConnection <[#blue]- WebRTCConnection --: 완료
         else storeType === "media"
             WebRTCConnection -[#red]> WebRTCConnection: createMediaStream(connectorId)
@@ -267,7 +268,7 @@ else "disconnected"
     end
     WebRTCConnection -> WebRTCConnection --: 완료
 else "failed"
-    WebRTCConnection -> WebRTCConnection ++: onConnectionFailed() 호출
+    WebRTCConnection -> WebRTCConnection ++: onConnectionDisconnected() 호출
     loop relatedStores 의 모든 MosaicStore
         WebRTCConnection -[#red]> MosaicStore: notifyAfterConnectionFailed(robotId) 호출
         MosaicStore -> MosaicStore: afterConnectionFailedSubscribers 모두 호출
