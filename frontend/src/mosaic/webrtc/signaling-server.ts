@@ -84,7 +84,7 @@ export class SignalingServer {
     const {rtcConnectionId, sdpAnswer} = data
     const webRtcConnection = this.rtcConnections.get(rtcConnectionId)
     if (!webRtcConnection) {
-      console.warn("Received ICE candidate for unknown WebRTC connection")
+      console.warn("Received SDP answer for unknown WebRTC connection")
       return
     }
     await webRtcConnection.receiveSdpAnswer(sdpAnswer)
