@@ -30,6 +30,7 @@ public class RobotRepository {
                         .set(ROBOT.AUTH_TYPE, robot.getAuthType().name())
                         .set(ROBOT.NAME, robot.getName())
                         .set(ROBOT.DESCRIPTION, robot.getDescription())
+                        .set(ROBOT.CONNECTOR_CONFIG, JSON.valueOf(robot.getConnectorConfig()))
                         .set(ROBOT.CREATED_AT, robot.getCreatedAt())
                         .set(ROBOT.UPDATED_AT, robot.getUpdatedAt())
                         .returning(ROBOT.PK))

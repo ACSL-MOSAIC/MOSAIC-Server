@@ -1,96 +1,33 @@
+import type {
+  WsAuthorizeDto,
+  WsAuthorizeResDto,
+  WsBaseMessage,
+  WsForceLogoutDto,
+  WsGetRobotListDto,
+  WsPingPongDto,
+  WsRobotListDto,
+} from "@/contexts/ws.dto.ts"
+import type {
+  WsClosePeerConnectionDto,
+  WsExchangeIceCandidateDto,
+  WsSendSdpAnswerDto,
+  WsSendSdpOfferDto,
+} from "@/mosaic/webrtc/signaling.dto.ts"
 import {createContext} from "react"
 
-export interface RobotInfo {
-  robot_id: string
-  state: string
-}
-
-export type WsBaseMessage<T extends string = string, D = any> = {
-  type: T
-  data: D
-}
-
-export type WsAuthorizeDto = {
-  accessToken: string
-}
-
-export type WsGetRobotListDto = Record<string, never> // 빈 객체
-
-export type WsRobotListDto = {
-  robots: RobotInfo[]
-}
-
-export type WsSendSdpOfferDto = {
-  robot_id: string
-  sdp_offer: string
-}
-
-export type WsReceiveSdpOfferDto = {
-  user_id: string
-  robot_id: string
-  sdp_offer: string
-}
-
-export type WsSendSdpAnswerDto = {
-  user_id: string
-  robot_id: string
-  sdp_answer: string
-}
-
-export type WsReceiveSdpAnswerDto = {
-  user_id: string
-  robot_id: string
-  sdp_answer: string
-}
-
-export type IceCandidate = {
-  candidate: string
-  sdpMid: string | null
-  sdpMLineIndex: number | null
-}
-
-export type WsSendIceCandidateDto = {
-  robot_id: string
-  ice_candidate: IceCandidate
-}
-
-export type WsReceiveIceCandidateDto = {
-  user_id: string
-  robot_id: string
-  ice_candidate: IceCandidate
-}
-
-export type WsSendClosePeerConnectionDto = {
-  robot_id: string
-}
-
-export type WsForceLogoutDto = {
-  message: string
-}
-
-export type WsPingDto = {
-  pingId: string
-}
-
-export type WsPongDto = {
-  pingId: string
-}
-
 export type WsMessages =
+  | WsBaseMessage<"ping.ping", WsPingPongDto>
+  | WsBaseMessage<"ping.pong", WsPingPongDto>
   | WsBaseMessage<"authorize.req", void>
   | WsBaseMessage<"authorize", WsAuthorizeDto>
+  | WsBaseMessage<"authorize.res", WsAuthorizeResDto>
+  | WsBaseMessage<"signaling.send_sdp_offer", WsSendSdpOfferDto>
+  | WsBaseMessage<"signaling.send_sdp_answer", WsSendSdpAnswerDto>
+  | WsBaseMessage<"signaling.exchange_ice_candidate", WsExchangeIceCandidateDto>
+  | WsBaseMessage<"signaling.close_connection", WsClosePeerConnectionDto>
   | WsBaseMessage<"get_robot_list", WsGetRobotListDto>
   | WsBaseMessage<"robot_list", WsRobotListDto>
-  | WsBaseMessage<"send_sdp_offer", WsSendSdpOfferDto>
-  | WsBaseMessage<"receive_sdp_offer", WsReceiveSdpOfferDto>
-  | WsBaseMessage<"send_sdp_answer", WsSendSdpAnswerDto>
-  | WsBaseMessage<"receive_sdp_answer", WsReceiveSdpAnswerDto>
-  | WsBaseMessage<"send_ice_candidate", WsSendIceCandidateDto>
-  | WsBaseMessage<"receive_ice_candidate", WsReceiveIceCandidateDto>
-  | WsBaseMessage<"send_close_peer_connection", WsSendClosePeerConnectionDto>
   | WsBaseMessage<"force_logout", WsForceLogoutDto>
-  | WsBaseMessage<"ping.ping", WsPingDto>
-  | WsBaseMessage<"ping.pong", WsPongDto>
 
 export type ExtractMessageByType<T extends WsMessages["type"]> = Extract<
   WsMessages,
@@ -100,14 +37,17 @@ export type ExtractMessageByType<T extends WsMessages["type"]> = Extract<
 export type ExtractDataByType<T extends WsMessages["type"]> =
   ExtractMessageByType<T>["data"]
 
-export interface WebSocketContextType {
-  sendMessage: (message: WsMessages) => void
-  onMessage: <T extends WsMessages["type"]>(
-    type: T,
-    callback: (data: ExtractDataByType<T>) => void | Promise<void>,
-  ) => () => void
+export type SendWsMessageType = (message: WsMessages) => void
 
-  disconnect: () => void
+export type OnWsMessageType = <T extends WsMessages["type"]>(
+  type: T,
+  callback: (data: ExtractDataByType<T>) => void | Promise<void>,
+) => () => void
+
+export interface WebSocketContextType {
+  sendWsMessage: SendWsMessageType
+  onWsMessage: OnWsMessageType
+  disconnectWs: () => void
 }
 
 export const WebSocketContext = createContext<WebSocketContextType | null>(null)
