@@ -4,16 +4,12 @@ import {MosaicStore} from "./mosaic-store.ts"
 type Subscriber = (data: ArrayBuffer) => Promise<void>
 
 export abstract class ReceivableStore extends MosaicStore {
-  protected static isParallelReceivable = false
+  public isParallelReceivable = false
 
   private subscriberList: Map<string, Subscriber> = new Map()
 
   public getStoreType(): "receivable" {
     return "receivable"
-  }
-
-  public isParallelReceivable(): boolean {
-    return (this.constructor as typeof ReceivableStore).isParallelReceivable
   }
 
   public subscribe(
@@ -28,19 +24,27 @@ export abstract class ReceivableStore extends MosaicStore {
   public async notifySubscribers(data: ArrayBuffer): Promise<void> {
     const promises = Array.from(this.subscriberList.values()).map(
       async (sub) => {
-      // Prevent one subscriber error from aborting the rest
-      try {
-        await sub(data);
-      } catch (error) {
-        console.error("ReceivableStore Subscriber notification failed:", error);
-      }
-    });
-    await Promise.all(promises);
+        // Prevent one subscriber error from aborting the rest
+        try {
+          await sub(data)
+        } catch (error) {
+          console.error(
+            "ReceivableStore Subscriber notification failed:",
+            error,
+          )
+        }
+      },
+    )
+    await Promise.all(promises)
   }
 
-  public abstract onSubscriberAdded(subscriber: Subscriber): void
+  // Can be overridden by subclasses
+  public onSubscriberAdded(_subscriber: Subscriber): void {
+  }
 
-  public abstract onSubscriberRemoved(subscriber: Subscriber): void
+  // Can be overridden by subclasses
+  public onSubscriberRemoved(_subscriber: Subscriber): void {
+  }
 
   private removeSubscriber(subscriberId: string): void {
     const subscriber = this.subscriberList.get(subscriberId)

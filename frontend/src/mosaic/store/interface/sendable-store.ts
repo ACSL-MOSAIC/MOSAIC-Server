@@ -7,7 +7,8 @@ export abstract class SendableStore<V> extends MosaicStore {
     return "sendable"
   }
 
-  public abstract add(data: V): void
+  // Needs to be implemented by subclasses
+  public abstract send(data: V): void
 
   public setDataChannel(channel: RTCDataChannel): void {
     this.dataChannel = channel
@@ -16,8 +17,7 @@ export abstract class SendableStore<V> extends MosaicStore {
   protected sendData(data: string): void {
     if (this.dataChannel && this.dataChannel.readyState === "open") {
       this.dataChannel.send(data)
-    } 
-    else{
+    } else {
       console.warn("SendableStore DataChannel is not open!")
     }
   }
