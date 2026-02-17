@@ -11,12 +11,13 @@ export function useMosaicWebRTCConnection() {
 
   const {webrtcConnectionManager} = context
   const createConnection = async (robotId: string) => {
-    // TODO
+    // TODO: channelManager에서 channelRequirements 받아와야함
+    await webrtcConnectionManager.prepareRtcConnection([robotId])
     await webrtcConnectionManager.createConnection(robotId, [])
   }
 
   const disconnectConnection = (robotId: string) => {
-    // TODO
+    webrtcConnectionManager.disconnectConnection(robotId)
   }
   return {
     createConnection,

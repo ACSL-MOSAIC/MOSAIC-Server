@@ -7,22 +7,44 @@ import { WebRTCConnection } from "@/mosaic/webrtc/webrtc-connection.ts"
 export class WebRTCConnectionManager {
   private readonly signalingServer: SignalingServer
   private connections: Map<string, WebRTCConnection>
+  private robotIdToRtcConnectionId: Map<string, string> = new Map()
 
   constructor(signalingServer: SignalingServer) {
     this.signalingServer = signalingServer
     this.connections = new Map()
   }
 
+  // robotIds 한 번의 API 호출로 각각의 rtcConnectionId 발급 후 내부 Map에 저장, return value는 참고용
+  public async prepareRtcConnection(robotIds: string[]): Promise<Map<string, string>> {
+    if (robotIds.length === 0) {
+      return new Map()
+    }
+    const response = await createWebRTCConnectionApi({ robotIds })
+    const map = new Map<string, string>()
+    for (const session of response.sessions) {
+      map.set(session.robotId, session.rtcSessionId)
+      this.robotIdToRtcConnectionId.set(session.robotId, session.rtcSessionId)
+    }
+    return map
+  }
+
+  // 저장된 Map에서 robotId의 rtcConnectionId를 조회 후 연결
   public async createConnection(
     robotId: string,
     channelRequirements: ChannelRequirement[],
   ): Promise<void> {
+    const rtcConnectionId = this.robotIdToRtcConnectionId.get(robotId)
+    if (!rtcConnectionId) {
+      throw new Error(
+        `No rtcConnectionId for robot ${robotId}. Call prepareRtcConnection([robotId]) first.`,
+      )
+    }
+
     const existingConnection = this.connections.get(robotId)
     if (existingConnection) {
       this.disconnectConnection(robotId)
     }
 
-    const rtcConnectionId = await this.prepareRtcConnection(robotId)
     const webrtcConnection = new WebRTCConnection(rtcConnectionId, robotId)
     this.signalingServer.setRtcConnection(webrtcConnection)
     this.connections.set(robotId, webrtcConnection)
@@ -39,6 +61,7 @@ export class WebRTCConnectionManager {
     connection.disconnect()
     this.signalingServer.removeRtcConnection(connection.rtcConnectionId)
     this.connections.delete(robotId)
+    this.robotIdToRtcConnectionId.delete(robotId)
   }
 
   public getConnection(robotId: string): WebRTCConnection | undefined {
@@ -46,21 +69,6 @@ export class WebRTCConnectionManager {
   }
 
   public removeDataChannel(robotConnector: RobotConnector): void {
-    // 하위 클래스 구현 후 다시 수정 예정
-  }
-
-  private async prepareRtcConnection(robotId: string): Promise<string> {
-    const response = await createWebRTCConnectionApi({ robotIds: [robotId] })
-    const targetSession =
-      response.sessions.find((session) => session.robotId === robotId) ??
-      response.sessions[0]
-
-    if (!targetSession) {
-      throw new Error(
-        `Failed to create WebRTC session for robot ${robotId}: no session returned`,
-      )
-    }
-
-    return targetSession.rtcSessionId
+    //TODO: 하위 클래스 구현 후 다시 수정 예정
   }
 }
