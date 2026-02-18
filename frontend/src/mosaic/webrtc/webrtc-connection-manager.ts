@@ -54,13 +54,21 @@ export class WebRTCConnectionManager {
 
   public disconnectConnection(robotId: string): void {
     const connection = this.connections.get(robotId)
-    if (!connection) {
+    // connection이 존재하지 않을 경우 prepareRtcConnection으로 발급받은 Map에서 조회
+    const rtcConnectionId = connection?.rtcConnectionId ?? this.robotIdToRtcConnectionId.get(robotId)
+    if (!rtcConnectionId) {
       return
     }
 
-    connection.disconnect()
-    this.signalingServer.removeRtcConnection(connection.rtcConnectionId)
-    this.connections.delete(robotId)
+    // backend/robot에게 rtc session 종료 알림
+    this.signalingServer.sendCloseConnection(rtcConnectionId)
+
+    if (connection) {
+      connection.disconnect()
+      this.signalingServer.removeRtcConnection(rtcConnectionId)
+      this.connections.delete(robotId)
+    }
+
     this.robotIdToRtcConnectionId.delete(robotId)
   }
 

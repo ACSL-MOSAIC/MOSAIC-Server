@@ -16,6 +16,7 @@ export class WebRTCConnection {
   private relatedStores: MosaicStore[] = []
   private dataChannels: Map<string, RTCDataChannel> = new Map()
   private mediaStreams: Map<string, MediaStream> = new Map()
+  private _signalingServer: SignalingServer | null = null
 
   constructor(rtcConnectionId: string, robotId: string) {
     this._rtcConnectionId = rtcConnectionId
@@ -26,8 +27,6 @@ export class WebRTCConnection {
   get rtcConnectionId(): string {
     return this._rtcConnectionId
   }
-
-  private _signalingServer: SignalingServer | null = null
 
   set signalingServer(value: SignalingServer) {
     this._signalingServer = value
