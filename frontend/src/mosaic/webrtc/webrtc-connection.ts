@@ -11,6 +11,7 @@ export class WebRTCConnection {
   private readonly _rtcConnectionId: string
   private readonly robotId: string
   private peerConnection: RTCPeerConnection | null
+  private iceServers: RTCIceServer[] = []
   private channelRequirements: ChannelRequirement[] = []
   private connectorRequirements: ConnectorRequirement[] = []
   private relatedStores: MosaicStore[] = []
@@ -30,6 +31,10 @@ export class WebRTCConnection {
 
   set signalingServer(value: SignalingServer) {
     this._signalingServer = value
+  }
+
+  public setIceServers(iceServers: RTCIceServer[]): void {
+    this.iceServers = [...iceServers]
   }
 
   public createConnection(channelRequirements: ChannelRequirement[]): void {
@@ -157,11 +162,8 @@ export class WebRTCConnection {
   }
 
   private createPeerConnection(): RTCPeerConnection {
-    // TODO: 서버로부터 ice servers 정보를 받아야 합니다.
-    //  ps. MosaicProvider 또는 WebRTCConnectionManager 에서 미리 받아두는 편이 나을지도?
-    //  (실시간으로 수정되는 값이 아니니). WebRTCConnectionManager 에서 createConnection 때 받는것도 괜찮은듯
     const configuration = {
-      iceServers: [],
+      iceServers: this.iceServers,
     }
     const peerConnection = new RTCPeerConnection(configuration)
     this.peerConnection = peerConnection

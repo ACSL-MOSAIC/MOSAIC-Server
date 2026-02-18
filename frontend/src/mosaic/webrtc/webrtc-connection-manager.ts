@@ -1,4 +1,7 @@
-import { createWebRTCConnectionApi } from "@/client/service/webrtc.api.ts"
+import {
+  createWebRTCConnectionApi,
+  getIceServersApi,
+} from "@/client/service/webrtc.api.ts"
 import type { RobotConnector } from "@/mosaic"
 import type { ChannelRequirement } from "@/mosaic/channel"
 import type { SignalingServer } from "@/mosaic/webrtc/signaling-server.ts"
@@ -8,6 +11,7 @@ export class WebRTCConnectionManager {
   private readonly signalingServer: SignalingServer
   private connections: Map<string, WebRTCConnection>
   private robotIdToRtcConnectionId: Map<string, string> = new Map()
+  private iceServers: RTCIceServer[] = []
 
   constructor(signalingServer: SignalingServer) {
     this.signalingServer = signalingServer
@@ -40,12 +44,25 @@ export class WebRTCConnectionManager {
       )
     }
 
+    if (this.iceServers.length === 0) {
+      const response = await getIceServersApi()
+      this.iceServers = response.map((iceServer) => {
+        const rtcIceServer: RTCIceServer = {
+          urls: iceServer.urls,
+          username: iceServer.username ?? undefined,
+          credential: iceServer.credential ?? undefined,
+        }
+        return rtcIceServer
+      })
+    }
+
     const existingConnection = this.connections.get(robotId)
     if (existingConnection) {
       this.disconnectConnection(robotId)
     }
 
     const webrtcConnection = new WebRTCConnection(rtcConnectionId, robotId)
+    webrtcConnection.setIceServers(this.iceServers)
     this.signalingServer.setRtcConnection(webrtcConnection)
     this.connections.set(robotId, webrtcConnection)
     webrtcConnection.createConnection(channelRequirements)
