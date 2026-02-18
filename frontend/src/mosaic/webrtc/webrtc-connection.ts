@@ -18,6 +18,8 @@ export class WebRTCConnection {
   private dataChannels: Map<string, RTCDataChannel> = new Map()
   private mediaStreams: Map<string, MediaStream> = new Map()
   private _signalingServer: SignalingServer | null = null
+  // disconnected 이벤트와 수동 disconnect가 모두 호출되었을 때 중복 호출 방지
+  private isDisconnectedNotified = false
 
   constructor(rtcConnectionId: string, robotId: string) {
     this._rtcConnectionId = rtcConnectionId
@@ -38,6 +40,7 @@ export class WebRTCConnection {
   }
 
   public createConnection(channelRequirements: ChannelRequirement[]): void {
+    this.isDisconnectedNotified = false
     this.channelRequirements = channelRequirements
 
     this.beforeConnection()
@@ -59,7 +62,8 @@ export class WebRTCConnection {
   }
 
   public disconnect(): void {
-    // TODO: 딱히 시퀀스 없음. 적당히 만들기
+    this.cleanupConnectionState(true)
+    this.cleanupTransportResources()
   }
 
   // 필요시 getter 추가하기
@@ -349,9 +353,7 @@ export class WebRTCConnection {
   }
 
   private onConnectionDisconnected(): void {
-    for (const store of this.relatedStores) {
-      store.notifyAfterDisconnected(this.robotId)
-    }
+    this.cleanupConnectionState(false)
   }
 
   private onConnectionFailed(): void {
@@ -369,5 +371,69 @@ export class WebRTCConnection {
 
   private resolveIceCandidate(iceCandidate: IceCandidate): RTCIceCandidate {
     return new RTCIceCandidate(iceCandidate)
+  }
+
+  private cleanupConnectionState(resetRequirements: boolean): void {
+    if (this.isDisconnectedNotified) {
+      return
+    }
+    this.isDisconnectedNotified = true
+    for (const store of this.relatedStores) {
+      store.notifyAfterDisconnected(this.robotId)
+    }
+    // resetRequirements가 true일 경우에만 연결 초기화
+    if (resetRequirements) {
+      this.channelRequirements = []
+      this.connectorRequirements = []
+      this.relatedStores = []
+    }
+  }
+
+  private cleanupTransportResources(): void {
+    // data channel 정리
+    for (const channel of this.dataChannels.values()) {
+      channel.onopen = null
+      channel.onmessage = null
+      channel.onclose = null
+      channel.onerror = null
+      if (channel.readyState !== "closed") {
+        try {
+          channel.close()
+        } catch (error) {
+          console.error(
+            `[${this.robotId}][${channel.label}] Failed to close data channel:`,
+            error,
+          )
+        }
+      }
+    }
+    this.dataChannels.clear()
+
+    // peer connection 정리
+    if (this.peerConnection) {
+      this.peerConnection.onicecandidate = null
+      this.peerConnection.onconnectionstatechange = null
+      this.peerConnection.ontrack = null
+
+      if (this.peerConnection.signalingState !== "closed") {
+        try {
+          this.peerConnection.close()
+        } catch (error) {
+          console.error(
+            `[${this.robotId}] Failed to close peer connection:`,
+            error,
+          )
+        }
+      }
+      this.peerConnection = null
+    }
+
+    // media stream 정리
+    for (const stream of this.mediaStreams.values()) {
+      for (const track of stream.getTracks()) {
+        track.stop()
+      }
+    }
+    this.mediaStreams.clear()
   }
 }
