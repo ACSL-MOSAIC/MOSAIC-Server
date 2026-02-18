@@ -1,3 +1,4 @@
+import type {RobotConnector} from "@/mosaic"
 import type {ChannelRequirement} from "@/mosaic/channel"
 import type {BidirectionalStore} from "@/mosaic/store/interface/bidirectional-store.ts"
 import type {MosaicStore} from "@/mosaic/store/interface/mosaic-store.ts"
@@ -100,6 +101,57 @@ export class WebRTCConnection {
     }
   }
 
+  public removeDataChannel(robotConnector: RobotConnector): void {
+    // parallel data channel 정리
+    if (robotConnector.dataType.endsWith("-p")) {
+      for (let i = 0; i < robotConnector.parallelNum; i++) {
+        const label = `${robotConnector.connectorId}-${i}`
+        const channel = this.dataChannels.get(label)
+        if (!channel) {
+          continue
+        }
+        channel.onopen = null
+        channel.onmessage = null
+        channel.onclose = null
+        channel.onerror = null
+        if (channel.readyState !== "closed") {
+          try {
+            channel.close()
+          } catch (error) {
+            console.error(
+              `[${this.robotId}][${label}] Failed to close data channel:`,
+              error,
+            )
+          }
+        }
+        this.dataChannels.delete(label)
+      }
+      return
+    }
+
+    // single data channel 정리
+    const label = robotConnector.connectorId
+    const channel = this.dataChannels.get(label)
+    if (!channel) {
+      return
+    }
+    channel.onopen = null
+    channel.onmessage = null
+    channel.onclose = null
+    channel.onerror = null
+    if (channel.readyState !== "closed") {
+      try {
+        channel.close()
+      } catch (error) {
+        console.error(
+          `[${this.robotId}][${label}] Failed to close data channel:`,
+          error,
+        )
+      }
+    }
+    this.dataChannels.delete(label)
+  }
+
   private beforeConnection() {
     // reorganize connectorRequirements based on channelRequirements
 
@@ -189,12 +241,10 @@ export class WebRTCConnection {
           const dc = this.createDataChannel(
             `${robotConnector.connectorId}-${i}`,
           )
-          this.dataChannels.set(dc.label, dc)
           this.setupReceivableChannel(dc, stores as ReceivableStore[])
         }
       } else {
         const dc = this.createDataChannel(robotConnector.connectorId)
-        this.dataChannels.set(dc.label, dc)
 
         const dataType = robotConnector.dataType.replace("-p", "")
         const direction = dataType.split("-")[1]

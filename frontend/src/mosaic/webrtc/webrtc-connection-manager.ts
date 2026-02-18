@@ -94,6 +94,10 @@ export class WebRTCConnectionManager {
   }
 
   public removeDataChannel(robotConnector: RobotConnector): void {
-    //TODO: 하위 클래스 구현 후 다시 수정 예정
+    const connection = this.connections.get(robotConnector.robotId)
+    if (!connection) {
+      return
+    }
+    connection.removeDataChannel(robotConnector)
   }
 }
