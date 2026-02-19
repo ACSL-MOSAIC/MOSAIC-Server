@@ -1,3 +1,5 @@
+import type {RobotStatus} from "@/mosaic"
+
 export interface RobotInfo {
   robot_id: string
   state: string
@@ -18,6 +20,11 @@ export type WsGetRobotListDto = Record<string, never> // 빈 객체
 
 export type WsRobotListDto = {
   robots: RobotInfo[]
+}
+
+export type WsStatusUpdateDto = {
+  robotId: string
+  status: RobotStatus
 }
 
 export type WsForceLogoutDto = {
