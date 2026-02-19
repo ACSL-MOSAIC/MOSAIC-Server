@@ -45,4 +45,12 @@ export class ChannelManager {
       (info) => info.robotConnector.robotId === robotId,
     )
   }
+
+  public getChannelRequirements(robotId: string): ChannelRequirement[] {
+    const requirements = this.channelRequirements.get(robotId)
+    if (!requirements) {
+      return []
+    }
+    return [...requirements]
+  }
 }

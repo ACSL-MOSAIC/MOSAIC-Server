@@ -1,6 +1,8 @@
+import {getRobotConfigApi} from "@/client/service/robot.api.ts"
 import {useContext} from "react"
 import {MosaicContext} from "@/contexts/MosaicContext.ts"
-import type {RobotConnector} from "@/mosaic"
+import type {RobotConfig, RobotConnector} from "@/mosaic"
+import {RobotInfo} from "@/mosaic/robot-info.ts"
 
 export function useMosaicStore() {
   const context = useContext(MosaicContext)
@@ -8,14 +10,37 @@ export function useMosaicStore() {
     throw new Error("useMosaicStore must be used within a MosaicProvider")
   }
 
-  const {storeManager} = context
-  const getOrCreateStore = (robotConnector: RobotConnector) => {
-    // TODO
-    return storeManager.getOrCreateStore(robotConnector, null)
+  const {storeManager, robotInfos, updateRobotInfo} = context
+
+  const getOrCreateStore = async (robotConnector: RobotConnector) => {
+    const robotInfo = robotInfos.find(
+      (info) => info.id === robotConnector.robotId,
+    )
+    if (!robotInfo) {
+      throw new Error(`Robot not found: ${robotConnector.robotId}`)
+    }
+
+    let robotConfig = robotInfo.robotConfigs
+    if (!robotConfig) {
+      const response = await getRobotConfigApi(robotConnector.robotId)
+      const parsedConfig = JSON.parse(response.connectorConfig) as RobotConfig
+      robotConfig = parsedConfig
+
+      updateRobotInfo(
+        new RobotInfo(
+          robotInfo.id,
+          robotInfo.name,
+          robotInfo.status,
+          robotConfig,
+        ),
+      )
+    }
+
+    return storeManager.getOrCreateStore(robotConnector, robotConfig)
   }
 
   const releaseStore = (robotConnector: RobotConnector) => {
-    // TODO
+    storeManager.releaseStore(robotConnector)
   }
 
   return {

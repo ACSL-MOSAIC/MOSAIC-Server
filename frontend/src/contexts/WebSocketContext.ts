@@ -6,6 +6,7 @@ import type {
   WsGetRobotListDto,
   WsPingPongDto,
   WsRobotListDto,
+  WsStatusUpdateDto,
 } from "@/contexts/ws.dto.ts"
 import type {
   WsClosePeerConnectionDto,
@@ -27,6 +28,7 @@ export type WsMessages =
   | WsBaseMessage<"signaling.close_connection", WsClosePeerConnectionDto>
   | WsBaseMessage<"get_robot_list", WsGetRobotListDto>
   | WsBaseMessage<"robot_list", WsRobotListDto>
+  | WsBaseMessage<"status.update", WsStatusUpdateDto>
   | WsBaseMessage<"force_logout", WsForceLogoutDto>
 
 export type ExtractMessageByType<T extends WsMessages["type"]> = Extract<

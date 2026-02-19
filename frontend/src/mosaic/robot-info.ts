@@ -3,20 +3,17 @@ import type {RobotConfig, RobotStatus} from "@/mosaic/index.ts"
 export class RobotInfo {
   private readonly _id: string
   private readonly _name: string
-  private readonly _wsConnected: boolean
   private readonly _status: RobotStatus
 
   public constructor(
     id: string,
     name: string,
-    wsConnected: boolean,
-    rtcStates: RobotStatus,
+    status: RobotStatus,
     robotConfigs: RobotConfig | null,
   ) {
     this._id = id
     this._name = name
-    this._wsConnected = wsConnected
-    this._status = rtcStates
+    this._status = status
     this._robotConfigs = robotConfigs
   }
 
@@ -36,10 +33,6 @@ export class RobotInfo {
 
   get name(): string {
     return this._name
-  }
-
-  get wsConnected(): boolean {
-    return this._wsConnected
   }
 
   get status(): RobotStatus {

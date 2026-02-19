@@ -9,11 +9,18 @@ export function useMosaicWebRTCConnection() {
     )
   }
 
-  const {webrtcConnectionManager} = context
+  const {webrtcConnectionManager, channelManager} = context
   const createConnection = async (robotId: string) => {
-    // TODO: channelManager에서 channelRequirements 받아와야함
+    const channelRequirements = channelManager.getChannelRequirements(robotId)
+    if (channelRequirements.length === 0) {
+      console.warn(
+        `[${robotId}] Skip WebRTC connection: no channel requirements`,
+      )
+      return
+    }
+
     await webrtcConnectionManager.prepareRtcConnection([robotId])
-    await webrtcConnectionManager.createConnection(robotId, [])
+    await webrtcConnectionManager.createConnection(robotId, channelRequirements)
   }
 
   const disconnectConnection = (robotId: string) => {
