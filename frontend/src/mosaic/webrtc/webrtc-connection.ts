@@ -102,36 +102,7 @@ export class WebRTCConnection {
     }
   }
 
-  public removeDataChannel(robotConnector: RobotConnector): void {
-    // parallel data channel 정리
-    if (robotConnector.dataType.endsWith("-p")) {
-      for (let i = 0; i < robotConnector.parallelNum; i++) {
-        const label = `${robotConnector.connectorId}-${i}`
-        const channel = this.dataChannels.get(label)
-        if (!channel) {
-          continue
-        }
-        channel.onopen = null
-        channel.onmessage = null
-        channel.onclose = null
-        channel.onerror = null
-        if (channel.readyState !== "closed") {
-          try {
-            channel.close()
-          } catch (error) {
-            console.error(
-              `[${this.robotId}][${label}] Failed to close data channel:`,
-              error,
-            )
-          }
-        }
-        this.dataChannels.delete(label)
-      }
-      return
-    }
-
-    // single data channel 정리
-    const label = robotConnector.connectorId
+  private closeAndRemoveDataChannel(label: string): void {
     const channel = this.dataChannels.get(label)
     if (!channel) {
       return
@@ -151,6 +122,16 @@ export class WebRTCConnection {
       }
     }
     this.dataChannels.delete(label)
+  }
+
+  public removeDataChannel(robotConnector: RobotConnector): void {
+    if (robotConnector.dataType.endsWith("-p")) {
+      for (let i = 0; i < robotConnector.parallelNum; i++) {
+        this.closeAndRemoveDataChannel(`${robotConnector.connectorId}-${i}`)
+      }
+      return
+    }
+    this.closeAndRemoveDataChannel(robotConnector.connectorId)
   }
 
   private beforeConnection() {
@@ -219,10 +200,10 @@ export class WebRTCConnection {
   }
 
   private createPeerConnection(): RTCPeerConnection {
-    const configuration = {
-      iceServers: this.iceServers,
-    }
-    const peerConnection = new RTCPeerConnection(configuration)
+    const peerConnection =
+      this.iceServers.length === 0
+        ? new RTCPeerConnection()
+        : new RTCPeerConnection({iceServers: this.iceServers})
     this.peerConnection = peerConnection
     peerConnection.onicecandidate = this.onicecandidate.bind(this)
     peerConnection.onconnectionstatechange =
@@ -440,51 +421,45 @@ export class WebRTCConnection {
     }
   }
 
-  private cleanupTransportResources(): void {
-    // data channel 정리
-    for (const channel of this.dataChannels.values()) {
-      channel.onopen = null
-      channel.onmessage = null
-      channel.onclose = null
-      channel.onerror = null
-      if (channel.readyState !== "closed") {
-        try {
-          channel.close()
-        } catch (error) {
-          console.error(
-            `[${this.robotId}][${channel.label}] Failed to close data channel:`,
-            error,
-          )
-        }
+  private cleanupDataChannels(): void {
+    for (const label of Array.from(this.dataChannels.keys())) {
+      this.closeAndRemoveDataChannel(label)
+    }
+  }
+
+  private cleanupPeerConnection(): void {
+    if (!this.peerConnection) {
+      return
+    }
+    this.peerConnection.onicecandidate = null
+    this.peerConnection.onconnectionstatechange = null
+    this.peerConnection.ontrack = null
+
+    if (this.peerConnection.signalingState !== "closed") {
+      try {
+        this.peerConnection.close()
+      } catch (error) {
+        console.error(
+          `[${this.robotId}] Failed to close peer connection:`,
+          error,
+        )
       }
     }
-    this.dataChannels.clear()
+    this.peerConnection = null
+  }
 
-    // peer connection 정리
-    if (this.peerConnection) {
-      this.peerConnection.onicecandidate = null
-      this.peerConnection.onconnectionstatechange = null
-      this.peerConnection.ontrack = null
-
-      if (this.peerConnection.signalingState !== "closed") {
-        try {
-          this.peerConnection.close()
-        } catch (error) {
-          console.error(
-            `[${this.robotId}] Failed to close peer connection:`,
-            error,
-          )
-        }
-      }
-      this.peerConnection = null
-    }
-
-    // media stream 정리
+  private cleanupMediaStreams(): void {
     for (const stream of this.mediaStreams.values()) {
       for (const track of stream.getTracks()) {
         track.stop()
       }
     }
     this.mediaStreams.clear()
+  }
+
+  private cleanupTransportResources(): void {
+    this.cleanupDataChannels()
+    this.cleanupMediaStreams()
+    this.cleanupPeerConnection()
   }
 }
