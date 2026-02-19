@@ -1,3 +1,4 @@
+import type {RobotConnector} from "@/mosaic"
 import type {ChannelRequirement} from "@/mosaic/channel"
 import type {BidirectionalStore} from "@/mosaic/store/interface/bidirectional-store.ts"
 import type {MosaicStore} from "@/mosaic/store/interface/mosaic-store.ts"
@@ -11,15 +12,24 @@ export class WebRTCConnection {
   private readonly _rtcConnectionId: string
   private readonly robotId: string
   private peerConnection: RTCPeerConnection | null
+  private iceServers: RTCIceServer[] = []
   private channelRequirements: ChannelRequirement[] = []
   private connectorRequirements: ConnectorRequirement[] = []
   private relatedStores: MosaicStore[] = []
   private dataChannels: Map<string, RTCDataChannel> = new Map()
   private mediaStreams: Map<string, MediaStream> = new Map()
+  private _signalingServer: SignalingServer | null = null
+  // disconnected 이벤트와 수동 disconnect가 모두 호출되었을 때 중복 호출 방지
+  private isDisconnectedNotified = false
 
-  constructor(rtcConnectionId: string, robotId: string) {
+  constructor(
+    rtcConnectionId: string,
+    robotId: string,
+    iceServers: RTCIceServer[],
+  ) {
     this._rtcConnectionId = rtcConnectionId
     this.robotId = robotId
+    this.iceServers = [...iceServers]
     this.peerConnection = null
   }
 
@@ -27,13 +37,12 @@ export class WebRTCConnection {
     return this._rtcConnectionId
   }
 
-  private _signalingServer: SignalingServer | null = null
-
   set signalingServer(value: SignalingServer) {
     this._signalingServer = value
   }
 
   public createConnection(channelRequirements: ChannelRequirement[]): void {
+    this.isDisconnectedNotified = false
     this.channelRequirements = channelRequirements
 
     this.beforeConnection()
@@ -55,7 +64,8 @@ export class WebRTCConnection {
   }
 
   public disconnect(): void {
-    // TODO: 딱히 시퀀스 없음. 적당히 만들기
+    this.cleanupConnectionState(true)
+    this.cleanupTransportResources()
   }
 
   // 필요시 getter 추가하기
@@ -90,6 +100,38 @@ export class WebRTCConnection {
       console.error(`[${this.robotId}] Failed to add ICE candidate:`, error)
       return Promise.reject(error)
     }
+  }
+
+  private closeAndRemoveDataChannel(label: string): void {
+    const channel = this.dataChannels.get(label)
+    if (!channel) {
+      return
+    }
+    channel.onopen = null
+    channel.onmessage = null
+    channel.onclose = null
+    channel.onerror = null
+    if (channel.readyState !== "closed") {
+      try {
+        channel.close()
+      } catch (error) {
+        console.error(
+          `[${this.robotId}][${label}] Failed to close data channel:`,
+          error,
+        )
+      }
+    }
+    this.dataChannels.delete(label)
+  }
+
+  public removeDataChannel(robotConnector: RobotConnector): void {
+    if (robotConnector.dataType.endsWith("-p")) {
+      for (let i = 0; i < robotConnector.parallelNum; i++) {
+        this.closeAndRemoveDataChannel(`${robotConnector.connectorId}-${i}`)
+      }
+      return
+    }
+    this.closeAndRemoveDataChannel(robotConnector.connectorId)
   }
 
   private beforeConnection() {
@@ -158,13 +200,10 @@ export class WebRTCConnection {
   }
 
   private createPeerConnection(): RTCPeerConnection {
-    // TODO: 서버로부터 ice servers 정보를 받아야 합니다.
-    //  ps. MosaicProvider 또는 WebRTCConnectionManager 에서 미리 받아두는 편이 나을지도?
-    //  (실시간으로 수정되는 값이 아니니). WebRTCConnectionManager 에서 createConnection 때 받는것도 괜찮은듯
-    const configuration = {
-      iceServers: [],
-    }
-    const peerConnection = new RTCPeerConnection(configuration)
+    const peerConnection =
+      this.iceServers.length === 0
+        ? new RTCPeerConnection()
+        : new RTCPeerConnection({iceServers: this.iceServers})
     this.peerConnection = peerConnection
     peerConnection.onicecandidate = this.onicecandidate.bind(this)
     peerConnection.onconnectionstatechange =
@@ -184,12 +223,10 @@ export class WebRTCConnection {
           const dc = this.createDataChannel(
             `${robotConnector.connectorId}-${i}`,
           )
-          this.dataChannels.set(dc.label, dc)
           this.setupReceivableChannel(dc, stores as ReceivableStore[])
         }
       } else {
         const dc = this.createDataChannel(robotConnector.connectorId)
-        this.dataChannels.set(dc.label, dc)
 
         const dataType = robotConnector.dataType.replace("-p", "")
         const direction = dataType.split("-")[1]
@@ -348,9 +385,7 @@ export class WebRTCConnection {
   }
 
   private onConnectionDisconnected(): void {
-    for (const store of this.relatedStores) {
-      store.notifyAfterDisconnected(this.robotId)
-    }
+    this.cleanupConnectionState(false)
   }
 
   private onConnectionFailed(): void {
@@ -368,5 +403,63 @@ export class WebRTCConnection {
 
   private resolveIceCandidate(iceCandidate: IceCandidate): RTCIceCandidate {
     return new RTCIceCandidate(iceCandidate)
+  }
+
+  private cleanupConnectionState(resetRequirements: boolean): void {
+    if (this.isDisconnectedNotified) {
+      return
+    }
+    this.isDisconnectedNotified = true
+    for (const store of this.relatedStores) {
+      store.notifyAfterDisconnected(this.robotId)
+    }
+    // resetRequirements가 true일 경우에만 연결 초기화
+    if (resetRequirements) {
+      this.channelRequirements = []
+      this.connectorRequirements = []
+      this.relatedStores = []
+    }
+  }
+
+  private cleanupDataChannels(): void {
+    for (const label of Array.from(this.dataChannels.keys())) {
+      this.closeAndRemoveDataChannel(label)
+    }
+  }
+
+  private cleanupPeerConnection(): void {
+    if (!this.peerConnection) {
+      return
+    }
+    this.peerConnection.onicecandidate = null
+    this.peerConnection.onconnectionstatechange = null
+    this.peerConnection.ontrack = null
+
+    if (this.peerConnection.signalingState !== "closed") {
+      try {
+        this.peerConnection.close()
+      } catch (error) {
+        console.error(
+          `[${this.robotId}] Failed to close peer connection:`,
+          error,
+        )
+      }
+    }
+    this.peerConnection = null
+  }
+
+  private cleanupMediaStreams(): void {
+    for (const stream of this.mediaStreams.values()) {
+      for (const track of stream.getTracks()) {
+        track.stop()
+      }
+    }
+    this.mediaStreams.clear()
+  }
+
+  private cleanupTransportResources(): void {
+    this.cleanupDataChannels()
+    this.cleanupMediaStreams()
+    this.cleanupPeerConnection()
   }
 }
