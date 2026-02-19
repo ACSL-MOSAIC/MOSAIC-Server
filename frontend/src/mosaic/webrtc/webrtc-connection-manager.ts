@@ -32,6 +32,18 @@ export class WebRTCConnectionManager {
     return map
   }
 
+  private async getIceServers(): Promise<void> {
+    if (this.iceServers.length > 0) {
+      return
+    }
+    const response = await getIceServersApi()
+    this.iceServers = response.map((iceServer) => ({
+      urls: iceServer.urls,
+      username: iceServer.username ?? undefined,
+      credential: iceServer.credential ?? undefined,
+    }))
+  }
+
   // 저장된 Map에서 robotId의 rtcConnectionId를 조회 후 연결
   public async createConnection(
     robotId: string,
@@ -44,25 +56,18 @@ export class WebRTCConnectionManager {
       )
     }
 
-    if (this.iceServers.length === 0) {
-      const response = await getIceServersApi()
-      this.iceServers = response.map((iceServer) => {
-        const rtcIceServer: RTCIceServer = {
-          urls: iceServer.urls,
-          username: iceServer.username ?? undefined,
-          credential: iceServer.credential ?? undefined,
-        }
-        return rtcIceServer
-      })
-    }
+    await this.getIceServers()
 
     const existingConnection = this.connections.get(robotId)
     if (existingConnection) {
       this.disconnectConnection(robotId)
     }
 
-    const webrtcConnection = new WebRTCConnection(rtcConnectionId, robotId)
-    webrtcConnection.setIceServers(this.iceServers)
+    const webrtcConnection = new WebRTCConnection(
+      rtcConnectionId,
+      robotId,
+      this.iceServers,
+    )
     this.signalingServer.setRtcConnection(webrtcConnection)
     this.connections.set(robotId, webrtcConnection)
     webrtcConnection.createConnection(channelRequirements)

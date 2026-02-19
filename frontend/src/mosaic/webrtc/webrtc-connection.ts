@@ -22,9 +22,14 @@ export class WebRTCConnection {
   // disconnected 이벤트와 수동 disconnect가 모두 호출되었을 때 중복 호출 방지
   private isDisconnectedNotified = false
 
-  constructor(rtcConnectionId: string, robotId: string) {
+  constructor(
+    rtcConnectionId: string,
+    robotId: string,
+    iceServers: RTCIceServer[],
+  ) {
     this._rtcConnectionId = rtcConnectionId
     this.robotId = robotId
+    this.iceServers = [...iceServers]
     this.peerConnection = null
   }
 
@@ -34,10 +39,6 @@ export class WebRTCConnection {
 
   set signalingServer(value: SignalingServer) {
     this._signalingServer = value
-  }
-
-  public setIceServers(iceServers: RTCIceServer[]): void {
-    this.iceServers = [...iceServers]
   }
 
   public createConnection(channelRequirements: ChannelRequirement[]): void {
