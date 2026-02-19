@@ -30,7 +30,6 @@ export function useMosaicStore() {
         new RobotInfo(
           robotInfo.id,
           robotInfo.name,
-          robotInfo.wsConnected,
           robotInfo.status,
           robotConfig,
         ),

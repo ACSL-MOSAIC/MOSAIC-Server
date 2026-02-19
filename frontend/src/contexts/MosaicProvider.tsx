@@ -1,7 +1,6 @@
-import {getRobotApi, getRobotConfigApi, getRobotListApi} from "@/client/service/robot.api.ts"
+import {getRobotApi, getRobotListApi} from "@/client/service/robot.api.ts"
 import {MosaicContext} from "@/contexts/MosaicContext.ts"
 import {useWebSocket} from "@/hooks/useWebSocket.ts"
-import type {RobotConfig} from "@/mosaic"
 import {ChannelManager} from "@/mosaic/channel/channel-manager.ts"
 import {RobotInfo} from "@/mosaic/robot-info.ts"
 import {StoreManager} from "@/mosaic/store/store-manager.ts"
@@ -48,14 +47,7 @@ export function MosaicProvider({children}: { children: ReactNode }) {
         }
 
         const loadedRobotInfos = response.data.map(
-          (robot) =>
-            new RobotInfo(
-              robot.id,
-              robot.name,
-              robot.status === 6,
-              robot.status,
-              null,
-            ),
+          (robot) => new RobotInfo(robot.id, robot.name, robot.status, null),
         )
         setRobotInfos(loadedRobotInfos)
       } catch (error) {
@@ -84,7 +76,6 @@ export function MosaicProvider({children}: { children: ReactNode }) {
           new RobotInfo(
             currentRobotInfo.id,
             currentRobotInfo.name,
-            data.status === 6,
             data.status,
             currentRobotInfo.robotConfigs,
           ),
@@ -93,32 +84,21 @@ export function MosaicProvider({children}: { children: ReactNode }) {
       }
 
       try {
-        const [robot, robotConfigResponse] = await Promise.all([
-          getRobotApi(data.robotId),
-          getRobotConfigApi(data.robotId),
-        ])
+        const robot = await getRobotApi(data.robotId)
         if (!isMounted) {
           return
-        }
-
-        let robotConfig: RobotConfig | null = null
-        try {
-          robotConfig = JSON.parse(robotConfigResponse.connectorConfig) as RobotConfig
-        } catch (error) {
-          console.error("Failed to parse robot connector config", error)
         }
 
         updateRobotInfo(
           new RobotInfo(
             robot.id,
             robot.name,
-            data.status === 6,
             data.status,
-            robotConfig,
+            null,
           ),
         )
       } catch (error) {
-        console.error("Failed to load robot by status.update with config", error)
+        console.error("Failed to load robot by status.update", error)
       }
     })
 
