@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketSession;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
@@ -36,11 +37,31 @@ public class MosaicUserWsHandler implements WebSocketHandler {
             case MosaicUserPingPongHandler.TYPE_PREFIX ->
                     this.mosaicUserPingPongHandler.handleWsMessage(wsMessage, wsSession);
             case MosaicUserAuthorizeHandler.TYPE_PREFIX ->
-                    this.mosaicUserAuthorizeHandler.handleWsMessage(wsMessage, wsSession);
+                    this.mosaicUserAuthorizeHandler.handleWsMessage(wsMessage, wsSession)
+                            .then(Mono.defer(() -> this.processPendingMessages(wsSession)));
             case MosaicUserSignalingHandler.TYPE_PREFIX ->
                     this.mosaicUserSignalingHandler.handleWsMessage(wsMessage, wsSession);
             default -> Mono.error(new CustomException(ResultCode.UNKNOWN_WEBSOCKET_REQUEST_TYPE));
         };
+    }
+
+    private Mono<Void> processPendingMessages(UserWsSession wsSession) {
+        if (!wsSession.getIsAuthenticated()) return Mono.empty();
+        return Flux.fromIterable(wsSession.drainPendingMessages())
+                .concatMap(msg -> this.handleWsMessageRequest(msg, wsSession)
+                        .onErrorResume(throwable -> {
+                            if (throwable instanceof CustomException e) {
+                                if (ResultCode.WEBSOCKET_SESSION_NOT_EXIST != e.getResultCode()) {
+                                    WsMessage<ResultCode> newWsMessage = new WsMessage<>(msg.getType(), e.getResultCode());
+                                    this.handleError(newWsMessage, e, wsSession);
+                                }
+                            } else {
+                                WsMessage<ResultCode> newWsMessage = new WsMessage<>(msg.getType(), ResultCode.UNKNOWN_EXCEPTION_OCCURRED);
+                                this.handleError(newWsMessage, new CustomException(ResultCode.UNKNOWN_EXCEPTION_OCCURRED, throwable), wsSession);
+                            }
+                            return Mono.empty();
+                        }))
+                .then();
     }
 
     @Override
@@ -65,8 +86,8 @@ public class MosaicUserWsHandler implements WebSocketHandler {
                 })
                 .<WsMessage<?>>handle((wsMessage, synchronousSink) -> {
                     if (!wsMessage.getType().equals(MosaicUserAuthorizeHandler.TYPE_PREFIX) && false == wsSession.getIsAuthenticated()) {
-                        WsMessage<ResultCode> newWsMessage = new WsMessage<>(wsMessage.getType(), ResultCode.AUTHENTICATION_FAILED);
-                        this.handleError(newWsMessage, new CustomException(ResultCode.AUTHENTICATION_FAILED), wsSession);
+                        log.debug("Queuing message type '{}' for unauthenticated session: {}", wsMessage.getType(), wsSession.getSessionId());
+                        wsSession.enqueuePendingMessage(wsMessage);
                         // Continue processing - don't break the stream
                     } else {
                         synchronousSink.next(wsMessage);

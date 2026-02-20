@@ -1,14 +1,16 @@
 package com.gistacsl.mosaic.websocket.session;
 
+import com.gistacsl.mosaic.websocket.dto.WsMessage;
 import io.undertow.websockets.core.WebSocketChannel;
 import lombok.Getter;
-import lombok.Setter;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.web.reactive.socket.HandshakeInfo;
 import org.springframework.web.reactive.socket.adapter.UndertowWebSocketSession;
 import reactor.core.publisher.Sinks;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -17,6 +19,7 @@ public class RobotWsSession extends UndertowWebSocketSession {
     private final UUID sessionId;
     private final Sinks.Many<String> sinks;
     private final OffsetDateTime connectedAt;
+    private final LinkedBlockingQueue<WsMessage<?>> pendingMessages;
     private UUID robotPk;
     private UUID organizationFk;
     private OffsetDateTime authenticatedAt;
@@ -27,6 +30,7 @@ public class RobotWsSession extends UndertowWebSocketSession {
         this.isAuthenticated = false;
         this.sessionId = sessionId;
         this.sinks = Sinks.many().unicast().onBackpressureBuffer(new LinkedBlockingQueue<>());
+        this.pendingMessages = new LinkedBlockingQueue<>();
         this.connectedAt = OffsetDateTime.now();
         this.authenticatedAt = OffsetDateTime.now();
     }
@@ -44,6 +48,16 @@ public class RobotWsSession extends UndertowWebSocketSession {
             return false;
         }
         return this.sessionId.equals(((RobotWsSession) obj).getSessionId());
+    }
+
+    public void enqueuePendingMessage(WsMessage<?> message) {
+        this.pendingMessages.offer(message);
+    }
+
+    public List<WsMessage<?>> drainPendingMessages() {
+        List<WsMessage<?>> drained = new ArrayList<>();
+        this.pendingMessages.drainTo(drained);
+        return drained;
     }
 
     public void sendMessage(String message) {
