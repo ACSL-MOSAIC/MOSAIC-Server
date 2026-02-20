@@ -3,25 +3,27 @@ package com.gistacsl.mosaic.websocket.scheduler;
 import com.gistacsl.mosaic.robot.RobotService;
 import com.gistacsl.mosaic.robot.enumerate.RobotStatus;
 import com.gistacsl.mosaic.websocket.handler.robot.MosaicRobotPingPongHandler;
-import com.gistacsl.mosaic.websocket.handler.user.MosaicUserPingPongHandler;
 import com.gistacsl.mosaic.websocket.session.WsSessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.OffsetDateTime;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PingPongScheduler {
+public class RobotWsScheduler {
+    private static final long UNAUTHENTICATED_TIMEOUT_SECONDS = 30;
+
     private final WsSessionManager wsSessionManager;
     private final MosaicRobotPingPongHandler robotPingPongHandler;
-    private final MosaicUserPingPongHandler userPingPongHandler;
     private final RobotService robotService;
 
     @Scheduled(fixedDelay = 5000)
     public void scheduledPingPong() {
-        log.debug("Running scheduled ping-pong check");
+        log.debug("Running robot scheduled ping-pong check");
 
         // Check all robots from DB
         this.robotService.getAllRobots()
@@ -45,13 +47,30 @@ public class PingPongScheduler {
                             );
                 });
 
-        // Send ping to all user sessions
-        this.wsSessionManager.getAllUserSessions().forEach(this.userPingPongHandler::sendPing);
-
         // Check for timeout sessions
         this.robotPingPongHandler.checkAndCloseTimeoutSessions();
-        this.userPingPongHandler.checkAndCloseTimeoutSessions();
 
-        log.debug("Scheduled ping-pong check completed");
+        log.debug("Scheduled robot ping-pong check completed");
+    }
+
+    @Scheduled(fixedDelay = 10000)
+    public void checkUnauthenticatedSessions() {
+        log.debug("Running unauthenticated session cleanup check");
+
+        OffsetDateTime threshold = OffsetDateTime.now().minusSeconds(UNAUTHENTICATED_TIMEOUT_SECONDS);
+
+        this.wsSessionManager.getAllRobotSessions()
+                .filter(session -> !session.getIsAuthenticated())
+                .filter(session -> session.getConnectedAt().isBefore(threshold))
+                .forEach(session -> {
+                    log.warn("Closing unauthenticated robot session: {} (connected at: {})",
+                            session.getSessionId(), session.getConnectedAt());
+                    session.close()
+                            .doOnSuccess(v -> log.info("Unauthenticated robot session closed: {}", session.getSessionId()))
+                            .doOnError(e -> log.error("Failed to close unauthenticated robot session: {}", session.getSessionId(), e))
+                            .subscribe();
+                });
+
+        log.debug("Unauthenticated robot session cleanup check completed");
     }
 }
