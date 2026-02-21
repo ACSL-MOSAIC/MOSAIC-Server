@@ -1,154 +1,80 @@
 import {
   addTabApi,
+  deleteTabApi,
   getTabConfigApi,
   getTabListApi,
   updateTabConfigApi,
+  updateTabNameApi,
 } from "@/client/service/dashboard.api.ts"
-import useCustomToast from "@/hooks/useCustomToast"
 import useAuth from "@/hooks/useAuth"
+import useCustomToast from "@/hooks/useCustomToast"
 import {
   Badge,
   Box,
   Button,
   Container,
-  Flex,
-  Heading,
   HStack,
-  NativeSelectField,
-  NativeSelectRoot,
+  Heading,
+  Input,
   Spinner,
   Text,
   Textarea,
   VStack,
 } from "@chakra-ui/react"
-import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query"
-import {createFileRoute} from "@tanstack/react-router"
-import {useEffect, useMemo, useRef, useState} from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
+import { useEffect, useMemo, useState } from "react"
 
 export const Route = createFileRoute("/_layout/dashboard")({
   component: DashboardPage,
 })
 
-type DashboardWidget = {
-  id: string
-  type: string
-  position: {
-    x: number
-    y: number
-    w: number
-    h: number
+const DEFAULT_DASHBOARD_CONFIG = { widgets: [] }
+
+const getDefaultConfigText = (): string =>
+  JSON.stringify(DEFAULT_DASHBOARD_CONFIG, null, 2)
+
+const ensureDashboardConfig = (value: unknown): Record<string, unknown> => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { ...DEFAULT_DASHBOARD_CONFIG }
   }
-  connectors: unknown[]
+
+  const config = value as Record<string, unknown>
+  if (Array.isArray(config.widgets)) {
+    return config
+  }
+
+  return {
+    ...config,
+    widgets: [],
+  }
 }
 
-type DashboardConfig = {
-  widgets: DashboardWidget[]
-  [key: string]: unknown
-}
-
-const DEFAULT_WIDGET_POSITION = {
-  x: 0,
-  y: 0,
-  w: 4,
-  h: 4,
-}
-
-const DEFAULT_TAB_CONFIG: DashboardConfig = {
-  widgets: [],
-}
-
-const INITIAL_WIDGET_TYPES = ["osm_gps_map", "video_stream"] as const
-
-const normalizeDashboardConfig = (rawConfig: string): DashboardConfig => {
+const formatConfigForEditor = (jsonString: string): string => {
   try {
-    const parsed = JSON.parse(rawConfig)
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return DEFAULT_TAB_CONFIG
-    }
-
-    const parsedObject = parsed as Record<string, unknown>
-    const parsedWidgets = Array.isArray(parsedObject.widgets)
-      ? parsedObject.widgets
-      : []
-
-    const widgets = parsedWidgets.map((widget, index) => {
-      const widgetObject =
-        widget && typeof widget === "object"
-          ? (widget as Record<string, unknown>)
-          : {}
-      return {
-        id:
-          typeof widgetObject.id === "string" && widgetObject.id.length > 0
-            ? widgetObject.id
-            : `widget-${index + 1}`,
-        type:
-          typeof widgetObject.type === "string" && widgetObject.type.length > 0
-            ? widgetObject.type
-            : "unknown_widget",
-        position:
-          widgetObject.position &&
-          typeof widgetObject.position === "object" &&
-          !Array.isArray(widgetObject.position)
-            ? ({
-                x:
-                  typeof (widgetObject.position as Record<string, unknown>).x ===
-                  "number"
-                    ? ((widgetObject.position as Record<string, unknown>)
-                        .x as number)
-                    : DEFAULT_WIDGET_POSITION.x,
-                y:
-                  typeof (widgetObject.position as Record<string, unknown>).y ===
-                  "number"
-                    ? ((widgetObject.position as Record<string, unknown>)
-                        .y as number)
-                    : DEFAULT_WIDGET_POSITION.y,
-                w:
-                  typeof (widgetObject.position as Record<string, unknown>).w ===
-                  "number"
-                    ? ((widgetObject.position as Record<string, unknown>)
-                        .w as number)
-                    : DEFAULT_WIDGET_POSITION.w,
-                h:
-                  typeof (widgetObject.position as Record<string, unknown>).h ===
-                  "number"
-                    ? ((widgetObject.position as Record<string, unknown>)
-                        .h as number)
-                    : DEFAULT_WIDGET_POSITION.h,
-              } as DashboardWidget["position"])
-            : DEFAULT_WIDGET_POSITION,
-        connectors: Array.isArray(widgetObject.connectors)
-          ? widgetObject.connectors
-          : [],
-      }
-    })
-
-    return {
-      ...parsedObject,
-      widgets,
-    } as DashboardConfig
+    const parsed = JSON.parse(jsonString)
+    return JSON.stringify(ensureDashboardConfig(parsed), null, 2)
   } catch {
-    return DEFAULT_TAB_CONFIG
+    return jsonString
   }
+}
+
+const normalizeConfigForSave = (jsonString: string): string => {
+  const parsed = JSON.parse(jsonString)
+  return JSON.stringify(ensureDashboardConfig(parsed))
 }
 
 function DashboardPage() {
-  const {user} = useAuth()
+  const { user } = useAuth()
   const queryClient = useQueryClient()
-  const {showSuccessToast, showErrorToast} = useCustomToast()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
 
   const [selectedTabId, setSelectedTabId] = useState("")
-  const [draftConfig, setDraftConfig] = useState<DashboardConfig>(
-    DEFAULT_TAB_CONFIG,
-  )
-  const [savedConfig, setSavedConfig] = useState<DashboardConfig>(
-    DEFAULT_TAB_CONFIG,
-  )
-  const [newWidgetType, setNewWidgetType] = useState<string>(
-    INITIAL_WIDGET_TYPES[0],
-  )
-  const autoInitializedTabsRef = useRef<Set<string>>(new Set())
+  const [newTabName, setNewTabName] = useState("Dashboard")
+  const [configText, setConfigText] = useState(getDefaultConfigText())
+  const [savedConfigText, setSavedConfigText] = useState(getDefaultConfigText())
 
-  const {data: tabs = [], isLoading: isTabsLoading} = useQuery({
+  const { data: tabs = [], isLoading: isTabsLoading } = useQuery({
     queryKey: ["dashboardTabs"],
     queryFn: getTabListApi,
     enabled: !!user,
@@ -166,7 +92,7 @@ function DashboardPage() {
     }
   }, [tabs, selectedTabId])
 
-  const {data: tabConfig, isLoading: isConfigLoading} = useQuery({
+  const { data: tabConfig, isLoading: isConfigLoading } = useQuery({
     queryKey: ["dashboardTabConfig", selectedTabId],
     queryFn: () => getTabConfigApi(selectedTabId),
     enabled: selectedTabId.length > 0,
@@ -176,113 +102,181 @@ function DashboardPage() {
     if (!tabConfig) {
       return
     }
+
     const rawConfig =
       typeof tabConfig.widgets === "string" ? tabConfig.widgets.trim() : ""
-    const normalized =
+    const formattedConfig =
       rawConfig.length > 0
-        ? normalizeDashboardConfig(rawConfig)
-        : DEFAULT_TAB_CONFIG
-    setDraftConfig(normalized)
-    setSavedConfig(normalized)
+        ? formatConfigForEditor(rawConfig)
+        : getDefaultConfigText()
+
+    setConfigText(formattedConfig)
+    setSavedConfigText(formattedConfig)
   }, [tabConfig])
 
   const hasChanges = useMemo(
-    () => JSON.stringify(draftConfig) !== JSON.stringify(savedConfig),
-    [draftConfig, savedConfig],
+    () => configText !== savedConfigText,
+    [configText, savedConfigText],
   )
-  const widgetCount = draftConfig.widgets.length
-  const configPreview = useMemo(
-    () => JSON.stringify(draftConfig, null, 2),
-    [draftConfig],
-  )
+
+  const jsonError = useMemo(() => {
+    try {
+      JSON.parse(configText)
+      return ""
+    } catch {
+      return "Invalid JSON format"
+    }
+  }, [configText])
+
+  const createTabMutation = useMutation({
+    mutationFn: async (name: string) => addTabApi({ name }),
+    onSuccess: async (_result, createdName) => {
+      showSuccessToast("Dashboard tab created.")
+      const nextTabs = await queryClient.fetchQuery({
+        queryKey: ["dashboardTabs"],
+        queryFn: getTabListApi,
+      })
+
+      const createdTab = [...nextTabs]
+        .reverse()
+        .find((tab) => tab.name === createdName)
+
+      if (createdTab) {
+        setSelectedTabId(createdTab.id)
+        try {
+          await updateTabConfigApi(createdTab.id, {
+            tabConfig: JSON.stringify(DEFAULT_DASHBOARD_CONFIG),
+          })
+          await queryClient.invalidateQueries({
+            queryKey: ["dashboardTabConfig", createdTab.id],
+          })
+        } catch {
+          showErrorToast("Default dashboard config initialization failed.")
+        }
+      }
+
+      setNewTabName("Dashboard")
+    },
+    onError: () => {
+      showErrorToast("Failed to create dashboard tab.")
+    },
+  })
+
+  const renameTabMutation = useMutation({
+    mutationFn: async ({ tabId, name }: { tabId: string; name: string }) => {
+      await updateTabNameApi(tabId, { name })
+      return { tabId, name }
+    },
+    onSuccess: async () => {
+      showSuccessToast("Dashboard name updated.")
+      await queryClient.invalidateQueries({ queryKey: ["dashboardTabs"] })
+    },
+    onError: () => {
+      showErrorToast("Failed to update dashboard name.")
+    },
+  })
+
+  const deleteTabMutation = useMutation({
+    mutationFn: async (tabId: string) => deleteTabApi(tabId),
+    onSuccess: async (_result, tabId) => {
+      showSuccessToast("Dashboard tab deleted.")
+      await queryClient.invalidateQueries({ queryKey: ["dashboardTabs"] })
+      await queryClient.invalidateQueries({
+        queryKey: ["dashboardTabConfig", tabId],
+      })
+
+      const nextTabs = await queryClient.fetchQuery({
+        queryKey: ["dashboardTabs"],
+        queryFn: getTabListApi,
+      })
+
+      if (nextTabs.length === 0) {
+        setSelectedTabId("")
+        setConfigText(getDefaultConfigText())
+        setSavedConfigText(getDefaultConfigText())
+        return
+      }
+
+      setSelectedTabId(nextTabs[0].id)
+    },
+    onError: () => {
+      showErrorToast("Failed to delete dashboard tab.")
+    },
+  })
 
   const saveConfigMutation = useMutation({
     mutationFn: async ({
       tabId,
-      config,
-      silent,
+      rawConfig,
     }: {
       tabId: string
-      config: DashboardConfig
-      silent?: boolean
+      rawConfig: string
     }) => {
-      const serialized = JSON.stringify(config)
-      await updateTabConfigApi(tabId, {tabConfig: serialized})
-      return {tabId, config, silent}
+      const normalized = normalizeConfigForSave(rawConfig)
+      await updateTabConfigApi(tabId, { tabConfig: normalized })
+      return { tabId, normalized }
     },
-    onSuccess: ({tabId, config, silent}) => {
+    onSuccess: ({ tabId, normalized }) => {
+      const formattedConfig = formatConfigForEditor(normalized)
       if (tabId === selectedTabId) {
-        setSavedConfig(config)
+        setConfigText(formattedConfig)
+        setSavedConfigText(formattedConfig)
       }
-      if (!silent) {
-        showSuccessToast("Dashboard config saved.")
-      }
+      showSuccessToast("Dashboard config saved.")
       queryClient.invalidateQueries({
         queryKey: ["dashboardTabConfig", tabId],
       })
     },
-    onError: (_error, variables) => {
-      if (variables.silent) {
-        autoInitializedTabsRef.current.delete(variables.tabId)
-      }
+    onError: () => {
       showErrorToast("Failed to save dashboard config.")
     },
   })
 
-  const createDefaultTabMutation = useMutation({
-    mutationFn: async () => addTabApi({name: "Dashboard"}),
-    onSuccess: async () => {
-      showSuccessToast("Default dashboard tab created.")
-      await queryClient.invalidateQueries({queryKey: ["dashboardTabs"]})
-    },
-    onError: () => {
-      showErrorToast("Failed to create default tab.")
-    },
-  })
-
-  useEffect(() => {
-    if (!tabConfig || !selectedTabId) {
+  const handleAddTab = () => {
+    const trimmedName = newTabName.trim()
+    if (trimmedName.length === 0) {
+      showErrorToast("Tab name is required.")
       return
     }
-    const rawConfig =
-      typeof tabConfig.widgets === "string" ? tabConfig.widgets.trim() : ""
-    const needsInitialization = rawConfig.length === 0
-    if (!needsInitialization) {
-      return
-    }
-    if (autoInitializedTabsRef.current.has(selectedTabId)) {
-      return
-    }
-
-    autoInitializedTabsRef.current.add(selectedTabId)
-    saveConfigMutation.mutate({
-      tabId: selectedTabId,
-      config: DEFAULT_TAB_CONFIG,
-      silent: true,
-    })
-  }, [selectedTabId, tabConfig, saveConfigMutation])
-
-  const handleAddWidget = () => {
-    if (!newWidgetType) {
-      return
-    }
-    const newWidget: DashboardWidget = {
-      id: crypto.randomUUID(),
-      type: newWidgetType,
-      position: DEFAULT_WIDGET_POSITION,
-      connectors: [],
-    }
-    setDraftConfig((prev) => ({
-      ...prev,
-      widgets: [...prev.widgets, newWidget],
-    }))
+    createTabMutation.mutate(trimmedName)
   }
 
-  const handleDeleteWidget = (widgetId: string) => {
-    setDraftConfig((prev) => ({
-      ...prev,
-      widgets: prev.widgets.filter((widget) => widget.id !== widgetId),
-    }))
+  const handleRenameTab = (tabId: string, currentName: string) => {
+    const nextName = window.prompt(
+      "새 대시보드 이름을 입력하세요.",
+      currentName,
+    )
+    if (nextName === null) {
+      return
+    }
+
+    const trimmedName = nextName.trim()
+    if (trimmedName.length === 0) {
+      showErrorToast("Tab name is required.")
+      return
+    }
+    if (trimmedName === currentName) {
+      return
+    }
+
+    renameTabMutation.mutate({
+      tabId,
+      name: trimmedName,
+    })
+  }
+
+  const handleSaveConfig = () => {
+    if (jsonError) {
+      showErrorToast("JSON format is invalid.")
+      return
+    }
+    if (!selectedTabId) {
+      return
+    }
+    saveConfigMutation.mutate({
+      tabId: selectedTabId,
+      rawConfig: configText,
+    })
   }
 
   if (!user) {
@@ -299,27 +293,9 @@ function DashboardPage() {
     return (
       <Container maxW="full" py={8}>
         <HStack gap={3}>
-          <Spinner size="sm"/>
+          <Spinner size="sm" />
           <Text>대시보드 탭을 불러오는 중입니다.</Text>
         </HStack>
-      </Container>
-    )
-  }
-
-  if (tabs.length === 0) {
-    return (
-      <Container maxW="full" py={8}>
-        <Heading size="lg" mb={3}>
-          Dashboard Config
-        </Heading>
-        <Text mb={4}>생성된 대시보드 탭이 없습니다.</Text>
-        <Button
-          w="fit-content"
-          onClick={() => createDefaultTabMutation.mutate()}
-          loading={createDefaultTabMutation.isPending}
-        >
-          Create Default Tab
-        </Button>
       </Container>
     )
   }
@@ -329,131 +305,158 @@ function DashboardPage() {
       <VStack align="stretch" gap={4}>
         <Heading size="lg">Dashboard Config</Heading>
 
-        <HStack gap={3}>
-          <Text minW="64px">Tab</Text>
-          <NativeSelectRoot maxW="360px">
-            <NativeSelectField
-              value={selectedTabId}
-              onChange={(event) => setSelectedTabId(event.target.value)}
-            >
-              {tabs.map((tab) => (
-                <option key={tab.id} value={tab.id}>
-                  {tab.name}
-                </option>
-              ))}
-            </NativeSelectField>
-          </NativeSelectRoot>
-          <Text color={hasChanges ? "orange.500" : "green.600"} fontSize="sm" ml={2}>
-            {hasChanges ? "Unsaved changes" : "Saved"}
+        <Box borderWidth="1px" borderRadius="md" p={4}>
+          <Text fontWeight="semibold" mb={2}>
+            Add Dashboard
           </Text>
-        </HStack>
-
-        {isConfigLoading ? (
-          <HStack gap={3}>
-            <Spinner size="sm"/>
-            <Text>선택한 탭의 config를 불러오는 중입니다.</Text>
+          <HStack gap={2}>
+            <Input
+              maxW="320px"
+              value={newTabName}
+              onChange={(event) => setNewTabName(event.target.value)}
+              placeholder="New dashboard name"
+            />
+            <Button
+              onClick={handleAddTab}
+              loading={createTabMutation.isPending}
+            >
+              Add Tab
+            </Button>
           </HStack>
-        ) : (
-          <>
-            <Flex justify="space-between" align="center">
-              <HStack gap={2}>
-                <NativeSelectRoot maxW="240px">
-                  <NativeSelectField
-                    value={newWidgetType}
-                    onChange={(event) => setNewWidgetType(event.target.value)}
-                  >
-                    {INITIAL_WIDGET_TYPES.map((widgetType) => (
-                      <option key={widgetType} value={widgetType}>
-                        {widgetType}
-                      </option>
-                    ))}
-                  </NativeSelectField>
-                </NativeSelectRoot>
-                <Button onClick={handleAddWidget}>Add Widget</Button>
-              </HStack>
-              <Badge colorPalette="blue" variant="subtle">
-                Widgets: {widgetCount}
-              </Badge>
-            </Flex>
+        </Box>
 
+        <Box borderWidth="1px" borderRadius="md" p={4}>
+          <HStack justify="space-between" mb={3}>
+            <Text fontWeight="semibold">Current Dashboards</Text>
+            <Badge colorPalette="blue" variant="subtle">
+              {tabs.length} tabs
+            </Badge>
+          </HStack>
+
+          {tabs.length === 0 ? (
+            <Text color="gray.500">생성된 대시보드 탭이 없습니다.</Text>
+          ) : (
             <VStack align="stretch" gap={2}>
-              {draftConfig.widgets.length === 0 ? (
+              {tabs.map((tab) => (
                 <Box
+                  key={tab.id}
                   borderWidth="1px"
                   borderRadius="md"
-                  px={4}
-                  py={6}
-                  color="gray.500"
+                  px={3}
+                  py={2}
+                  borderColor={
+                    selectedTabId === tab.id ? "blue.400" : "gray.200"
+                  }
+                  bg={selectedTabId === tab.id ? "blue.50" : "white"}
+                  cursor="pointer"
+                  onClick={() => setSelectedTabId(tab.id)}
                 >
-                  No widgets yet. Add one to build the dashboard config.
-                </Box>
-              ) : (
-                draftConfig.widgets.map((widget) => (
-                  <HStack
-                    key={widget.id}
-                    justify="space-between"
-                    borderWidth="1px"
-                    borderRadius="md"
-                    px={3}
-                    py={2}
-                  >
-                    <VStack align="start" gap={0}>
-                      <Text fontSize="sm" fontWeight="medium">
-                        {widget.type}
-                      </Text>
-                      <Text fontSize="xs" color="gray.500">
-                        {widget.id}
-                      </Text>
-                    </VStack>
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      colorPalette="red"
-                      onClick={() => handleDeleteWidget(widget.id)}
+                  <HStack justify="space-between">
+                    <Text
+                      fontWeight={
+                        selectedTabId === tab.id ? "semibold" : "normal"
+                      }
                     >
-                      Delete
-                    </Button>
+                      {tab.name}
+                    </Text>
+                    <HStack gap={2}>
+                      {selectedTabId === tab.id && (
+                        <Badge colorPalette="blue" variant="solid">
+                          Selected
+                        </Badge>
+                      )}
+                      <Button
+                        size="xs"
+                        colorPalette="green"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          handleRenameTab(tab.id, tab.name)
+                        }}
+                        loading={renameTabMutation.isPending}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        colorPalette="red"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          deleteTabMutation.mutate(tab.id)
+                        }}
+                        loading={deleteTabMutation.isPending}
+                      >
+                        Delete
+                      </Button>
+                    </HStack>
                   </HStack>
-                ))
-              )}
+                  <Text fontSize="xs" color="gray.500">
+                    {tab.id}
+                  </Text>
+                </Box>
+              ))}
             </VStack>
+          )}
+        </Box>
 
-            <Box>
-              <Text fontSize="sm" color="gray.600" mb={2}>
-                Config JSON Preview (read-only)
-              </Text>
-              <Textarea
-                value={configPreview}
-                readOnly
-                minH="280px"
-                fontFamily="monospace"
-                fontSize="sm"
-              />
-            </Box>
+        {tabs.length > 0 && (
+          <>
+            {isConfigLoading ? (
+              <HStack gap={3}>
+                <Spinner size="sm" />
+                <Text>선택한 탭의 config를 불러오는 중입니다.</Text>
+              </HStack>
+            ) : (
+              <VStack align="stretch" gap={2}>
+                <HStack justify="space-between">
+                  <Text fontSize="sm" color="gray.600">
+                    Dashboard Config JSON
+                  </Text>
+                  <Text
+                    color={hasChanges ? "orange.500" : "green.600"}
+                    fontSize="sm"
+                  >
+                    {hasChanges ? "Unsaved changes" : "Saved"}
+                  </Text>
+                </HStack>
+                <Textarea
+                  value={configText}
+                  onChange={(event) => setConfigText(event.target.value)}
+                  minH="360px"
+                  fontFamily="monospace"
+                  fontSize="sm"
+                />
+                {jsonError && (
+                  <Text color="red.500" fontSize="sm">
+                    {jsonError}
+                  </Text>
+                )}
+              </VStack>
+            )}
+
+            <HStack justify="space-between">
+              <Button
+                variant="outline"
+                onClick={() => setConfigText(savedConfigText)}
+                disabled={!hasChanges}
+              >
+                Discard Changes
+              </Button>
+              <Button
+                onClick={handleSaveConfig}
+                loading={saveConfigMutation.isPending}
+                disabled={
+                  !selectedTabId ||
+                  !hasChanges ||
+                  isConfigLoading ||
+                  !!jsonError
+                }
+              >
+                Save Config
+              </Button>
+            </HStack>
           </>
         )}
-
-        <HStack justify="space-between">
-          <Button
-            variant="outline"
-            onClick={() => setDraftConfig(savedConfig)}
-            disabled={!hasChanges}
-          >
-            Discard Changes
-          </Button>
-          <Button
-            onClick={() =>
-              saveConfigMutation.mutate({
-                tabId: selectedTabId,
-                config: draftConfig,
-              })
-            }
-            loading={saveConfigMutation.isPending}
-            disabled={!selectedTabId || !hasChanges || isConfigLoading}
-          >
-            Save Config
-          </Button>
-        </HStack>
       </VStack>
     </Container>
   )
