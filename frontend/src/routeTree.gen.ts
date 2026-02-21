@@ -19,8 +19,9 @@ import { Route as LoginOrganizationImport } from './routes/login/organization'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutRobotsImport } from './routes/_layout/robots'
 import { Route as LayoutOccupancyMapsImport } from './routes/_layout/occupancy-maps'
-import { Route as LayoutDashboardImport } from './routes/_layout/dashboard'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
+import { Route as LayoutDashboardIndexImport } from './routes/_layout/dashboard/index'
+import { Route as LayoutDashboardTabIdImport } from './routes/_layout/dashboard/$tabId'
 
 // Create/Update Routes
 
@@ -64,13 +65,18 @@ const LayoutOccupancyMapsRoute = LayoutOccupancyMapsImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutDashboardRoute = LayoutDashboardImport.update({
-  path: '/dashboard',
+const LayoutAdminRoute = LayoutAdminImport.update({
+  path: '/admin',
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutAdminRoute = LayoutAdminImport.update({
-  path: '/admin',
+const LayoutDashboardIndexRoute = LayoutDashboardIndexImport.update({
+  path: '/dashboard/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutDashboardTabIdRoute = LayoutDashboardTabIdImport.update({
+  path: '/dashboard/$tabId',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -88,10 +94,6 @@ declare module '@tanstack/react-router' {
     }
     '/_layout/admin': {
       preLoaderRoute: typeof LayoutAdminImport
-      parentRoute: typeof LayoutImport
-    }
-    '/_layout/dashboard': {
-      preLoaderRoute: typeof LayoutDashboardImport
       parentRoute: typeof LayoutImport
     }
     '/_layout/occupancy-maps': {
@@ -118,6 +120,14 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginIndexImport
       parentRoute: typeof rootRoute
     }
+    '/_layout/dashboard/$tabId': {
+      preLoaderRoute: typeof LayoutDashboardTabIdImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/dashboard/': {
+      preLoaderRoute: typeof LayoutDashboardIndexImport
+      parentRoute: typeof LayoutImport
+    }
   }
 }
 
@@ -126,11 +136,12 @@ declare module '@tanstack/react-router' {
 export const routeTree = rootRoute.addChildren([
   LayoutRoute.addChildren([
     LayoutAdminRoute,
-    LayoutDashboardRoute,
     LayoutOccupancyMapsRoute,
     LayoutRobotsRoute,
     LayoutSettingsRoute,
     LayoutIndexRoute,
+    LayoutDashboardTabIdRoute,
+    LayoutDashboardIndexRoute,
   ]),
   SignupRoute,
   LoginOrganizationRoute,

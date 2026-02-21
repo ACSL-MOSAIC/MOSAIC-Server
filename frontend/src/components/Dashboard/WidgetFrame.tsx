@@ -1,0 +1,31 @@
+import type { WidgetConfig } from "@/mosaic"
+import { VStack } from "@chakra-ui/react"
+import type { ReactNode } from "react"
+import { WidgetBody } from "./WidgetBody"
+import { WidgetFooter } from "./WidgetFooter"
+import { WidgetHeader } from "./WidgetHeader"
+
+export interface WidgetFrameProps {
+  widgetConfig: WidgetConfig
+  children?: ReactNode
+  footerInfo?: Array<{
+    label: string
+    value: string | ReactNode
+  }>
+  footerMessage?: string
+}
+
+export function WidgetFrame({
+  widgetConfig,
+  children,
+  footerInfo = [],
+  footerMessage,
+}: WidgetFrameProps) {
+  return (
+    <VStack gap={3} align="stretch" h="100%">
+      <WidgetHeader widgetConfig={widgetConfig} />
+      <WidgetBody>{children}</WidgetBody>
+      <WidgetFooter footerInfo={footerInfo} footerMessage={footerMessage} />
+    </VStack>
+  )
+}
