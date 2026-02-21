@@ -242,10 +242,7 @@ function DashboardPage() {
   }
 
   const handleRenameTab = (tabId: string, currentName: string) => {
-    const nextName = window.prompt(
-      "새 대시보드 이름을 입력하세요.",
-      currentName,
-    )
+    const nextName = window.prompt("Enter a new dashboard name.", currentName)
     if (nextName === null) {
       return
     }
@@ -283,7 +280,7 @@ function DashboardPage() {
     return (
       <Container maxW="full" py={8}>
         <Heading size="lg" mb={8}>
-          로그인이 필요합니다.
+          Please log in.
         </Heading>
       </Container>
     )
@@ -294,7 +291,7 @@ function DashboardPage() {
       <Container maxW="full" py={8}>
         <HStack gap={3}>
           <Spinner size="sm" />
-          <Text>대시보드 탭을 불러오는 중입니다.</Text>
+          <Text>Loading dashboard tabs...</Text>
         </HStack>
       </Container>
     )
@@ -334,7 +331,7 @@ function DashboardPage() {
           </HStack>
 
           {tabs.length === 0 ? (
-            <Text color="gray.500">생성된 대시보드 탭이 없습니다.</Text>
+            <Text color="gray.500">No dashboard tabs have been created.</Text>
           ) : (
             <VStack align="stretch" gap={2}>
               {tabs.map((tab) => (
@@ -404,7 +401,7 @@ function DashboardPage() {
             {isConfigLoading ? (
               <HStack gap={3}>
                 <Spinner size="sm" />
-                <Text>선택한 탭의 config를 불러오는 중입니다.</Text>
+                <Text>Loading the selected tab configuration...</Text>
               </HStack>
             ) : (
               <VStack align="stretch" gap={2}>
