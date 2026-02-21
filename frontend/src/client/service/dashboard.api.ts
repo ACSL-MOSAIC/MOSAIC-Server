@@ -2,9 +2,10 @@ import type {CancelablePromise} from "@/client/core/CancelablePromise.ts"
 import {request as __request} from "@/client/core/request.ts"
 import type {
   TabAddDto,
-  TabConfigDto, TabConfigUpdateDto,
+  TabConfigDto,
+  TabConfigUpdateDto,
   TabInfoDto,
-  TabNameUpdateDto
+  TabNameUpdateDto,
 } from "./dashboard.dto.ts"
 
 /**
@@ -15,39 +16,47 @@ import type {
 export const getTabListApi = (): CancelablePromise<TabInfoDto[]> => {
   return __request({
     method: "GET",
-    url: "/api/v1/dashboard",
+    url: "/api/v1/dashboard/tabs",
   })
 }
 
 export const addTabApi = (tabAddDto: TabAddDto): CancelablePromise<void> => {
   return __request({
     method: "POST",
-    url: "/api/v1/dashboard",
+    url: "/api/v1/dashboard/tabs",
     body: tabAddDto,
     mediaType: "application/json",
   })
 }
 
-export const getTabConfigApi = (tabId: string): CancelablePromise<TabConfigDto> => {
+export const getTabConfigApi = (
+  tabId: string,
+): CancelablePromise<TabConfigDto> => {
   return __request({
     method: "GET",
-    url: `/api/v1/dashboard/${tabId}`,
+    url: `/api/v1/dashboard/tabs/${tabId}`,
   })
 }
 
-export const updateTabNameApi = (tabId: string, tabNameUpdateDto: TabNameUpdateDto): CancelablePromise<void> => {
+export const updateTabNameApi = (
+  tabId: string,
+  tabNameUpdateDto: TabNameUpdateDto,
+): CancelablePromise<void> => {
   return __request({
     method: "PUT",
-    url: `/api/v1/dashboard/${tabId}`,
+    url: `/api/v1/dashboard/tabs/${tabId}`,
     body: tabNameUpdateDto,
     mediaType: "application/json",
   })
 }
 
-export const updateTabConfigApi = (tabId: string, tabConfigUpdateDto: TabConfigUpdateDto): CancelablePromise<void> => {
+export const updateTabConfigApi = (
+  tabId: string,
+  tabConfigUpdateDto: TabConfigUpdateDto,
+): CancelablePromise<void> => {
   return __request({
     method: "PUT",
-    url: `/api/v1/dashboard/${tabId}`,
+    url: `/api/v1/dashboard/tabs/${tabId}/configs`,
     body: tabConfigUpdateDto,
     mediaType: "application/json",
   })
@@ -56,6 +65,6 @@ export const updateTabConfigApi = (tabId: string, tabConfigUpdateDto: TabConfigU
 export const deleteTabApi = (tabId: string): CancelablePromise<void> => {
   return __request({
     method: "DELETE",
-    url: `/api/v1/dashboard/${tabId}`,
+    url: `/api/v1/dashboard/tabs/${tabId}`,
   })
 }
