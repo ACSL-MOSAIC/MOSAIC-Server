@@ -35,16 +35,16 @@ public class MosaicRobotStatusHandler {
 
         RobotUpdateStatusWsDto req = this.objectMapper.convertValue(wsMessage.getData(), RobotUpdateStatusWsDto.class);
         return this.updateRobotStatus(req.status(), wsSession)
-                .then(this.notifyToOrganization(req.status(), wsSession));
+                .then(this.notifyToSubscribers(req.status(), wsSession));
     }
 
     private Mono<Void> updateRobotStatus(RobotStatus robotStatus, RobotWsSession wsSession) {
         return this.robotService.updateRobotStatus(robotStatus, wsSession.getRobotPk(), wsSession.getOrganizationFk());
     }
 
-    private Mono<Void> notifyToOrganization(RobotStatus robotStatus, RobotWsSession wsSession) {
+    private Mono<Void> notifyToSubscribers(RobotStatus robotStatus, RobotWsSession wsSession) {
         WsMessage<UserUpdateRobotStatusWsDto> wsMessage = new WsMessage<>(TYPE_UPDATE, new UserUpdateRobotStatusWsDto(wsSession.getRobotPk(), robotStatus));
-        this.wsSessionManager.getUserSessionByOrganizationPk(wsSession.getOrganizationFk())
+        this.wsSessionManager.getUserSessionsSubscribedToRobot(wsSession.getRobotPk(), wsSession.getOrganizationFk())
                 .forEach(userWsSession -> {
                     try {
                         this.wsMessageSender.sendWsMessageToUser(wsMessage, userWsSession);

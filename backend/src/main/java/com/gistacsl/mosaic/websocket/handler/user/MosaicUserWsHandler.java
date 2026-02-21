@@ -27,6 +27,7 @@ public class MosaicUserWsHandler implements WebSocketHandler {
     private final MosaicUserAuthorizeHandler mosaicUserAuthorizeHandler;
     private final MosaicUserSignalingHandler mosaicUserSignalingHandler;
     private final MosaicUserPingPongHandler mosaicUserPingPongHandler;
+    private final MosaicUserStatusHandler mosaicUserStatusHandler;
 
     private final WsMessageSender wsMessageSender;
     private final WsSessionManager wsSessionManager;
@@ -41,6 +42,8 @@ public class MosaicUserWsHandler implements WebSocketHandler {
                             .then(Mono.defer(() -> this.processPendingMessages(wsSession)));
             case MosaicUserSignalingHandler.TYPE_PREFIX ->
                     this.mosaicUserSignalingHandler.handleWsMessage(wsMessage, wsSession);
+            case MosaicUserStatusHandler.TYPE_PREFIX ->
+                    this.mosaicUserStatusHandler.handleWsMessage(wsMessage, wsSession);
             default -> Mono.error(new CustomException(ResultCode.UNKNOWN_WEBSOCKET_REQUEST_TYPE));
         };
     }

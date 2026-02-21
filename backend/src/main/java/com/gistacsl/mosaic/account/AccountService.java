@@ -175,7 +175,8 @@ public class AccountService {
         TabEntity newTabEntity = TabEntity.builder()
                 .pk(newTabPk)
                 .organizationFk(organization.getPk())
-                .name("Dashboard")
+                .name("Default")
+                .tabConfig("{\"widgets\":[]}")
                 .createdAt(now)
                 .updatedAt(now)
                 .build();

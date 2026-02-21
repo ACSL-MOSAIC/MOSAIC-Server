@@ -65,6 +65,11 @@ public class WsSessionManager {
                 .filter(session -> session.getUserAuth().getOrganizationPk().equals(organizationPk));
     }
 
+    public Stream<UserWsSession> getUserSessionsSubscribedToRobot(UUID robotPk, UUID organizationPk) {
+        return this.getUserSessionByOrganizationPk(organizationPk)
+                .filter(session -> session.isSubscribedToRobot(robotPk));
+    }
+
     public Stream<RobotWsSession> getAllRobotSessions() {
         return this.robotSessionMap.values().stream();
     }

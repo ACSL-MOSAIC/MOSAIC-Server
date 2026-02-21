@@ -12,7 +12,9 @@ import reactor.core.publisher.Sinks;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.LinkedBlockingQueue;
 
 @Getter
@@ -21,6 +23,7 @@ public class UserWsSession extends UndertowWebSocketSession {
     private final Sinks.Many<String> sinks;
     private final LinkedBlockingQueue<WsMessage<?>> pendingMessages;
     private final OffsetDateTime connectedAt;
+    private final Set<UUID> subscribedRobotIds = new CopyOnWriteArraySet<>();
     private UserAuth userAuth;
     private Boolean isAuthenticated;
 
@@ -36,6 +39,19 @@ public class UserWsSession extends UndertowWebSocketSession {
     public void authenticated(UserAuth userAuth) {
         this.userAuth = userAuth;
         this.isAuthenticated = true;
+    }
+
+    public void subscribeToRobots(List<UUID> robotIds) {
+        this.subscribedRobotIds.clear();
+        this.subscribedRobotIds.addAll(robotIds);
+    }
+
+    public void unsubscribeFromRobots(List<UUID> robotIds) {
+        this.subscribedRobotIds.removeAll(robotIds);
+    }
+
+    public boolean isSubscribedToRobot(UUID robotId) {
+        return this.subscribedRobotIds.contains(robotId);
     }
 
     @Override
