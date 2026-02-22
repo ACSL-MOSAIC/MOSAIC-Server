@@ -2,7 +2,16 @@ import { getTabConfigApi } from "@/client/service/dashboard.api.ts"
 import { WidgetFactory } from "@/components/Dashboard/WidgetFactory.tsx"
 import useAuth from "@/hooks/useAuth.ts"
 import { RobotConnector, type TabConfig, type WidgetConfig } from "@/mosaic"
-import { Box, Container, HStack, Spinner, Text } from "@chakra-ui/react"
+import {
+  Box,
+  Container,
+  HStack,
+  Skeleton,
+  SkeletonText,
+  Spinner,
+  Text,
+  VStack,
+} from "@chakra-ui/react"
 import { useQuery } from "@tanstack/react-query"
 import { Navigate } from "@tanstack/react-router"
 import { Responsive, WidthProvider } from "react-grid-layout"
@@ -11,7 +20,7 @@ import "react-resizable/css/styles.css"
 import RobotConnectionPanel from "@/components/Dashboard/RobotConnectionPanel.tsx"
 import { useMosaicWebRTCConnection } from "@/hooks/useMosaicWebRTCConnection.ts"
 import { useRobotInfo } from "@/hooks/useRobotInfo.ts"
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
@@ -28,8 +37,9 @@ interface DashboardGridProps {
 
 export default function DashboardGrid({ tabId }: DashboardGridProps) {
   const { user } = useAuth()
-  const { subscribeRobots, unsubscribeRobots } = useRobotInfo()
+  const { robotInfos, subscribeRobots, unsubscribeRobots } = useRobotInfo()
   const { createConnection, disconnectConnection } = useMosaicWebRTCConnection()
+  const [robotLoadError, setRobotLoadError] = useState<string | null>(null)
 
   const { data: tabConfig, isPending: isConfigLoading } = useQuery({
     queryKey: ["parsedDashboardTabConfig", tabId],
@@ -61,11 +71,35 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
     () => (tabConfig ? extractRobotListFromTabConfig(tabConfig) : []),
     [tabConfig],
   )
+  const hasAllRequiredRobots = useMemo(
+    () =>
+      robotList.every((robotId) => robotInfos.some((r) => r.id === robotId)),
+    [robotList, robotInfos],
+  )
 
   useEffect(() => {
-    if (robotList.length === 0) return
-    subscribeRobots(robotList)
+    let isActive = true
+    setRobotLoadError(null)
+
+    if (robotList.length === 0) {
+      return
+    }
+
+    const loadRobots = async () => {
+      try {
+        await subscribeRobots(robotList)
+      } catch (error) {
+        console.error("Failed to subscribe dashboard robots:", error)
+        if (isActive) {
+          setRobotLoadError("Failed to load robots for this dashboard.")
+        }
+      }
+    }
+
+    void loadRobots()
+
     return () => {
+      isActive = false
       unsubscribeRobots()
     }
   }, [robotList, subscribeRobots, unsubscribeRobots])
@@ -80,7 +114,7 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
       <Container maxW="full" py={8}>
         <HStack gap={3}>
           <Spinner size="sm" />
-          <Text>대시보드 탭을 불러오는 중입니다.</Text>
+          <Text>Loading dashboard tabs...</Text>
         </HStack>
       </Container>
     )
@@ -88,6 +122,48 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
 
   if (!tabConfig) {
     return <Navigate to="/dashboard" />
+  }
+
+  if (robotLoadError) {
+    return (
+      <Container maxW="full" py={8}>
+        <Box
+          borderWidth="1px"
+          borderColor="red.200"
+          borderRadius="md"
+          bg="red.50"
+          px={4}
+          py={3}
+        >
+          <Text color="red.700">{robotLoadError}</Text>
+        </Box>
+      </Container>
+    )
+  }
+
+  if (robotList.length > 0 && !hasAllRequiredRobots) {
+    return (
+      <Container maxW="full" py={8}>
+        <VStack align="stretch" gap={4}>
+          <HStack gap={3}>
+            <Spinner size="sm" />
+            <Text>Loading robots for this dashboard...</Text>
+          </HStack>
+          <Box borderWidth="1px" borderRadius="md" p={4} bg="white">
+            <Skeleton height="26px" width="280px" mb={3} />
+            <SkeletonText noOfLines={1} width="220px" mb={4} />
+            <HStack gap={4}>
+              <Skeleton height="150px" flex={1} />
+              <Skeleton height="150px" flex={1} />
+            </HStack>
+          </Box>
+          <HStack gap={4}>
+            <Skeleton height="280px" flex={1} />
+            <Skeleton height="280px" flex={1} />
+          </HStack>
+        </VStack>
+      </Container>
+    )
   }
 
   const connectToRobot = async (robotId: string) => {

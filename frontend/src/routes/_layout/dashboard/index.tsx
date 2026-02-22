@@ -33,7 +33,7 @@ import {
 } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 export const Route = createFileRoute("/_layout/dashboard/")({
   component: DashboardPage,
@@ -80,6 +80,7 @@ function DashboardPage() {
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
   const navigate = useNavigate()
+  const connectConfirmButtonRef = useRef<HTMLButtonElement | null>(null)
   const [selectedTabId, setSelectedTabId] = useState("")
   const [connectTargetTab, setConnectTargetTab] = useState<{
     id: string
@@ -246,6 +247,31 @@ function DashboardPage() {
       rawConfig: configText,
     })
   }
+
+  const handleConfirmConnect = () => {
+    if (!connectTargetTab?.id) {
+      return
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    navigate({
+      to: "/dashboard/$tabId" as any,
+      params: { tabId: connectTargetTab.id } as any,
+    })
+    setConnectTargetTab(null)
+  }
+
+  useEffect(() => {
+    if (!connectTargetTab) {
+      return
+    }
+    const timerId = window.setTimeout(() => {
+      connectConfirmButtonRef.current?.focus()
+    }, 0)
+    return () => {
+      window.clearTimeout(timerId)
+    }
+  }, [connectTargetTab])
 
   if (!user) {
     return (
@@ -434,7 +460,15 @@ function DashboardPage() {
         placement="center"
         size="sm"
       >
-        <DialogContent>
+        <DialogContent
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") {
+              return
+            }
+            event.preventDefault()
+            handleConfirmConnect()
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Connect to Dashboard</DialogTitle>
           </DialogHeader>
@@ -454,15 +488,10 @@ function DashboardPage() {
               </Button>
             </DialogActionTrigger>
             <Button
+              ref={connectConfirmButtonRef}
               colorPalette="blue"
-              onClick={() => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                navigate({
-                  to: "/dashboard/$tabId" as any,
-                  params: { tabId: connectTargetTab?.id } as any,
-                })
-                setConnectTargetTab(null)
-              }}
+              autoFocus
+              onClick={handleConfirmConnect}
             >
               Connect
             </Button>
