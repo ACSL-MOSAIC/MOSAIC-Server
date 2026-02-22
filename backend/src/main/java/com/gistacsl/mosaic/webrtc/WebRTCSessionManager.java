@@ -2,6 +2,9 @@ package com.gistacsl.mosaic.webrtc;
 
 import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.common.exception.CustomException;
+import com.gistacsl.mosaic.websocket.dto.WsMessage;
+import com.gistacsl.mosaic.websocket.handler.WsMessageSender;
+import com.gistacsl.mosaic.websocket.handler.dto.PrepareConnectionWsDto;
 import com.gistacsl.mosaic.websocket.session.RobotWsSession;
 import com.gistacsl.mosaic.websocket.session.UserWsSession;
 import com.gistacsl.mosaic.websocket.session.WsSessionManager;
@@ -17,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class WebRTCSessionManager {
     private final DSLContext dslContext;
+    private final WsMessageSender wsMessageSender;
     private final WsSessionManager wsSessionManager;
     private final Map<UUID, WebRTCSession> sessions = new ConcurrentHashMap<>();
 
@@ -28,6 +32,8 @@ public class WebRTCSessionManager {
                 .orElseThrow(() -> new CustomException(ResultCode.USER_WS_SESSION_NOT_EXIST));
 
         WebRTCSession session = new WebRTCSession(robotWsSession, userWsSession);
+        WsMessage<PrepareConnectionWsDto> wsMessage = new WsMessage<>("signaling.prepare_connection", new PrepareConnectionWsDto(session.getSessionId()));
+        this.wsMessageSender.sendWsMessageToRobot(wsMessage, robotWsSession);
         sessions.put(session.getSessionId(), session);
         return session;
     }

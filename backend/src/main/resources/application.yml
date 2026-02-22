@@ -37,9 +37,9 @@ file:
 
 logging:
   level:
-    root: DEBUG
-    com.gistacsl.mosaic: DEBUG
-    org.springframework: DEBUG
-    org.springframework.web: DEBUG
+    root: INFO
+    com.gistacsl.mosaic: INFO
+    org.springframework: INFO
+    org.springframework.web: INFO
     sun.rmi: INFO
     javax.management: INFO

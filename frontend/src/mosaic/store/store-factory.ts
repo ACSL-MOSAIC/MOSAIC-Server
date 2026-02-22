@@ -1,30 +1,40 @@
-import type {RobotConnector} from "@/mosaic"
-import type {MosaicStore} from "./interface/mosaic-store.ts"
+import type { RobotConnector } from "@/mosaic"
+import { MediaStreamStore } from "@/mosaic/store/interface/media-stream-store.ts"
+import type { MosaicStore } from "./interface/mosaic-store.ts"
+
+const modules = import.meta.glob<Record<string, unknown>>("./impl/*.ts", {
+  eager: true,
+})
+
+const storeRegistry = new Map<string, typeof MosaicStore>()
+
+for (const module of Object.values(modules)) {
+  for (const exported of Object.values(module)) {
+    if (
+      typeof exported === "function" &&
+      ((exported as typeof MosaicStore).connectorType !== "undefined" ||
+        (exported as typeof MosaicStore).connectorType !== "template")
+    ) {
+      const StoreClass = exported as typeof MosaicStore
+      storeRegistry.set(StoreClass.connectorType, StoreClass)
+    }
+  }
+}
 
 export class StoreFactory {
-  // Key: dataType; value: function that takes robotConnector and returns a MosaicStore instance
-  private storeFactories: Map<
-    string,
-    (robotConnector: RobotConnector) => MosaicStore
-  > = new Map()
-
-  public registerMosaicStore<T extends MosaicStore>(
-    // StoreClass extends MosaicStore; type is determined via getDataType()
-    StoreClass: (new (robotConnector: RobotConnector) => T) & {
-      getDataType(): string
-    },
-  ): void {
-    this.storeFactories.set(StoreClass.getDataType(), (robotConnector) =>
-      new StoreClass(robotConnector),
-    )
-  }
-
   public createStore(
     connectorType: string,
     robotConnector: RobotConnector,
   ): MosaicStore | null {
-    const factory = this.storeFactories.get(connectorType)
-    if (factory === undefined) return null
-    return factory(robotConnector)
+    if (connectorType === "media") {
+      return new MediaStreamStore(robotConnector)
+    }
+    const StoreClass = storeRegistry.get(connectorType)
+    if (StoreClass === undefined) return null
+    return new (
+      StoreClass as unknown as new (
+        robotConnector: RobotConnector,
+      ) => MosaicStore
+    )(robotConnector)
   }
 }

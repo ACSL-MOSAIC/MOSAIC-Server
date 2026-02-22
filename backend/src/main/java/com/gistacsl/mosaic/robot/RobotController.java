@@ -52,13 +52,6 @@ public class RobotController {
                 .map(GResponse::toGResponse);
     }
 
-    @GetMapping("/{id}/config")
-    public Mono<GResponse<RobotConfigDto.Res>> getRobotConfig(@PathVariable UUID id) {
-        return UserAuth.getUserAuthFromSecurityContextHolder()
-                .flatMap(userAuth -> robotService.getRobotConfig(userAuth, id))
-                .map(GResponse::toGResponse);
-    }
-
     @PutMapping("/{id}")
     public Mono<GResponse<MessageDto>> updateRobot(
             @PathVariable UUID id,

@@ -1,20 +1,10 @@
-import { useWebSocket } from "@/contexts/WebSocketContext"
-import { useRobotMapping } from "@/hooks/useRobotMapping"
-import {
-  Badge,
-  Box,
-  Button,
-  Flex,
-  Grid,
-  Icon,
-  IconButton,
-  Text,
-} from "@chakra-ui/react"
+import { useRobotInfo } from "@/hooks/useRobotInfo.ts"
+import type { RobotInfo } from "@/mosaic/robot-info.ts"
+import { Badge, Box, Button, Flex, Grid, Icon, Text } from "@chakra-ui/react"
 import { useCallback, useMemo } from "react"
-import { IoPower, IoPowerOutline, IoSettings } from "react-icons/io5"
+import { IoPower, IoPowerOutline } from "react-icons/io5"
 
 interface RobotConnectionPanelProps {
-  connections: { [key: string]: boolean }
   onConnect: (robotId: string) => void
   onDisconnect: (robotId: string) => void
   onConnectAll: () => void
@@ -22,53 +12,39 @@ interface RobotConnectionPanelProps {
 }
 
 function RobotConnectionPanel({
-  connections,
   onConnect,
   onDisconnect,
   onConnectAll,
   onDisconnectAll,
 }: RobotConnectionPanelProps) {
-  const { robots } = useWebSocket()
-  const { getRobotName } = useRobotMapping()
+  const { robotInfos } = useRobotInfo()
 
   const readyRobots = useMemo(
-    () => robots.filter((robot) => robot.state === "READY_TO_CONNECT"),
-    [robots],
+    () =>
+      robotInfos.filter((robotInfo) => {
+        return robotInfo.isReadyToConnect
+      }),
+    [robotInfos],
   )
   const connectedRobots = useMemo(
-    () => robots.filter((robot) => connections[robot.robot_id]),
-    [robots, connections],
+    () =>
+      robotInfos.filter((robotInfo) => {
+        return robotInfo.isRtcConnected
+      }),
+    [robotInfos],
   )
 
-  const getStatusColor = useCallback(
-    (robotId: string) => {
-      if (connections[robotId]) {
-        return "green"
-      }
-      const robot = robots.find((r) => r.robot_id === robotId)
-      if (robot?.state === "READY_TO_CONNECT") {
-        return "blue"
-      }
-      return "gray"
-    },
-    [connections, robots],
-  )
+  const getStatusColor = useCallback((robotInfo: RobotInfo) => {
+    if (robotInfo.isRtcConnected) {
+      return "green"
+    }
+    if (robotInfo.isReadyToConnect) {
+      return "blue"
+    }
+    return "gray"
+  }, [])
 
-  const getStatusText = useCallback(
-    (robotId: string) => {
-      if (connections[robotId]) {
-        return "Connected"
-      }
-      const robot = robots.find((r) => r.robot_id === robotId)
-      if (robot?.state === "READY_TO_CONNECT") {
-        return "Ready"
-      }
-      return "Unavailable"
-    },
-    [connections, robots],
-  )
-
-  if (robots.length === 0) {
+  if (robotInfos.length === 0) {
     return (
       <Box textAlign="center" py={4} bg="gray.50" borderRadius="lg">
         <Text fontSize="lg" color="gray.500">
@@ -87,7 +63,7 @@ function RobotConnectionPanel({
             Robot Connection Management
           </Text>
           <Text fontSize="sm" color="gray.500">
-            {connectedRobots.length} of {robots.length} robots connected
+            {connectedRobots.length} of {robotInfos.length} robots connected
           </Text>
         </Box>
         <Flex gap={2}>
@@ -116,45 +92,38 @@ function RobotConnectionPanel({
       <Grid
         templateColumns={{
           base: "1fr",
-          md: "repeat(2, 1fr)",
-          lg: "repeat(4, 1fr)",
+          md: "repeat(3, 1fr)",
+          lg: "repeat(6, 1fr)",
         }}
         gap={4}
       >
-        {robots.map((robot) => {
-          const isConnected = connections[robot.robot_id]
-          const canConnect = robot.state === "READY_TO_CONNECT"
-
+        {robotInfos.map((robotInfo) => {
           return (
             <Box
-              key={robot.robot_id}
+              key={robotInfo.id}
               p={4}
-              bg={isConnected ? "green.50" : "gray.50"}
+              bg={robotInfo.isRtcConnected ? "green.50" : "gray.50"}
               borderRadius="lg"
               borderWidth={2}
-              borderColor={isConnected ? "green.200" : "gray.200"}
+              borderColor={robotInfo.isRtcConnected ? "green.200" : "gray.200"}
               transition="all 0.2s"
               _hover={{ transform: "translateY(-1px)", boxShadow: "md" }}
             >
               <Flex justify="space-between" align="center" mb={2}>
                 <Text fontWeight="bold" fontSize="lg">
-                  {getRobotName(robot.robot_id)}
+                  {robotInfo.name}
                 </Text>
-                <Badge colorScheme={getStatusColor(robot.robot_id)}>
-                  {getStatusText(robot.robot_id)}
+                <Badge colorScheme={getStatusColor(robotInfo)}>
+                  {robotInfo.statusString}
                 </Badge>
               </Flex>
 
-              <Text fontSize="sm" color="gray.600" mb={3}>
-                Status: {robot.state}
-              </Text>
-
               <Flex gap={2} align="center">
-                {isConnected ? (
+                {robotInfo.isRtcConnected ? (
                   <Button
                     colorScheme="red"
                     size="sm"
-                    onClick={() => onDisconnect(robot.robot_id)}
+                    onClick={() => onDisconnect(robotInfo.id)}
                     flex="1"
                   >
                     <Icon as={IoPowerOutline} mr={2} />
@@ -164,8 +133,8 @@ function RobotConnectionPanel({
                   <Button
                     colorScheme="blue"
                     size="sm"
-                    onClick={() => onConnect(robot.robot_id)}
-                    disabled={!canConnect}
+                    onClick={() => onConnect(robotInfo.id)}
+                    disabled={!robotInfo.isReadyToConnect}
                     flex="1"
                   >
                     <Icon as={IoPowerOutline} mr={2} />

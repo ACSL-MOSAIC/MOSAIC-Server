@@ -9,23 +9,20 @@ import {
   Textarea,
   VStack,
 } from "@chakra-ui/react"
-import {useMutation, useQueryClient} from "@tanstack/react-query"
-import {useEffect, useState} from "react"
-import {type SubmitHandler, useForm} from "react-hook-form"
-import {FaExchangeAlt} from "react-icons/fa"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useEffect, useState } from "react"
+import { type SubmitHandler, useForm } from "react-hook-form"
+import { FaExchangeAlt } from "react-icons/fa"
 
-import type {ApiError} from "@/client"
-import {
-  getRobotConfigApi,
-  updateRobotApi,
-} from "@/client/service/robot.api.ts"
+import type { ApiError } from "@/client"
+import { getRobotApi, updateRobotApi } from "@/client/service/robot.api.ts"
 import type {
   RobotInfoDto,
   RobotUpdateDto,
 } from "@/client/service/robot.dto.ts"
-import {ROBOT_AUTH_TYPES} from "@/client/service/robot.dto.ts"
+import { ROBOT_AUTH_TYPES } from "@/client/service/robot.dto.ts"
 import useCustomToast from "@/hooks/useCustomToast"
-import {handleError} from "@/utils"
+import { handleError } from "@/utils"
 import {
   DialogBody,
   DialogCloseTrigger,
@@ -36,22 +33,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog"
-import {Field} from "../ui/field"
+import { Field } from "../ui/field"
 
 interface EditRobotProps {
   robot: RobotInfoDto
 }
 
-const EditRobotDialog = ({robot}: EditRobotProps) => {
+const EditRobotDialog = ({ robot }: EditRobotProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const queryClient = useQueryClient()
-  const {showSuccessToast} = useCustomToast()
+  const { showSuccessToast } = useCustomToast()
   const {
     register,
     handleSubmit,
     reset,
     setValue,
-    formState: {errors, isSubmitting},
+    formState: { errors, isSubmitting },
   } = useForm<RobotUpdateDto>({
     mode: "onBlur",
     criteriaMode: "all",
@@ -65,7 +62,7 @@ const EditRobotDialog = ({robot}: EditRobotProps) => {
   // Load connector config when dialog opens
   useEffect(() => {
     if (isOpen) {
-      getRobotConfigApi(robot.id)
+      getRobotApi(robot.id)
         .then((response) => {
           // Format JSON with indentation for display
           const formattedConfig = JSON.stringify(
@@ -92,7 +89,7 @@ const EditRobotDialog = ({robot}: EditRobotProps) => {
       handleError(err)
     },
     onSettled: () => {
-      queryClient.invalidateQueries({queryKey: ["robots"]})
+      queryClient.invalidateQueries({ queryKey: ["robots"] })
     },
   })
 
@@ -109,14 +106,14 @@ const EditRobotDialog = ({robot}: EditRobotProps) => {
 
   return (
     <DialogRoot
-      size={{base: "xs", md: "md"}}
+      size={{ base: "xs", md: "md" }}
       placement="center"
       open={isOpen}
-      onOpenChange={({open}) => setIsOpen(open)}
+      onOpenChange={({ open }) => setIsOpen(open)}
     >
       <DialogTrigger asChild>
         <Button variant="ghost">
-          <FaExchangeAlt fontSize="16px"/>
+          <FaExchangeAlt fontSize="16px" />
           Edit Robot
         </Button>
       </DialogTrigger>
@@ -224,7 +221,7 @@ const EditRobotDialog = ({robot}: EditRobotProps) => {
             </ButtonGroup>
           </DialogFooter>
         </form>
-        <DialogCloseTrigger/>
+        <DialogCloseTrigger />
       </DialogContent>
     </DialogRoot>
   )

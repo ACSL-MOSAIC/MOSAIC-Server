@@ -4,6 +4,7 @@ import {
 } from "@/client/service/webrtc.api.ts"
 import type { RobotConnector } from "@/mosaic"
 import type { ChannelRequirement } from "@/mosaic/channel"
+import type { RobotInfo } from "@/mosaic/robot-info.ts"
 import type { SignalingServer } from "@/mosaic/webrtc/signaling-server.ts"
 import { WebRTCConnection } from "@/mosaic/webrtc/webrtc-connection.ts"
 
@@ -19,7 +20,9 @@ export class WebRTCConnectionManager {
   }
 
   // robotIds 한 번의 API 호출로 각각의 rtcConnectionId 발급 후 내부 Map에 저장, return value는 참고용
-  public async prepareRtcConnection(robotIds: string[]): Promise<Map<string, string>> {
+  public async prepareRtcConnection(
+    robotIds: string[],
+  ): Promise<Map<string, string>> {
     if (robotIds.length === 0) {
       return new Map()
     }
@@ -46,30 +49,30 @@ export class WebRTCConnectionManager {
 
   // 저장된 Map에서 robotId의 rtcConnectionId를 조회 후 연결
   public async createConnection(
-    robotId: string,
+    robotInfo: RobotInfo,
     channelRequirements: ChannelRequirement[],
   ): Promise<void> {
-    const rtcConnectionId = this.robotIdToRtcConnectionId.get(robotId)
+    const rtcConnectionId = this.robotIdToRtcConnectionId.get(robotInfo.id)
     if (!rtcConnectionId) {
       throw new Error(
-        `No rtcConnectionId for robot ${robotId}. Call prepareRtcConnection([robotId]) first.`,
+        `No rtcConnectionId for robot ${robotInfo.id}. Call prepareRtcConnection([robotId]) first.`,
       )
     }
 
     await this.getIceServers()
 
-    const existingConnection = this.connections.get(robotId)
+    const existingConnection = this.connections.get(robotInfo.id)
     if (existingConnection) {
-      this.disconnectConnection(robotId)
+      this.disconnectConnection(robotInfo.id)
     }
 
     const webrtcConnection = new WebRTCConnection(
       rtcConnectionId,
-      robotId,
+      robotInfo,
       this.iceServers,
     )
     this.signalingServer.setRtcConnection(webrtcConnection)
-    this.connections.set(robotId, webrtcConnection)
+    this.connections.set(robotInfo.id, webrtcConnection)
     webrtcConnection.createConnection(channelRequirements)
     await webrtcConnection.startConnection()
   }
@@ -77,7 +80,8 @@ export class WebRTCConnectionManager {
   public disconnectConnection(robotId: string): void {
     const connection = this.connections.get(robotId)
     // connection이 존재하지 않을 경우 prepareRtcConnection으로 발급받은 Map에서 조회
-    const rtcConnectionId = connection?.rtcConnectionId ?? this.robotIdToRtcConnectionId.get(robotId)
+    const rtcConnectionId =
+      connection?.rtcConnectionId ?? this.robotIdToRtcConnectionId.get(robotId)
     if (!rtcConnectionId) {
       return
     }

@@ -1,9 +1,4 @@
-import type {RobotStatus} from "@/mosaic"
-
-export interface RobotInfo {
-  robot_id: string
-  state: string
-}
+import type { RobotStatus } from "@/mosaic"
 
 export type WsBaseMessage<T extends string = string, D = any> = {
   type: T
@@ -18,13 +13,13 @@ export type WsAuthorizeResDto = number
 
 export type WsGetRobotListDto = Record<string, never> // 빈 객체
 
-export type WsRobotListDto = {
-  robots: RobotInfo[]
-}
-
 export type WsStatusUpdateDto = {
   robotId: string
   status: RobotStatus
+}
+
+export type WsStatusSubscribeDto = {
+  robotIds: string[]
 }
 
 export type WsForceLogoutDto = {

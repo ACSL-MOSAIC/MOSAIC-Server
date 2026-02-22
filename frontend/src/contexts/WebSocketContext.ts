@@ -5,7 +5,7 @@ import type {
   WsForceLogoutDto,
   WsGetRobotListDto,
   WsPingPongDto,
-  WsRobotListDto,
+  WsStatusSubscribeDto,
   WsStatusUpdateDto,
 } from "@/contexts/ws.dto.ts"
 import type {
@@ -14,7 +14,7 @@ import type {
   WsSendSdpAnswerDto,
   WsSendSdpOfferDto,
 } from "@/mosaic/webrtc/signaling.dto.ts"
-import {createContext} from "react"
+import { createContext } from "react"
 
 export type WsMessages =
   | WsBaseMessage<"ping.ping", WsPingPongDto>
@@ -25,10 +25,11 @@ export type WsMessages =
   | WsBaseMessage<"signaling.send_sdp_offer", WsSendSdpOfferDto>
   | WsBaseMessage<"signaling.send_sdp_answer", WsSendSdpAnswerDto>
   | WsBaseMessage<"signaling.exchange_ice_candidate", WsExchangeIceCandidateDto>
-  | WsBaseMessage<"signaling.close_connection", WsClosePeerConnectionDto>
+  | WsBaseMessage<"signaling.close_peer_connection", WsClosePeerConnectionDto>
   | WsBaseMessage<"get_robot_list", WsGetRobotListDto>
-  | WsBaseMessage<"robot_list", WsRobotListDto>
   | WsBaseMessage<"status.update", WsStatusUpdateDto>
+  | WsBaseMessage<"status.subscribe", WsStatusSubscribeDto>
+  | WsBaseMessage<"status.unsubscribe", WsStatusSubscribeDto>
   | WsBaseMessage<"force_logout", WsForceLogoutDto>
 
 export type ExtractMessageByType<T extends WsMessages["type"]> = Extract<

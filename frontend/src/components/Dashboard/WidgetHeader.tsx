@@ -1,5 +1,6 @@
+import { useRobotInfo } from "@/hooks/useRobotInfo.ts"
 import type { WidgetConfig } from "@/mosaic"
-import { Flex, HStack, Text, VStack } from "@chakra-ui/react"
+import { Flex, HStack, Text } from "@chakra-ui/react"
 
 export interface WidgetHeaderProps {
   widgetConfig: WidgetConfig
@@ -8,6 +9,8 @@ export interface WidgetHeaderProps {
 export function WidgetHeader({
   widgetConfig: { type, connectors },
 }: WidgetHeaderProps) {
+  const { robotInfos } = useRobotInfo()
+
   return (
     <HStack cursor="move">
       <Flex
@@ -16,14 +19,23 @@ export function WidgetHeader({
         className="draggable-header"
         width="100%"
       >
-        <VStack gap={0} align="start">
+        <HStack gap={2} align="end">
           <Text fontSize="sm" fontWeight="bold" color="green.500">
             {type}
           </Text>
           <Text fontSize="xs" color="gray.600">
-            Robot: {connectors.map((c) => c.robotId).join(", ")}
+            Robot:{" "}
+            {connectors
+              .map((c) => {
+                const robotInfo = robotInfos.find(
+                  (robotInfos) => robotInfos.id === c.robotId,
+                )
+                if (robotInfo) return robotInfo.name
+                return c.robotId
+              })
+              .join(", ")}
           </Text>
-        </VStack>
+        </HStack>
       </Flex>
 
       {/*{onRemove && (*/}

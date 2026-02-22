@@ -1,5 +1,5 @@
-import {MosaicContext} from "@/contexts/MosaicContext.ts"
-import {useContext} from "react"
+import { MosaicContext } from "@/contexts/MosaicContext.ts"
+import { useContext } from "react"
 
 export function useRobotInfo() {
   const context = useContext(MosaicContext)
@@ -7,7 +7,13 @@ export function useRobotInfo() {
     throw new Error("useRobotInfo must be used within a MosaicProvider")
   }
 
-  const {robotInfos} = context
+  const { robotInfos, updateRobotInfo, subscribeRobots, unsubscribeRobots } =
+    context
 
-  return robotInfos
+  return {
+    robotInfos,
+    updateRobotInfo,
+    subscribeRobots,
+    unsubscribeRobots,
+  }
 }

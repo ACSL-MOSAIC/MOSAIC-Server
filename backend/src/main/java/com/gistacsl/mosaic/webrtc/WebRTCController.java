@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/webrtc")
 @RequiredArgsConstructor
@@ -27,7 +29,9 @@ public class WebRTCController {
     }
 
     @GetMapping("/ice-servers")
-    public Flux<IceServerDto.Res> getIceServers() {
-        return webRTCService.getIceServers();
+    public Mono<GResponse<List<IceServerDto.Res>>> getIceServers() {
+        return webRTCService.getIceServers()
+                .collectList()
+                .map(GResponse::toGResponse);
     }
 }

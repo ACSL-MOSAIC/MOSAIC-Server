@@ -13,7 +13,8 @@ public class RobotInfoDto {
             String description,
             RobotStatus status,
             RobotAuthType authType,
-            UUID organizationId
+            UUID organizationId,
+            String connectorConfig
     ) {
     }
 }

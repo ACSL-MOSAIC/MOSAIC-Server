@@ -1,19 +1,3 @@
-export type MosaicDataType =
-  | "media"
-  | "byte-r2u"
-  | "byte-r2u-p"
-  | "byte-u2r"
-  | "byte-bi"
-  | "string-r2u"
-  | "string-r2u-p"
-  | "string-u2r"
-  | "string-bi"
-  | "json-r2u"
-  | "json-r2u-p"
-  | "json-u2r"
-  | "json-bi"
-
-// TODO: Define WidgetType
 export type WidgetType = string
 
 export interface WidgetPositionConfig {
@@ -26,44 +10,19 @@ export interface WidgetPositionConfig {
 export class RobotConnector {
   public robotId: string
   public connectorId: string
-  public dataType: MosaicDataType
-  public parallelNum: number
 
-  constructor(
-    robotId: string,
-    connectorId: string,
-    dataType: MosaicDataType,
-    parallelNum = 1,
-  ) {
+  constructor(robotId: string, connectorId: string) {
     this.robotId = robotId
     this.connectorId = connectorId
-    this.dataType = dataType
-    this.parallelNum = parallelNum
-  }
-
-  public static fromConnectorConfig(connectorConfig: ConnectorConfig) {
-    if (connectorConfig.dataType.endsWith("-p")) {
-      return new RobotConnector(
-        connectorConfig.connectorId,
-        connectorConfig.connectorId,
-        connectorConfig.dataType,
-        connectorConfig.params?.parallelNum,
-      )
-    }
-    return new RobotConnector(
-      connectorConfig.connectorId,
-      connectorConfig.connectorId,
-      connectorConfig.dataType,
-    )
   }
 
   public static deserialize(serialized: string): RobotConnector {
-    const [robotId, connectorId, dataType] = serialized.split(":")
-    return new RobotConnector(robotId, connectorId, dataType as MosaicDataType)
+    const [robotId, connectorId] = serialized.split(":")
+    return new RobotConnector(robotId, connectorId)
   }
 
   public serialize(): string {
-    return `${this.robotId}:${this.connectorId}:${this.dataType}`
+    return `${this.robotId}:${this.connectorId}`
   }
 }
 
@@ -84,7 +43,6 @@ export interface TabConfig {
 export interface ConnectorConfig {
   connectorId: string
   connectorType: string
-  dataType: MosaicDataType
   params: any
 }
 

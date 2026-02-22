@@ -1,4 +1,4 @@
-import {MosaicStore} from "./mosaic-store.ts"
+import { MosaicStore } from "./mosaic-store.ts"
 
 export abstract class SendableStore<V> extends MosaicStore {
   protected dataChannel: RTCDataChannel | null = null
@@ -18,6 +18,7 @@ export abstract class SendableStore<V> extends MosaicStore {
     if (this.dataChannel && this.dataChannel.readyState === "open") {
       this.dataChannel.send(data)
     } else {
+      console.log("NOT SENDABLE, ", this.dataChannel, this)
       console.warn("SendableStore DataChannel is not open!")
     }
   }

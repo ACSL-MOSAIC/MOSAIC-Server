@@ -1,8 +1,8 @@
-import type {RobotStatus} from "@/mosaic"
+import type { RobotStatus } from "@/mosaic"
 
 export const ROBOT_AUTH_TYPES = [
-  {value: 0, label: "No Authorization"},
-  {value: 1, label: "Simple Token"},
+  { value: 0, label: "No Authorization" },
+  { value: 1, label: "Simple Token" },
 ] as const
 
 export type RobotAuthType = (typeof ROBOT_AUTH_TYPES)[number]["value"]
@@ -14,6 +14,7 @@ export type RobotInfoDto = {
   status: RobotStatus
   authType: RobotAuthType
   organizationId: string
+  connectorConfig: string
 }
 
 export type RobotAddDto = {
@@ -30,8 +31,4 @@ export type RobotUpdateDto = {
   status?: RobotStatus | null
   authType?: RobotAuthType | null
   connectorConfig?: string | null
-}
-
-export type RobotConfigDto = {
-  connectorConfig: string
 }

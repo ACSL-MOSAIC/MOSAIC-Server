@@ -75,7 +75,7 @@ export class SignalingServer {
 
   public sendCloseConnection(rtcConnectionId: string): void {
     this.sendWsMessage({
-      type: "signaling.close_connection",
+      type: "signaling.close_peer_connection",
       data: { rtcConnectionId: rtcConnectionId },
     })
   }

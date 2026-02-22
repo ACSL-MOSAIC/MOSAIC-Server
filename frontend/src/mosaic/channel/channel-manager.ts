@@ -1,25 +1,32 @@
-import type {ChannelInfo, ChannelRequirement} from "@/mosaic/channel/index.ts"
-import type {RobotConnector} from "@/mosaic"
+import type { RobotConnector } from "@/mosaic"
+import type { ChannelInfo, ChannelRequirement } from "@/mosaic/channel/index.ts"
 
 export class ChannelManager {
   private activeChannels: Map<string, ChannelInfo> = new Map()
   private channelRequirements: Map<string, ChannelRequirement[]> = new Map()
 
   public registerActiveChannel(channelInfo: ChannelInfo): void {
-    this.activeChannels.set(
-      channelInfo.robotConnector.serialize(),
-      channelInfo,
-    )
+    this.activeChannels.set(channelInfo.robotConnector.serialize(), channelInfo)
   }
 
   public addChannelRequirement(channelRequirement: ChannelRequirement): void {
     const robotId = channelRequirement.robotConnector.robotId
     const list = this.channelRequirements.get(robotId) ?? []
+    if (
+      list.find(
+        (cr) =>
+          cr.robotConnector.serialize() ===
+          channelRequirement.robotConnector.serialize(),
+      )
+    )
+      return
     list.push(channelRequirement)
     this.channelRequirements.set(robotId, list)
   }
 
-  public removeChannelRequirement(channelRequirement: ChannelRequirement): void {
+  public removeChannelRequirement(
+    channelRequirement: ChannelRequirement,
+  ): void {
     const robotId = channelRequirement.robotConnector.robotId
     const list = this.channelRequirements.get(robotId)
     if (list === undefined) return

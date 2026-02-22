@@ -11,9 +11,11 @@ import com.gistacsl.mosaic.websocket.dto.WsMessage;
 import com.gistacsl.mosaic.websocket.handler.WsMessageSender;
 import com.gistacsl.mosaic.websocket.session.RobotWsSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class MosaicRobotSignalingHandler {
@@ -35,6 +37,7 @@ public class MosaicRobotSignalingHandler {
                 ExchangeIceCandidateWsDto req = this.objectMapper.convertValue(wsMessage.getData(), ExchangeIceCandidateWsDto.class);
                 this.handleExchangeIceCandidate(req, wsSession);
             } else {
+                log.warn("Unknown websocket request type: {}", wsMessage.getType());
                 return Mono.error(new CustomException(ResultCode.UNKNOWN_WEBSOCKET_REQUEST_TYPE));
             }
         } catch (CustomException e) {
@@ -50,7 +53,7 @@ public class MosaicRobotSignalingHandler {
         if (webRTCSession == null) {
             throw new CustomException(ResultCode.WEBRTC_SESSION_NOT_EXIST);
         }
-        if (!webRTCSession.getUserWsSession().equals(wsSession)) {
+        if (!webRTCSession.getRobotWsSession().equals(wsSession)) {
             throw new CustomException(ResultCode.ACCESS_DENIED);
         }
 

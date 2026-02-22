@@ -1,8 +1,12 @@
-import type {RobotConnector} from "@/mosaic"
-import {ConnectionSubscribable} from "./connection-subscribable.ts"
+import type { RobotConnector } from "@/mosaic"
+import type { ChannelRequirement } from "@/mosaic/channel"
+import { ConnectionSubscribable } from "./connection-subscribable.ts"
+
+export type StoreType = "receivable" | "sendable" | "media"
 
 export abstract class MosaicStore extends ConnectionSubscribable {
-  protected dataType = "undefined"
+  static readonly connectorType: string = "undefined"
+  protected connectorType = "undefined"
 
   protected robotConnector: RobotConnector
 
@@ -11,15 +15,22 @@ export abstract class MosaicStore extends ConnectionSubscribable {
     this.robotConnector = robotConnector
   }
 
-  public getDataType(): string {
-    return this.dataType
+  public getConnectorType(): string {
+    return this.connectorType
   }
 
-  public abstract getStoreType():
-    | "receivable"
-    | "sendable"
-    | "bidirectional"
-    | "media"
+  public getChannelRequirements(
+    robotConnector: RobotConnector,
+  ): ChannelRequirement[] {
+    return [
+      {
+        robotConnector: robotConnector,
+        store: this,
+      },
+    ]
+  }
+
+  public abstract getStoreType(): StoreType
 
   public getRobotConnector(): RobotConnector {
     return this.robotConnector

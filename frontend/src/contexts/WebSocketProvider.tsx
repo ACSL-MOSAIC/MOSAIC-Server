@@ -1,7 +1,7 @@
-import type {WsBaseMessage} from "@/contexts/ws.dto.ts"
+import type { WsBaseMessage } from "@/contexts/ws.dto.ts"
 import useAuth from "@/hooks/useAuth"
-import {getBackendWsUrl} from "@/utils/envs.ts"
-import {type ReactNode, useEffect, useRef} from "react"
+import { getBackendWsUrl } from "@/utils/envs.ts"
+import { type ReactNode, useEffect, useRef } from "react"
 import {
   type ExtractDataByType,
   type OnWsMessageType,
@@ -10,11 +10,10 @@ import {
   type WsMessages,
 } from "./WebSocketContext"
 
-export function WebSocketProvider({children}: { children: ReactNode }) {
-  const {user, logout: authLogout} = useAuth()
+export function WebSocketProvider({ children }: { children: ReactNode }) {
+  const { user, logout: authLogout } = useAuth()
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
-  const refreshIntervalRef = useRef<NodeJS.Timeout>()
   const isConnectingRef = useRef(false)
   const messageHandlersRef = useRef<
     Map<string, (data: any) => void | Promise<void>>
@@ -50,18 +49,12 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
     console.log("WebSocket 연결됨")
     isConnectingRef.current = false
     wsRef.current = websocket
-
-    refreshIntervalRef.current = setInterval(() => {
-      if (websocket.readyState === WebSocket.OPEN) {
-        websocket.send(JSON.stringify({type: "ping"}))
-      }
-    }, 30000)
   }
 
   const wsOnMessage = async (event: MessageEvent<string>) => {
     try {
       const message: WsBaseMessage = JSON.parse(event.data)
-      // console.log("WebSocket 메시지 수신:", message)
+      // console.log("WebSocket Message Received:", message)
 
       const handler = messageHandlersRef.current.get(message.type)
       if (handler) {
@@ -84,10 +77,6 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
     console.log("WebSocket 연결 종료:", event.code, event.reason)
     isConnectingRef.current = false
     wsRef.current = null
-
-    if (refreshIntervalRef.current) {
-      clearInterval(refreshIntervalRef.current)
-    }
 
     if (event.code !== 1000 && event.code !== 1006) {
       reconnectTimeoutRef.current = setTimeout(() => {
@@ -134,7 +123,7 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
   const sendWsMessage: SendWsMessageType = (message: WsMessages) => {
     const ws = wsRef.current
     if (ws?.readyState === WebSocket.OPEN) {
-      console.log("WebSocket 메시지 전송:", message)
+      // console.log("WebSocket 메시지 전송:", message)
       ws.send(JSON.stringify(message))
     } else {
       console.error("WebSocket이 연결되어 있지 않습니다., ", ws?.readyState)
@@ -145,16 +134,13 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
     type: T,
     callback: (data: ExtractDataByType<T>) => void | Promise<void>,
   ) => {
-    const handler = messageHandlersRef.current.get(type)
-    if (!handler) {
-      messageHandlersRef.current.set(
-        type,
-        callback as (data: any) => void | Promise<void>,
-      )
-    }
+    const wrappedCallback = callback as (data: any) => void | Promise<void>
+    messageHandlersRef.current.set(type, wrappedCallback)
 
     return () => {
-      messageHandlersRef.current.delete(type)
+      if (messageHandlersRef.current.get(type) === wrappedCallback) {
+        messageHandlersRef.current.delete(type)
+      }
     }
   }
 
@@ -178,29 +164,12 @@ export function WebSocketProvider({children}: { children: ReactNode }) {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current)
       }
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current)
-      }
     }
   }, [user?.id])
 
-  useEffect(() => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current)
-      }
-    }
-
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current)
-      }
-    }
-  }, [wsRef.current?.readyState])
-
   return (
     <WebSocketContext.Provider
-      value={{sendWsMessage, onWsMessage, disconnectWs}}
+      value={{ sendWsMessage, onWsMessage, disconnectWs }}
     >
       {children}
     </WebSocketContext.Provider>

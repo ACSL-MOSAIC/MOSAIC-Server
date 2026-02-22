@@ -1,6 +1,6 @@
-import type {RobotConfig, RobotConnector} from "@/mosaic"
-import type {MosaicStore} from "./interface/mosaic-store.ts"
-import {StoreFactory} from "./store-factory.ts"
+import type { RobotConfig, RobotConnector } from "@/mosaic"
+import type { MosaicStore } from "./interface/mosaic-store.ts"
+import { StoreFactory } from "./store-factory.ts"
 
 class RobotConnectorRefMap<V> {
   private map: Map<string, V> = new Map()
@@ -50,16 +50,13 @@ export class StoreManager {
   ): MosaicStore {
     // If store already exists, only increment ref count
     const existing = this.mosaicStores.get(robotConnector)
-    if (existing !== undefined) {
+    if (existing) {
       this.mosaicStores.incrementRefCount(robotConnector)
       return existing
     }
 
     // If not found, create new store and resolve connector type
-    const connectorType = this.resolveConnectorType(
-      robotConnector,
-      robotConfig,
-    )
+    const connectorType = this.resolveConnectorType(robotConnector, robotConfig)
     const store = this.storeFactory.createStore(connectorType, robotConnector)
     if (store === null) {
       throw new Error(`Unknown connector type: ${connectorType}`)
@@ -88,10 +85,8 @@ export class StoreManager {
       (c) => c.connectorId === robotConnector.connectorId,
     )
     if (connector === undefined) {
-      throw new Error(
-        `Connector not found: ${robotConnector.connectorId} in robot ${robotConfig.id}`,
-      )
+      throw new Error(`Connector not found: ${robotConnector.connectorId}`)
     }
-    return connector.dataType
+    return connector.connectorType
   }
 }

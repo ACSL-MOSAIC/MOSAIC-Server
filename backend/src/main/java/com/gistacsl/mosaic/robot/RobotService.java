@@ -65,12 +65,6 @@ public class RobotService {
                 .map(this::robotEntityToRobotInfoRes);
     }
 
-    public Mono<RobotConfigDto.Res> getRobotConfig(UserAuth userAuth, UUID robotPk) {
-        return robotRepository.findConnectorConfigByPkAndOrganizationFk(robotPk, userAuth.getOrganizationPk(), dslContext)
-                .switchIfEmpty(Mono.error(new CustomException(ResultCode.ROBOT_NOT_FOUND)))
-                .map(RobotConfigDto.Res::new);
-    }
-
     public Mono<RobotEntity> getRobotEntity(UUID robotPk) {
         return robotRepository.findByPk(robotPk, dslContext)
                 .switchIfEmpty(Mono.error(new CustomException(ResultCode.ROBOT_NOT_FOUND)));
@@ -124,7 +118,8 @@ public class RobotService {
                 entity.getDescription(),
                 entity.getStatus(),
                 entity.getAuthType(),
-                entity.getOrganizationFk()
+                entity.getOrganizationFk(),
+                entity.getConnectorConfig()
         );
     }
 }

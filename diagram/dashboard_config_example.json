@@ -1,57 +1,122 @@
 {
-  "id": "c3767ae3-0624-482c-a12c-73bc63139be3",
-  "name": "Control Panel",
   "widgets": [
     {
       "id": "f040953d-f50e-4652-bc30-0f166af865e4",
-      "type": "osm_gps_map",
+      "type": "JsonViewerWidget",
       "connectors": [
         {
-          "robot_id": "a200_0000",
-          "connector_id": "gps_sensor"
+          "robotId": "0c476cef-3be2-45e9-b57e-c7ffa4edcb2e",
+          "connectorId": "gps_coordinate_channel"
+        }
+      ],
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 3,
+        "h": 3
+      }
+    },
+    {
+      "id": "5b555249-3d35-46a6-bac1-bd022c841dfb",
+      "type": "JsonViewerWidget",
+      "connectors": [
+        {
+          "robotId": "17ed13fa-0022-4acc-91d5-9ae8b79b5d5c",
+          "connectorId": "gps_coordinate_channel"
+        }
+      ],
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 3,
+        "h": 3
+      }
+    },
+    {
+      "id": "b9f53cac-2925-4733-91b1-19a82279f3da",
+      "type": "ConnectionCheckWidget",
+      "connectors": [
+        {
+          "robotId": "0c476cef-3be2-45e9-b57e-c7ffa4edcb2e",
+          "connectorId": "connection_check-sender"
         },
         {
-          "robot_id": "a200_0001",
-          "connector_id": "gps_sensor"
+          "robotId": "0c476cef-3be2-45e9-b57e-c7ffa4edcb2e",
+          "connectorId": "connection_check-receiver"
         }
       ],
       "position": {
         "x": 3,
         "y": 0,
-        "w": 7,
+        "w": 3,
+        "h": 3
+      }
+    },
+    {
+      "id": "a2609bd0-8f31-4f6a-be01-8ec0bfcd515b",
+      "type": "MediaViewerWidget",
+      "connectors": [
+        {
+          "robotId": "0c476cef-3be2-45e9-b57e-c7ffa4edcb2e",
+          "connectorId": "video_stream"
+        }
+      ],
+      "position": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
         "h": 6
       }
     },
     {
-      "id": "079ef55b-c25b-41fd-b084-61c720dd0405",
-      "type": "video_stream",
+      "id": "ee23a8a0-f3f6-4d60-abe8-71d8b1e61b6b",
+      "type": "WASDSenderWidget",
       "connectors": [
         {
-          "robot_id": "a200_0000",
-          "connector_id": "front_camera_ros2"
+          "robotId": "0c476cef-3be2-45e9-b57e-c7ffa4edcb2e",
+          "connectorId": "robot_cmd_vel"
         }
       ],
       "position": {
-        "x": 4,
-        "y": 2,
-        "w": 7,
-        "h": 6
+        "x": 3,
+        "y": 3,
+        "w": 3,
+        "h": 3
       }
     },
     {
-      "id": "e9b43378-65c8-4d8f-aa75-569c2ff91b64",
-      "type": "progressive_pointcloud_2d",
+      "id": "5fbecf9a-dd05-457f-a08d-34692263b7fc",
+      "type": "ConnectionCheckWidget",
       "connectors": [
         {
-          "robot_id": "a200_0000",
-          "connector_id": "lidar_sensor",
-          "parallel": 5
+          "robotId": "17ed13fa-0022-4acc-91d5-9ae8b79b5d5c",
+          "connectorId": "connection_check-sender"
+        },
+        {
+          "robotId": "17ed13fa-0022-4acc-91d5-9ae8b79b5d5c",
+          "connectorId": "connection_check-receiver"
         }
       ],
       "position": {
-        "x": 4,
-        "y": 2,
-        "w": 7,
+        "x": 3,
+        "y": 3,
+        "w": 3,
+        "h": 3
+      }
+    },
+    {
+      "id": "2efdd1fb-ec76-4f06-90b5-70108d6adb64",
+      "type": "MediaViewerWidget",
+      "connectors": [
+        {
+          "robotId": "17ed13fa-0022-4acc-91d5-9ae8b79b5d5c",
+          "connectorId": "video_stream"
+        }
+      ],
+      "position": {
+        "x": 6,
+        "y": 6,
+        "w": 6,
         "h": 6
       }
     }

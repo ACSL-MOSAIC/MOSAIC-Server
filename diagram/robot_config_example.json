@@ -1,59 +1,34 @@
-[
-  {
-    "connectors": [
-      {
-        "connector_id": "front_camera",
-        "connector_type": "opencv-webcam",
-        "data_type": "media",
-        "params": {
-          "device_id": 0,
-          "fps": 30,
-          "width": 640,
-          "height": 480
-        }
-      },
-      {
-        "connector_id": "lidar_sensor",
-        "connector_type": "ros2-sender-sensor-PointCloud2",
-        "data_type": "byte-r2u-p",
-        "params": {
-          "topic_name": "/a200_0000/sensors/lidar3d_0/points",
-          "parallel_stream": 5
-        }
-      },
-      {
-        "connector_id": "front_camera_ros2",
-        "connector_type": "ros2-sender-sensor-Image",
-        "data_type": "media",
-        "params": {
-          "topic_name": "/a200_0000/sensors/camera_0/color/image",
-          "recordable": true
-        }
-      },
-      {
-        "connector_id": "gps_sensor",
-        "connector_type": "ros2-sender-sensor-NavSatFix",
-        "data_type": "json-r2u",
-        "params": {
-          "topic_name": "/a200_0000/sensors/gps_0/fix"
-        }
-      },
-      {
-        "connector_id": "amcl_pose",
-        "connector_type": "ros2-sender-geometry-PoseWithCovarianceStamped",
-        "data_type": "json-r2u",
-        "params": {
-          "topic_name": "/a200_0000/amcl_pose"
-        }
-      },
-      {
-        "connector_id": "robot_cmd_vel",
-        "connector_type": "ros2-receiver-geometry-TwistStamped",
-        "data_type": "json-u2r",
-        "params": {
-          "topic_name": "/a200_0000/cmd_vel"
-        }
+{
+  "connectors": [
+    {
+      "connectorId": "connection_check-sender",
+      "connectorType": "connection-check-receiver"
+    },
+    {
+      "connectorId": "connection_check-receiver",
+      "connectorType": "connection-check-sender"
+    },
+    {
+      "connectorId": "video_stream",
+      "connectorType": "media",
+      "params": {
+        "topic_name": "/a200_0001/sensors/camera_0/color/image",
+        "recordable": true
       }
-    ]
-  }
-]
+    },
+    {
+      "connectorId": "gps_coordinate_channel",
+      "connectorType": "json-receivable",
+      "params": {
+        "topic_name": "/a200_0001/sensors/gps_0/fix"
+      }
+    },
+    {
+      "connectorId": "robot_cmd_vel",
+      "connectorType": "ros2-wasd-to-twist",
+      "params": {
+        "topic_name": "/a200_0001/cmd_vel"
+      }
+    }
+  ]
+}

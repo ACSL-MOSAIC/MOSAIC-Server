@@ -1,25 +1,38 @@
 import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx"
+import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts"
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts"
-import type { WidgetConfig } from "@/mosaic"
-import { useEffect } from "react"
+import type JsonReceivableStore from "@/mosaic/store/impl/json-receivable-store.ts"
+import { Code } from "@chakra-ui/react"
+import { useEffect, useState } from "react"
 
-interface JsonViewerWidgetProps {
-  widgetConfig: WidgetConfig
-}
-
-export default function JsonViewerWidget({
-  widgetConfig,
-}: JsonViewerWidgetProps) {
+export default function JsonViewerWidget({ widgetConfig }: WidgetProps) {
   const { getOrCreateStore, releaseStore } = useMosaicStore()
+  const [data, setData] = useState<any>(null)
 
   useEffect(() => {
-    widgetConfig.connectors.forEach((connector) => {
-      const store = getOrCreateStore(connector)
+    const connector = widgetConfig.connectors[0]
+    const store = getOrCreateStore(connector) as JsonReceivableStore
+    store.subscribe((data) => {
+      setData(data)
     })
     return () => {
-      widgetConfig.connectors.forEach((connector) => releaseStore(connector))
+      releaseStore(connector)
     }
-  }, [getOrCreateStore, releaseStore])
+  }, [widgetConfig])
 
-  return <WidgetFrame widgetConfig={widgetConfig}>Hello?</WidgetFrame>
+  const formattedData = data ? JSON.stringify(data, null, 2) : ""
+
+  return (
+    <WidgetFrame widgetConfig={widgetConfig}>
+      <Code
+        display="block"
+        p={3}
+        borderRadius="md"
+        whiteSpace="pre-wrap"
+        overflowY="auto"
+      >
+        {formattedData}
+      </Code>
+    </WidgetFrame>
+  )
 }

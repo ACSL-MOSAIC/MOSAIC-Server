@@ -21,7 +21,7 @@ public class MosaicUserSignalingHandler {
     public static final String TYPE_PREFIX = "signaling";
     public static final String TYPE_SEND_SDP_OFFER = TYPE_PREFIX + ".send_sdp_offer";
     public static final String TYPE_EXCHANGE_ICE_CANDIDATE = TYPE_PREFIX + ".exchange_ice_candidate";
-    public static final String TYPE_CLOSE_CONNECTION = TYPE_PREFIX + ".close_connection";
+    public static final String TYPE_CLOSE_CONNECTION = TYPE_PREFIX + ".close_peer_connection";
 
     private final ObjectMapper objectMapper;
     private final WsMessageSender wsMessageSender;
@@ -72,7 +72,7 @@ public class MosaicUserSignalingHandler {
         if (webRTCSession == null) {
             throw new CustomException(ResultCode.WEBRTC_SESSION_NOT_EXIST);
         }
-        if (webRTCSession.getUserWsSession().equals(wsSession)) {
+        if (!webRTCSession.getUserWsSession().equals(wsSession)) {
             throw new CustomException(ResultCode.ACCESS_DENIED);
         }
 
@@ -85,7 +85,7 @@ public class MosaicUserSignalingHandler {
         if (webRTCSession == null) {
             throw new CustomException(ResultCode.WEBRTC_SESSION_NOT_EXIST);
         }
-        if (webRTCSession.getUserWsSession().equals(wsSession)) {
+        if (!webRTCSession.getUserWsSession().equals(wsSession)) {
             throw new CustomException(ResultCode.ACCESS_DENIED);
         }
 

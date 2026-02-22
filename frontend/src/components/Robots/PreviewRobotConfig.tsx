@@ -7,11 +7,11 @@ import {
   Spinner,
   Text,
 } from "@chakra-ui/react"
-import {useState} from "react"
-import {FiEye} from "react-icons/fi"
+import { useState } from "react"
+import { FiEye } from "react-icons/fi"
 
-import {getRobotConfigApi} from "@/client/service/robot.api.ts"
-import type {RobotInfoDto} from "@/client/service/robot.dto.ts"
+import { getRobotApi } from "@/client/service/robot.api.ts"
+import type { RobotInfoDto } from "@/client/service/robot.dto.ts"
 import {
   DialogActionTrigger,
   DialogBody,
@@ -28,16 +28,16 @@ interface PreviewRobotConfigProps {
   robot: RobotInfoDto
 }
 
-const PreviewRobotConfig = ({robot}: PreviewRobotConfigProps) => {
+const PreviewRobotConfig = ({ robot }: PreviewRobotConfigProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [configData, setConfigData] = useState<string | null>(null)
-  const {showErrorToast} = useCustomToast()
+  const { showErrorToast } = useCustomToast()
 
   const loadConfigData = async () => {
     setIsLoading(true)
     try {
-      const response = await getRobotConfigApi(robot.id)
+      const response = await getRobotApi(robot.id)
       setConfigData(response.connectorConfig)
     } catch (error) {
       console.error("Failed to load config data:", error)
@@ -47,7 +47,7 @@ const PreviewRobotConfig = ({robot}: PreviewRobotConfigProps) => {
     }
   }
 
-  const handleOpenChange = ({open}: { open: boolean }) => {
+  const handleOpenChange = ({ open }: { open: boolean }) => {
     setIsOpen(open)
     if (open && !configData) {
       loadConfigData()
@@ -64,14 +64,14 @@ const PreviewRobotConfig = ({robot}: PreviewRobotConfigProps) => {
 
   return (
     <DialogRoot
-      size={{base: "md", md: "lg"}}
+      size={{ base: "md", md: "lg" }}
       placement="center"
       open={isOpen}
       onOpenChange={handleOpenChange}
     >
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
-          <FiEye/>
+          <FiEye />
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -81,7 +81,7 @@ const PreviewRobotConfig = ({robot}: PreviewRobotConfigProps) => {
         <DialogBody>
           {isLoading ? (
             <Flex justifyContent="center" alignItems="center" minH="300px">
-              <Spinner size="xl"/>
+              <Spinner size="xl" />
             </Flex>
           ) : (
             <Box>
@@ -113,7 +113,7 @@ const PreviewRobotConfig = ({robot}: PreviewRobotConfigProps) => {
             </Button>
           </DialogActionTrigger>
         </DialogFooter>
-        <DialogCloseTrigger/>
+        <DialogCloseTrigger />
       </DialogContent>
     </DialogRoot>
   )

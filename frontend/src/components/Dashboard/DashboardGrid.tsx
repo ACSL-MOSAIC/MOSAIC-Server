@@ -1,5 +1,4 @@
 import { getTabConfigApi } from "@/client/service/dashboard.api.ts"
-// import RobotConnectionPanel from "@/components/Dashboard/RobotConnectionPanel.tsx"
 import { WidgetFactory } from "@/components/Dashboard/WidgetFactory.tsx"
 import useAuth from "@/hooks/useAuth.ts"
 import { RobotConnector, type TabConfig, type WidgetConfig } from "@/mosaic"
@@ -9,8 +8,19 @@ import { Navigate } from "@tanstack/react-router"
 import { Responsive, WidthProvider } from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
+import RobotConnectionPanel from "@/components/Dashboard/RobotConnectionPanel.tsx"
+import { useMosaicWebRTCConnection } from "@/hooks/useMosaicWebRTCConnection.ts"
+import { useRobotInfo } from "@/hooks/useRobotInfo.ts"
+import { useEffect, useMemo } from "react"
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
+
+const extractRobotListFromTabConfig = (tabConfig: TabConfig): string[] => {
+  const robotIds = tabConfig.widgets.flatMap((widgetConfig) =>
+    widgetConfig.connectors.map((connector) => connector.robotId),
+  )
+  return [...new Set(robotIds)]
+}
 
 interface DashboardGridProps {
   tabId: string
@@ -18,6 +28,8 @@ interface DashboardGridProps {
 
 export default function DashboardGrid({ tabId }: DashboardGridProps) {
   const { user } = useAuth()
+  const { subscribeRobots, unsubscribeRobots } = useRobotInfo()
+  const { createConnection, disconnectConnection } = useMosaicWebRTCConnection()
 
   const { data: tabConfig, isPending: isConfigLoading } = useQuery({
     queryKey: ["parsedDashboardTabConfig", tabId],
@@ -33,11 +45,9 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
             type: widget.type,
             position: widget.position,
             connectors: widget.connectors.map((connector) => {
-              // TODO: Need to be resolved by RobotConfig
               return new RobotConnector(
                 connector.robotId,
                 connector.connectorId,
-                "byte-bi",
               )
             }),
           }
@@ -46,6 +56,19 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
     },
     enabled: !!user,
   })
+
+  const robotList = useMemo(
+    () => (tabConfig ? extractRobotListFromTabConfig(tabConfig) : []),
+    [tabConfig],
+  )
+
+  useEffect(() => {
+    if (robotList.length === 0) return
+    subscribeRobots(robotList)
+    return () => {
+      unsubscribeRobots()
+    }
+  }, [robotList, subscribeRobots, unsubscribeRobots])
 
   const handleLayoutChange = (layout: any) => {
     // TODO: save layout to db
@@ -63,20 +86,40 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
     )
   }
 
-  if (!isConfigLoading && !tabConfig) {
+  if (!tabConfig) {
     return <Navigate to="/dashboard" />
+  }
+
+  const connectToRobot = async (robotId: string) => {
+    console.log(`connectToRobot: ${robotId}`)
+    await createConnection([robotId])
+  }
+
+  const disconnectFromRobot = (robotId: string) => {
+    console.log(`disconnectFromRobot: ${robotId}`)
+    disconnectConnection(robotId)
+  }
+
+  const connectAllRobots = async () => {
+    console.log("connectAllRobots")
+    await createConnection(robotList)
+  }
+
+  const disconnectAllRobots = () => {
+    console.log("disconnectAllRobots")
+    for (const robotId of robotList) {
+      disconnectConnection(robotId)
+    }
   }
 
   return (
     <Box p={4}>
-      {/* Robot connection management panel */}
-      {/*<RobotConnectionPanel*/}
-      {/*  connections={connections}*/}
-      {/*  onConnect={connectToRobot}*/}
-      {/*  onDisconnect={disconnectFromRobot}*/}
-      {/*  onConnectAll={handleConnectAllRobots}*/}
-      {/*  onDisconnectAll={handleDisconnectAllRobots}*/}
-      {/*/>*/}
+      <RobotConnectionPanel
+        onConnect={connectToRobot}
+        onDisconnect={disconnectFromRobot}
+        onConnectAll={connectAllRobots}
+        onDisconnectAll={disconnectAllRobots}
+      />
 
       <ResponsiveGridLayout
         className="layout"

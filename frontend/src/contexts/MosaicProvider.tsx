@@ -1,24 +1,40 @@
-import {getRobotApi, getRobotListApi} from "@/client/service/robot.api.ts"
-import {MosaicContext} from "@/contexts/MosaicContext.ts"
-import {useWebSocket} from "@/hooks/useWebSocket.ts"
-import {ChannelManager} from "@/mosaic/channel/channel-manager.ts"
-import {RobotInfo} from "@/mosaic/robot-info.ts"
-import {StoreManager} from "@/mosaic/store/store-manager.ts"
-import {SignalingServer} from "@/mosaic/webrtc/signaling-server.ts"
-import {WebRTCConnectionManager} from "@/mosaic/webrtc/webrtc-connection-manager.ts"
-import {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from "react"
+import { getRobotApi } from "@/client/service/robot.api.ts"
+import { MosaicContext } from "@/contexts/MosaicContext.ts"
+import { useWebSocket } from "@/hooks/useWebSocket.ts"
+import type { RobotConfig } from "@/mosaic"
+import { ChannelManager } from "@/mosaic/channel/channel-manager.ts"
+import { RobotInfo } from "@/mosaic/robot-info.ts"
+import { StoreManager } from "@/mosaic/store/store-manager.ts"
+import { SignalingServer } from "@/mosaic/webrtc/signaling-server.ts"
+import { WebRTCConnectionManager } from "@/mosaic/webrtc/webrtc-connection-manager.ts"
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 
-export function MosaicProvider({children}: { children: ReactNode }) {
-  const {sendWsMessage, onWsMessage} = useWebSocket()
+export function MosaicProvider({ children }: { children: ReactNode }) {
+  const { sendWsMessage, onWsMessage } = useWebSocket()
 
   const [robotInfos, setRobotInfos] = useState<RobotInfo[]>([])
   const robotInfosRef = useRef<RobotInfo[]>([])
   const storeManagerRef = useRef(new StoreManager())
   const channelManagerRef = useRef(new ChannelManager())
-  const signalingServerRef = useRef(new SignalingServer(sendWsMessage, onWsMessage))
-  const webrtcConnectionManagerRef = useRef(
-    new WebRTCConnectionManager(signalingServerRef.current),
+  const signalingServerRef = useRef<SignalingServer | null>(null)
+  if (signalingServerRef.current === null) {
+    signalingServerRef.current = new SignalingServer(sendWsMessage, onWsMessage)
+  }
+  const webrtcConnectionManagerRef = useRef<WebRTCConnectionManager | null>(
+    null,
   )
+  if (webrtcConnectionManagerRef.current === null) {
+    webrtcConnectionManagerRef.current = new WebRTCConnectionManager(
+      signalingServerRef.current,
+    )
+  }
 
   useEffect(() => {
     robotInfosRef.current = robotInfos
@@ -36,42 +52,44 @@ export function MosaicProvider({children}: { children: ReactNode }) {
     })
   }, [])
 
-  //초기 robot list 조회
-  useEffect(() => {
-    let isMounted = true
-    const fetchRobotList = async () => {
-      try {
-        const response = await getRobotListApi()
-        if (!isMounted) {
-          return
-        }
-
-        const loadedRobotInfos = response.data.map(
-          (robot) => new RobotInfo(robot.id, robot.name, robot.status, null),
+  const subscribeRobots = useCallback(
+    async (robotIds: string[]) => {
+      console.log("subscribe robots: ", robotIds.join(","))
+      const robotInfosPromises = robotIds.map(async (robotId) => {
+        const response = await getRobotApi(robotId)
+        return new RobotInfo(
+          response.id,
+          response.name,
+          response.status,
+          JSON.parse(response.connectorConfig) as RobotConfig,
         )
-        setRobotInfos(loadedRobotInfos)
-      } catch (error) {
-        console.error("Failed to load robot list", error)
-      }
-    }
+      })
+      const newRobotInfos = await Promise.all(robotInfosPromises)
+      setRobotInfos(newRobotInfos)
+      sendWsMessage({
+        type: "status.subscribe",
+        data: { robotIds },
+      })
+    },
+    [sendWsMessage],
+  )
 
-    fetchRobotList()
+  const unsubscribeRobots = useCallback(() => {
+    sendWsMessage({
+      type: "status.unsubscribe",
+      data: {
+        robotIds: robotInfosRef.current.map((robotInfo) => robotInfo.id),
+      },
+    })
+  }, [sendWsMessage])
 
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
-  //robot status 업데이트 이벤트 처리
   useEffect(() => {
-    let isMounted = true
-
     const unsubscribe = onWsMessage("status.update", async (data) => {
       const currentRobotInfo = robotInfosRef.current.find(
         (robotInfo) => robotInfo.id === data.robotId,
       )
 
-      if (currentRobotInfo) {
+      if (currentRobotInfo && currentRobotInfo.status !== data.status) {
         updateRobotInfo(
           new RobotInfo(
             currentRobotInfo.id,
@@ -82,28 +100,9 @@ export function MosaicProvider({children}: { children: ReactNode }) {
         )
         return
       }
-
-      try {
-        const robot = await getRobotApi(data.robotId)
-        if (!isMounted) {
-          return
-        }
-
-        updateRobotInfo(
-          new RobotInfo(
-            robot.id,
-            robot.name,
-            data.status,
-            null,
-          ),
-        )
-      } catch (error) {
-        console.error("Failed to load robot by status.update", error)
-      }
     })
 
     return () => {
-      isMounted = false
       unsubscribe()
     }
   }, [onWsMessage, updateRobotInfo])
@@ -113,10 +112,12 @@ export function MosaicProvider({children}: { children: ReactNode }) {
       robotInfos,
       storeManager: storeManagerRef.current,
       channelManager: channelManagerRef.current,
-      webrtcConnectionManager: webrtcConnectionManagerRef.current,
+      webrtcConnectionManager: webrtcConnectionManagerRef.current!,
       updateRobotInfo,
+      subscribeRobots,
+      unsubscribeRobots,
     }),
-    [robotInfos, updateRobotInfo],
+    [robotInfos, updateRobotInfo, subscribeRobots, unsubscribeRobots],
   )
 
   return (

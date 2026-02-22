@@ -1,16 +1,17 @@
-import type {RobotConnector} from "@/mosaic"
-import type {ChannelRequirement} from "@/mosaic/channel"
-import type {BidirectionalStore} from "@/mosaic/store/interface/bidirectional-store.ts"
-import type {MosaicStore} from "@/mosaic/store/interface/mosaic-store.ts"
-import type {ReceivableStore} from "@/mosaic/store/interface/receivable-store.ts"
-import type {SendableStore} from "@/mosaic/store/interface/sendable-store.ts"
-import type {ConnectorRequirement} from "@/mosaic/webrtc/index.ts"
-import type {SignalingServer} from "@/mosaic/webrtc/signaling-server.ts"
-import type {IceCandidate} from "@/mosaic/webrtc/signaling.dto.ts"
+import type { RobotConnector } from "@/mosaic"
+import type { ChannelRequirement } from "@/mosaic/channel"
+import type { RobotInfo } from "@/mosaic/robot-info.ts"
+import type { MediaStreamStore } from "@/mosaic/store/interface/media-stream-store.ts"
+import type { MosaicStore } from "@/mosaic/store/interface/mosaic-store.ts"
+import type { ReceivableStore } from "@/mosaic/store/interface/receivable-store.ts"
+import type { SendableStore } from "@/mosaic/store/interface/sendable-store.ts"
+import type { ConnectorRequirement } from "@/mosaic/webrtc/index.ts"
+import type { SignalingServer } from "@/mosaic/webrtc/signaling-server.ts"
+import type { IceCandidate } from "@/mosaic/webrtc/signaling.dto.ts"
 
 export class WebRTCConnection {
   private readonly _rtcConnectionId: string
-  private readonly robotId: string
+  private readonly robotInfo: RobotInfo
   private peerConnection: RTCPeerConnection | null
   private iceServers: RTCIceServer[] = []
   private channelRequirements: ChannelRequirement[] = []
@@ -24,11 +25,11 @@ export class WebRTCConnection {
 
   constructor(
     rtcConnectionId: string,
-    robotId: string,
+    robotInfo: RobotInfo,
     iceServers: RTCIceServer[],
   ) {
     this._rtcConnectionId = rtcConnectionId
-    this.robotId = robotId
+    this.robotInfo = robotInfo
     this.iceServers = [...iceServers]
     this.peerConnection = null
   }
@@ -82,7 +83,7 @@ export class WebRTCConnection {
       await this.peerConnection.setRemoteDescription(sdpAnswer)
     } catch (error) {
       console.error(
-        `[${this.robotId}] Failed to set remote description:`,
+        `[${this.robotInfo.id}] Failed to set remote description:`,
         error,
       )
       return Promise.reject(error)
@@ -97,7 +98,10 @@ export class WebRTCConnection {
     try {
       await this.peerConnection.addIceCandidate(rtcIceCandidate)
     } catch (error) {
-      console.error(`[${this.robotId}] Failed to add ICE candidate:`, error)
+      console.error(
+        `[${this.robotInfo.id}] Failed to add ICE candidate:`,
+        error,
+      )
       return Promise.reject(error)
     }
   }
@@ -116,7 +120,7 @@ export class WebRTCConnection {
         channel.close()
       } catch (error) {
         console.error(
-          `[${this.robotId}][${label}] Failed to close data channel:`,
+          `[${this.robotInfo.id}][${label}] Failed to close data channel:`,
           error,
         )
       }
@@ -125,8 +129,14 @@ export class WebRTCConnection {
   }
 
   public removeDataChannel(robotConnector: RobotConnector): void {
-    if (robotConnector.dataType.endsWith("-p")) {
-      for (let i = 0; i < robotConnector.parallelNum; i++) {
+    const connectorRequirement = this.connectorRequirements.find(
+      (cr) => cr.robotConnector.serialize() === robotConnector.serialize(),
+    )
+    if (!connectorRequirement) {
+      return
+    }
+    if (connectorRequirement.parallelNum) {
+      for (let i = 0; i < connectorRequirement.parallelNum; i++) {
         this.closeAndRemoveDataChannel(`${robotConnector.connectorId}-${i}`)
       }
       return
@@ -142,7 +152,7 @@ export class WebRTCConnection {
     this.connectorRequirements = []
 
     for (const channelRequirement of this.channelRequirements) {
-      const {robotConnector, store} = channelRequirement
+      const { robotConnector, store } = channelRequirement
       this.relatedStores.push(store)
 
       const connectorRequirement = this.connectorRequirements.find(
@@ -151,43 +161,48 @@ export class WebRTCConnection {
       if (connectorRequirement) {
         connectorRequirement.stores.push(store)
       } else {
-        this.connectorRequirements.push({robotConnector, stores: [store]})
+        const connectorConfig = this.robotInfo.robotConfigs.connectors.find(
+          (connector) => connector.connectorId === robotConnector.connectorId,
+        )
+        if (!connectorConfig) {
+          console.error(
+            `[${this.robotInfo.id}] Connector id is not valid: ${robotConnector.connectorId}`,
+          )
+          throw new Error("Connector id is not valid")
+        }
+        this.connectorRequirements.push({
+          robotConnector,
+          storeType: store.getStoreType(),
+          parallelNum: connectorConfig.params?.parallelNum,
+          stores: [store],
+        })
       }
     }
 
-    // validate if fit with robotConnector.dataType and storeType
+    // validate if fit with connectorRequirement.storeType and stores
     for (const connectorRequirement of this.connectorRequirements) {
-      const {robotConnector, stores} = connectorRequirement
-      const dataType = robotConnector.dataType
-      const direction = dataType.split("-")[1]
+      const { storeType, parallelNum, stores } = connectorRequirement
 
       let flag = false
 
-      if (dataType === "media") {
+      if (storeType === "media") {
+        // All rest stores must be media store
         flag = stores.every((store) => store.getStoreType() === "media")
-      } else if (dataType.endsWith("-p")) {
-        flag = stores.every((store) => {
-          if (store.getStoreType() !== "receivable") {
-            return false
-          }
-          const receivableStore = store as ReceivableStore
-          return receivableStore.isParallelReceivable
-        })
-      } else {
-        if (direction === "r2u") {
-          flag = stores.every((store) => store.getStoreType() === "receivable")
-        } else if (direction === "u2r") {
-          flag = stores.every((store) => store.getStoreType() === "sendable")
-        } else if (direction === "bi") {
-          flag = stores.every(
-            (store) => store.getStoreType() === "bidirectional",
-          )
-        }
+      } else if (storeType === "receivable") {
+        // All rest stores must be receivable store
+        flag = stores.every((store) => store.getStoreType() === "receivable")
+      } else if (storeType === "sendable") {
+        // All rest stores must be sendable store
+        flag = stores.every((store) => store.getStoreType() === "sendable")
+      }
+
+      if (parallelNum && storeType !== "receivable") {
+        flag = true
       }
 
       if (!flag) {
         console.error(
-          `[${this.robotId}] Connector requirement is not valid:`,
+          `[${this.robotInfo.id}] Connector requirement is not valid:`,
           connectorRequirement,
         )
         throw new Error("Connector requirement is not valid!")
@@ -195,7 +210,7 @@ export class WebRTCConnection {
     }
 
     for (const store of this.relatedStores) {
-      store.notifyBeforeConnected(this.robotId)
+      store.notifyBeforeConnected(this.robotInfo.id)
     }
   }
 
@@ -203,7 +218,7 @@ export class WebRTCConnection {
     const peerConnection =
       this.iceServers.length === 0
         ? new RTCPeerConnection()
-        : new RTCPeerConnection({iceServers: this.iceServers})
+        : new RTCPeerConnection({ iceServers: this.iceServers })
     this.peerConnection = peerConnection
     peerConnection.onicecandidate = this.onicecandidate.bind(this)
     peerConnection.onconnectionstatechange =
@@ -213,33 +228,73 @@ export class WebRTCConnection {
   }
 
   private setupConnectors(): void {
-    for (const {robotConnector, stores} of this.connectorRequirements) {
-      if (robotConnector.dataType === "media") {
-        // TODO: setup media
-        // TODO: 시퀀스 안만듦. 레거시쪽 media store 보기 귀찮아서 안만들었던 기억 있음
-        //  우선 DC 먼저
-      } else if (robotConnector.dataType.endsWith("-p")) {
-        for (let i = 0; i < robotConnector.parallelNum; i++) {
-          const dc = this.createDataChannel(
-            `${robotConnector.connectorId}-${i}`,
-          )
-          this.setupReceivableChannel(dc, stores as ReceivableStore[])
-        }
-      } else {
-        const dc = this.createDataChannel(robotConnector.connectorId)
+    const mediaConnectorRequirements: ConnectorRequirement[] = []
 
-        const dataType = robotConnector.dataType.replace("-p", "")
-        const direction = dataType.split("-")[1]
-        if (direction === "r2u") {
-          this.setupReceivableChannel(dc, stores as ReceivableStore[])
-        } else if (direction === "u2r") {
-          this.setupSendableChannel(dc, stores as SendableStore<any>[])
-        } else if (direction === "bi") {
-          this.setupBidirectionalChannel(
-            dc,
-            stores as BidirectionalStore<any>[],
-          )
+    for (const { robotConnector, storeType, parallelNum, stores } of this
+      .connectorRequirements) {
+      if (storeType === "media") {
+        mediaConnectorRequirements.push({
+          robotConnector,
+          storeType,
+          parallelNum,
+          stores,
+        })
+      } else {
+        if (parallelNum) {
+          for (let i = 0; i < parallelNum; i++) {
+            const dc = this.createDataChannel(
+              `${robotConnector.connectorId}-${i}`,
+            )
+            this.setupReceivableChannel(dc, stores as ReceivableStore<any>[])
+          }
+        } else {
+          const dc = this.createDataChannel(robotConnector.connectorId)
+
+          if (storeType === "receivable") {
+            this.setupReceivableChannel(dc, stores as ReceivableStore<any>[])
+          } else {
+            this.setupSendableChannel(dc, stores as SendableStore<any>[])
+          }
         }
+      }
+    }
+
+    this.setupMediaStreamStore(mediaConnectorRequirements)
+  }
+
+  private setupMediaStreamStore(connectorRequirements: ConnectorRequirement[]) {
+    if (!this.peerConnection) {
+      throw new Error("Peer connection is not initialized yet!")
+    }
+    this.peerConnection.ontrack = (event: RTCTrackEvent) => {
+      if (!this.peerConnection) {
+        console.error("PeerConnection not initialized")
+        return
+      }
+
+      if (event.track.kind !== "video" || !event.streams?.[0]) {
+        console.warn("Track has no video stream")
+        return
+      }
+
+      const stream = event.streams[0]
+
+      // Use media type extracted from MSID
+      const mediaType = stream.id
+
+      if (!mediaType) {
+        console.warn("Media type not found in metadata")
+        return
+      }
+
+      const mediaStreamStores: MediaStreamStore[] = connectorRequirements
+        .filter((cr) => cr.storeType === "media")
+        .flatMap((cr) => cr.stores.map((store) => store as MediaStreamStore))
+
+      for (const mediaStreamStore of mediaStreamStores) {
+        mediaStreamStore.setPeerConnection(this.peerConnection)
+        mediaStreamStore.setMediaStreamTrack(event.track)
+        mediaStreamStore.setMediaStream(stream)
       }
     }
   }
@@ -255,18 +310,16 @@ export class WebRTCConnection {
 
   private setupReceivableChannel(
     dc: RTCDataChannel,
-    stores: ReceivableStore[],
+    stores: ReceivableStore<any>[],
   ): void {
     dc.onmessage = async (event) => {
       try {
-        const arrayBuffer = await this.convertDcEventToArrayBuffer(event)
-        const notify = stores.map((store) =>
-          store.notifySubscribers(arrayBuffer),
-        )
+        const data = await this.convertDcEventToArrayBuffer(event)
+        const notify = stores.map((store) => store.notifySubscribers(data))
         await Promise.all(notify)
       } catch (error) {
         console.error(
-          `[${this.robotId}][${dc.label}] Failed to process received data:`,
+          `[${this.robotInfo.id}][${dc.label}] Failed to process received data:`,
           error,
         )
       }
@@ -278,40 +331,19 @@ export class WebRTCConnection {
     stores: SendableStore<any>[],
   ): void {
     dc.onopen = () => {
+      console.log(
+        `[${this.robotInfo.id}][${dc.label}] Data channel is opened!`,
+        stores,
+      )
       for (const store of stores) {
         store.setDataChannel(dc)
-      }
-    }
-  }
-
-  private setupBidirectionalChannel(
-    dc: RTCDataChannel,
-    stores: BidirectionalStore<any>[],
-  ): void {
-    dc.onopen = () => {
-      for (const store of stores) {
-        store.setDataChannel(dc)
-      }
-    }
-    dc.onmessage = async (event) => {
-      try {
-        const arrayBuffer = await this.convertDcEventToArrayBuffer(event)
-        const notify = stores.map((store) =>
-          store.notifySubscribers(arrayBuffer),
-        )
-        await Promise.all(notify)
-      } catch (error) {
-        console.error(
-          `[${this.robotId}][${dc.label}] Failed to process received data:`,
-          error,
-        )
       }
     }
   }
 
   private async convertDcEventToArrayBuffer(
     event: MessageEvent,
-  ): Promise<ArrayBuffer> {
+  ): Promise<ArrayBuffer | string> {
     const data = event.data
 
     if (data instanceof Blob) {
@@ -327,7 +359,7 @@ export class WebRTCConnection {
 
     // count required media streams (we aren't sure if these logics are required)
     const numMediaStreams = this.connectorRequirements.filter(
-      (cr) => cr.robotConnector.dataType === "media",
+      (cr) => cr.storeType === "media",
     ).length
 
     for (let index = 0; index < numMediaStreams; index++) {
@@ -347,7 +379,7 @@ export class WebRTCConnection {
 
   private onconnectionstatechange(): void {
     const state = this.peerConnection?.connectionState
-    console.log(`[${this.robotId}] Connection state changed to ${state}`)
+    console.log(`[${this.robotInfo.id}] Connection state changed to ${state}`)
 
     if (state === "connected") {
       this.onConnectionConnected()
@@ -367,7 +399,7 @@ export class WebRTCConnection {
 
     if (event.track.kind !== "video" || !event.streams?.[0]) {
       console.log(
-        `[${this.robotId}] Video track is not of kind video or has no stream`,
+        `[${this.robotInfo.id}] Video track is not of kind video or has no stream`,
       )
       return
     }
@@ -379,8 +411,12 @@ export class WebRTCConnection {
   }
 
   private onConnectionConnected(): void {
+    console.log(
+      `[${this.robotInfo.id}] Connection established!, notifying related stores: `,
+      this.relatedStores,
+    )
     for (const store of this.relatedStores) {
-      store.notifyAfterConnected(this.robotId)
+      store.notifyAfterConnected(this.robotInfo.id)
     }
   }
 
@@ -390,7 +426,7 @@ export class WebRTCConnection {
 
   private onConnectionFailed(): void {
     for (const store of this.relatedStores) {
-      store.notifyAfterConnectionFailed(this.robotId)
+      store.notifyAfterConnectionFailed(this.robotInfo.id)
     }
   }
 
@@ -411,7 +447,7 @@ export class WebRTCConnection {
     }
     this.isDisconnectedNotified = true
     for (const store of this.relatedStores) {
-      store.notifyAfterDisconnected(this.robotId)
+      store.notifyAfterDisconnected(this.robotInfo.id)
     }
     // resetRequirements가 true일 경우에만 연결 초기화
     if (resetRequirements) {
@@ -440,7 +476,7 @@ export class WebRTCConnection {
         this.peerConnection.close()
       } catch (error) {
         console.error(
-          `[${this.robotId}] Failed to close peer connection:`,
+          `[${this.robotInfo.id}] Failed to close peer connection:`,
           error,
         )
       }
