@@ -41,6 +41,9 @@ export default function WASDSenderWidget({ widgetConfig }: WidgetProps) {
     storeRef.current = getOrCreateStore(
       connector,
     ) as SendableStore<SimpleDirection>
+    if (storeRef.current === null) {
+      return
+    }
     return () => {
       // TODO: it does not work!!!!?!?!?!?!?
       // releaseStore(connector)

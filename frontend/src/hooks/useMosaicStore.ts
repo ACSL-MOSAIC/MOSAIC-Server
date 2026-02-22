@@ -15,13 +15,15 @@ export function useMosaicStore() {
       (info) => info.id === robotConnector.robotId,
     )
     if (!robotInfo) {
-      throw new Error(`Robot not found: ${robotConnector.robotId}`)
+      console.error(`Robot not found: ${robotConnector.robotId}`)
+      return null
     }
 
     const store = storeManager.getOrCreateStore(
       robotConnector,
       robotInfo.robotConfigs,
     )
+    if (!store) return null
     store.getChannelRequirements(robotConnector).forEach((cr) => {
       channelManager.addChannelRequirement(cr)
     })

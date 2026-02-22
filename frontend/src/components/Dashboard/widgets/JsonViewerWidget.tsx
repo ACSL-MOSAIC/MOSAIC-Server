@@ -12,6 +12,9 @@ export default function JsonViewerWidget({ widgetConfig }: WidgetProps) {
   useEffect(() => {
     const connector = widgetConfig.connectors[0]
     const store = getOrCreateStore(connector) as JsonReceivableStore
+    if (store === null) {
+      return
+    }
     store.subscribe((data) => {
       setData(data)
     })

@@ -67,6 +67,9 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
   useEffect(() => {
     const connector = widgetConfig.connectors[0]
     const store = getOrCreateStore(connector) as MediaStreamStore
+    if (store === null) {
+      return
+    }
     store.onAfterConnected((_robotId: string) => {
       configureVideo(store)
     })

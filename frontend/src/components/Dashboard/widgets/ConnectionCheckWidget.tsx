@@ -52,6 +52,10 @@ export default function ConnectionCheckWidget({ widgetConfig }: WidgetProps) {
       senderConnector,
     ) as ConnectionCheckReceiverStore
 
+    if (senderStore === null || receiverStore === null) {
+      return
+    }
+
     receiverStore.subscribe((data) => {
       const receivedAt = performance.timeOrigin + performance.now()
       const d: ConnectionCheckData = {

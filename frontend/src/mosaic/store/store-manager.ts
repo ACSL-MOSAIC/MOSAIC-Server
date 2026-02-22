@@ -47,7 +47,7 @@ export class StoreManager {
   public getOrCreateStore(
     robotConnector: RobotConnector,
     robotConfig: RobotConfig,
-  ): MosaicStore {
+  ): MosaicStore | null {
     // If store already exists, only increment ref count
     const existing = this.mosaicStores.get(robotConnector)
     if (existing) {
@@ -59,7 +59,8 @@ export class StoreManager {
     const connectorType = this.resolveConnectorType(robotConnector, robotConfig)
     const store = this.storeFactory.createStore(connectorType, robotConnector)
     if (store === null) {
-      throw new Error(`Unknown connector type: ${connectorType}`)
+      console.error(`Failed to create store for connector: ${connectorType}`)
+      return null
     }
 
     this.mosaicStores.set(robotConnector, store)
