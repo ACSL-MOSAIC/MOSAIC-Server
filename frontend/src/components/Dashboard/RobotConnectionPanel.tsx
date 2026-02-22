@@ -90,11 +90,8 @@ function RobotConnectionPanel({
 
       {/* Robot list */}
       <Grid
-        templateColumns={{
-          base: "1fr",
-          md: "repeat(3, 1fr)",
-          lg: "repeat(6, 1fr)",
-        }}
+        templateColumns="repeat(auto-fit, minmax(260px, 340px))"
+        justifyContent="start"
         gap={4}
       >
         {robotInfos.map((robotInfo) => {
@@ -109,11 +106,20 @@ function RobotConnectionPanel({
               transition="all 0.2s"
               _hover={{ transform: "translateY(-1px)", boxShadow: "md" }}
             >
-              <Flex justify="space-between" align="center" mb={2}>
-                <Text fontWeight="bold" fontSize="lg">
+              <Flex justify="space-between" align="center" gap={2} mb={2}>
+                <Text
+                  fontWeight="bold"
+                  fontSize="lg"
+                  flex={1}
+                  minW={0}
+                  whiteSpace="nowrap"
+                  overflow="hidden"
+                  textOverflow="ellipsis"
+                  title={robotInfo.name}
+                >
                   {robotInfo.name}
                 </Text>
-                <Badge colorScheme={getStatusColor(robotInfo)}>
+                <Badge colorScheme={getStatusColor(robotInfo)} flexShrink={0}>
                   {robotInfo.statusString}
                 </Badge>
               </Flex>
