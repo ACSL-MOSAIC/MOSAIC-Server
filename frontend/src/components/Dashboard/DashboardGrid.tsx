@@ -80,7 +80,7 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
       <Container maxW="full" py={8}>
         <HStack gap={3}>
           <Spinner size="sm" />
-          <Text>대시보드 탭을 불러오는 중입니다.</Text>
+          <Text>Loading dashboard tabs...</Text>
         </HStack>
       </Container>
     )
