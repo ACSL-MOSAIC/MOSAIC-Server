@@ -34,6 +34,43 @@ const extractRobotListFromTabConfig = (tabConfig: TabConfig): string[] => {
   return [...new Set(robotIds)]
 }
 
+const mergeLayoutIntoWidgets = (
+  widgets: WidgetConfig[],
+  layout: Layout[],
+): WidgetConfig[] => {
+  const layoutById = new Map(layout.map((item) => [item.i, item]))
+  let hasChanged = false
+
+  const nextWidgets = widgets.map((widget) => {
+    const nextLayout = layoutById.get(widget.id)
+    if (!nextLayout) {
+      return widget
+    }
+
+    if (
+      widget.position.x === nextLayout.x &&
+      widget.position.y === nextLayout.y &&
+      widget.position.w === nextLayout.w &&
+      widget.position.h === nextLayout.h
+    ) {
+      return widget
+    }
+
+    hasChanged = true
+    return {
+      ...widget,
+      position: {
+        x: nextLayout.x,
+        y: nextLayout.y,
+        w: nextLayout.w,
+        h: nextLayout.h,
+      },
+    }
+  })
+
+  return hasChanged ? nextWidgets : widgets
+}
+
 interface DashboardGridProps {
   tabId: string
 }
@@ -159,43 +196,6 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
       unsubscribeRobots()
     }
   }, [robotList, subscribeRobots, unsubscribeRobots])
-
-  const mergeLayoutIntoWidgets = (
-    widgets: WidgetConfig[],
-    layout: Layout[],
-  ): WidgetConfig[] => {
-    const layoutById = new Map(layout.map((item) => [item.i, item]))
-    let hasChanged = false
-
-    const nextWidgets = widgets.map((widget) => {
-      const nextLayout = layoutById.get(widget.id)
-      if (!nextLayout) {
-        return widget
-      }
-
-      if (
-        widget.position.x === nextLayout.x &&
-        widget.position.y === nextLayout.y &&
-        widget.position.w === nextLayout.w &&
-        widget.position.h === nextLayout.h
-      ) {
-        return widget
-      }
-
-      hasChanged = true
-      return {
-        ...widget,
-        position: {
-          x: nextLayout.x,
-          y: nextLayout.y,
-          w: nextLayout.w,
-          h: nextLayout.h,
-        },
-      }
-    })
-
-    return hasChanged ? nextWidgets : widgets
-  }
 
   const handleLayoutChange = (layout: Layout[]) => {
     const nextWidgets = mergeLayoutIntoWidgets(
