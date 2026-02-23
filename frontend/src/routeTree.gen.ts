@@ -21,6 +21,7 @@ import { Route as LayoutRobotsImport } from './routes/_layout/robots'
 import { Route as LayoutOccupancyMapsImport } from './routes/_layout/occupancy-maps'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
 import { Route as LayoutDashboardIndexImport } from './routes/_layout/dashboard/index'
+import { Route as LayoutDashboardConfigImport } from './routes/_layout/dashboard/config'
 import { Route as LayoutDashboardTabIdImport } from './routes/_layout/dashboard/$tabId'
 
 // Create/Update Routes
@@ -75,6 +76,11 @@ const LayoutDashboardIndexRoute = LayoutDashboardIndexImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
+const LayoutDashboardConfigRoute = LayoutDashboardConfigImport.update({
+  path: '/dashboard/config',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
 const LayoutDashboardTabIdRoute = LayoutDashboardTabIdImport.update({
   path: '/dashboard/$tabId',
   getParentRoute: () => LayoutRoute,
@@ -124,6 +130,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutDashboardTabIdImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/dashboard/config': {
+      preLoaderRoute: typeof LayoutDashboardConfigImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/dashboard/': {
       preLoaderRoute: typeof LayoutDashboardIndexImport
       parentRoute: typeof LayoutImport
@@ -141,6 +151,7 @@ export const routeTree = rootRoute.addChildren([
     LayoutSettingsRoute,
     LayoutIndexRoute,
     LayoutDashboardTabIdRoute,
+    LayoutDashboardConfigRoute,
     LayoutDashboardIndexRoute,
   ]),
   SignupRoute,

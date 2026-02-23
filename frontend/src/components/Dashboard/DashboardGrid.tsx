@@ -5,8 +5,10 @@ import {
 import { WidgetFactory } from "@/components/Dashboard/WidgetFactory.tsx"
 import useAuth from "@/hooks/useAuth.ts"
 import { RobotConnector, type TabConfig, type WidgetConfig } from "@/mosaic"
+import { DASHBOARD_STORAGE_KEYS } from "@/utils"
 import {
   Box,
+  Button,
   Container,
   HStack,
   Skeleton,
@@ -16,7 +18,7 @@ import {
   VStack,
 } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Navigate } from "@tanstack/react-router"
+import { Navigate, useNavigate } from "@tanstack/react-router"
 import { type Layout, Responsive, WidthProvider } from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
@@ -77,6 +79,7 @@ interface DashboardGridProps {
 
 export default function DashboardGrid({ tabId }: DashboardGridProps) {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { robotInfos, subscribeRobots, unsubscribeRobots } = useRobotInfo()
   const { createConnection, disconnectConnection } = useMosaicWebRTCConnection()
@@ -316,8 +319,22 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
     }
   }
 
+  const handleOpenDashboardConfig = () => {
+    if (typeof window !== "undefined") {
+      // Keep lastTabId for config page preselection, and force /dashboard entry to open config once.
+      window.localStorage.setItem(DASHBOARD_STORAGE_KEYS.forceConfig, "1")
+    }
+    navigate({ to: "/dashboard/config" })
+  }
+
   return (
     <Box p={4}>
+      <HStack justify="flex-end" mb={4}>
+        <Button size="sm" variant="outline" onClick={handleOpenDashboardConfig}>
+          Open Dashboard Config
+        </Button>
+      </HStack>
+
       <RobotConnectionPanel
         onConnect={connectToRobot}
         onDisconnect={disconnectFromRobot}
