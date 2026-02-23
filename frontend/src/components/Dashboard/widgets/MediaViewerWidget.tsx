@@ -8,6 +8,9 @@ import { useEffect, useRef, useState } from "react"
 export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
   const { getOrCreateStore, releaseStore } = useMosaicStore()
   const videoRef = useRef<HTMLVideoElement>(null)
+  const connector = widgetConfig.connectors[0]
+  const connectorRobotId = connector?.robotId ?? ""
+  const connectorId = connector?.connectorId ?? ""
   const [isPlaying, setIsPlaying] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -65,11 +68,18 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
   }
 
   useEffect(() => {
-    const connector = widgetConfig.connectors[0]
+    if (!connector || !connectorRobotId || !connectorId) {
+      return
+    }
+
     const store = getOrCreateStore(connector) as MediaStreamStore
     if (store === null) {
       return
     }
+
+    // Rebind immediately for already-connected sessions.
+    configureVideo(store)
+
     store.onAfterConnected((_robotId: string) => {
       configureVideo(store)
     })
@@ -82,7 +92,7 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
         videoRef.current.srcObject = null
       }
     }
-  }, [widgetConfig])
+  }, [connectorRobotId, connectorId])
 
   const handlePlayPause = () => {
     if (videoRef.current) {
