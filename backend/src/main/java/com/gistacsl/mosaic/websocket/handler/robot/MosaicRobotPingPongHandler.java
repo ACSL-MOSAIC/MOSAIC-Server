@@ -90,6 +90,7 @@ public class MosaicRobotPingPongHandler {
                         .subscribe());
 
                 this.pendingPings.remove(record.sessionId);
+                // TODO: Robot status 변경하고 USER 에게도 알려야 함 -> 메소드 호출 필요
             }
         });
     }
