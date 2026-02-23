@@ -22,13 +22,13 @@ interface ImuData {
 
 const AXIS_COLORS = ["#ef4444", "#22c55e", "#3b82f6"] as const // X=red Y=green Z=blue
 
-// Isaac Sim은 Z-up, Three.js는 Y-up → X축 -90° 보정
+// Isaac Sim is Z-up, Three.js is Y-up → correct by -90° around X axis
 const ZUP_TO_YUP = new THREE.Quaternion().setFromAxisAngle(
   new THREE.Vector3(1, 0, 0),
   -Math.PI / 2,
 )
 
-// orientation: [w, x, y, z] → Z-up 보정 후 THREE.Quaternion
+// orientation: [w, x, y, z] → apply Z-up correction, then build THREE.Quaternion
 function RobotModel({
   orientation,
 }: { orientation: [number, number, number, number] }) {
