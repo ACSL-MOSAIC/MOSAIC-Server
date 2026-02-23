@@ -7,6 +7,7 @@ export const Route = createFileRoute("/_layout/dashboard/$tabId")({
 })
 
 const LAST_DASHBOARD_TAB_ID_STORAGE_KEY = "dashboard:lastTabId"
+const DASHBOARD_FORCE_CONFIG_STORAGE_KEY = "dashboard:forceConfig"
 
 function Index() {
   const { tabId } = Route.useParams()
@@ -16,6 +17,7 @@ function Index() {
       return
     }
     window.localStorage.setItem(LAST_DASHBOARD_TAB_ID_STORAGE_KEY, tabId)
+    window.localStorage.removeItem(DASHBOARD_FORCE_CONFIG_STORAGE_KEY)
   }, [tabId])
 
   return <DashboardGrid tabId={tabId} />

@@ -40,6 +40,7 @@ export const Route = createFileRoute("/_layout/dashboard/config")({
 })
 
 const DEFAULT_DASHBOARD_CONFIG = { widgets: [] }
+const LAST_DASHBOARD_TAB_ID_STORAGE_KEY = "dashboard:lastTabId"
 
 const getDefaultConfigText = (): string =>
   JSON.stringify(DEFAULT_DASHBOARD_CONFIG, null, 2)
@@ -102,9 +103,20 @@ function DashboardPage() {
     }
 
     const hasSelectedTab = tabs.some((tab) => tab.id === selectedTabId)
-    if (!hasSelectedTab) {
-      setSelectedTabId(tabs[0].id)
+    if (hasSelectedTab) {
+      return
     }
+
+    const savedTabId =
+      typeof window === "undefined"
+        ? null
+        : window.localStorage.getItem(LAST_DASHBOARD_TAB_ID_STORAGE_KEY)
+    if (savedTabId && tabs.some((tab) => tab.id === savedTabId)) {
+      setSelectedTabId(savedTabId)
+      return
+    }
+
+    setSelectedTabId(tabs[0].id)
   }, [tabs, selectedTabId])
 
   const { data: tabConfig, isLoading: isConfigLoading } = useQuery({

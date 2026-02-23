@@ -27,7 +27,7 @@ import { useRobotInfo } from "@/hooks/useRobotInfo.ts"
 import { useEffect, useMemo, useRef, useState } from "react"
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
-const LAST_DASHBOARD_TAB_ID_STORAGE_KEY = "dashboard:lastTabId"
+const DASHBOARD_FORCE_CONFIG_STORAGE_KEY = "dashboard:forceConfig"
 
 const extractRobotListFromTabConfig = (tabConfig: TabConfig): string[] => {
   const robotIds = tabConfig.widgets.flatMap((widgetConfig) =>
@@ -321,7 +321,8 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
 
   const handleOpenDashboardConfig = () => {
     if (typeof window !== "undefined") {
-      window.localStorage.removeItem(LAST_DASHBOARD_TAB_ID_STORAGE_KEY)
+      // Keep lastTabId for config page preselection, and force /dashboard entry to open config once.
+      window.localStorage.setItem(DASHBOARD_FORCE_CONFIG_STORAGE_KEY, "1")
     }
     navigate({ to: "/dashboard/config" })
   }

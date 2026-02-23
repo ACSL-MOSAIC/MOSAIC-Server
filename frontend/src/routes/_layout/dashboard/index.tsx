@@ -9,6 +9,7 @@ export const Route = createFileRoute("/_layout/dashboard/")({
 })
 
 const LAST_DASHBOARD_TAB_ID_STORAGE_KEY = "dashboard:lastTabId"
+const DASHBOARD_FORCE_CONFIG_STORAGE_KEY = "dashboard:forceConfig"
 
 function DashboardEntryPage() {
   const { user } = useAuth()
@@ -34,6 +35,14 @@ function DashboardEntryPage() {
   }
 
   if (tabs.length === 0) {
+    return <Navigate to="/dashboard/config" />
+  }
+
+  const shouldForceConfig =
+    typeof window !== "undefined" &&
+    window.localStorage.getItem(DASHBOARD_FORCE_CONFIG_STORAGE_KEY) === "1"
+  if (shouldForceConfig) {
+    window.localStorage.removeItem(DASHBOARD_FORCE_CONFIG_STORAGE_KEY)
     return <Navigate to="/dashboard/config" />
   }
 
