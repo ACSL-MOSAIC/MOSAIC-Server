@@ -32,7 +32,6 @@ const DirectionIcon = ({ direction }: { direction: Direction }) => {
 }
 
 export default function WASDSenderWidget({ widgetConfig }: WidgetProps) {
-  // const { getOrCreateStore, releaseStore } = useMosaicStore()
   const { getOrCreateStore } = useMosaicStore()
   const storeRef = useRef<SendableStore<SimpleDirection> | null>(null)
 
