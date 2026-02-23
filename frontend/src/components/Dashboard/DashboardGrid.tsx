@@ -5,6 +5,7 @@ import {
 import { WidgetFactory } from "@/components/Dashboard/WidgetFactory.tsx"
 import useAuth from "@/hooks/useAuth.ts"
 import { RobotConnector, type TabConfig, type WidgetConfig } from "@/mosaic"
+import { DASHBOARD_STORAGE_KEYS } from "@/utils"
 import {
   Box,
   Button,
@@ -27,7 +28,6 @@ import { useRobotInfo } from "@/hooks/useRobotInfo.ts"
 import { useEffect, useMemo, useRef, useState } from "react"
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
-const DASHBOARD_FORCE_CONFIG_STORAGE_KEY = "dashboard:forceConfig"
 
 const extractRobotListFromTabConfig = (tabConfig: TabConfig): string[] => {
   const robotIds = tabConfig.widgets.flatMap((widgetConfig) =>
@@ -322,7 +322,7 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
   const handleOpenDashboardConfig = () => {
     if (typeof window !== "undefined") {
       // Keep lastTabId for config page preselection, and force /dashboard entry to open config once.
-      window.localStorage.setItem(DASHBOARD_FORCE_CONFIG_STORAGE_KEY, "1")
+      window.localStorage.setItem(DASHBOARD_STORAGE_KEYS.forceConfig, "1")
     }
     navigate({ to: "/dashboard/config" })
   }

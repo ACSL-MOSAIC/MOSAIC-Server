@@ -44,6 +44,11 @@ export const confirmPasswordRules = (
   return rules
 }
 
+export const DASHBOARD_STORAGE_KEYS = {
+  lastTabId: "dashboard:lastTabId",
+  forceConfig: "dashboard:forceConfig",
+} as const
+
 export const handleError = (err: ApiError) => {
   const {showErrorToast} = useCustomToast()
   const errDetail = (err.body as any)?.detail

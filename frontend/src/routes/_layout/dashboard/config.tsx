@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog.tsx"
 import useAuth from "@/hooks/useAuth.ts"
 import useCustomToast from "@/hooks/useCustomToast.ts"
+import { DASHBOARD_STORAGE_KEYS } from "@/utils"
 import {
   Badge,
   Box,
@@ -40,7 +41,6 @@ export const Route = createFileRoute("/_layout/dashboard/config")({
 })
 
 const DEFAULT_DASHBOARD_CONFIG = { widgets: [] }
-const LAST_DASHBOARD_TAB_ID_STORAGE_KEY = "dashboard:lastTabId"
 
 const getDefaultConfigText = (): string =>
   JSON.stringify(DEFAULT_DASHBOARD_CONFIG, null, 2)
@@ -110,7 +110,7 @@ function DashboardPage() {
     const savedTabId =
       typeof window === "undefined"
         ? null
-        : window.localStorage.getItem(LAST_DASHBOARD_TAB_ID_STORAGE_KEY)
+        : window.localStorage.getItem(DASHBOARD_STORAGE_KEYS.lastTabId)
     if (savedTabId && tabs.some((tab) => tab.id === savedTabId)) {
       setSelectedTabId(savedTabId)
       return

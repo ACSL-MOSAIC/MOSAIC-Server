@@ -1,5 +1,6 @@
 import { getTabListApi } from "@/client/service/dashboard.api.ts"
 import useAuth from "@/hooks/useAuth.ts"
+import { DASHBOARD_STORAGE_KEYS } from "@/utils"
 import { Container, HStack, Spinner, Text } from "@chakra-ui/react"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Navigate } from "@tanstack/react-router"
@@ -7,9 +8,6 @@ import { createFileRoute, Navigate } from "@tanstack/react-router"
 export const Route = createFileRoute("/_layout/dashboard/")({
   component: DashboardEntryPage,
 })
-
-const LAST_DASHBOARD_TAB_ID_STORAGE_KEY = "dashboard:lastTabId"
-const DASHBOARD_FORCE_CONFIG_STORAGE_KEY = "dashboard:forceConfig"
 
 function DashboardEntryPage() {
   const { user } = useAuth()
@@ -40,16 +38,16 @@ function DashboardEntryPage() {
 
   const shouldForceConfig =
     typeof window !== "undefined" &&
-    window.localStorage.getItem(DASHBOARD_FORCE_CONFIG_STORAGE_KEY) === "1"
+    window.localStorage.getItem(DASHBOARD_STORAGE_KEYS.forceConfig) === "1"
   if (shouldForceConfig) {
-    window.localStorage.removeItem(DASHBOARD_FORCE_CONFIG_STORAGE_KEY)
+    window.localStorage.removeItem(DASHBOARD_STORAGE_KEYS.forceConfig)
     return <Navigate to="/dashboard/config" />
   }
 
   const savedTabId =
     typeof window === "undefined"
       ? null
-      : window.localStorage.getItem(LAST_DASHBOARD_TAB_ID_STORAGE_KEY)
+      : window.localStorage.getItem(DASHBOARD_STORAGE_KEYS.lastTabId)
   if (savedTabId && tabs.some((tab) => tab.id === savedTabId)) {
     return <Navigate to="/dashboard/$tabId" params={{ tabId: savedTabId }} />
   }
