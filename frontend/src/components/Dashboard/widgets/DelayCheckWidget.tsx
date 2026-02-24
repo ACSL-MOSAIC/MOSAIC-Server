@@ -7,8 +7,11 @@ import type {
   ConnectionCheckReceiverStore,
   ConnectionCheckSenderStore,
 } from "@/mosaic/store/impl/connection-checking-store.ts"
-import { Box, Button, HStack } from "@chakra-ui/react"
+import { Box, Button, HStack, Switch } from "@chakra-ui/react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+
+// ~250 KB ASCII string, generated once at module load
+const LARGE_PAYLOAD = "x".repeat(250 * 1024)
 
 interface ConnectionCheckData {
   messageCreated: number
@@ -49,6 +52,8 @@ export default function DelayCheckWidget({ widgetConfig }: WidgetProps) {
   >([])
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [largeMode, setLargeMode] = useState(false)
+  const largeModeRef = useRef(false)
 
   const robotName = useMemo(() => {
     const robotId = widgetConfig.connectors[0]?.robotId
@@ -88,7 +93,7 @@ export default function DelayCheckWidget({ widgetConfig }: WidgetProps) {
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = `${robotName}.csv`
+    a.download = `${robotName}${largeModeRef.current ? "_large" : ""}_delay_stats.csv`
     a.click()
     URL.revokeObjectURL(url)
   }, [connectionCheckingMessages, robotName])
@@ -132,6 +137,7 @@ export default function DelayCheckWidget({ widgetConfig }: WidgetProps) {
       intervalRef.current = setInterval(() => {
         senderStore.send({
           messageCreated: performance.timeOrigin + performance.now(),
+          ...(largeModeRef.current ? { extra: LARGE_PAYLOAD } : {}),
         })
       }, 500)
     })
@@ -155,72 +161,77 @@ export default function DelayCheckWidget({ widgetConfig }: WidgetProps) {
   return (
     <WidgetFrame widgetConfig={widgetConfig}>
       <Box display="flex" flexDirection="column" h="100%" gap={2}>
-        {/* Stats bar + Save button */}
-        <HStack
-          px={2}
-          justify="space-between"
-          align="center"
-          flexShrink={0}
-          gap={2}
-        >
-          <Box
-            as="table"
-            fontSize="xs"
-            fontFamily="mono"
-            style={{ borderCollapse: "collapse" }}
-            flex={1}
-            minW={0}
-          >
-            <Box as="tbody">
-              <Box as="tr">
-                {["Mean", "Std", "p50", "p95", "p99"].map((label) => (
+        {/* Stats + controls */}
+        <HStack px={2} align="center" flexShrink={0} gap={4}>
+          {/* Left: stats in two rows */}
+          <Box flex={1} minW={0} fontSize="xs" fontFamily="mono">
+            <HStack gap={4} mb={0.5}>
+              {(["Mean", "Std"] as const).map((label) => (
+                <Box key={label} textAlign="center">
+                  <Box color="gray.700">{label}</Box>
                   <Box
-                    key={label}
-                    as="td"
-                    px={3}
-                    py={0}
-                    textAlign="center"
-                    color="gray.700"
-                    whiteSpace="nowrap"
-                  >
-                    {label}
-                  </Box>
-                ))}
-              </Box>
-              <Box as="tr">
-                {[
-                  stats?.mean,
-                  stats?.std,
-                  stats?.p50,
-                  stats?.p95,
-                  stats?.p99,
-                ].map((val, i) => (
-                  <Box
-                    key={i}
-                    as="td"
-                    px={3}
-                    py={0}
-                    textAlign="center"
                     color="cyan.500"
                     fontWeight="semibold"
                     whiteSpace="nowrap"
                   >
-                    {val != null ? val.toFixed(3) : "—"}
+                    {stats?.[label.toLowerCase() as "mean" | "std"]?.toFixed(
+                      3,
+                    ) ?? "—"}
                   </Box>
-                ))}
-              </Box>
-            </Box>
+                </Box>
+              ))}
+            </HStack>
+            <HStack gap={4}>
+              {(["p50", "p95", "p99"] as const).map((label) => (
+                <Box key={label} textAlign="center">
+                  <Box color="gray.700">{label}</Box>
+                  <Box
+                    color="cyan.500"
+                    fontWeight="semibold"
+                    whiteSpace="nowrap"
+                  >
+                    {stats?.[label]?.toFixed(3) ?? "—"}
+                  </Box>
+                </Box>
+              ))}
+            </HStack>
           </Box>
-          <Button
-            size="xs"
-            variant="outline"
-            colorPalette="teal"
-            onClick={handleSave}
-            disabled={connectionCheckingMessages.length === 0}
-            flexShrink={0}
-          >
-            Save CSV
-          </Button>
+
+          {/* Right: [Large + switch] | [Save CSV] */}
+          <HStack flexShrink={0} align="center" gap={2}>
+            <Box
+              display="flex"
+              flexDirection="column"
+              alignItems="center"
+              gap={0.5}
+            >
+              <Box fontSize="xs" color="gray.500">
+                Large
+              </Box>
+              <Switch.Root
+                size="sm"
+                checked={largeMode}
+                onCheckedChange={(e: { checked: boolean }) => {
+                  largeModeRef.current = e.checked
+                  setLargeMode(e.checked)
+                }}
+              >
+                <Switch.HiddenInput />
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+              </Switch.Root>
+            </Box>
+            <Button
+              size="xs"
+              variant="outline"
+              colorPalette="teal"
+              onClick={handleSave}
+              disabled={connectionCheckingMessages.length === 0}
+            >
+              Save CSV
+            </Button>
+          </HStack>
         </HStack>
 
         {/* Data table */}
