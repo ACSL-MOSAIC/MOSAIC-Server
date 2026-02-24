@@ -12,33 +12,42 @@ export class ChannelManager {
   public addChannelRequirement(channelRequirement: ChannelRequirement): void {
     const robotId = channelRequirement.robotConnector.robotId
     const list = this.channelRequirements.get(robotId) ?? []
-    if (
-      list.find(
-        (cr) =>
-          cr.robotConnector.serialize() ===
-          channelRequirement.robotConnector.serialize(),
-      )
+    const existingIndex = list.findIndex(
+      (cr) =>
+        cr.robotConnector.serialize() ===
+        channelRequirement.robotConnector.serialize(),
     )
+    if (existingIndex >= 0) {
+      // Keep only one requirement per connector and always keep the latest store ref.
+      list[existingIndex] = channelRequirement
+      this.channelRequirements.set(robotId, list)
       return
+    }
     list.push(channelRequirement)
     this.channelRequirements.set(robotId, list)
+  }
+
+  public removeChannelRequirementByConnector(
+    robotConnector: RobotConnector,
+  ): void {
+    const robotId = robotConnector.robotId
+    const list = this.channelRequirements.get(robotId)
+    if (list === undefined) return
+    const targetSerialized = robotConnector.serialize()
+    const next = list.filter(
+      (req) => req.robotConnector.serialize() !== targetSerialized,
+    )
+    if (next.length === 0) {
+      this.channelRequirements.delete(robotId)
+    } else {
+      this.channelRequirements.set(robotId, next)
+    }
   }
 
   public removeChannelRequirement(
     channelRequirement: ChannelRequirement,
   ): void {
-    const robotId = channelRequirement.robotConnector.robotId
-    const list = this.channelRequirements.get(robotId)
-    if (list === undefined) return
-    // Remove the given channelRequirement from the array for this robotId
-    const next = list.filter((req) => req !== channelRequirement)
-    // If the array is empty after removal, delete the robotId entry from the map
-    if (next.length === 0) {
-      this.channelRequirements.delete(robotId)
-    } else {
-      // Otherwise save the updated array back
-      this.channelRequirements.set(robotId, next)
-    }
+    this.removeChannelRequirementByConnector(channelRequirement.robotConnector)
   }
 
   public getActiveChannel(

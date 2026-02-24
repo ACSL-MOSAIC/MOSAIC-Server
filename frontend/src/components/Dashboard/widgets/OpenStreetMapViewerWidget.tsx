@@ -1,7 +1,6 @@
 import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx"
 import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts"
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts"
-import { RobotConnector } from "@/mosaic"
 import type JsonReceivableStore from "@/mosaic/store/impl/json-receivable-store.ts"
 import { Box, Text } from "@chakra-ui/react"
 import type { Map as LeafletMap } from "leaflet"
@@ -48,20 +47,41 @@ const parseGpsCoordinate = (payload: unknown): GpsCoordinate | null => {
   }
 
   const data = payload as Record<string, unknown>
-  const latitude = toFiniteNumber(data.latitude ?? data.lat)
-  const longitude = toFiniteNumber(data.longitude ?? data.lng ?? data.lon)
+  const directLatitude = toFiniteNumber(data.latitude ?? data.lat)
+  const directLongitude = toFiniteNumber(data.longitude ?? data.lng ?? data.lon)
 
-  if (latitude === null || longitude === null) {
-    return null
+  if (directLatitude !== null && directLongitude !== null) {
+    return {
+      latitude: directLatitude,
+      longitude: directLongitude,
+    }
   }
 
-  return {
-    latitude,
-    longitude,
+  const nestedCoordinate = data.coordinate
+  if (
+    nestedCoordinate &&
+    typeof nestedCoordinate === "object" &&
+    !Array.isArray(nestedCoordinate)
+  ) {
+    const nested = nestedCoordinate as Record<string, unknown>
+    const nestedLatitude = toFiniteNumber(nested.latitude ?? nested.lat)
+    const nestedLongitude = toFiniteNumber(
+      nested.longitude ?? nested.lng ?? nested.lon,
+    )
+    if (nestedLatitude !== null && nestedLongitude !== null) {
+      return {
+        latitude: nestedLatitude,
+        longitude: nestedLongitude,
+      }
+    }
   }
+
+  return null
 }
 
-export default function OpenStreetMapViewerWidget({ widgetConfig }: WidgetProps) {
+export default function OpenStreetMapViewerWidget({
+  widgetConfig,
+}: WidgetProps) {
   const { getOrCreateStore, releaseStore } = useMosaicStore()
   const mapRef = useRef<LeafletMap | null>(null)
   const hasCenteredRef = useRef(false)
@@ -72,12 +92,11 @@ export default function OpenStreetMapViewerWidget({ widgetConfig }: WidgetProps)
   const [hasInvalidPayload, setHasInvalidPayload] = useState(false)
 
   useEffect(() => {
-    if (!connectorRobotId || !connectorId) {
+    if (!connector || !connectorRobotId || !connectorId) {
       return
     }
 
-    const robotConnector = new RobotConnector(connectorRobotId, connectorId)
-    const store = getOrCreateStore(robotConnector) as JsonReceivableStore
+    const store = getOrCreateStore(connector) as JsonReceivableStore
     if (store === null) {
       return
     }
@@ -94,16 +113,19 @@ export default function OpenStreetMapViewerWidget({ widgetConfig }: WidgetProps)
 
     return () => {
       unsubscribe()
-      releaseStore(robotConnector)
+      releaseStore(connector)
     }
-  }, [connectorRobotId, connectorId])
+  }, [connector, connectorRobotId, connectorId, getOrCreateStore, releaseStore])
 
   useEffect(() => {
     if (!mapRef.current || !coordinate) {
       return
     }
 
-    const nextCenter: [number, number] = [coordinate.latitude, coordinate.longitude]
+    const nextCenter: [number, number] = [
+      coordinate.latitude,
+      coordinate.longitude,
+    ]
     if (!hasCenteredRef.current) {
       mapRef.current.setView(nextCenter, TRACKING_ZOOM)
       hasCenteredRef.current = true
@@ -150,7 +172,8 @@ export default function OpenStreetMapViewerWidget({ widgetConfig }: WidgetProps)
                   {connectorRobotId}
                 </Text>
                 <Text fontSize="xs">
-                  {coordinate.latitude.toFixed(6)}, {coordinate.longitude.toFixed(6)}
+                  {coordinate.latitude.toFixed(6)},{" "}
+                  {coordinate.longitude.toFixed(6)}
                 </Text>
               </Popup>
             </Marker>

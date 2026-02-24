@@ -1,6 +1,6 @@
 import { MosaicContext } from "@/contexts/MosaicContext.ts"
 import type { RobotConnector } from "@/mosaic"
-import { useContext } from "react"
+import { useCallback, useContext } from "react"
 
 export function useMosaicStore() {
   const context = useContext(MosaicContext)
@@ -10,29 +10,38 @@ export function useMosaicStore() {
 
   const { storeManager, channelManager, robotInfos } = context
 
-  const getOrCreateStore = (robotConnector: RobotConnector) => {
-    const robotInfo = robotInfos.find(
-      (info) => info.id === robotConnector.robotId,
-    )
-    if (!robotInfo) {
-      console.error(`Robot not found: ${robotConnector.robotId}`)
-      return null
-    }
+  const getOrCreateStore = useCallback(
+    (robotConnector: RobotConnector) => {
+      const robotInfo = robotInfos.find(
+        (info) => info.id === robotConnector.robotId,
+      )
+      if (!robotInfo) {
+        console.error(`Robot not found: ${robotConnector.robotId}`)
+        return null
+      }
 
-    const store = storeManager.getOrCreateStore(
-      robotConnector,
-      robotInfo.robotConfigs,
-    )
-    if (!store) return null
-    store.getChannelRequirements(robotConnector).forEach((cr) => {
-      channelManager.addChannelRequirement(cr)
-    })
-    return store
-  }
+      const store = storeManager.getOrCreateStore(
+        robotConnector,
+        robotInfo.robotConfigs,
+      )
+      if (!store) return null
+      store.getChannelRequirements(robotConnector).forEach((cr) => {
+        channelManager.addChannelRequirement(cr)
+      })
+      return store
+    },
+    [channelManager, robotInfos, storeManager],
+  )
 
-  const releaseStore = (robotConnector: RobotConnector) => {
-    storeManager.releaseStore(robotConnector)
-  }
+  const releaseStore = useCallback(
+    (robotConnector: RobotConnector) => {
+      const isReleased = storeManager.releaseStore(robotConnector)
+      if (isReleased) {
+        channelManager.removeChannelRequirementByConnector(robotConnector)
+      }
+    },
+    [channelManager, storeManager],
+  )
 
   return {
     getOrCreateStore,
