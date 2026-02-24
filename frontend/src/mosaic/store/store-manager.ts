@@ -67,15 +67,17 @@ export class StoreManager {
     return store
   }
 
-  public releaseStore(robotConnector: RobotConnector): void {
+  public releaseStore(robotConnector: RobotConnector): boolean {
     const store = this.mosaicStores.get(robotConnector)
-    if (store === undefined) return
+    if (store === undefined) return false
 
     // Decrement ref count; remove store when it reaches 0
     this.mosaicStores.decrementRefCount(robotConnector)
     if (this.mosaicStores.getRefCount(robotConnector) === 0) {
       this.mosaicStores.delete(robotConnector)
+      return true
     }
+    return false
   }
 
   private resolveConnectorType(
