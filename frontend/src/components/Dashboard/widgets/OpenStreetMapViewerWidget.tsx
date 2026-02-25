@@ -162,9 +162,6 @@ export default function OpenStreetMapViewerWidget({
     activeRobotId.length > 0
       ? (robotGpsStateMap[activeRobotId]?.coordinate ?? null)
       : null
-  const hasAnyInvalidPayload = connectors.some(
-    (item) => robotGpsStateMap[item.robotId]?.hasInvalidPayload ?? false,
-  )
 
   useEffect(() => {
     if (connectors.length === 0) {
@@ -277,20 +274,6 @@ export default function OpenStreetMapViewerWidget({
     )
     hasCenteredRef.current = true
   }
-
-  const statusText = (() => {
-    if (connectors.length === 0) {
-      return "No GPS connector configured."
-    }
-    if (!coordinate && hasAnyInvalidPayload) {
-      return "Waiting for valid GPS payload..."
-    }
-    if (!coordinate) {
-      return "Waiting for GPS data..."
-    }
-    const activeRobotName = robotNameById[activeRobotId] ?? activeRobotId
-    return `${activeRobotName}: ${coordinate.latitude.toFixed(6)}, ${coordinate.longitude.toFixed(6)}`
-  })()
 
   return (
     <WidgetFrame
