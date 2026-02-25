@@ -92,7 +92,6 @@ export default function OpenStreetMapViewerWidget({
   const { robotInfos } = useRobotInfo()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<LeafletMap | null>(null)
-  const hasCenteredRef = useRef(false)
   const [robotGpsStateMap, setRobotGpsStateMap] = useState<
     Record<string, RobotGpsState>
   >({})
@@ -158,10 +157,6 @@ export default function OpenStreetMapViewerWidget({
       : primaryRobotState?.coordinate !== null && primaryRobotState?.coordinate
         ? primaryRobotId
         : (firstRobotWithCoordinate?.robotId ?? "")
-  const coordinate =
-    activeRobotId.length > 0
-      ? (robotGpsStateMap[activeRobotId]?.coordinate ?? null)
-      : null
 
   useEffect(() => {
     if (connectors.length === 0) {
@@ -226,24 +221,6 @@ export default function OpenStreetMapViewerWidget({
   }, [connectors, selectedRobotId])
 
   useEffect(() => {
-    if (!mapRef.current || !coordinate) {
-      return
-    }
-
-    const nextCenter: [number, number] = [
-      coordinate.latitude,
-      coordinate.longitude,
-    ]
-    if (!hasCenteredRef.current) {
-      mapRef.current.setView(nextCenter, TRACKING_ZOOM)
-      hasCenteredRef.current = true
-      return
-    }
-
-    mapRef.current.panTo(nextCenter)
-  }, [coordinate])
-
-  useEffect(() => {
     if (!containerRef.current || !mapRef.current) {
       return
     }
@@ -261,7 +238,7 @@ export default function OpenStreetMapViewerWidget({
     }
   }, [])
 
-  const flyToRobot = (robotId: string) => {
+  const centerMapOnRobot = (robotId: string) => {
     setSelectedRobotId(robotId)
     const targetCoordinate = robotGpsStateMap[robotId]?.coordinate
     if (!mapRef.current || !targetCoordinate) {
@@ -272,7 +249,6 @@ export default function OpenStreetMapViewerWidget({
       [targetCoordinate.latitude, targetCoordinate.longitude],
       TRACKING_ZOOM,
     )
-    hasCenteredRef.current = true
   }
 
   return (
@@ -304,7 +280,7 @@ export default function OpenStreetMapViewerWidget({
                 icon={robotMarkerIcon}
                 eventHandlers={{
                   click: () => {
-                    flyToRobot(robotId)
+                    centerMapOnRobot(robotId)
                   },
                 }}
               >
@@ -351,7 +327,7 @@ export default function OpenStreetMapViewerWidget({
                   variant={isSelected ? "solid" : "ghost"}
                   colorScheme={isSelected ? "green" : "gray"}
                   onClick={() => {
-                    flyToRobot(robotId)
+                    centerMapOnRobot(robotId)
                   }}
                   disabled={!hasCoordinate}
                 >
