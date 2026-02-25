@@ -125,6 +125,14 @@ export default function OpenStreetMapViewerWidget({
     () => [...new Set(connectors.map((item) => item.robotId))],
     [connectors],
   )
+  const selectorPanelWidth = useMemo(() => {
+    const longestRobotNameLength = robotIds.reduce((max, robotId) => {
+      const robotName = robotNameById[robotId] ?? robotId
+      return Math.max(max, Array.from(robotName).length)
+    }, 0)
+    const widthInCh = Math.max(longestRobotNameLength + 2, 16)
+    return `${widthInCh}ch`
+  }, [robotIds, robotNameById])
   const robotsWithCoordinate = useMemo(
     () =>
       robotIds.flatMap((robotId) => {
@@ -335,6 +343,7 @@ export default function OpenStreetMapViewerWidget({
           position="absolute"
           left={3}
           bottom={3}
+          w={selectorPanelWidth}
           px={3}
           py={2}
           bg="rgba(255,255,255,0.9)"
@@ -354,6 +363,7 @@ export default function OpenStreetMapViewerWidget({
                 <Button
                   key={robotId}
                   size="2xs"
+                  w="100%"
                   justifyContent="flex-start"
                   variant={isSelected ? "solid" : "ghost"}
                   colorScheme={isSelected ? "green" : "gray"}
@@ -368,9 +378,6 @@ export default function OpenStreetMapViewerWidget({
                 </Button>
               )
             })}
-            <Text fontSize="xs" color="gray.700" truncate>
-              {statusText}
-            </Text>
           </VStack>
         </Box>
       </Box>
