@@ -285,8 +285,12 @@ export default function OpenStreetMapViewerWidget({
   })()
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
-      <Box ref={containerRef} h="100%" position="relative">
+    <WidgetFrame
+      widgetConfig={widgetConfig}
+      useBody={false}
+      showRobotInfo={false}
+    >
+      <Box ref={containerRef} flex="1" minH="0" position="relative">
         <MapContainer
           ref={mapRef}
           center={DEFAULT_CENTER}
