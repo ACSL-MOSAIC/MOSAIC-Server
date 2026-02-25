@@ -10,6 +10,9 @@ type WidgetComponent = ComponentType<{ widgetConfig: WidgetConfig }>
 
 const modules = import.meta.glob("./widgets/*.tsx")
 const registry = new Map<string, LazyExoticComponent<WidgetComponent>>()
+const LazyNotFoundWidget = lazy(
+  () => import("./widgets/NotFoundWidget.tsx"),
+) as LazyExoticComponent<WidgetComponent>
 
 function getLazyWidget(type: string) {
   console.log("Render Lazy Widget type: ", type)
@@ -33,9 +36,7 @@ export interface WidgetFactoryProps {
 }
 
 export function WidgetFactory({ widgetConfig }: WidgetFactoryProps) {
-  const LazyComponent = getLazyWidget(widgetConfig.type)
-
-  if (!LazyComponent) return <div>Unknown widget: {widgetConfig.type}</div>
+  const LazyComponent = getLazyWidget(widgetConfig.type) ?? LazyNotFoundWidget
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
