@@ -32,21 +32,25 @@ const DirectionIcon = ({ direction }: { direction: Direction }) => {
 }
 
 export default function WASDSenderWidget({ widgetConfig }: WidgetProps) {
-  // const { getOrCreateStore, releaseStore } = useMosaicStore()
-  const { getOrCreateStore } = useMosaicStore()
+  const { getOrCreateStore, releaseStore } = useMosaicStore()
   const storeRef = useRef<SendableStore<SimpleDirection> | null>(null)
 
   useEffect(() => {
     const connector = widgetConfig.connectors[0]
+    if (!connector) {
+      return
+    }
+
     storeRef.current = getOrCreateStore(
       connector,
     ) as SendableStore<SimpleDirection>
     if (storeRef.current === null) {
       return
     }
+
     return () => {
-      // TODO: it does not work!!!!?!?!?!?!?
-      // releaseStore(connector)
+      releaseStore(connector)
+      storeRef.current = null
     }
   }, [widgetConfig])
 
