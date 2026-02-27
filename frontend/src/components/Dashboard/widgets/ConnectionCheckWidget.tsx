@@ -34,15 +34,20 @@ export default function ConnectionCheckWidget({ widgetConfig }: WidgetProps) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
+    const firstConnector = widgetConfig.connectors[0]
+    const secondConnector = widgetConfig.connectors[1]
+    if (!firstConnector || !secondConnector) {
+      return
+    }
+
     let senderConnector: RobotConnector
     let receiverConnector: RobotConnector
-    const connector = widgetConfig.connectors[0]
-    if (connector.connectorId.endsWith("sender")) {
-      senderConnector = connector
-      receiverConnector = widgetConfig.connectors[1]
+    if (firstConnector.connectorId.endsWith("sender")) {
+      senderConnector = firstConnector
+      receiverConnector = secondConnector
     } else {
-      senderConnector = widgetConfig.connectors[1]
-      receiverConnector = connector
+      senderConnector = secondConnector
+      receiverConnector = firstConnector
     }
 
     const senderStore = getOrCreateStore(
@@ -56,7 +61,7 @@ export default function ConnectionCheckWidget({ widgetConfig }: WidgetProps) {
       return
     }
 
-    receiverStore.subscribe((data) => {
+    const unsubscribe = receiverStore.subscribe((data) => {
       const receivedAt = performance.timeOrigin + performance.now()
       const d: ConnectionCheckData = {
         messageCreated: data.messageCreated,
@@ -89,10 +94,11 @@ export default function ConnectionCheckWidget({ widgetConfig }: WidgetProps) {
         clearInterval(intervalRef.current)
         intervalRef.current = null
       }
-      // unsubscribe()
+      unsubscribe()
       delOnAfterConnected()
       delOnAfterDisconnected()
-      releaseStore(connector)
+      releaseStore(receiverConnector)
+      releaseStore(senderConnector)
     }
   }, [widgetConfig])
 
