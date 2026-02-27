@@ -97,20 +97,7 @@ export default function OpenStreetMapViewerWidget({
   >({})
   const [selectedRobotId, setSelectedRobotId] = useState<string>("")
 
-  const connectors = useMemo(() => {
-    const seen = new Set<string>()
-    return widgetConfig.connectors.filter((item) => {
-      if (!item?.robotId || !item?.connectorId) {
-        return false
-      }
-      const key = `${item.robotId}:${item.connectorId}`
-      if (seen.has(key)) {
-        return false
-      }
-      seen.add(key)
-      return true
-    })
-  }, [widgetConfig.connectors])
+  const connectors = widgetConfig.connectors
 
   const robotNameById = useMemo(() => {
     const map: Record<string, string> = {}
@@ -120,10 +107,9 @@ export default function OpenStreetMapViewerWidget({
     return map
   }, [robotInfos])
 
-  const robotIds = useMemo(
-    () => [...new Set(connectors.map((item) => item.robotId))],
-    [connectors],
-  )
+  const robotIds = useMemo(() => {
+    return [...new Set(connectors.map((item) => item.robotId))]
+  }, [connectors])
   const selectorPanelWidth = useMemo(() => {
     const longestRobotNameLength = robotIds.reduce((max, robotId) => {
       const robotName = robotNameById[robotId] ?? robotId
