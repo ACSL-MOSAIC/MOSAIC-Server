@@ -36,10 +36,11 @@ export default function JsonViewerWidget({ widgetConfig }: WidgetProps) {
     <WidgetFrame widgetConfig={widgetConfig}>
       <Code
         display="block"
+        h="100%"
         p={3}
         borderRadius="md"
-        whiteSpace="pre-wrap"
-        overflowY="auto"
+        whiteSpace="pre"
+        overflow="auto"
       >
         {formattedData}
       </Code>
