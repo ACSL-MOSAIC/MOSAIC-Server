@@ -15,7 +15,6 @@ const LazyNotFoundWidget = lazy(
 ) as LazyExoticComponent<WidgetComponent>
 
 function getLazyWidget(type: string) {
-  console.log("Render Lazy Widget type: ", type)
   if (registry.has(type)) return registry.get(type)!
 
   const entry = Object.entries(modules).find(([path]) =>
@@ -27,7 +26,6 @@ function getLazyWidget(type: string) {
     entry[1] as () => Promise<{ default: WidgetComponent }>,
   )
   registry.set(type, component)
-  console.log("Lazy Widget registered: ", type, component)
   return component
 }
 
