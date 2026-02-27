@@ -110,6 +110,7 @@ export default function OpenStreetMapViewerWidget({
   const robotIds = useMemo(() => {
     return [...new Set(connectors.map((item) => item.robotId))]
   }, [connectors])
+  
   const selectorPanelWidth = useMemo(() => {
     const longestRobotNameLength = robotIds.reduce((max, robotId) => {
       const robotName = robotNameById[robotId] ?? robotId
@@ -118,6 +119,7 @@ export default function OpenStreetMapViewerWidget({
     const widthInCh = Math.max(longestRobotNameLength + 2, 16)
     return `${widthInCh}ch`
   }, [robotIds, robotNameById])
+  
   const robotsWithCoordinate = useMemo(
     () =>
       robotIds.flatMap((robotId) => {
