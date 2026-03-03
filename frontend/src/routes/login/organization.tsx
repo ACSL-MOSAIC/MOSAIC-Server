@@ -1,16 +1,27 @@
-import {Button, Container, Heading, Image, Input, Text} from "@chakra-ui/react"
-import {createFileRoute, Link as RouterLink, redirect} from "@tanstack/react-router"
+import {
+  Button,
+  Container,
+  Heading,
+  Image,
+  Input,
+  Text,
+} from "@chakra-ui/react"
+import {
+  Link as RouterLink,
+  createFileRoute,
+  redirect,
+} from "@tanstack/react-router"
 import type React from "react"
-import {useState} from "react"
-import {FiLock, FiMail, FiUsers} from "react-icons/fi"
+import { useState } from "react"
+import { FiLock, FiMail, FiUsers } from "react-icons/fi"
 
-import {Field} from "@/components/ui/field"
-import {InputGroup} from "@/components/ui/input-group"
-import {PasswordInput} from "@/components/ui/password-input"
-import useAuth, {isLoggedIn} from "@/hooks/useAuth"
-import {emailPattern} from "@/utils"
-import Logo from "/assets/images/acsl-logo.svg"
-import type {OrganizationLoginReqDto} from "@/client/service/account.dto.ts"
+import type { OrganizationLoginReqDto } from "@/client/service/account.dto.ts"
+import { Field } from "@/components/ui/field"
+import { InputGroup } from "@/components/ui/input-group"
+import { PasswordInput } from "@/components/ui/password-input"
+import useAuth, { isLoggedIn } from "@/hooks/useAuth"
+import { emailPattern } from "@/utils"
+import Logo from "/assets/images/mosaic.svg"
 
 export const Route = createFileRoute("/login/organization")({
   component: OrganizationLogin,
@@ -24,7 +35,12 @@ export const Route = createFileRoute("/login/organization")({
 })
 
 function OrganizationLogin() {
-  const {loginWithOrganizationMutation, disconnectMutation, error, resetError} = useAuth()
+  const {
+    loginWithOrganizationMutation,
+    disconnectMutation,
+    error,
+    resetError,
+  } = useAuth()
   const [formData, setFormData] = useState<OrganizationLoginReqDto>({
     username: "",
     password: "",
@@ -92,7 +108,7 @@ function OrganizationLogin() {
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const {name, value} = e.target
+    const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -121,8 +137,11 @@ function OrganizationLogin() {
       <Heading size="xl" textAlign="center" mb={6}>
         Organization Log In
       </Heading>
-      <Field invalid={!!errors.organizationName} errorText={errors.organizationName}>
-        <InputGroup w="100%" startElement={<FiUsers/>}>
+      <Field
+        invalid={!!errors.organizationName}
+        errorText={errors.organizationName}
+      >
+        <InputGroup w="100%" startElement={<FiUsers />}>
           <Input
             id="organizationName"
             name="organizationName"
@@ -134,7 +153,7 @@ function OrganizationLogin() {
         </InputGroup>
       </Field>
       <Field invalid={!!errors.username} errorText={errors.username || !!error}>
-        <InputGroup w="100%" startElement={<FiMail/>}>
+        <InputGroup w="100%" startElement={<FiMail />}>
           <Input
             id="username"
             name="username"
@@ -152,7 +171,7 @@ function OrganizationLogin() {
         onChange={handleChange}
         placeholder="Password"
         errors={errors}
-        startElement={<FiLock/>}
+        startElement={<FiLock />}
       />
       <Button variant="solid" type="submit" loading={isSubmitting} size="md">
         Log In

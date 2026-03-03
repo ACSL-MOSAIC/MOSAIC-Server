@@ -1,8 +1,11 @@
 import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx"
 import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts"
-import { useRobotInfo } from "@/hooks/useRobotInfo.ts"
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts"
-import type { MediaStreamStore, StreamStats } from "@/mosaic/store/interface/media-stream-store.ts"
+import { useRobotInfo } from "@/hooks/useRobotInfo.ts"
+import type {
+  MediaStreamStore,
+  StreamStats,
+} from "@/mosaic/store/interface/media-stream-store.ts"
 import { Box, Button, Flex, HStack, IconButton, Text } from "@chakra-ui/react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
@@ -37,8 +40,9 @@ export default function MediaViewerWithStatWidget({
   const handleSave = useCallback(() => {
     const header = "seq,timestamp,fps,jitter,rtt_ms\n"
     const rows = statsList
-      .map((s, i) =>
-        `${i + 1},${s.timestamp.toFixed(3)},${s.fps.toFixed(2)},${s.jitter.toFixed(6)},${s.rtt.toFixed(3)}`,
+      .map(
+        (s, i) =>
+          `${i + 1},${s.timestamp.toFixed(3)},${s.fps.toFixed(2)},${s.jitter.toFixed(6)},${s.rtt.toFixed(3)}`,
       )
       .join("\n")
     const blob = new Blob([header + rows], { type: "text/csv" })
@@ -178,7 +182,7 @@ export default function MediaViewerWithStatWidget({
           <Box fontSize="sm">{error}</Box>
         </Flex>
       ) : (
-        <Box display="flex" flexDirection="column" h="100%">
+        <Box display="flex" flexDirection="column" h="100%" w="100%">
           {/* Video area */}
           <Box flex={1} position="relative" minH={0}>
             <video
@@ -240,8 +244,18 @@ export default function MediaViewerWithStatWidget({
           >
             <HStack gap={4}>
               <StatCell label="FPS" value={latestStat?.fps.toFixed(1) ?? "—"} />
-              <StatCell label="Jitter" value={latestStat ? `${(latestStat.jitter * 1000).toFixed(3)} ms` : "—"} />
-              <StatCell label="RTT" value={latestStat ? `${latestStat.rtt.toFixed(1)} ms` : "—"} />
+              <StatCell
+                label="Jitter"
+                value={
+                  latestStat
+                    ? `${(latestStat.jitter * 1000).toFixed(3)} ms`
+                    : "—"
+                }
+              />
+              <StatCell
+                label="RTT"
+                value={latestStat ? `${latestStat.rtt.toFixed(1)} ms` : "—"}
+              />
             </HStack>
             <Button
               size="xs"
@@ -263,7 +277,9 @@ function StatCell({ label, value }: { label: string; value: string }) {
   return (
     <HStack gap={1}>
       <Text color="gray.500">{label}:</Text>
-      <Text color="cyan.500" fontWeight="semibold">{value}</Text>
+      <Text color="cyan.500" fontWeight="semibold">
+        {value}
+      </Text>
     </HStack>
   )
 }

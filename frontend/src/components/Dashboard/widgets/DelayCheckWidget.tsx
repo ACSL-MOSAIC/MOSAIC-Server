@@ -160,7 +160,7 @@ export default function DelayCheckWidget({ widgetConfig }: WidgetProps) {
 
   return (
     <WidgetFrame widgetConfig={widgetConfig}>
-      <Box display="flex" flexDirection="column" h="100%" gap={2}>
+      <Box display="flex" flexDirection="column" h="100%" w="100%" gap={2}>
         {/* Stats + controls */}
         <HStack px={2} align="center" flexShrink={0} gap={4}>
           {/* Left: stats in two rows */}
