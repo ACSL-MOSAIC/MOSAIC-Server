@@ -4,10 +4,12 @@ import { Flex, HStack, Text } from "@chakra-ui/react"
 
 export interface WidgetHeaderProps {
   widgetConfig: WidgetConfig
+  showRobotInfo?: boolean
 }
 
 export function WidgetHeader({
   widgetConfig: { type, connectors },
+  showRobotInfo = true,
 }: WidgetHeaderProps) {
   const { robotInfos } = useRobotInfo()
 
@@ -23,18 +25,20 @@ export function WidgetHeader({
           <Text fontSize="sm" fontWeight="bold" color="green.500">
             {type}
           </Text>
-          <Text fontSize="xs" color="gray.600">
-            Robot:{" "}
-            {connectors
-              .map((c) => {
-                const robotInfo = robotInfos.find(
-                  (robotInfos) => robotInfos.id === c.robotId,
-                )
-                if (robotInfo) return robotInfo.name
-                return c.robotId
-              })
-              .join(", ")}
-          </Text>
+          {showRobotInfo && (
+            <Text fontSize="xs" color="gray.600">
+              Robot:{" "}
+              {connectors
+                .map((c) => {
+                  const robotInfo = robotInfos.find(
+                    (robotInfos) => robotInfos.id === c.robotId,
+                  )
+                  if (robotInfo) return robotInfo.name
+                  return c.robotId
+                })
+                .join(", ")}
+            </Text>
+          )}
         </HStack>
       </Flex>
 

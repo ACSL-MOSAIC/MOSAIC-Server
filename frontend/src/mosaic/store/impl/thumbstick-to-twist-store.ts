@@ -1,9 +1,9 @@
 import { SendableStore } from "@/mosaic/store/interface/sendable-store.ts"
 import type { Thumbstick } from "@/mosaic/store/type/thumbstick.ts"
 
-export class Ros2ThumbstickToTwistStore extends SendableStore<Thumbstick> {
-  static readonly connectorType = "ros2-thumbstick-to-twist"
-  connectorType = Ros2ThumbstickToTwistStore.connectorType
+export class ThumbstickToTwistStore extends SendableStore<Thumbstick> {
+  static readonly connectorType = "thumbstick-to-twist"
+  connectorType = ThumbstickToTwistStore.connectorType
 
   public send(data: Thumbstick): void {
     const { angle, power, holonomic } = data

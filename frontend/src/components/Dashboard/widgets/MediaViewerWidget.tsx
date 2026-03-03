@@ -78,15 +78,20 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
     }
 
     // Rebind immediately for already-connected sessions.
-    configureVideo(store)
+    let cleanupVideoListeners = configureVideo(store)
 
-    store.onAfterConnected((_robotId: string) => {
-      configureVideo(store)
-    })
+    const unsubscribeAfterConnected = store.onAfterConnected(
+      (_robotId: string) => {
+        cleanupVideoListeners?.()
+        cleanupVideoListeners = configureVideo(store)
+      },
+    )
     // store.subscribe((data) => {
     //   setData(data)
     // })
     return () => {
+      cleanupVideoListeners?.()
+      unsubscribeAfterConnected()
       releaseStore(connector)
       if (videoRef.current) {
         videoRef.current.srcObject = null

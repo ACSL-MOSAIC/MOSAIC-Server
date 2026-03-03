@@ -2,7 +2,15 @@ import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx"
 import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts"
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts"
 import type JsonReceivableStore from "@/mosaic/store/impl/json-receivable-store.ts"
-import { Badge, Box, Grid, HStack, Separator, Text, VStack } from "@chakra-ui/react"
+import {
+  Badge,
+  Box,
+  Grid,
+  HStack,
+  Separator,
+  Text,
+  VStack,
+} from "@chakra-ui/react"
 import type { ReactNode } from "react"
 import { useEffect, useState } from "react"
 import { MdBatteryFull, MdPower } from "react-icons/md"
@@ -103,10 +111,17 @@ export default function ClearpathPlatformPowerViewerWidget({
 
   useEffect(() => {
     const connector = widgetConfig.connectors[0]
+    if (!connector) return
+
     const store = getOrCreateStore(connector) as JsonReceivableStore
     if (store === null) return
-    store.subscribe((incoming) => setData(incoming as PowerData))
+
+    const unsubscribe = store.subscribe((incoming) =>
+      setData(incoming as PowerData),
+    )
+
     return () => {
+      unsubscribe()
       releaseStore(connector)
     }
   }, [widgetConfig])
@@ -114,7 +129,12 @@ export default function ClearpathPlatformPowerViewerWidget({
   if (!data) {
     return (
       <WidgetFrame widgetConfig={widgetConfig}>
-        <Box display="flex" alignItems="center" justifyContent="center" h="100%">
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          h="100%"
+        >
           <Text color="fg.muted" fontSize="sm">
             Waiting for data...
           </Text>

@@ -11,14 +11,21 @@ export default function JsonViewerWidget({ widgetConfig }: WidgetProps) {
 
   useEffect(() => {
     const connector = widgetConfig.connectors[0]
+    if (!connector) {
+      return
+    }
+
     const store = getOrCreateStore(connector) as JsonReceivableStore
     if (store === null) {
       return
     }
-    store.subscribe((data) => {
+
+    const unsubscribe = store.subscribe((data) => {
       setData(data)
     })
+
     return () => {
+      unsubscribe()
       releaseStore(connector)
     }
   }, [widgetConfig])
@@ -29,10 +36,11 @@ export default function JsonViewerWidget({ widgetConfig }: WidgetProps) {
     <WidgetFrame widgetConfig={widgetConfig}>
       <Code
         display="block"
+        h="100%"
         p={3}
         borderRadius="md"
-        whiteSpace="pre-wrap"
-        overflowY="auto"
+        whiteSpace="pre"
+        overflow="auto"
       >
         {formattedData}
       </Code>

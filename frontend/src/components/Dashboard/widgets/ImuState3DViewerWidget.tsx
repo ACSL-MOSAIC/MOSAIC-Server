@@ -131,10 +131,17 @@ export default function ImuState3DViewerWidget({ widgetConfig }: WidgetProps) {
 
   useEffect(() => {
     const connector = widgetConfig.connectors[0]
+    if (!connector) return
+
     const store = getOrCreateStore(connector) as JsonReceivableStore
     if (store === null) return
-    store.subscribe((incoming) => setData(incoming as ImuData))
+
+    const unsubscribe = store.subscribe((incoming) =>
+      setData(incoming as ImuData),
+    )
+
     return () => {
+      unsubscribe()
       releaseStore(connector)
     }
   }, [widgetConfig])
