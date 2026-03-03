@@ -85,42 +85,34 @@ export default function WASDSenderWidget({ widgetConfig }: WidgetProps) {
 
   return (
     <WidgetFrame widgetConfig={widgetConfig}>
-      <Box
-        bg="gray.50"
-        borderRadius="xl"
-        p={4}
-        boxShadow="inset 0 2px 4px rgba(0,0,0,0.1)"
-        position="relative"
-      >
-        <Grid templateColumns="repeat(3, 1fr)" gap={2} maxW="180px" mx="auto">
-          {/* empty */}
-          <Box />
+      <Grid templateColumns="repeat(3, 1fr)" gap={2} mx="auto">
+        {/* empty */}
+        <Box />
 
-          {/* up */}
-          <DirectionButton direction="up" />
+        {/* up */}
+        <DirectionButton direction="up" />
 
-          {/* empty */}
-          <Box />
+        {/* empty */}
+        <Box />
 
-          {/* left */}
-          <DirectionButton direction="left" />
+        {/* left */}
+        <DirectionButton direction="left" />
 
-          {/* center */}
-          <DirectionButton direction="stop" />
+        {/* center */}
+        <DirectionButton direction="stop" />
 
-          {/* right */}
-          <DirectionButton direction="right" />
+        {/* right */}
+        <DirectionButton direction="right" />
 
-          {/* empty */}
-          <Box />
+        {/* empty */}
+        <Box />
 
-          {/* down */}
-          <DirectionButton direction="down" />
+        {/* down */}
+        <DirectionButton direction="down" />
 
-          {/* empty */}
-          <Box />
-        </Grid>
-      </Box>
+        {/* empty */}
+        <Box />
+      </Grid>
     </WidgetFrame>
   )
 }

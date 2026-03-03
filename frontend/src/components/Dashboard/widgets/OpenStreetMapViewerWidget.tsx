@@ -3,10 +3,10 @@ import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts"
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts"
 import { useRobotInfo } from "@/hooks/useRobotInfo.ts"
 import type JsonReceivableStore from "@/mosaic/store/impl/json-receivable-store.ts"
+import { Box, Button, Text, VStack } from "@chakra-ui/react"
 import type { Map as LeafletMap } from "leaflet"
 import L from "leaflet"
-import { useEffect, useRef, useState } from "react"
-import { Box, Button, Text, VStack } from "@chakra-ui/react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet"
 import "leaflet/dist/leaflet.css"
 
@@ -110,7 +110,7 @@ export default function OpenStreetMapViewerWidget({
   const robotIds = useMemo(() => {
     return [...new Set(connectors.map((item) => item.robotId))]
   }, [connectors])
-  
+
   const selectorPanelWidth = useMemo(() => {
     const longestRobotNameLength = robotIds.reduce((max, robotId) => {
       const robotName = robotNameById[robotId] ?? robotId
@@ -119,7 +119,7 @@ export default function OpenStreetMapViewerWidget({
     const widthInCh = Math.max(longestRobotNameLength + 2, 16)
     return `${widthInCh}ch`
   }, [robotIds, robotNameById])
-  
+
   const robotsWithCoordinate = useMemo(
     () =>
       robotIds.flatMap((robotId) => {
