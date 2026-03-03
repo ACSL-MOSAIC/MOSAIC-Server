@@ -309,7 +309,10 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
 
   const connectAllRobots = async () => {
     console.log("connectAllRobots")
-    await createConnection(robotList)
+    const readyRobotIds = robotInfos
+      .filter((r) => r.isReadyToConnect)
+      .map((r) => r.id)
+    await createConnection(readyRobotIds)
   }
 
   const disconnectAllRobots = () => {
