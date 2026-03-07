@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "unicorn", "jsx-a11y"],
+  "ignorePatterns": ["node_modules", "src/routeTree.gen.ts"],
+  "rules": {
+    "typescript/no-explicit-any": "off",
+    "react/no-array-index-key": "off",
+    "typescript/no-non-null-assertion": "off",
+    "unicorn/no-array-for-each": "off",
+    "unicorn/no-static-only-class": "off",
+    "react-hooks/exhaustive-deps": "off"
+  }
+}

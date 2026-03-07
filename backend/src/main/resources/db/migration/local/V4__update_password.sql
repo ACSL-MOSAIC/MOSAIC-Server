@@ -1,0 +1,7 @@
+UPDATE users
+SET hashed_password = '$2a$12$YDUWhRH3q3BYf9P8bQvrz.C32lMk02rvQCvGd1nv0CyV110bnWxk6'
+where pk = '00000000-0000-0000-0000-000000000010';
+
+UPDATE users
+SET hashed_password = '$2a$12$YDUWhRH3q3BYf9P8bQvrz.C32lMk02rvQCvGd1nv0CyV110bnWxk6'
+where pk = '00000000-0000-0000-0000-000000000011';

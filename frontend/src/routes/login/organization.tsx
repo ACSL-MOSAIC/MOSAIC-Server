@@ -1,0 +1,163 @@
+import type React from "react";
+
+import Logo from "/assets/images/mosaic.svg";
+import { Button, Container, Heading, Image, Input, Text } from "@chakra-ui/react";
+import { Link as RouterLink, createFileRoute, redirect } from "@tanstack/react-router";
+import { useState } from "react";
+import { FiLock, FiMail, FiUsers } from "react-icons/fi";
+
+import type { OrganizationLoginReqDto } from "@/client/service/account.dto.ts";
+
+import { Field } from "@/components/ui/field";
+import { InputGroup } from "@/components/ui/input-group";
+import { PasswordInput } from "@/components/ui/password-input";
+import useAuth, { isLoggedIn } from "@/hooks/useAuth";
+import { emailPattern } from "@/utils";
+
+export const Route = createFileRoute("/login/organization")({
+  component: OrganizationLogin,
+  beforeLoad: async () => {
+    if (isLoggedIn()) {
+      throw redirect({
+        to: "/",
+      });
+    }
+  },
+});
+
+function OrganizationLogin() {
+  const { loginWithOrganizationMutation, disconnectMutation, error, resetError } = useAuth();
+  const [formData, setFormData] = useState<OrganizationLoginReqDto>({
+    username: "",
+    password: "",
+    organizationName: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{
+    username?: string;
+    password?: string;
+    organizationName?: string;
+  }>({});
+
+  const validateForm = () => {
+    const newErrors: {
+      username?: string;
+      password?: string;
+      organizationName?: string;
+    } = {};
+
+    if (!formData.username) {
+      newErrors.username = "Username is required";
+    } else if (!emailPattern.value.test(formData.username)) {
+      newErrors.username = emailPattern.message;
+    }
+
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+    } else if (formData.password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters";
+    }
+
+    if (!formData.organizationName) {
+      newErrors.organizationName = "Organization name is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    resetError();
+
+    try {
+      const response = await loginWithOrganizationMutation.mutateAsync(formData);
+      if (response.existingConnection) {
+        if (
+          window.confirm(
+            "이미 다른 기기에서 로그인되어 있습니다. 기존 연결을 해제하고 로그인하시겠습니까?",
+          )
+        ) {
+          await disconnectMutation.mutateAsync();
+          await loginWithOrganizationMutation.mutateAsync(formData);
+        }
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  return (
+    <Container
+      as="form"
+      onSubmit={handleSubmit}
+      h="100vh"
+      maxW="sm"
+      alignItems="stretch"
+      justifyContent="center"
+      gap={4}
+      centerContent
+    >
+      <Image src={Logo} alt="FastAPI logo" height="auto" maxW="2xs" alignSelf="center" mb={2} />
+      <Heading size="xl" textAlign="center" mb={6}>
+        Organization Log In
+      </Heading>
+      <Field invalid={!!errors.organizationName} errorText={errors.organizationName}>
+        <InputGroup w="100%" startElement={<FiUsers />}>
+          <Input
+            id="organizationName"
+            name="organizationName"
+            value={formData.organizationName}
+            onChange={handleChange}
+            placeholder="Organization Name"
+            type="text"
+          />
+        </InputGroup>
+      </Field>
+      <Field invalid={!!errors.username} errorText={errors.username || !!error}>
+        <InputGroup w="100%" startElement={<FiMail />}>
+          <Input
+            id="username"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            placeholder="Email"
+            type="email"
+          />
+        </InputGroup>
+      </Field>
+      <PasswordInput
+        type="password"
+        name="password"
+        value={formData.password}
+        onChange={handleChange}
+        placeholder="Password"
+        errors={errors}
+        startElement={<FiLock />}
+      />
+      <Button variant="solid" type="submit" loading={isSubmitting} size="md">
+        Log In
+      </Button>
+      <Text textAlign="center">
+        Personal account?{" "}
+        <RouterLink to="/login" className="main-link">
+          Log in here
+        </RouterLink>
+      </Text>
+    </Container>
+  );
+}

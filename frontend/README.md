@@ -9,16 +9,16 @@ and [Chakra UI](https://chakra-ui.com/).
 Before you begin, ensure that you have either the Node Version Manager (nvm) or Fast Node Manager (fnm) installed on
 your system.
 
-* To install fnm follow the [official fnm guide](https://github.com/Schniz/fnm#installation). If you prefer nvm, you can
+- To install fnm follow the [official fnm guide](https://github.com/Schniz/fnm#installation). If you prefer nvm, you can
   install it using the [official nvm guide](https://github.com/nvm-sh/nvm#installing-and-updating).
 
-* After installing either nvm or fnm, proceed to the `frontend` directory:
+- After installing either nvm or fnm, proceed to the `frontend` directory:
 
 ```bash
 cd frontend
 ```
 
-* If the Node.js version specified in the `.nvmrc` file isn't installed on your system, you can install it using the
+- If the Node.js version specified in the `.nvmrc` file isn't installed on your system, you can install it using the
   appropriate command:
 
 ```bash
@@ -29,7 +29,7 @@ fnm install
 nvm install
 ```
 
-* Once the installation is complete, switch to the installed version:
+- Once the installation is complete, switch to the installed version:
 
 ```bash
 # If using fnm
@@ -39,19 +39,19 @@ fnm use
 nvm use
 ```
 
-* Within the `frontend` directory, install the necessary NPM packages:
+- Within the `frontend` directory, install the necessary NPM packages:
 
 ```bash
 npm install
 ```
 
-* And start the live server with the following `npm` script:
+- And start the live server with the following `npm` script:
 
 ```bash
 npm run dev
 ```
 
-* Then open your browser at http://localhost:5173/.
+- Then open your browser at http://localhost:5173/.
 
 Notice that this live server is not running inside Docker, it's for local development, and that is the recommended
 workflow. Once you are happy with your frontend, you can build the frontend Docker image and start it, to test it in a
@@ -64,11 +64,11 @@ Check the file `package.json` to see other available options.
 
 If you are developing an API-only app and want to remove the frontend, you can do it easily:
 
-* Remove the `./frontend` directory.
+- Remove the `./frontend` directory.
 
-* In the `docker-compose.yml` file, remove the whole service / section `frontend`.
+- In the `docker-compose.yml` file, remove the whole service / section `frontend`.
 
-* In the `docker-compose.override.yml` file, remove the whole service / section `frontend` and `playwright`.
+- In the `docker-compose.override.yml` file, remove the whole service / section `frontend` and `playwright`.
 
 Done, you have a frontend-less (api-only) app. 🤓
 
@@ -76,8 +76,8 @@ Done, you have a frontend-less (api-only) app. 🤓
 
 If you want, you can also remove the `FRONTEND` environment variables from:
 
-* `.env`
-* `./scripts/*.sh`
+- `.env`
+- `./scripts/*.sh`
 
 But it would be only to clean them up, leaving them won't really have any effect either way.
 
@@ -96,13 +96,13 @@ Then, when you run the frontend, it will use that URL as the base URL for the AP
 
 The frontend code is structured as follows:
 
-* `frontend/src` - The main frontend code.
-* `frontend/src/assets` - Static assets.
-* `frontend/src/client` - The generated OpenAPI client.
-* `frontend/src/components` - The different components of the frontend.
-* `frontend/src/hooks` - Custom hooks.
-* `frontend/src/routes` - The different routes of the frontend which include the pages.
-* `theme.tsx` - The Chakra UI custom theme.
+- `frontend/src` - The main frontend code.
+- `frontend/src/assets` - Static assets.
+- `frontend/src/client` - The generated OpenAPI client.
+- `frontend/src/components` - The different components of the frontend.
+- `frontend/src/hooks` - Custom hooks.
+- `frontend/src/routes` - The different routes of the frontend which include the pages.
+- `theme.tsx` - The Chakra UI custom theme.
 
 ## End-to-End Testing with Playwright
 

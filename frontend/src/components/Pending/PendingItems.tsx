@@ -1,5 +1,6 @@
-import { Table } from "@chakra-ui/react"
-import { SkeletonText } from "../ui/skeleton"
+import { Table } from "@chakra-ui/react";
+
+import { SkeletonText } from "../ui/skeleton";
 
 const PendingItems = () => (
   <Table.Root size={{ base: "sm", md: "md" }}>
@@ -30,6 +31,6 @@ const PendingItems = () => (
       ))}
     </Table.Body>
   </Table.Root>
-)
+);
 
-export default PendingItems
+export default PendingItems;

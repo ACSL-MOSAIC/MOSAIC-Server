@@ -50,7 +50,7 @@ par 모든 subscriber에게 동시 전송
   activate WidgetComponent
   
   WidgetComponent -[#black]> WidgetComponent: widget update
-  note right of WidgetComponent: 위젯 내부 상태 업데이트\n(비동기 처리 가능)
+  note right of WidgetComponent: 위젯 내부 상태 업데이트\n(비동기 처리)
   
   WidgetComponent --[#blue]> ReceivableStore: 완료
   deactivate WidgetComponent

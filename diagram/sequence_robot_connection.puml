@@ -21,30 +21,27 @@ activate MosaicContext
 
 == WebSocket 연결 ==
 
-MosaicContext -[#black]> MosaicContext: wsObjects.set(robotId, ws)
-
-MosaicContext -[#red]> RobotInfo: setWSConnection(true)
+MosaicContext -[#red]> RobotInfo: updateRobotInfo(robotInfo)
 activate RobotInfo
-RobotInfo -[#black]> RobotInfo: this.wsConnected = true
+RobotInfo -[#black]> RobotInfo: robotInfo 객체 교체
 RobotInfo --[#blue]> MosaicContext: 완료
 deactivate RobotInfo
-note over MosaicContext, RobotInfo: TODO: 윗부분 제거 필요!!!
+note over MosaicContext, RobotInfo: 이것 역시 updateRobotInfo() 주체는 미정, (set method만 삭제함)
 
 == WebRTC 연결 시작 ==
+MosaicContext -[#red]> WebRTCConnectionManager: 내부 connections 참조 (key = robotId)
+WebRTCConnectionManager -[#blue]> MosaicContext : WebRTCConnection | undefined
 
-MosaicContext -[#red]> RobotInfo: setRTCStatus("CONNECTING")
-activate RobotInfo
-RobotInfo -[#black]> RobotInfo: this.rtcStatus = "CONNECTING"
-RobotInfo --[#blue]> MosaicContext: 완료
-deactivate RobotInfo
-note over MosaicContext, RobotInfo: TODO: 윗부분 제거 필요!!!
+alt 해당 robotId의 WebRTCConnection이 존재할 경우
+ MosaicContext -[#red]> WebRTCConnectionManager : disconnectConnection(robotId)
+ WebRTCConnectionManager -[#blue]> MosaicContext : 완료
 
-MosaicContext -[#red]> WebRTCConnectionManager: createConnection(robotId, channelRequirements)
-activate WebRTCConnectionManager
-note over WebRTCConnectionManager
-TODO: connections 변수에 이미 robotId 로 된 WebRTCConnection 존재하는지 확인
-있는 경우 핸들링 필요!!!! (추천하는건 걍 깔끔히 지우고 새로 만드는 것)
-end note
+else 없는 경우
+ MosaicContext -[#red]> WebRTCConnectionManager: createConnection(robotId, channelRequirements)
+ activate WebRTCConnectionManager
+end
+
+
 
 WebRTCConnectionManager -[#red]> Backend: API 호출 POST /api/v1/connection/create
 note right of WebRTCConnectionManager
@@ -82,7 +79,7 @@ note right of WebRTCConnection
 RTCPeerConnection 생성 및 저장
 onicecandidate 이벤트 등록
 onconnectionstatechange 등록
-ondatachannel 이벤트 등록
+ontrack 이벤트 등록
 end note
 
 == MediaStream, DataChannel 생성 및 콜백 등록 ==
@@ -110,9 +107,8 @@ loop 각 ConnectorRequirement
             WebRTCConnection <[#blue]- WebRTCConnection --: RTCDataChannel 반환
 
             WebRTCConnection -[#red]> WebRTCConnection ++: setupSendableChannel(RTCDataChannel, SendableStore)
-            WebRTCConnection -[#red]> MosaicStore: SendableStore 의 setDataChannel(RTCDataChannel) 호출
-            MosaicStore -> MosaicStore: RTCDataChannel 저장
-            MosaicStore -[#blue]> WebRTCConnection: 완료
+            WebRTCConnection -> RTCDataChannel: onopen 이벤트 등록
+            note over WebRTCConnection, RTCDataChannel: onopen 시 SendableStore 의 setDataChannel(RTCDataChannel) 호출
             WebRTCConnection <[#blue]- WebRTCConnection --: 완료
         else storeType === "media"
             WebRTCConnection -[#red]> WebRTCConnection: createMediaStream(connectorId)
@@ -271,7 +267,7 @@ else "disconnected"
     end
     WebRTCConnection -> WebRTCConnection --: 완료
 else "failed"
-    WebRTCConnection -> WebRTCConnection ++: onConnectionDisconnected() 호출
+    WebRTCConnection -> WebRTCConnection ++: onConnectionFailed() 호출
     loop relatedStores 의 모든 MosaicStore
         WebRTCConnection -[#red]> MosaicStore: notifyAfterConnectionFailed(robotId) 호출
         MosaicStore -> MosaicStore: afterConnectionFailedSubscribers 모두 호출
@@ -284,5 +280,4 @@ WebRTCConnection -> WebRTCConnection: 완료
 deactivate WebRTCConnection
 
 note right of DashboardGrid: UI 자동 업데이트 (async)\n(RobotInfo 상태 변경 감지)
-
 @enduml

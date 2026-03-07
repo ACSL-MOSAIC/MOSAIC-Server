@@ -1,82 +1,75 @@
-import {
-  Box,
-  Button,
-  Container,
-  Flex,
-  HStack,
-  Heading,
-  Input,
-  Text,
-} from "@chakra-ui/react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
-import { type SubmitHandler, useForm } from "react-hook-form"
-import { FiCopy } from "react-icons/fi"
+import { Box, Button, Container, Flex, HStack, Heading, Input, Text } from "@chakra-ui/react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { type SubmitHandler, useForm } from "react-hook-form";
+import { FiCopy } from "react-icons/fi";
 
-import type { ApiError } from "@/client"
-import { updateUserMeApi } from "@/client/service/user.api.ts"
-import type { UserPublic, UserUpdate } from "@/client/service/user.dto.ts"
-import useAuth from "@/hooks/useAuth"
-import useCustomToast from "@/hooks/useCustomToast"
-import { emailPattern, handleError } from "@/utils"
-import { Field } from "../ui/field"
+import type { ApiError } from "@/client";
+import type { UserUpdateMeDto } from "@/client/service/user.dto.ts";
+
+import { updateUserMeApi } from "@/client/service/user.api.ts";
+import useAuth from "@/hooks/useAuth";
+import useCustomToast from "@/hooks/useCustomToast";
+import { handleError } from "@/utils";
+
+import { Field } from "../ui/field";
 
 const UserInformation = () => {
-  const queryClient = useQueryClient()
-  const { showSuccessToast } = useCustomToast()
-  const [editMode, setEditMode] = useState(false)
-  const { user: currentUser } = useAuth()
+  const queryClient = useQueryClient();
+  const { showSuccessToast } = useCustomToast();
+  const [editMode, setEditMode] = useState(false);
+  const { user: currentUser } = useAuth();
+  const isPersonalUser = currentUser?.email === currentUser?.organizationName;
   const {
     register,
     handleSubmit,
     reset,
     getValues,
-    formState: { isSubmitting, errors, isDirty },
-  } = useForm<UserPublic>({
+    formState: { isSubmitting, isDirty },
+  } = useForm<UserUpdateMeDto>({
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
-      full_name: currentUser?.full_name,
-      email: currentUser?.email,
+      fullName: currentUser?.fullName,
     },
-  })
+  });
 
   const toggleEditMode = () => {
-    setEditMode(!editMode)
-  }
+    setEditMode(!editMode);
+  };
 
   const mutation = useMutation({
     mutationFn: updateUserMeApi,
     onSuccess: () => {
-      showSuccessToast("User updated successfully.")
+      showSuccessToast("User updated successfully.");
     },
     onError: (err: ApiError) => {
-      handleError(err)
+      handleError(err);
     },
     onSettled: () => {
-      queryClient.invalidateQueries()
+      queryClient.invalidateQueries();
     },
-  })
+  });
 
-  const onSubmit: SubmitHandler<UserUpdate> = async (data) => {
-    mutation.mutate(data)
-  }
+  const onSubmit: SubmitHandler<UserUpdateMeDto> = async (data) => {
+    mutation.mutate(data);
+  };
 
   const onCancel = () => {
-    reset()
-    toggleEditMode()
-  }
+    reset();
+    toggleEditMode();
+  };
 
   const handleCopyUserId = async () => {
     if (currentUser?.id) {
       try {
-        await navigator.clipboard.writeText(currentUser.id)
-        showSuccessToast("User ID copied to clipboard")
+        await navigator.clipboard.writeText(currentUser.id);
+        showSuccessToast("User ID copied to clipboard");
       } catch (err) {
-        console.error("Failed to copy User ID:", err)
+        console.error("Failed to copy User ID:", err);
       }
     }
-  }
+  };
 
   return (
     <>
@@ -84,63 +77,47 @@ const UserInformation = () => {
         <Heading size="sm" py={4}>
           User Information
         </Heading>
-        <Box
-          w={{ sm: "full", md: "l" }}
-          as="form"
-          onSubmit={handleSubmit(onSubmit)}
-        >
+        <Box w={{ base: "100%", md: "md" }} as="form" onSubmit={handleSubmit(onSubmit)}>
           <Field label="Full name">
             {editMode ? (
-              <Input
-                {...register("full_name", { maxLength: 30 })}
-                type="text"
-                size="md"
-              />
+              <Input {...register("fullName", { maxLength: 30 })} type="text" size="md" />
             ) : (
               <Text
                 fontSize="md"
                 py={2}
-                color={!currentUser?.full_name ? "gray" : "inherit"}
+                color={!currentUser?.fullName ? "gray" : "inherit"}
                 truncate
                 maxW="sm"
               >
-                {currentUser?.full_name || "N/A"}
+                {currentUser?.fullName || "N/A"}
               </Text>
             )}
           </Field>
-          <Field
-            mt={4}
-            label="Email"
-            invalid={!!errors.email}
-            errorText={errors.email?.message}
-          >
-            {editMode ? (
-              <Input
-                {...register("email", {
-                  required: "Email is required",
-                  pattern: emailPattern,
-                })}
-                type="email"
-                size="md"
-              />
-            ) : (
-              <Text fontSize="md" py={2} truncate maxW="sm">
-                {currentUser?.email}
-              </Text>
-            )}
+          <Field mt={4} label="Email">
+            <Text fontSize="md" py={2} color="gray.600">
+              {currentUser?.email}
+            </Text>
           </Field>
+          {!isPersonalUser && (
+            <>
+              <Field mt={4} label="Role">
+                <Text fontSize="md" py={2} color="gray.600">
+                  {currentUser?.isOrganizationAdmin ? "Admin" : "User"}
+                </Text>
+              </Field>
+              <Field mt={4} label="Organization Name">
+                <Text fontSize="md" py={2} color="gray.600">
+                  {currentUser?.organizationName}
+                </Text>
+              </Field>
+            </>
+          )}
           <Field mt={4} label="User ID">
             <HStack alignItems="center" gap={2}>
               <Text fontSize="md" py={2} color="gray.600" fontFamily="mono">
                 {currentUser?.id}
               </Text>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleCopyUserId}
-                p={1}
-              >
+              <Button type="button" variant="ghost" size="sm" onClick={handleCopyUserId} p={1}>
                 <FiCopy size={14} />
               </Button>
             </HStack>
@@ -151,7 +128,7 @@ const UserInformation = () => {
               onClick={toggleEditMode}
               type={editMode ? "button" : "submit"}
               loading={editMode ? isSubmitting : false}
-              disabled={editMode ? !isDirty || !getValues("email") : false}
+              disabled={editMode ? !isDirty || !getValues("fullName") : false}
             >
               {editMode ? "Save" : "Edit"}
             </Button>
@@ -169,7 +146,7 @@ const UserInformation = () => {
         </Box>
       </Container>
     </>
-  )
-}
+  );
+};
 
-export default UserInformation
+export default UserInformation;

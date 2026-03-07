@@ -1,25 +1,13 @@
-import {
-  Box,
-  Button,
-  Code,
-  DialogTitle,
-  Flex,
-  Spinner,
-  Text,
-  VStack,
-} from "@chakra-ui/react"
-import { useEffect, useRef, useState } from "react"
-import { FiEye } from "react-icons/fi"
+import { Box, Button, Code, DialogTitle, Flex, Spinner, Text, VStack } from "@chakra-ui/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { FiEye } from "react-icons/fi";
+
+import type { OccupancyMapDto } from "@/client/service/occupancy-map.dto.ts";
 
 import {
   getOccupancyMapPgmApi,
   getOccupancyMapYamlApi,
-} from "@/client/service/occupancy-map.api.ts"
-import type { OccupancyMapPublic } from "@/client/service/occupancy-map.dto.ts"
-import { loadPgmMap } from "@/components/Dashboard/widgets/ros-2d-map-pose/load-pgm-map.ts"
-import type { PgmMapData } from "@/components/Dashboard/widgets/ros-2d-map-pose/load-pgm-map.ts"
-import { loadYamlMap } from "@/components/Dashboard/widgets/ros-2d-map-pose/load-yaml-map.ts"
-import type { YamlMapData } from "@/components/Dashboard/widgets/ros-2d-map-pose/load-yaml-map.ts"
+} from "@/client/service/occupancy-map.api.ts";
 import {
   DialogActionTrigger,
   DialogBody,
@@ -29,99 +17,107 @@ import {
   DialogHeader,
   DialogRoot,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import useCustomToast from "@/hooks/useCustomToast"
+} from "@/components/ui/dialog";
+import useCustomToast from "@/hooks/useCustomToast";
+import { type PgmMapData, loadPgmMap } from "@/utils/load-pgm-map.ts";
+import { type YamlMapData, loadYamlMap } from "@/utils/load-yaml-map.ts";
 
 interface PreviewOccupancyMapProps {
-  occupancyMap: OccupancyMapPublic
+  occupancyMap: OccupancyMapDto;
 }
 
 const PreviewOccupancyMap = ({ occupancyMap }: PreviewOccupancyMapProps) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [pgmMapData, setPgmMapData] = useState<PgmMapData | null>(null)
-  const [yamlMapData, setYamlMapData] = useState<YamlMapData | null>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const { showErrorToast } = useCustomToast()
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [pgmMapData, setPgmMapData] = useState<PgmMapData | null>(null);
+  const [yamlMapData, setYamlMapData] = useState<YamlMapData | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { showErrorToast } = useCustomToast();
 
-  const loadMapData = async () => {
-    setIsLoading(true)
+  const loadMapData = useCallback(async () => {
+    setIsLoading(true);
     try {
       const [pgmBlob, yamlBlob] = await Promise.all([
         getOccupancyMapPgmApi(occupancyMap.id),
         getOccupancyMapYamlApi(occupancyMap.id),
-      ])
+      ]);
 
       // Convert Blob to File
       const pgmFile = new File([pgmBlob], "map.pgm", {
         type: "application/octet-stream",
-      })
+      });
       const yamlFile = new File([yamlBlob], "map.yaml", {
         type: "application/x-yaml",
-      })
+      });
 
       // Parse files
       const [parsedPgmData, parsedYamlData] = await Promise.all([
         loadPgmMap(pgmFile),
         loadYamlMap(yamlFile),
-      ])
+      ]);
 
-      setPgmMapData(parsedPgmData)
-      setYamlMapData(parsedYamlData)
+      setPgmMapData(parsedPgmData);
+      setYamlMapData(parsedYamlData);
     } catch (error) {
-      console.error("Failed to load map data:", error)
-      showErrorToast("Failed to load map data")
+      console.error("Failed to load map data:", error);
+      showErrorToast("Failed to load map data");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  }, [occupancyMap.id, showErrorToast]);
 
-  const drawMap = () => {
-    const canvas = canvasRef.current
-    if (!canvas || !pgmMapData) return
+  const drawMap = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !pgmMapData) return;
 
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
     // Set canvas size to match PGM dimensions
-    canvas.width = pgmMapData.width
-    canvas.height = pgmMapData.height
+    canvas.width = pgmMapData.width;
+    canvas.height = pgmMapData.height;
 
     // Create image data
-    const imageData = ctx.createImageData(pgmMapData.width, pgmMapData.height)
-    const pixels = imageData.data
+    const imageData = ctx.createImageData(pgmMapData.width, pgmMapData.height);
+    const pixels = imageData.data;
 
     // Convert grayscale PGM data to RGBA
     for (let i = 0; i < pgmMapData.data.length; i++) {
-      const value = pgmMapData.data[i]
-      const pixelIndex = i * 4
-      pixels[pixelIndex] = value // R
-      pixels[pixelIndex + 1] = value // G
-      pixels[pixelIndex + 2] = value // B
-      pixels[pixelIndex + 3] = 255 // A
+      const value = pgmMapData.data[i];
+      const pixelIndex = i * 4;
+      pixels[pixelIndex] = value; // R
+      pixels[pixelIndex + 1] = value; // G
+      pixels[pixelIndex + 2] = value; // B
+      pixels[pixelIndex + 3] = 255; // A
     }
 
-    ctx.putImageData(imageData, 0, 0)
-  }
+    ctx.putImageData(imageData, 0, 0);
+  }, [pgmMapData]);
 
   useEffect(() => {
     if (isOpen && !pgmMapData && !isLoading) {
-      loadMapData()
+      loadMapData();
     }
-  }, [isOpen])
+  }, [isOpen, pgmMapData, isLoading, loadMapData]);
 
   useEffect(() => {
     if (pgmMapData) {
-      drawMap()
+      drawMap();
     }
-  }, [pgmMapData])
+  }, [pgmMapData, drawMap]);
 
   return (
     <DialogRoot
       size={{ base: "md", md: "lg" }}
       placement="center"
       open={isOpen}
-      onOpenChange={({ open }) => setIsOpen(open)}
+      onOpenChange={({ open }) => {
+        setIsOpen(open);
+        if (!open) {
+          setPgmMapData(null);
+          setYamlMapData(null);
+        }
+      }}
     >
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
@@ -176,12 +172,7 @@ const PreviewOccupancyMap = ({ occupancyMap }: PreviewOccupancyMapProps) => {
                   <Text fontWeight="bold" mb={2}>
                     Map Configuration (YAML)
                   </Text>
-                  <Code
-                    display="block"
-                    p={3}
-                    borderRadius="md"
-                    whiteSpace="pre-wrap"
-                  >
+                  <Code display="block" p={3} borderRadius="md" whiteSpace="pre-wrap">
                     {`image: ${yamlMapData.image}
 mode: ${yamlMapData.mode}
 resolution: ${yamlMapData.resolution}
@@ -206,7 +197,7 @@ occupied_thresh: ${yamlMapData.occupied_thresh}`}
         <DialogCloseTrigger />
       </DialogContent>
     </DialogRoot>
-  )
-}
+  );
+};
 
-export default PreviewOccupancyMap
+export default PreviewOccupancyMap;

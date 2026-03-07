@@ -1,50 +1,47 @@
-import { type CancelablePromise, type Message, OpenAPI } from "@/client"
-import { request as __request } from "@/client/core/request.ts"
-import type { RobotCreate, RobotUpdate, RobotsPublic } from "./robot.dto.ts"
+import type { CancelablePromise, MessageDto, PageDto } from "@/client";
 
-/**
- * Retrieve robots.
- * @param skip
- * @param limit
- * @returns RobotsPublic Successful Response
- * @throws ApiError
- */
-export const readRobotsApi = (
+import { request as __request } from "@/client/core/request.ts";
+
+import type { RobotAddDto, RobotInfoDto, RobotUpdateDto } from "./robot.dto.ts";
+
+export const getRobotListApi = (
   limit?: number,
   skip?: number,
-): CancelablePromise<RobotsPublic> => {
-  return __request(OpenAPI, {
+): CancelablePromise<PageDto<RobotInfoDto>> => {
+  return __request({
     method: "GET",
-    url: "/api/v1/robots/",
+    url: "/api/v1/robots",
     query: {
-      skip: skip,
       limit: limit,
+      skip: skip,
     },
-    errors: {
-      422: "Validation Error",
-    },
-  })
-}
+  });
+};
 
 /**
  * Create new robot.
  * @param requestBody
- * @returns RobotPublic Successful Response
+ * @returns MessageDto Successful Response
  * @throws ApiError
  */
-export const createRobotApi = (
-  requestBody: RobotCreate,
-): CancelablePromise<RobotsPublic> => {
-  return __request(OpenAPI, {
+export const addRobotApi = (requestBody: RobotAddDto): CancelablePromise<MessageDto> => {
+  return __request({
     method: "POST",
-    url: "/api/v1/robots/",
+    url: "/api/v1/robots",
     body: requestBody,
     mediaType: "application/json",
-    errors: {
-      422: "Validation Error",
+  });
+};
+
+export const getRobotApi = (id: string): CancelablePromise<RobotInfoDto> => {
+  return __request({
+    method: "GET",
+    url: "/api/v1/robots/{id}",
+    path: {
+      id: id,
     },
-  })
-}
+  });
+};
 
 /**
  * Update a robot.
@@ -55,9 +52,9 @@ export const createRobotApi = (
  */
 export const updateRobotApi = (
   id: string,
-  requestBody: RobotUpdate,
-): CancelablePromise<RobotsPublic> => {
-  return __request(OpenAPI, {
+  requestBody: RobotUpdateDto,
+): CancelablePromise<MessageDto> => {
+  return __request({
     method: "PUT",
     url: "/api/v1/robots/{id}",
     path: {
@@ -65,11 +62,8 @@ export const updateRobotApi = (
     },
     body: requestBody,
     mediaType: "application/json",
-    errors: {
-      422: "Validation Error",
-    },
-  })
-}
+  });
+};
 
 /**
  * Delete a robot.
@@ -77,15 +71,12 @@ export const updateRobotApi = (
  * @returns Message Successful Response
  * @throws ApiError
  */
-export const deleteRobotApi = (id: string): CancelablePromise<Message> => {
-  return __request(OpenAPI, {
+export const deleteRobotApi = (id: string): CancelablePromise<MessageDto> => {
+  return __request({
     method: "DELETE",
     url: "/api/v1/robots/{id}",
     path: {
       id: id,
     },
-    errors: {
-      422: "Validation Error",
-    },
-  })
-}
+  });
+};

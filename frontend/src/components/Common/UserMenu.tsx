@@ -1,20 +1,21 @@
-import { Box, Button, Flex, Text } from "@chakra-ui/react"
-import { Link } from "@tanstack/react-router"
-import { FaUserAstronaut } from "react-icons/fa"
-import { FiLogOut, FiUser } from "react-icons/fi"
+import { Box, Button, Flex, Text } from "@chakra-ui/react";
+import { Link } from "@tanstack/react-router";
+import { FaUserAstronaut } from "react-icons/fa";
+import { FiLogOut, FiUser } from "react-icons/fi";
 
-import { useWebSocket } from "@/contexts/WebSocketContext"
-import useAuth from "@/hooks/useAuth"
-import { MenuContent, MenuItem, MenuRoot, MenuTrigger } from "../ui/menu"
+import useAuth from "@/hooks/useAuth";
+import { useWebSocket } from "@/hooks/useWebSocket.ts";
+
+import { MenuContent, MenuItem, MenuRoot, MenuTrigger } from "../ui/menu";
 
 const UserMenu = () => {
-  const { user, logout } = useAuth()
-  const { disconnect } = useWebSocket()
+  const { user, logout } = useAuth();
+  const { disconnectWs } = useWebSocket();
 
   const handleLogout = async () => {
-    disconnect()
-    logout()
-  }
+    disconnectWs();
+    logout();
+  };
 
   return (
     <>
@@ -24,7 +25,7 @@ const UserMenu = () => {
           <MenuTrigger asChild p={2}>
             <Button data-testid="user-menu" variant="solid" maxW="sm" truncate>
               <FaUserAstronaut fontSize="16" />
-              <Text>{user?.full_name || "User"}</Text>
+              <Text>{user?.fullName || "User"}</Text>
             </Button>
           </MenuTrigger>
 
@@ -56,7 +57,7 @@ const UserMenu = () => {
         </MenuRoot>
       </Flex>
     </>
-  )
-}
+  );
+};
 
-export default UserMenu
+export default UserMenu;

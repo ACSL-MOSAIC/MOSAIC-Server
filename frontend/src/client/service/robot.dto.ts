@@ -1,31 +1,34 @@
-export type RobotCreate = {
-  id: string
-  name: string
-  description?: string | null
-}
+import type { RobotStatus } from "@/mosaic";
 
-export type RobotPublic = {
-  name: string
-  description?: string | null
-  status?: RobotStatus
-  id: string
-  owner_id: string
-}
+export const ROBOT_AUTH_TYPES = [
+  { value: 0, label: "No Authorization" },
+  { value: 1, label: "Simple Token" },
+] as const;
 
-export type RobotsPublic = {
-  data: Array<RobotPublic>
-  count: number
-}
+export type RobotAuthType = (typeof ROBOT_AUTH_TYPES)[number]["value"];
 
-export type RobotStatus =
-  | "READY_TO_CONNECT"
-  | "CONNECTING"
-  | "CONNECTED"
-  | "DISCONNECTED"
-  | "REMOVED"
+export type RobotInfoDto = {
+  id: string;
+  name: string;
+  description: string;
+  status: RobotStatus;
+  authType: RobotAuthType;
+  organizationId: string;
+  connectorConfig: string;
+};
 
-export type RobotUpdate = {
-  name?: string | null
-  description?: string | null
-  status?: RobotStatus | null
-}
+export type RobotAddDto = {
+  name: string;
+  description: string;
+  status: RobotStatus;
+  authType: RobotAuthType;
+  connectorConfig: string;
+};
+
+export type RobotUpdateDto = {
+  name?: string | null;
+  description?: string | null;
+  status?: RobotStatus | null;
+  authType?: RobotAuthType | null;
+  connectorConfig?: string | null;
+};

@@ -1,20 +1,17 @@
-import { Container, Flex, Image, Input, Text } from "@chakra-ui/react"
-import {
-  Link as RouterLink,
-  createFileRoute,
-  redirect,
-} from "@tanstack/react-router"
-import { type SubmitHandler, useForm } from "react-hook-form"
-import { FiLock, FiUser } from "react-icons/fi"
+import Logo from "/assets/images/mosaic.svg";
+import { Container, Flex, Heading, Image, Input, Text } from "@chakra-ui/react";
+import { Link as RouterLink, createFileRoute, redirect } from "@tanstack/react-router";
+import { type SubmitHandler, useForm } from "react-hook-form";
+import { FiLock, FiUser } from "react-icons/fi";
 
-import type { UserRegister } from "@/client/service/user.dto.ts"
-import { Button } from "@/components/ui/button"
-import { Field } from "@/components/ui/field"
-import { InputGroup } from "@/components/ui/input-group"
-import { PasswordInput } from "@/components/ui/password-input"
-import useAuth, { isLoggedIn } from "@/hooks/useAuth"
-import { confirmPasswordRules, emailPattern, passwordRules } from "@/utils"
-import Logo from "/assets/images/acsl-logo.svg"
+import type { AccountSignupDto } from "@/client/service/account.dto.ts";
+
+import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { InputGroup } from "@/components/ui/input-group";
+import { PasswordInput } from "@/components/ui/password-input";
+import useAuth, { isLoggedIn } from "@/hooks/useAuth";
+import { confirmPasswordRules, emailPattern, passwordRules } from "@/utils";
 
 export const Route = createFileRoute("/signup")({
   component: SignUp,
@@ -22,36 +19,37 @@ export const Route = createFileRoute("/signup")({
     if (isLoggedIn()) {
       throw redirect({
         to: "/",
-      })
+      });
     }
   },
-})
+});
 
-interface UserRegisterForm extends UserRegister {
-  confirm_password: string
+interface SignupForm extends AccountSignupDto {
+  confirmPassword: string;
 }
 
 function SignUp() {
-  const { signUpMutation } = useAuth()
+  const { signUpMutation } = useAuth();
   const {
     register,
     handleSubmit,
     getValues,
     formState: { errors, isSubmitting },
-  } = useForm<UserRegisterForm>({
+  } = useForm<SignupForm>({
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
       email: "",
-      full_name: "",
+      fullName: "",
       password: "",
-      confirm_password: "",
+      confirmPassword: "",
     },
-  })
+  });
 
-  const onSubmit: SubmitHandler<UserRegisterForm> = (data) => {
-    signUpMutation.mutate(data)
-  }
+  const onSubmit: SubmitHandler<SignupForm> = (data) => {
+    const { confirmPassword: _, ...signupData } = data;
+    signUpMutation.mutate(signupData);
+  };
 
   return (
     <>
@@ -66,23 +64,16 @@ function SignUp() {
           gap={4}
           centerContent
         >
-          <Image
-            src={Logo}
-            alt="FastAPI logo"
-            height="auto"
-            maxW="2xs"
-            alignSelf="center"
-            mb={4}
-          />
-          <Field
-            invalid={!!errors.full_name}
-            errorText={errors.full_name?.message}
-          >
+          <Image src={Logo} alt="FastAPI logo" height="auto" maxW="2xs" alignSelf="center" mb={2} />
+          <Heading size="xl" textAlign="center" mb={6}>
+            Sign Up
+          </Heading>
+          <Field invalid={!!errors.fullName} errorText={errors.fullName?.message}>
             <InputGroup w="100%" startElement={<FiUser />}>
               <Input
-                id="full_name"
+                id="fullName"
                 minLength={3}
-                {...register("full_name", {
+                {...register("fullName", {
                   required: "Full Name is required",
                 })}
                 placeholder="Full Name"
@@ -112,16 +103,16 @@ function SignUp() {
             errors={errors}
           />
           <PasswordInput
-            type="confirm_password"
+            type="confirmPassword"
             startElement={<FiLock />}
-            {...register("confirm_password", confirmPasswordRules(getValues))}
+            {...register("confirmPassword", confirmPasswordRules(getValues))}
             placeholder="Confirm Password"
             errors={errors}
           />
           <Button variant="solid" type="submit" loading={isSubmitting}>
             Sign Up
           </Button>
-          <Text>
+          <Text textAlign="center">
             Already have an account?{" "}
             <RouterLink to="/login" className="main-link">
               Log In
@@ -130,7 +121,7 @@ function SignUp() {
         </Container>
       </Flex>
     </>
-  )
+  );
 }
 
-export default SignUp
+export default SignUp;

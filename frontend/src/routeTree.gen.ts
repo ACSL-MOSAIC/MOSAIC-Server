@@ -12,15 +12,17 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as SignupImport } from './routes/signup'
-import { Route as ResetPasswordImport } from './routes/reset-password'
-import { Route as LoginImport } from './routes/login'
 import { Route as LayoutImport } from './routes/_layout'
+import { Route as LoginIndexImport } from './routes/login/index'
 import { Route as LayoutIndexImport } from './routes/_layout/index'
+import { Route as LoginOrganizationImport } from './routes/login/organization'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutRobotsImport } from './routes/_layout/robots'
 import { Route as LayoutOccupancyMapsImport } from './routes/_layout/occupancy-maps'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
-import { Route as LayoutConnectIndexImport } from './routes/_layout/connect/index'
+import { Route as LayoutDashboardIndexImport } from './routes/_layout/dashboard/index'
+import { Route as LayoutDashboardConfigImport } from './routes/_layout/dashboard/config'
+import { Route as LayoutDashboardTabIdImport } from './routes/_layout/dashboard/$tabId'
 
 // Create/Update Routes
 
@@ -29,24 +31,24 @@ const SignupRoute = SignupImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const ResetPasswordRoute = ResetPasswordImport.update({
-  path: '/reset-password',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const LoginRoute = LoginImport.update({
-  path: '/login',
-  getParentRoute: () => rootRoute,
-} as any)
-
 const LayoutRoute = LayoutImport.update({
   id: '/_layout',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const LoginIndexRoute = LoginIndexImport.update({
+  path: '/login/',
   getParentRoute: () => rootRoute,
 } as any)
 
 const LayoutIndexRoute = LayoutIndexImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
+} as any)
+
+const LoginOrganizationRoute = LoginOrganizationImport.update({
+  path: '/login/organization',
+  getParentRoute: () => rootRoute,
 } as any)
 
 const LayoutSettingsRoute = LayoutSettingsImport.update({
@@ -69,8 +71,18 @@ const LayoutAdminRoute = LayoutAdminImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutConnectIndexRoute = LayoutConnectIndexImport.update({
-  path: '/connect/',
+const LayoutDashboardIndexRoute = LayoutDashboardIndexImport.update({
+  path: '/dashboard/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutDashboardConfigRoute = LayoutDashboardConfigImport.update({
+  path: '/dashboard/config',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutDashboardTabIdRoute = LayoutDashboardTabIdImport.update({
+  path: '/dashboard/$tabId',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -80,14 +92,6 @@ declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/_layout': {
       preLoaderRoute: typeof LayoutImport
-      parentRoute: typeof rootRoute
-    }
-    '/login': {
-      preLoaderRoute: typeof LoginImport
-      parentRoute: typeof rootRoute
-    }
-    '/reset-password': {
-      preLoaderRoute: typeof ResetPasswordImport
       parentRoute: typeof rootRoute
     }
     '/signup': {
@@ -110,12 +114,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsImport
       parentRoute: typeof LayoutImport
     }
+    '/login/organization': {
+      preLoaderRoute: typeof LoginOrganizationImport
+      parentRoute: typeof rootRoute
+    }
     '/_layout/': {
       preLoaderRoute: typeof LayoutIndexImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/connect/': {
-      preLoaderRoute: typeof LayoutConnectIndexImport
+    '/login/': {
+      preLoaderRoute: typeof LoginIndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/_layout/dashboard/$tabId': {
+      preLoaderRoute: typeof LayoutDashboardTabIdImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/dashboard/config': {
+      preLoaderRoute: typeof LayoutDashboardConfigImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/dashboard/': {
+      preLoaderRoute: typeof LayoutDashboardIndexImport
       parentRoute: typeof LayoutImport
     }
   }
@@ -130,11 +150,13 @@ export const routeTree = rootRoute.addChildren([
     LayoutRobotsRoute,
     LayoutSettingsRoute,
     LayoutIndexRoute,
-    LayoutConnectIndexRoute,
+    LayoutDashboardTabIdRoute,
+    LayoutDashboardConfigRoute,
+    LayoutDashboardIndexRoute,
   ]),
-  LoginRoute,
-  ResetPasswordRoute,
   SignupRoute,
+  LoginOrganizationRoute,
+  LoginIndexRoute,
 ])
 
 /* prettier-ignore-end */

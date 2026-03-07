@@ -1,387 +1,330 @@
-import {useWebSocket} from "@/contexts/WebSocketContext"
 import {
-  type DataChannelConfig,
-  type VideoChannelConfig,
-  WebRTCConnection,
-} from "@/rtc/webrtc-connection"
-import {Box} from "@chakra-ui/react"
-import React, {useState, useEffect, useRef} from "react"
-import {Responsive, WidthProvider} from "react-grid-layout"
-import {v4 as uuidv4} from "uuid"
-import {TabManager} from "./TabManager"
-import type {DashboardConfig, WidgetConfig, WidgetType} from "./types"
-import {WidgetFactory} from "./widgets/WidgetFactory"
-import "react-grid-layout/css/styles.css"
-import "react-resizable/css/styles.css"
-import {toaster} from "@/components/ui/toaster"
-import {
-  useDashboardConfigMutation,
-  useDashboardConfigQuery,
-} from "@/hooks/useDashboardConfig"
-import {DEFAULT_DATA_CHANNELS} from "@/rtc/config/webrtc-datachannel-config.ts"
-import {useQueryClient} from "@tanstack/react-query"
-import RobotConnectionPanel from "./RobotConnectionPanel"
-import {
-  addTab,
-  addWidget,
-  removeTab,
-  removeWidget,
-  renameTab,
-} from "./dashboardUtils"
+  Box,
+  Button,
+  Container,
+  HStack,
+  Skeleton,
+  SkeletonText,
+  Spinner,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Navigate, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { type Layout, Responsive, WidthProvider } from "react-grid-layout";
 
-const ResponsiveGridLayout = WidthProvider(Responsive)
+import { getTabConfigApi, updateTabConfigApi } from "@/client/service/dashboard.api.ts";
+import RobotConnectionPanel from "@/components/Dashboard/RobotConnectionPanel.tsx";
+import { WidgetFactory } from "@/components/Dashboard/WidgetFactory.tsx";
+import useAuth from "@/hooks/useAuth.ts";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
+import { useMosaicWebRTCConnection } from "@/hooks/useMosaicWebRTCConnection.ts";
+import { useRobotInfo } from "@/hooks/useRobotInfo.ts";
+import { RobotConnector, type TabConfig, type WidgetConfig } from "@/mosaic";
+import { DASHBOARD_STORAGE_KEYS } from "@/utils";
+
+const ResponsiveGridLayout = WidthProvider(Responsive);
+
+const extractRobotListFromTabConfig = (tabConfig: TabConfig): string[] => {
+  const robotIds = tabConfig.widgets.flatMap((widgetConfig) =>
+    widgetConfig.connectors.map((connector) => connector.robotId),
+  );
+  return [...new Set(robotIds)];
+};
+
+const mergeLayoutIntoWidgets = (widgets: WidgetConfig[], layout: Layout[]): WidgetConfig[] => {
+  const layoutById = new Map(layout.map((item) => [item.i, item]));
+  let hasChanged = false;
+
+  const nextWidgets = widgets.map((widget) => {
+    const nextLayout = layoutById.get(widget.id);
+    if (!nextLayout) {
+      return widget;
+    }
+
+    if (
+      widget.position.x === nextLayout.x &&
+      widget.position.y === nextLayout.y &&
+      widget.position.w === nextLayout.w &&
+      widget.position.h === nextLayout.h
+    ) {
+      return widget;
+    }
+
+    hasChanged = true;
+    return {
+      ...widget,
+      position: {
+        x: nextLayout.x,
+        y: nextLayout.y,
+        w: nextLayout.w,
+        h: nextLayout.h,
+      },
+    };
+  });
+
+  return hasChanged ? nextWidgets : widgets;
+};
 
 interface DashboardGridProps {
-  onOpenDynamicTypeModal: (robotId: string) => void
+  tabId: string;
 }
 
-export function DashboardGrid({onOpenDynamicTypeModal}: DashboardGridProps) {
-  const {data: dashboardConfig} = useDashboardConfigQuery()
-  const {mutate: saveDashboardConfig} = useDashboardConfigMutation()
-  const queryClient = useQueryClient()
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const [connections, setConnections] = useState<{ [key: string]: boolean }>({})
-  const ws = useWebSocket()
+export default function DashboardGrid({ tabId }: DashboardGridProps) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { robotInfos, subscribeRobots, unsubscribeRobots } = useRobotInfo();
+  const { createConnection, disconnectConnection } = useMosaicWebRTCConnection();
+  const [robotLoadError, setRobotLoadError] = useState<string | null>(null);
+  const [editableWidgets, setEditableWidgets] = useState<WidgetConfig[]>([]);
+  const editableWidgetsRef = useRef<WidgetConfig[]>([]);
+  const isLayoutDirtyRef = useRef(false);
 
-  // Ref to manage WebRTC connection objects
-  const rtcConnections = useRef<{ [key: string]: WebRTCConnection }>({})
-
-  // Create refs for each robot (dynamically managed)
-  const videoRefs = useRef<{
-    [key: string]: React.RefObject<HTMLVideoElement>
-  }>({})
-  const canvasRefs = useRef<{
-    [key: string]: React.RefObject<HTMLCanvasElement>
-  }>({})
-  const positionElementRefs = useRef<{
-    [key: string]: React.RefObject<HTMLDivElement>
-  }>({})
-
-  // Initialize refs function
-  const initializeRefs = (robotId: string) => {
-    if (!videoRefs.current[robotId]) {
-      videoRefs.current[robotId] = React.createRef<HTMLVideoElement>()
-    }
-    if (!canvasRefs.current[robotId]) {
-      canvasRefs.current[robotId] = React.createRef<HTMLCanvasElement>()
-    }
-    if (!positionElementRefs.current[robotId]) {
-      positionElementRefs.current[robotId] = React.createRef<HTMLDivElement>()
-    }
-  }
-
-  // Mark as unsaved when config changes
-  const updateConfig = (newConfig: DashboardConfig) => {
-    queryClient.setQueryData(["dashboardConfig"], newConfig)
-    setHasUnsavedChanges(true)
-  }
-
-  // Save function
-  const handleSave = () => {
-    if (dashboardConfig) {
-      saveDashboardConfig(dashboardConfig)
-      setHasUnsavedChanges(false)
-      toaster.create({
-        title: "Settings Saved",
-        description: "Dashboard settings have been saved successfully.",
-      })
-    }
-  }
-
-  // Connection state change handler
-  const handleConnectionStateChange = (
-    robotId: string,
-    isConnected: boolean,
-  ) => {
-    setConnections((prev) => ({
-      ...prev,
-      [robotId]: isConnected,
-    }))
-  }
-
-  const widgetConfigToChannelConfig = (widgetConfig: WidgetConfig) => {
-    const dataChannelConfigs: DataChannelConfig[] = []
-    const videoChannelConfigs: VideoChannelConfig[] = []
-
-    if (widgetConfig.type === "video_stream") {
-      // turtlesim video is the only video type
-      const videoChannelConfig: VideoChannelConfig = {
-        label: widgetConfig.id,
-        dataType: widgetConfig.dataType,
-      }
-      videoChannelConfigs.push(videoChannelConfig)
-    } else {
-      // For other widget types, create data channel configs
-      const dcConfigs = DEFAULT_DATA_CHANNELS.filter(
-        (dc) => dc.dataType === widgetConfig.dataType,
-      ).map((dc) => {
-        const dataChannelConfig: DataChannelConfig = {
-          label: dc.label,
-          dataType: dc.dataType,
-          channelType: dc.channelType,
-        }
-        return dataChannelConfig
-      })
-      dataChannelConfigs.push(...dcConfigs)
-    }
-
-    return {
-      dataChannelConfigs,
-      videoChannelConfigs,
-    }
-  }
-
-  // Connect to robot function
-  const connectToRobot = async (robotId: string) => {
-    try {
-      if (rtcConnections.current[robotId]) {
-        const connection = rtcConnections.current[robotId]
-        connection.disconnect()
-        delete rtcConnections.current[robotId]
-      }
-
-      // Initialize refs
-      initializeRefs(robotId)
-
-      const dataChannelConfigs: DataChannelConfig[] = []
-      const videoChannelConfigs: VideoChannelConfig[] = []
-
-      activeTab?.widgets
-        .filter(
-          (wc) =>
-            wc.robotId === robotId || wc.config?.robotIdList?.includes(robotId),
-        )
-        .forEach((widgetConfig) => {
-          const {
-            dataChannelConfigs: dcConfigs,
-            videoChannelConfigs: vcConfigs,
-          } = widgetConfigToChannelConfig(widgetConfig)
-          dataChannelConfigs.push(...dcConfigs)
-          videoChannelConfigs.push(...vcConfigs)
-        })
-
-      const connection = new WebRTCConnection({
-        robotId,
-        ws,
-        onConnectionStateChange: (isConnected) =>
-          handleConnectionStateChange(robotId, isConnected),
-        dataChannels: dataChannelConfigs,
-        videoChannels: videoChannelConfigs,
-      })
-
-      await connection.startConnection()
-      rtcConnections.current[robotId] = connection
-    } catch (error) {
-      console.error(`Robot ${robotId} connection failed:`, error)
-      throw error
-    }
-  }
-
-  // Disconnect from robot function
-  const disconnectFromRobot = (robotId: string) => {
-    const connection = rtcConnections.current[robotId]
-    if (connection) {
-      connection.disconnect()
-      delete rtcConnections.current[robotId]
-      handleConnectionStateChange(robotId, false)
-
-      // Auto-remove widget feature removed - changed to show NO_DATA
-    }
-  }
-
-  // Connect all robots function
-  const handleConnectAllRobots = async () => {
-    console.log("Attempting to connect all robots")
-    const readyRobots = ws.robots.filter(
-      (robot) => robot.state === "READY_TO_CONNECT",
-    )
-
-    for (const robot of readyRobots) {
-      try {
-        await connectToRobot(robot.robot_id)
-      } catch (error) {
-        console.error(`Robot ${robot.robot_id} connection failed:`, error)
-      }
-    }
-  }
-
-  // Disconnect all robots function
-  const handleDisconnectAllRobots = () => {
-    Object.keys(rtcConnections.current).forEach((robotId) => {
-      disconnectFromRobot(robotId)
-    })
-  }
-
-  // Tab management functions
-  const handleAddTab = (tabName: string) => {
-    if (dashboardConfig) {
-      const newConfig = addTab(dashboardConfig, tabName)
-      updateConfig(newConfig)
-    }
-  }
-
-  const handleRemoveTab = (tabId: string) => {
-    if (dashboardConfig) {
-      const newConfig = removeTab(dashboardConfig, tabId)
-      updateConfig(newConfig)
-    }
-  }
-
-  const handleRenameTab = (tabId: string, newName: string) => {
-    if (dashboardConfig) {
-      const newConfig = renameTab(dashboardConfig, tabId, newName)
-      updateConfig(newConfig)
-    }
-  }
-
-  const handleTabChange = (tabId: string) => {
-    if (dashboardConfig) {
-      updateConfig({
-        ...dashboardConfig,
-        activeTabId: tabId,
-      })
-    }
-  }
-
-  const handleAddWidget = (
-    type: WidgetType,
-    selectedRobotId?: string,
-    config?: any,
-  ) => {
-    if (!dashboardConfig) return
-
-    // Set appropriate data type based on widget type
-    const dataType = type
-
-    const newWidget: WidgetConfig = {
-      id: uuidv4(),
-      type,
-      position: {x: 0, y: 0, w: 4, h: 4},
-      robotId: selectedRobotId,
-      dataType,
-      config,
-    }
-
-    const newConfig = addWidget(
-      dashboardConfig,
-      dashboardConfig.activeTabId,
-      newWidget,
-    )
-    updateConfig(newConfig)
-  }
-
-  const handleRemoveWidget = (widgetId: string) => {
-    if (dashboardConfig) {
-      const newConfig = removeWidget(
-        dashboardConfig,
-        dashboardConfig.activeTabId,
-        widgetId,
-      )
-      updateConfig(newConfig)
-    }
-  }
-
-  // Layout change handler
-  const handleLayoutChange = (layout: any) => {
-    if (!dashboardConfig) return
-
-    const newConfig = {
-      ...dashboardConfig,
-      tabs: dashboardConfig.tabs.map((tab) => {
-        if (tab.id === dashboardConfig.activeTabId) {
-          return {
-            ...tab,
-            widgets: tab.widgets.map((widget) => {
-              const newLayout = layout.find((l: any) => l.i === widget.id)
-              if (newLayout) {
-                return {
-                  ...widget,
-                  position: {
-                    x: newLayout.x,
-                    y: newLayout.y,
-                    w: newLayout.w,
-                    h: newLayout.h,
-                  },
-                }
-              }
-              return widget
-            }),
-          }
-        }
-        return tab
-      }),
-    }
-    updateConfig(newConfig)
-  }
-
-  // UniversalWidget에서 config 수정 시 위젯만 교체
-  const handleUpdateWidgetConfig = (widgetId: string, newConfig: any) => {
-    if (!dashboardConfig) return
-    const newTabs = dashboardConfig.tabs.map((tab) => {
-      if (tab.id !== dashboardConfig.activeTabId) return tab
+  const { data: tabConfig, isPending: isConfigLoading } = useQuery({
+    queryKey: ["parsedDashboardTabConfig", tabId],
+    queryFn: async () => {
+      const tabConfigDto = await getTabConfigApi(tabId);
+      const widgets = JSON.parse(tabConfigDto.widgets).widgets as WidgetConfig[];
       return {
-        ...tab,
-        widgets: tab.widgets.map((w) =>
-          w.id === widgetId ? {...w, config: newConfig} : w,
-        ),
-      }
-    })
-    updateConfig({...dashboardConfig, tabs: newTabs})
-  }
+        id: tabConfigDto.id,
+        name: tabConfigDto.name,
+        widgets: widgets.map((widget) => {
+          return {
+            id: widget.id,
+            type: widget.type,
+            position: widget.position,
+            connectors: widget.connectors.map((connector) => {
+              return new RobotConnector(connector.robotId, connector.connectorId);
+            }),
+          };
+        }),
+      } as TabConfig;
+    },
+    enabled: !!user,
+  });
 
-  // Disconnect all connections on component unmount
+  const saveLayoutMutation = useMutation({
+    mutationFn: async ({
+      targetTabId,
+      widgets,
+    }: {
+      targetTabId: string;
+      widgets: WidgetConfig[];
+    }) => {
+      const tabConfigJson = JSON.stringify({
+        widgets: widgets.map((widget) => ({
+          ...widget,
+          connectors: widget.connectors.map((connector) => ({
+            robotId: connector.robotId,
+            connectorId: connector.connectorId,
+          })),
+        })),
+      });
+
+      await updateTabConfigApi(targetTabId, {
+        tabConfig: tabConfigJson,
+      });
+    },
+    onSuccess: async (_data, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: ["parsedDashboardTabConfig", variables.targetTabId],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["dashboardTabConfig", variables.targetTabId],
+      });
+    },
+    onError: (error) => {
+      console.error("Failed to save layout:", error);
+      isLayoutDirtyRef.current = true;
+    },
+  });
+
   useEffect(() => {
-    return () => {
-      Object.keys(rtcConnections.current).forEach((robotId) => {
-        disconnectFromRobot(robotId)
-      })
+    if (!tabConfig) {
+      setEditableWidgets([]);
+      editableWidgetsRef.current = [];
+      isLayoutDirtyRef.current = false;
+      return;
     }
-  }, [])
 
-  if (!dashboardConfig) {
-    return <Box p={4}>Loading...</Box>
+    setEditableWidgets(tabConfig.widgets);
+    editableWidgetsRef.current = tabConfig.widgets;
+    isLayoutDirtyRef.current = false;
+  }, [tabConfig]);
+
+  const robotList = useMemo(
+    () => (tabConfig ? extractRobotListFromTabConfig(tabConfig) : []),
+    [tabConfig],
+  );
+  const hasAllRequiredRobots = useMemo(
+    () => robotList.every((robotId) => robotInfos.some((r) => r.id === robotId)),
+    [robotList, robotInfos],
+  );
+
+  useEffect(() => {
+    let isActive = true;
+    setRobotLoadError(null);
+
+    if (robotList.length === 0) {
+      return;
+    }
+
+    const loadRobots = async () => {
+      try {
+        await subscribeRobots(robotList);
+      } catch (error) {
+        console.error("Failed to subscribe dashboard robots:", error);
+        if (isActive) {
+          setRobotLoadError("Failed to load robots for this dashboard.");
+        }
+      }
+    };
+
+    void loadRobots();
+
+    return () => {
+      isActive = false;
+      unsubscribeRobots();
+    };
+  }, [robotList, subscribeRobots, unsubscribeRobots]);
+
+  const handleLayoutChange = (layout: Layout[]) => {
+    const nextWidgets = mergeLayoutIntoWidgets(editableWidgetsRef.current, layout);
+    if (nextWidgets === editableWidgetsRef.current) {
+      return;
+    }
+
+    editableWidgetsRef.current = nextWidgets;
+    setEditableWidgets(nextWidgets);
+    isLayoutDirtyRef.current = true;
+  };
+
+  const handleLayoutCommit = (layout: Layout[]) => {
+    if (!tabConfig) {
+      return;
+    }
+
+    const nextWidgets = mergeLayoutIntoWidgets(editableWidgetsRef.current, layout);
+    if (nextWidgets !== editableWidgetsRef.current) {
+      editableWidgetsRef.current = nextWidgets;
+      setEditableWidgets(nextWidgets);
+      isLayoutDirtyRef.current = true;
+    }
+
+    if (!isLayoutDirtyRef.current) {
+      return;
+    }
+    isLayoutDirtyRef.current = false;
+
+    saveLayoutMutation.mutate({
+      targetTabId: tabConfig.id,
+      widgets: nextWidgets,
+    });
+  };
+
+  if (isConfigLoading) {
+    return (
+      <Container maxW="full" py={8}>
+        <HStack gap={3}>
+          <Spinner size="sm" />
+          <Text>Loading dashboard tabs...</Text>
+        </HStack>
+      </Container>
+    );
   }
 
-  const activeTab = dashboardConfig.tabs.find(
-    (tab) => tab.id === dashboardConfig.activeTabId,
-  )
-  if (!activeTab) {
-    return <Box p={4}>Tab not found.</Box>
+  if (!tabConfig) {
+    return <Navigate to="/dashboard" />;
   }
+
+  if (robotLoadError) {
+    return (
+      <Container maxW="full" py={8}>
+        <Box borderWidth="1px" borderColor="red.200" borderRadius="md" bg="red.50" px={4} py={3}>
+          <Text color="red.700">{robotLoadError}</Text>
+        </Box>
+      </Container>
+    );
+  }
+
+  if (robotList.length > 0 && !hasAllRequiredRobots) {
+    return (
+      <Container maxW="full" py={8}>
+        <VStack align="stretch" gap={4}>
+          <HStack gap={3}>
+            <Spinner size="sm" />
+            <Text>Loading robots for this dashboard...</Text>
+          </HStack>
+          <Box borderWidth="1px" borderRadius="md" p={4} bg="white">
+            <Skeleton height="26px" width="280px" mb={3} />
+            <SkeletonText noOfLines={1} width="220px" mb={4} />
+            <HStack gap={4}>
+              <Skeleton height="150px" flex={1} />
+              <Skeleton height="150px" flex={1} />
+            </HStack>
+          </Box>
+          <HStack gap={4}>
+            <Skeleton height="280px" flex={1} />
+            <Skeleton height="280px" flex={1} />
+          </HStack>
+        </VStack>
+      </Container>
+    );
+  }
+
+  const connectToRobot = async (robotId: string) => {
+    console.log(`connectToRobot: ${robotId}`);
+    await createConnection([robotId]);
+  };
+
+  const disconnectFromRobot = (robotId: string) => {
+    console.log(`disconnectFromRobot: ${robotId}`);
+    disconnectConnection(robotId);
+  };
+
+  const connectAllRobots = async () => {
+    console.log("connectAllRobots");
+    const readyRobotIds = robotInfos.filter((r) => r.isReadyToConnect).map((r) => r.id);
+    await createConnection(readyRobotIds);
+  };
+
+  const disconnectAllRobots = () => {
+    console.log("disconnectAllRobots");
+    for (const robotId of robotList) {
+      disconnectConnection(robotId);
+    }
+  };
+
+  const handleOpenDashboardConfig = () => {
+    if (typeof window !== "undefined") {
+      // Keep lastTabId for config page preselection, and force /dashboard entry to open config once.
+      window.localStorage.setItem(DASHBOARD_STORAGE_KEYS.forceConfig, "1");
+    }
+    navigate({ to: "/dashboard/config" });
+  };
 
   return (
     <Box p={4}>
-      {/* Robot connection management panel */}
+      <HStack justify="flex-end" mb={4}>
+        <Button size="sm" variant="outline" onClick={handleOpenDashboardConfig}>
+          Open Dashboard Config
+        </Button>
+      </HStack>
+
       <RobotConnectionPanel
-        connections={connections}
         onConnect={connectToRobot}
         onDisconnect={disconnectFromRobot}
-        onConnectAll={handleConnectAllRobots}
-        onDisconnectAll={handleDisconnectAllRobots}
-        onOpenDynamicTypeModal={onOpenDynamicTypeModal}
-      />
-
-      {/* Tab manager */}
-      <TabManager
-        tabs={dashboardConfig.tabs.map((tab) => ({
-          id: tab.id,
-          name: tab.name,
-        }))}
-        activeTabId={dashboardConfig.activeTabId}
-        onTabChange={handleTabChange}
-        onAddTab={handleAddTab}
-        onRemoveTab={handleRemoveTab}
-        onRenameTab={handleRenameTab}
-        onAddWidget={handleAddWidget}
-        onSaveChanges={handleSave}
-        hasUnsavedChanges={hasUnsavedChanges}
-        robots={ws.robots}
+        onConnectAll={connectAllRobots}
+        onDisconnectAll={disconnectAllRobots}
       />
 
       <ResponsiveGridLayout
         className="layout"
         layouts={{
-          lg: activeTab.widgets.map((w) => ({
+          lg: editableWidgets.map((w) => ({
             i: w.id,
             x: w.position.x,
             y: w.position.y,
@@ -393,19 +336,21 @@ export function DashboardGrid({onOpenDynamicTypeModal}: DashboardGridProps) {
             maxH: 15,
           })),
         }}
-        breakpoints={{lg: 1500, md: 1245, sm: 960, xs: 600, xxs: 0}}
-        cols={{lg: 15, md: 12, sm: 8, xs: 6, xxs: 3}}
+        breakpoints={{ lg: 1500, md: 1245, sm: 960, xs: 600, xxs: 0 }}
+        cols={{ lg: 15, md: 12, sm: 8, xs: 6, xxs: 3 }}
         rowHeight={100}
         width={1500}
         onLayoutChange={handleLayoutChange}
+        onDragStop={(layout) => handleLayoutCommit(layout)}
+        onResizeStop={(layout) => handleLayoutCommit(layout)}
         isDraggable={true}
         isResizable={true}
         margin={[16, 16]}
         draggableHandle=".draggable-header"
       >
-        {activeTab.widgets.map((widget) => (
+        {editableWidgets.map((widgetConfig) => (
           <Box
-            key={widget.id}
+            key={widgetConfig.id}
             bg="white"
             p={4}
             borderRadius="md"
@@ -415,21 +360,10 @@ export function DashboardGrid({onOpenDynamicTypeModal}: DashboardGridProps) {
             flexDirection="column"
             mb={4}
           >
-            <WidgetFactory
-              type={widget.type}
-              robotId={widget.robotId}
-              dataType={widget.dataType}
-              connections={connections}
-              config={widget.config}
-              widgetId={widget.id}
-              onRemove={() => handleRemoveWidget(widget.id)}
-              onUpdateConfig={(newConfig) =>
-                handleUpdateWidgetConfig(widget.id, newConfig)
-              }
-            />
+            <WidgetFactory widgetConfig={widgetConfig} />
           </Box>
         ))}
       </ResponsiveGridLayout>
     </Box>
-  )
+  );
 }

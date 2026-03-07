@@ -1,0 +1,24 @@
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/mosaic
+    username: username
+    password: password
+
+  flyway:
+    locations: classpath:db/migration,classpath:db/migration/local
+    url: jdbc:postgresql://localhost:5432/mosaic
+    user: username
+    password: password
+
+
+# File paths for local development
+file:
+  storage:
+    base-path: ./local-storage
+    occupancy-map-path: ./local-storage/occupancy-maps
+
+mosaic:
+  security:
+    # This encryption key is only used for local development
+    # DO NOT USE THIS IN PRODUCTION
+    encryption-key: 1tcmum10T0aSvjd01iZ/9Vr04nB2GoJIo9gXCLHJKaE=

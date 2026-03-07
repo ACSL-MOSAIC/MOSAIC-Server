@@ -9,8 +9,9 @@ RUN npm install --legacy-peer-deps
 
 COPY ./ /app/
 
-ARG VITE_API_URL=${VITE_API_URL}
 ARG VITE_ENVIRONMENT=${VITE_ENVIRONMENT}
+ARG VITE_API_URL=${VITE_API_URL}
+ARG VITE_WS_URL=${VITE_WS_URL}
 
 RUN npm run build
 
