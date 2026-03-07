@@ -1,54 +1,49 @@
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx"
-import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts"
-import { useMosaicStore } from "@/hooks/useMosaicStore.ts"
-import type JsonReceivableStore from "@/mosaic/store/impl/json-receivable-store.ts"
-import {
-  Badge,
-  Box,
-  Grid,
-  HStack,
-  Separator,
-  Text,
-  VStack,
-} from "@chakra-ui/react"
-import type { ReactNode } from "react"
-import { useEffect, useState } from "react"
-import { MdBatteryFull, MdPower } from "react-icons/md"
+import type { ReactNode } from "react";
+
+import { Badge, Box, Grid, HStack, Separator, Text, VStack } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
+import { MdBatteryFull, MdPower } from "react-icons/md";
+
+import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts";
+import type JsonReceivableStore from "@/mosaic/store/impl/json-receivable-store.ts";
+
+import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 interface PowerData {
-  battery_connected: number
-  charger_connected: number
+  battery_connected: number;
+  charger_connected: number;
   measured_currents: {
-    left_driver_current: string
-    mcu_and_user_port_current: string
-    right_driver_current: string
-  }
+    left_driver_current: string;
+    mcu_and_user_port_current: string;
+    right_driver_current: string;
+  };
   measured_voltages: {
-    battery_voltage: string
-    left_driver_voltage: string
-    right_driver_voltage: string
-  }
-  timestamp: number
+    battery_voltage: string;
+    left_driver_voltage: string;
+    right_driver_voltage: string;
+  };
+  timestamp: number;
 }
 
 function parseUnit(str: string): { value: string; unit: string } {
   return {
     value: Number.parseFloat(str).toFixed(2),
     unit: str.replace(/[\d.]/g, "").trim(),
-  }
+  };
 }
 
 function formatTimestamp(micros: number): string {
-  const date = new Date(micros / 1000)
-  const hh = date.getHours().toString().padStart(2, "0")
-  const mm = date.getMinutes().toString().padStart(2, "0")
-  const ss = date.getSeconds().toString().padStart(2, "0")
-  const ms = date.getMilliseconds().toString().padStart(3, "0")
-  return `${hh}:${mm}:${ss}.${ms}`
+  const date = new Date(micros / 1000);
+  const hh = date.getHours().toString().padStart(2, "0");
+  const mm = date.getMinutes().toString().padStart(2, "0");
+  const ss = date.getSeconds().toString().padStart(2, "0");
+  const ms = date.getMilliseconds().toString().padStart(3, "0");
+  return `${hh}:${mm}:${ss}.${ms}`;
 }
 
 function StatCard({ label, rawValue }: { label: string; rawValue: string }) {
-  const { value, unit } = parseUnit(rawValue)
+  const { value, unit } = parseUnit(rawValue);
   return (
     <Box
       bg="bg.subtle"
@@ -72,7 +67,7 @@ function StatCard({ label, rawValue }: { label: string; rawValue: string }) {
         </HStack>
       </HStack>
     </Box>
-  )
+  );
 }
 
 function StatusRow({
@@ -80,9 +75,9 @@ function StatusRow({
   label,
   connected,
 }: {
-  icon: ReactNode
-  label: string
-  connected: boolean
+  icon: ReactNode;
+  label: string;
+  connected: boolean;
 }) {
   return (
     <HStack gap={2}>
@@ -92,55 +87,42 @@ function StatusRow({
       <Text fontSize="sm" flex={1}>
         {label}
       </Text>
-      <Badge
-        size="sm"
-        colorPalette={connected ? "green" : "gray"}
-        variant="subtle"
-      >
+      <Badge size="sm" colorPalette={connected ? "green" : "gray"} variant="subtle">
         {connected ? "Connected" : "Disconnected"}
       </Badge>
     </HStack>
-  )
+  );
 }
 
-export default function ClearpathPlatformPowerViewerWidget({
-  widgetConfig,
-}: WidgetProps) {
-  const { getOrCreateStore, releaseStore } = useMosaicStore()
-  const [data, setData] = useState<PowerData | null>(null)
+export default function ClearpathPlatformPowerViewerWidget({ widgetConfig }: WidgetProps) {
+  const { getOrCreateStore, releaseStore } = useMosaicStore();
+  const [data, setData] = useState<PowerData | null>(null);
 
   useEffect(() => {
-    const connector = widgetConfig.connectors[0]
-    if (!connector) return
+    const connector = widgetConfig.connectors[0];
+    if (!connector) return;
 
-    const store = getOrCreateStore(connector) as JsonReceivableStore
-    if (store === null) return
+    const store = getOrCreateStore(connector) as JsonReceivableStore;
+    if (store === null) return;
 
-    const unsubscribe = store.subscribe((incoming) =>
-      setData(incoming as PowerData),
-    )
+    const unsubscribe = store.subscribe((incoming) => setData(incoming as PowerData));
 
     return () => {
-      unsubscribe()
-      releaseStore(connector)
-    }
-  }, [widgetConfig])
+      unsubscribe();
+      releaseStore(connector);
+    };
+  }, [widgetConfig]);
 
   if (!data) {
     return (
       <WidgetFrame widgetConfig={widgetConfig}>
-        <Box
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          h="100%"
-        >
+        <Box display="flex" alignItems="center" justifyContent="center" h="100%">
           <Text color="fg.muted" fontSize="sm">
             Waiting for data...
           </Text>
         </Box>
       </WidgetFrame>
-    )
+    );
   }
 
   return (
@@ -174,18 +156,9 @@ export default function ClearpathPlatformPowerViewerWidget({
             >
               Voltages
             </Text>
-            <StatCard
-              label="Battery"
-              rawValue={data.measured_voltages.battery_voltage}
-            />
-            <StatCard
-              label="Left Driver"
-              rawValue={data.measured_voltages.left_driver_voltage}
-            />
-            <StatCard
-              label="Right Driver"
-              rawValue={data.measured_voltages.right_driver_voltage}
-            />
+            <StatCard label="Battery" rawValue={data.measured_voltages.battery_voltage} />
+            <StatCard label="Left Driver" rawValue={data.measured_voltages.left_driver_voltage} />
+            <StatCard label="Right Driver" rawValue={data.measured_voltages.right_driver_voltage} />
           </VStack>
 
           <VStack align="stretch" gap={2}>
@@ -198,18 +171,12 @@ export default function ClearpathPlatformPowerViewerWidget({
             >
               Currents
             </Text>
-            <StatCard
-              label="Left Driver"
-              rawValue={data.measured_currents.left_driver_current}
-            />
+            <StatCard label="Left Driver" rawValue={data.measured_currents.left_driver_current} />
             <StatCard
               label="MCU & Port"
               rawValue={data.measured_currents.mcu_and_user_port_current}
             />
-            <StatCard
-              label="Right Driver"
-              rawValue={data.measured_currents.right_driver_current}
-            />
+            <StatCard label="Right Driver" rawValue={data.measured_currents.right_driver_current} />
           </VStack>
         </Grid>
 
@@ -221,5 +188,5 @@ export default function ClearpathPlatformPowerViewerWidget({
         </Text>
       </VStack>
     </WidgetFrame>
-  )
+  );
 }

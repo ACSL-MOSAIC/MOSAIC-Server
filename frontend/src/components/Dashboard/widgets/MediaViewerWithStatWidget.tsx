@@ -1,169 +1,166 @@
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx"
-import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts"
-import { useMosaicStore } from "@/hooks/useMosaicStore.ts"
-import { useRobotInfo } from "@/hooks/useRobotInfo.ts"
-import type {
-  MediaStreamStore,
-  StreamStats,
-} from "@/mosaic/store/interface/media-stream-store.ts"
-import { Box, Button, Flex, HStack, IconButton, Text } from "@chakra-ui/react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { Box, Button, Flex, HStack, IconButton, Text } from "@chakra-ui/react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts";
+import type { MediaStreamStore, StreamStats } from "@/mosaic/store/interface/media-stream-store.ts";
+
+import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
+import { useRobotInfo } from "@/hooks/useRobotInfo.ts";
 
 interface CollectedStat extends StreamStats {
-  timestamp: number
+  timestamp: number;
 }
 
-export default function MediaViewerWithStatWidget({
-  widgetConfig,
-}: WidgetProps) {
-  const { getOrCreateStore, releaseStore } = useMosaicStore()
-  const { robotInfos } = useRobotInfo()
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const connector = widgetConfig.connectors[0]
-  const connectorRobotId = connector?.robotId ?? ""
-  const connectorId = connector?.connectorId ?? ""
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [statsList, setStatsList] = useState<CollectedStat[]>([])
+export default function MediaViewerWithStatWidget({ widgetConfig }: WidgetProps) {
+  const { getOrCreateStore, releaseStore } = useMosaicStore();
+  const { robotInfos } = useRobotInfo();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const connector = widgetConfig.connectors[0];
+  const connectorRobotId = connector?.robotId ?? "";
+  const connectorId = connector?.connectorId ?? "";
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [statsList, setStatsList] = useState<CollectedStat[]>([]);
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const storeRef = useRef<MediaStreamStore | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const storeRef = useRef<MediaStreamStore | null>(null);
 
   const robotName = useMemo(() => {
-    const info = robotInfos.find((r) => r.id === connectorRobotId)
-    return info?.name ?? connectorRobotId ?? "robot"
-  }, [connectorRobotId, robotInfos])
+    const info = robotInfos.find((r) => r.id === connectorRobotId);
+    return info?.name ?? connectorRobotId ?? "robot";
+  }, [connectorRobotId, robotInfos]);
 
-  const latestStat = statsList[statsList.length - 1] ?? null
+  const latestStat = statsList[statsList.length - 1] ?? null;
 
   const handleSave = useCallback(() => {
-    const header = "seq,timestamp,fps,jitter,rtt_ms\n"
+    const header = "seq,timestamp,fps,jitter,rtt_ms\n";
     const rows = statsList
       .map(
         (s, i) =>
           `${i + 1},${s.timestamp.toFixed(3)},${s.fps.toFixed(2)},${s.jitter.toFixed(6)},${s.rtt.toFixed(3)}`,
       )
-      .join("\n")
-    const blob = new Blob([header + rows], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `${robotName}_stream_stats.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }, [statsList, robotName])
+      .join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${robotName}_stream_stats.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [statsList, robotName]);
 
   const configureVideo = (store: MediaStreamStore) => {
     if (videoRef.current) {
-      store.setVideoElement(videoRef.current)
+      store.setVideoElement(videoRef.current);
     }
 
-    const mediaStream = store.getMediaStream()
+    const mediaStream = store.getMediaStream();
     if (mediaStream) {
       if (videoRef.current && videoRef.current.srcObject === mediaStream) {
         if (videoRef.current.paused) {
           videoRef.current.play().catch((error) => {
-            console.error("❌ Video autoplay failed:", error)
-          })
+            console.error("❌ Video autoplay failed:", error);
+          });
         }
       }
     }
 
-    const videoElement = videoRef.current
+    const videoElement = videoRef.current;
     if (videoElement) {
-      const handlePlay = () => setIsPlaying(true)
-      const handlePause = () => setIsPlaying(false)
-      const handleLoadedMetadata = () => setError(null)
+      const handlePlay = () => setIsPlaying(true);
+      const handlePause = () => setIsPlaying(false);
+      const handleLoadedMetadata = () => setError(null);
       const handleError = (e: any) => {
-        console.error("Video load error:", e)
-        setError("An error occurred while loading the video.")
-      }
+        console.error("Video load error:", e);
+        setError("An error occurred while loading the video.");
+      };
 
-      videoElement.addEventListener("play", handlePlay)
-      videoElement.addEventListener("pause", handlePause)
-      videoElement.addEventListener("loadedmetadata", handleLoadedMetadata)
-      videoElement.addEventListener("error", handleError)
+      videoElement.addEventListener("play", handlePlay);
+      videoElement.addEventListener("pause", handlePause);
+      videoElement.addEventListener("loadedmetadata", handleLoadedMetadata);
+      videoElement.addEventListener("error", handleError);
 
       return () => {
-        videoElement.removeEventListener("play", handlePlay)
-        videoElement.removeEventListener("pause", handlePause)
-        videoElement.removeEventListener("loadedmetadata", handleLoadedMetadata)
-        videoElement.removeEventListener("error", handleError)
-      }
+        videoElement.removeEventListener("play", handlePlay);
+        videoElement.removeEventListener("pause", handlePause);
+        videoElement.removeEventListener("loadedmetadata", handleLoadedMetadata);
+        videoElement.removeEventListener("error", handleError);
+      };
     }
-  }
+  };
 
   useEffect(() => {
     if (!connector || !connectorRobotId || !connectorId) {
-      return
+      return;
     }
 
-    const store = getOrCreateStore(connector) as MediaStreamStore
+    const store = getOrCreateStore(connector) as MediaStreamStore;
     if (store === null) {
-      return
+      return;
     }
-    storeRef.current = store
+    storeRef.current = store;
 
-    configureVideo(store)
+    configureVideo(store);
     store.onAfterConnected((_robotId: string) => {
-      configureVideo(store)
-    })
+      configureVideo(store);
+    });
 
     intervalRef.current = setInterval(async () => {
-      const stats = await storeRef.current?.getStats()
+      const stats = await storeRef.current?.getStats();
       if (stats) {
         const entry: CollectedStat = {
           ...stats,
           timestamp: performance.timeOrigin + performance.now(),
-        }
-        setStatsList((prev) => [...prev, entry])
+        };
+        setStatsList((prev) => [...prev, entry]);
       }
-    }, 500)
+    }, 500);
 
     return () => {
       if (intervalRef.current !== null) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
-      storeRef.current = null
-      releaseStore(connector)
+      storeRef.current = null;
+      releaseStore(connector);
       if (videoRef.current) {
-        videoRef.current.srcObject = null
+        videoRef.current.srcObject = null;
       }
-    }
-  }, [connectorRobotId, connectorId])
+    };
+  }, [connectorRobotId, connectorId]);
 
   const handlePlayPause = () => {
     if (videoRef.current) {
       if (isPlaying) {
-        videoRef.current.pause()
+        videoRef.current.pause();
       } else {
-        videoRef.current.play()
+        videoRef.current.play();
       }
     }
-  }
+  };
 
   const handleFullscreen = () => {
     if (videoRef.current) {
       if (!isFullscreen) {
-        videoRef.current.requestFullscreen?.()
+        videoRef.current.requestFullscreen?.();
       } else {
-        document.exitFullscreen?.()
+        document.exitFullscreen?.();
       }
     }
-  }
+  };
 
   const handleFullscreenChange = () => {
-    setIsFullscreen(!!document.fullscreenElement)
-  }
+    setIsFullscreen(!!document.fullscreenElement);
+  };
 
   useEffect(() => {
-    document.addEventListener("fullscreenchange", handleFullscreenChange)
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange)
-    }
-  }, [])
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
 
   return (
     <WidgetFrame widgetConfig={widgetConfig}>
@@ -246,16 +243,9 @@ export default function MediaViewerWithStatWidget({
               <StatCell label="FPS" value={latestStat?.fps.toFixed(1) ?? "—"} />
               <StatCell
                 label="Jitter"
-                value={
-                  latestStat
-                    ? `${(latestStat.jitter * 1000).toFixed(3)} ms`
-                    : "—"
-                }
+                value={latestStat ? `${(latestStat.jitter * 1000).toFixed(3)} ms` : "—"}
               />
-              <StatCell
-                label="RTT"
-                value={latestStat ? `${latestStat.rtt.toFixed(1)} ms` : "—"}
-              />
+              <StatCell label="RTT" value={latestStat ? `${latestStat.rtt.toFixed(1)} ms` : "—"} />
             </HStack>
             <Button
               size="xs"
@@ -270,7 +260,7 @@ export default function MediaViewerWithStatWidget({
         </Box>
       )}
     </WidgetFrame>
-  )
+  );
 }
 
 function StatCell({ label, value }: { label: string; value: string }) {
@@ -281,5 +271,5 @@ function StatCell({ label, value }: { label: string; value: string }) {
         {value}
       </Text>
     </HStack>
-  )
+  );
 }

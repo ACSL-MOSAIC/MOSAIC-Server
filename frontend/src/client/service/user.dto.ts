@@ -1,19 +1,19 @@
 export type UserDto = {
-  id: string
-  email: string
-  isActive: boolean
-  isOrganizationAdmin: boolean
-  fullName: string
-  organizationName: string
-  createdAt: string
-  updatedAt: string
-}
+  id: string;
+  email: string;
+  isActive: boolean;
+  isOrganizationAdmin: boolean;
+  fullName: string;
+  organizationName: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export type UserUpdateMeDto = {
-  fullName: string
-}
+  fullName: string;
+};
 
 export type UserUpdatePasswordMeDto = {
-  currentPassword: string
-  newPassword: string
-}
+  currentPassword: string;
+  newPassword: string;
+};

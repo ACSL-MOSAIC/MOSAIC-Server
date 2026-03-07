@@ -1,27 +1,28 @@
-import {IconButton} from "@chakra-ui/react"
-import {BsThreeDotsVertical} from "react-icons/bs"
-import {MenuContent, MenuRoot, MenuTrigger} from "../ui/menu"
+import { IconButton } from "@chakra-ui/react";
+import { BsThreeDotsVertical } from "react-icons/bs";
 
-import type {RobotPublic} from "@/client/service/robot.dto.ts"
-import DeleteRobotDialog from "../Robots/DeleteRobotDialog.tsx"
-import EditRobotDialog from "../Robots/EditRobotDialog.tsx"
+import type { RobotPublic } from "@/client/service/robot.dto.ts";
+
+import DeleteRobotDialog from "../Robots/DeleteRobotDialog.tsx";
+import EditRobotDialog from "../Robots/EditRobotDialog.tsx";
+import { MenuContent, MenuRoot, MenuTrigger } from "../ui/menu";
 
 interface RobotActionsMenuProps {
-  robot: RobotPublic
+  robot: RobotPublic;
 }
 
-export const RobotActionsMenu = ({robot}: RobotActionsMenuProps) => {
+export const RobotActionsMenu = ({ robot }: RobotActionsMenuProps) => {
   return (
     <MenuRoot>
       <MenuTrigger asChild>
         <IconButton variant="ghost" color="inherit">
-          <BsThreeDotsVertical/>
+          <BsThreeDotsVertical />
         </IconButton>
       </MenuTrigger>
       <MenuContent>
-        <EditRobotDialog robot={robot}/>
-        <DeleteRobotDialog id={robot.id}/>
+        <EditRobotDialog robot={robot} />
+        <DeleteRobotDialog id={robot.id} />
       </MenuContent>
     </MenuRoot>
-  )
-}
+  );
+};

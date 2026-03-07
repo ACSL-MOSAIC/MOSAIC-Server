@@ -1,20 +1,21 @@
-import {Box, Button, Flex, Text} from "@chakra-ui/react"
-import {Link} from "@tanstack/react-router"
-import {FaUserAstronaut} from "react-icons/fa"
-import {FiLogOut, FiUser} from "react-icons/fi"
+import { Box, Button, Flex, Text } from "@chakra-ui/react";
+import { Link } from "@tanstack/react-router";
+import { FaUserAstronaut } from "react-icons/fa";
+import { FiLogOut, FiUser } from "react-icons/fi";
 
-import useAuth from "@/hooks/useAuth"
-import {useWebSocket} from "@/hooks/useWebSocket.ts"
-import {MenuContent, MenuItem, MenuRoot, MenuTrigger} from "../ui/menu"
+import useAuth from "@/hooks/useAuth";
+import { useWebSocket } from "@/hooks/useWebSocket.ts";
+
+import { MenuContent, MenuItem, MenuRoot, MenuTrigger } from "../ui/menu";
 
 const UserMenu = () => {
-  const {user, logout} = useAuth()
-  const {disconnectWs} = useWebSocket()
+  const { user, logout } = useAuth();
+  const { disconnectWs } = useWebSocket();
 
   const handleLogout = async () => {
-    disconnectWs()
-    logout()
-  }
+    disconnectWs();
+    logout();
+  };
 
   return (
     <>
@@ -23,7 +24,7 @@ const UserMenu = () => {
         <MenuRoot>
           <MenuTrigger asChild p={2}>
             <Button data-testid="user-menu" variant="solid" maxW="sm" truncate>
-              <FaUserAstronaut fontSize="16"/>
+              <FaUserAstronaut fontSize="16" />
               <Text>{user?.fullName || "User"}</Text>
             </Button>
           </MenuTrigger>
@@ -35,9 +36,9 @@ const UserMenu = () => {
                 value="user-settings"
                 gap={2}
                 py={2}
-                style={{cursor: "pointer"}}
+                style={{ cursor: "pointer" }}
               >
-                <FiUser fontSize="18px"/>
+                <FiUser fontSize="18px" />
                 <Box flex="1">My Profile</Box>
               </MenuItem>
             </Link>
@@ -47,16 +48,16 @@ const UserMenu = () => {
               gap={2}
               py={2}
               onClick={handleLogout}
-              style={{cursor: "pointer"}}
+              style={{ cursor: "pointer" }}
             >
-              <FiLogOut/>
+              <FiLogOut />
               Log Out
             </MenuItem>
           </MenuContent>
         </MenuRoot>
       </Flex>
     </>
-  )
-}
+  );
+};
 
-export default UserMenu
+export default UserMenu;

@@ -1,7 +1,3 @@
-import {useMutation, useQueryClient} from "@tanstack/react-query"
-import {useRef, useState} from "react"
-import {type SubmitHandler, useForm} from "react-hook-form"
-
 import {
   Button,
   DialogActionTrigger,
@@ -12,15 +8,20 @@ import {
   Text,
   Textarea,
   VStack,
-} from "@chakra-ui/react"
-import {FaPlus} from "react-icons/fa"
+} from "@chakra-ui/react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRef, useState } from "react";
+import { type SubmitHandler, useForm } from "react-hook-form";
+import { FaPlus } from "react-icons/fa";
 
-import type {ApiError} from "@/client/core/ApiError"
-import {addRobotApi} from "@/client/service/robot.api.ts"
-import type {RobotAddDto} from "@/client/service/robot.dto.ts"
-import {ROBOT_AUTH_TYPES} from "@/client/service/robot.dto.ts"
-import useCustomToast from "@/hooks/useCustomToast"
-import {handleError} from "@/utils"
+import type { ApiError } from "@/client/core/ApiError";
+import type { RobotAddDto } from "@/client/service/robot.dto.ts";
+
+import { addRobotApi } from "@/client/service/robot.api.ts";
+import { ROBOT_AUTH_TYPES } from "@/client/service/robot.dto.ts";
+import useCustomToast from "@/hooks/useCustomToast";
+import { handleError } from "@/utils";
+
 import {
   DialogBody,
   DialogCloseTrigger,
@@ -29,19 +30,19 @@ import {
   DialogHeader,
   DialogRoot,
   DialogTrigger,
-} from "../ui/dialog"
-import {Field} from "../ui/field"
+} from "../ui/dialog";
+import { Field } from "../ui/field";
 
 const AddRobotDialog = () => {
-  const [isOpen, setIsOpen] = useState(false)
-  const dialogContentRef = useRef<HTMLDivElement>(null)
-  const queryClient = useQueryClient()
-  const {showSuccessToast} = useCustomToast()
+  const [isOpen, setIsOpen] = useState(false);
+  const dialogContentRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+  const { showSuccessToast } = useCustomToast();
   const {
     register,
     handleSubmit,
     reset,
-    formState: {errors, isValid, isSubmitting},
+    formState: { errors, isValid, isSubmitting },
   } = useForm<RobotAddDto>({
     mode: "onBlur",
     criteriaMode: "all",
@@ -52,37 +53,37 @@ const AddRobotDialog = () => {
       authType: 0,
       connectorConfig: undefined,
     },
-  })
+  });
 
   const mutation = useMutation({
     mutationFn: (data: RobotAddDto) => addRobotApi(data),
     onSuccess: () => {
-      showSuccessToast("Robot created successfully.")
-      reset()
-      setIsOpen(false)
+      showSuccessToast("Robot created successfully.");
+      reset();
+      setIsOpen(false);
     },
     onError: (err: ApiError) => {
-      handleError(err)
+      handleError(err);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({queryKey: ["robots"]})
+      queryClient.invalidateQueries({ queryKey: ["robots"] });
     },
-  })
+  });
 
   const onSubmit: SubmitHandler<RobotAddDto> = (data) => {
-    mutation.mutate(data)
-  }
+    mutation.mutate(data);
+  };
 
   return (
     <DialogRoot
-      size={{base: "xs", md: "md"}}
+      size={{ base: "xs", md: "md" }}
       placement="center"
       open={isOpen}
-      onOpenChange={({open}) => setIsOpen(open)}
+      onOpenChange={({ open }) => setIsOpen(open)}
     >
       <DialogTrigger asChild>
         <Button value="add-robot" my={4}>
-          <FaPlus fontSize="16px"/>
+          <FaPlus fontSize="16px" />
           Add Robot
         </Button>
       </DialogTrigger>
@@ -94,12 +95,7 @@ const AddRobotDialog = () => {
           <DialogBody>
             <Text mb={4}>Fill in the details to add a new robot.</Text>
             <VStack gap={4}>
-              <Field
-                required
-                invalid={!!errors.name}
-                errorText={errors.name?.message}
-                label="Name"
-              >
+              <Field required invalid={!!errors.name} errorText={errors.name?.message} label="Name">
                 <Input
                   id="name"
                   {...register("name", {
@@ -153,12 +149,12 @@ const AddRobotDialog = () => {
                   id="connectorConfig"
                   {...register("connectorConfig", {
                     validate: (value) => {
-                      if (!value) return true
+                      if (!value) return true;
                       try {
-                        JSON.parse(value)
-                        return true
+                        JSON.parse(value);
+                        return true;
                       } catch {
-                        return "Invalid JSON format"
+                        return "Invalid JSON format";
                       }
                     },
                   })}
@@ -173,28 +169,19 @@ const AddRobotDialog = () => {
 
           <DialogFooter gap={2}>
             <DialogActionTrigger asChild>
-              <Button
-                variant="subtle"
-                colorPalette="gray"
-                disabled={isSubmitting}
-              >
+              <Button variant="subtle" colorPalette="gray" disabled={isSubmitting}>
                 Cancel
               </Button>
             </DialogActionTrigger>
-            <Button
-              variant="solid"
-              type="submit"
-              disabled={!isValid}
-              loading={isSubmitting}
-            >
+            <Button variant="solid" type="submit" disabled={!isValid} loading={isSubmitting}>
               Save
             </Button>
           </DialogFooter>
         </form>
-        <DialogCloseTrigger/>
+        <DialogCloseTrigger />
       </DialogContent>
     </DialogRoot>
-  )
-}
+  );
+};
 
-export default AddRobotDialog
+export default AddRobotDialog;

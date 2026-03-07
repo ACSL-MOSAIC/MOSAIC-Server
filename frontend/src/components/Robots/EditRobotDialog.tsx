@@ -8,21 +8,20 @@ import {
   Text,
   Textarea,
   VStack,
-} from "@chakra-ui/react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useEffect, useState } from "react"
-import { type SubmitHandler, useForm } from "react-hook-form"
-import { FaExchangeAlt } from "react-icons/fa"
+} from "@chakra-ui/react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { type SubmitHandler, useForm } from "react-hook-form";
+import { FaExchangeAlt } from "react-icons/fa";
 
-import type { ApiError } from "@/client"
-import { getRobotApi, updateRobotApi } from "@/client/service/robot.api.ts"
-import type {
-  RobotInfoDto,
-  RobotUpdateDto,
-} from "@/client/service/robot.dto.ts"
-import { ROBOT_AUTH_TYPES } from "@/client/service/robot.dto.ts"
-import useCustomToast from "@/hooks/useCustomToast"
-import { handleError } from "@/utils"
+import type { ApiError } from "@/client";
+import type { RobotInfoDto, RobotUpdateDto } from "@/client/service/robot.dto.ts";
+
+import { getRobotApi, updateRobotApi } from "@/client/service/robot.api.ts";
+import { ROBOT_AUTH_TYPES } from "@/client/service/robot.dto.ts";
+import useCustomToast from "@/hooks/useCustomToast";
+import { handleError } from "@/utils";
+
 import {
   DialogBody,
   DialogCloseTrigger,
@@ -32,17 +31,17 @@ import {
   DialogRoot,
   DialogTitle,
   DialogTrigger,
-} from "../ui/dialog"
-import { Field } from "../ui/field"
+} from "../ui/dialog";
+import { Field } from "../ui/field";
 
 interface EditRobotProps {
-  robot: RobotInfoDto
+  robot: RobotInfoDto;
 }
 
 const EditRobotDialog = ({ robot }: EditRobotProps) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const queryClient = useQueryClient()
-  const { showSuccessToast } = useCustomToast()
+  const [isOpen, setIsOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { showSuccessToast } = useCustomToast();
   const {
     register,
     handleSubmit,
@@ -57,7 +56,7 @@ const EditRobotDialog = ({ robot }: EditRobotProps) => {
       description: robot.description ?? undefined,
       connectorConfig: undefined,
     },
-  })
+  });
 
   // Load connector config when dialog opens
   useEffect(() => {
@@ -65,33 +64,29 @@ const EditRobotDialog = ({ robot }: EditRobotProps) => {
       getRobotApi(robot.id)
         .then((response) => {
           // Format JSON with indentation for display
-          const formattedConfig = JSON.stringify(
-            JSON.parse(response.connectorConfig),
-            null,
-            2,
-          )
-          setValue("connectorConfig", formattedConfig)
+          const formattedConfig = JSON.stringify(JSON.parse(response.connectorConfig), null, 2);
+          setValue("connectorConfig", formattedConfig);
         })
         .catch((error) => {
-          console.error("Failed to load connector config:", error)
-        })
+          console.error("Failed to load connector config:", error);
+        });
     }
-  }, [isOpen, robot.id, setValue])
+  }, [isOpen, robot.id, setValue]);
 
   const mutation = useMutation({
     mutationFn: (data: RobotUpdateDto) => updateRobotApi(robot.id, data),
     onSuccess: () => {
-      showSuccessToast("Robot updated successfully.")
-      reset()
-      setIsOpen(false)
+      showSuccessToast("Robot updated successfully.");
+      reset();
+      setIsOpen(false);
     },
     onError: (err: ApiError) => {
-      handleError(err)
+      handleError(err);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["robots"] })
+      queryClient.invalidateQueries({ queryKey: ["robots"] });
     },
-  })
+  });
 
   const onSubmit: SubmitHandler<RobotUpdateDto> = async (data) => {
     // Stringify connector config without formatting before sending
@@ -100,9 +95,9 @@ const EditRobotDialog = ({ robot }: EditRobotProps) => {
       connectorConfig: data.connectorConfig
         ? JSON.stringify(JSON.parse(data.connectorConfig))
         : data.connectorConfig,
-    }
-    mutation.mutate(submitData)
-  }
+    };
+    mutation.mutate(submitData);
+  };
 
   return (
     <DialogRoot
@@ -125,12 +120,7 @@ const EditRobotDialog = ({ robot }: EditRobotProps) => {
           <DialogBody>
             <Text mb={4}>Update the robot details below.</Text>
             <VStack gap={4}>
-              <Field
-                required
-                invalid={!!errors.name}
-                errorText={errors.name?.message}
-                label="Name"
-              >
+              <Field required invalid={!!errors.name} errorText={errors.name?.message} label="Name">
                 <Input
                   id="name"
                   {...register("name", {
@@ -186,12 +176,12 @@ const EditRobotDialog = ({ robot }: EditRobotProps) => {
                   id="connectorConfig"
                   {...register("connectorConfig", {
                     validate: (value) => {
-                      if (!value) return true
+                      if (!value) return true;
                       try {
-                        JSON.parse(value)
-                        return true
+                        JSON.parse(value);
+                        return true;
                       } catch {
-                        return "Invalid JSON format"
+                        return "Invalid JSON format";
                       }
                     },
                   })}
@@ -207,11 +197,7 @@ const EditRobotDialog = ({ robot }: EditRobotProps) => {
           <DialogFooter gap={2}>
             <ButtonGroup>
               <DialogActionTrigger asChild>
-                <Button
-                  variant="subtle"
-                  colorPalette="gray"
-                  disabled={isSubmitting}
-                >
+                <Button variant="subtle" colorPalette="gray" disabled={isSubmitting}>
                   Cancel
                 </Button>
               </DialogActionTrigger>
@@ -224,7 +210,7 @@ const EditRobotDialog = ({ robot }: EditRobotProps) => {
         <DialogCloseTrigger />
       </DialogContent>
     </DialogRoot>
-  )
-}
+  );
+};
 
-export default EditRobotDialog
+export default EditRobotDialog;

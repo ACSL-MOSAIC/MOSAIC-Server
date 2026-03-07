@@ -1,12 +1,14 @@
-import type {CancelablePromise} from "@/client/core/CancelablePromise.ts"
-import {request as __request} from "@/client/core/request.ts"
+import type { CancelablePromise } from "@/client/core/CancelablePromise.ts";
+
+import { request as __request } from "@/client/core/request.ts";
+
 import type {
   TabAddDto,
   TabConfigDto,
   TabConfigUpdateDto,
   TabInfoDto,
   TabNameUpdateDto,
-} from "./dashboard.dto.ts"
+} from "./dashboard.dto.ts";
 
 /**
  * Read Tab List
@@ -17,8 +19,8 @@ export const getTabListApi = (): CancelablePromise<TabInfoDto[]> => {
   return __request({
     method: "GET",
     url: "/api/v1/dashboard/tabs",
-  })
-}
+  });
+};
 
 export const addTabApi = (tabAddDto: TabAddDto): CancelablePromise<void> => {
   return __request({
@@ -26,17 +28,15 @@ export const addTabApi = (tabAddDto: TabAddDto): CancelablePromise<void> => {
     url: "/api/v1/dashboard/tabs",
     body: tabAddDto,
     mediaType: "application/json",
-  })
-}
+  });
+};
 
-export const getTabConfigApi = (
-  tabId: string,
-): CancelablePromise<TabConfigDto> => {
+export const getTabConfigApi = (tabId: string): CancelablePromise<TabConfigDto> => {
   return __request({
     method: "GET",
     url: `/api/v1/dashboard/tabs/${tabId}`,
-  })
-}
+  });
+};
 
 export const updateTabNameApi = (
   tabId: string,
@@ -47,8 +47,8 @@ export const updateTabNameApi = (
     url: `/api/v1/dashboard/tabs/${tabId}`,
     body: tabNameUpdateDto,
     mediaType: "application/json",
-  })
-}
+  });
+};
 
 export const updateTabConfigApi = (
   tabId: string,
@@ -59,12 +59,12 @@ export const updateTabConfigApi = (
     url: `/api/v1/dashboard/tabs/${tabId}/configs`,
     body: tabConfigUpdateDto,
     mediaType: "application/json",
-  })
-}
+  });
+};
 
 export const deleteTabApi = (tabId: string): CancelablePromise<void> => {
   return __request({
     method: "DELETE",
     url: `/api/v1/dashboard/tabs/${tabId}`,
-  })
-}
+  });
+};

@@ -1,1 +1,1 @@
-export type SimpleDirection = "up" | "down" | "left" | "right" | "stop"
+export type SimpleDirection = "up" | "down" | "left" | "right" | "stop";

@@ -1,5 +1,5 @@
-import type { WidgetConfig } from "@/mosaic"
+import type { WidgetConfig } from "@/mosaic";
 
 export interface WidgetProps {
-  widgetConfig: WidgetConfig
+  widgetConfig: WidgetConfig;
 }

@@ -1,8 +1,9 @@
-import { Box } from "@chakra-ui/react"
-import type { ReactNode } from "react"
+import type { ReactNode } from "react";
+
+import { Box } from "@chakra-ui/react";
 
 export interface WidgetBodyProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
 export function WidgetBody({ children }: WidgetBodyProps) {
@@ -24,5 +25,5 @@ export function WidgetBody({ children }: WidgetBodyProps) {
     >
       {children}
     </Box>
-  )
+  );
 }

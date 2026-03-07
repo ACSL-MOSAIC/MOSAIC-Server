@@ -1,18 +1,15 @@
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx"
-import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts"
-import { Box, Code, Flex, HStack, Icon, Text, VStack } from "@chakra-ui/react"
-import { LuPuzzle, LuWrench } from "react-icons/lu"
+import { Box, Code, Flex, HStack, Icon, Text, VStack } from "@chakra-ui/react";
+import { LuPuzzle, LuWrench } from "react-icons/lu";
+
+import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts";
+
+import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
 
 export default function NotFoundWidget({ widgetConfig }: WidgetProps) {
   return (
     <WidgetFrame widgetConfig={widgetConfig}>
       <Flex h="100%" align="center" justify="center">
-        <Box
-          w="100%"
-          h="100%"
-          bgGradient="linear(to-b, orange.50, white)"
-          p={4}
-        >
+        <Box w="100%" h="100%" bgGradient="linear(to-b, orange.50, white)" p={4}>
           <VStack align="start" gap={4} h="100%">
             <HStack gap={2}>
               <Flex
@@ -64,5 +61,5 @@ export default function NotFoundWidget({ widgetConfig }: WidgetProps) {
         </Box>
       </Flex>
     </WidgetFrame>
-  )
+  );
 }

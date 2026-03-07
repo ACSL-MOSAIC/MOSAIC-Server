@@ -1,9 +1,10 @@
-import type {CancelablePromise} from "@/client"
-import {request as __request} from "@/client/core/request.ts"
+import type { CancelablePromise } from "@/client";
 import type {
   RobotSimpleTokenReqDto,
   RobotSimpleTokenResDto,
-} from "@/client/service/robot-auth.dto.ts"
+} from "@/client/service/robot-auth.dto.ts";
+
+import { request as __request } from "@/client/core/request.ts";
 
 export const generateSimpleTokenApi = (
   requestBody: RobotSimpleTokenReqDto,
@@ -13,5 +14,5 @@ export const generateSimpleTokenApi = (
     url: "/api/v1/robots/auth/simple-token",
     body: requestBody,
     mediaType: "application/json",
-  })
-}
+  });
+};

@@ -1,49 +1,51 @@
-import {Box, Button, Container, Heading, VStack} from "@chakra-ui/react"
-import {useMutation} from "@tanstack/react-query"
-import {type SubmitHandler, useForm} from "react-hook-form"
-import {FiLock} from "react-icons/fi"
+import { Box, Button, Container, Heading, VStack } from "@chakra-ui/react";
+import { useMutation } from "@tanstack/react-query";
+import { type SubmitHandler, useForm } from "react-hook-form";
+import { FiLock } from "react-icons/fi";
 
-import type {ApiError} from "@/client"
-import {updatePasswordMeApi} from "@/client/service/user.api.ts"
-import type {UserUpdatePasswordMeDto} from "@/client/service/user.dto.ts"
-import useCustomToast from "@/hooks/useCustomToast"
-import {confirmPasswordRules, handleError, passwordRules} from "@/utils"
-import {PasswordInput} from "../ui/password-input"
+import type { ApiError } from "@/client";
+import type { UserUpdatePasswordMeDto } from "@/client/service/user.dto.ts";
+
+import { updatePasswordMeApi } from "@/client/service/user.api.ts";
+import useCustomToast from "@/hooks/useCustomToast";
+import { confirmPasswordRules, handleError, passwordRules } from "@/utils";
+
+import { PasswordInput } from "../ui/password-input";
 
 interface UpdatePasswordForm extends UserUpdatePasswordMeDto {
-  confirmPassword: string
+  confirmPassword: string;
 }
 
 const ChangePassword = () => {
-  const {showSuccessToast} = useCustomToast()
+  const { showSuccessToast } = useCustomToast();
   const {
     register,
     handleSubmit,
     reset,
     getValues,
-    formState: {errors, isValid, isSubmitting},
+    formState: { errors, isValid, isSubmitting },
   } = useForm<UpdatePasswordForm>({
     mode: "onBlur",
     criteriaMode: "all",
-  })
+  });
 
   const mutation = useMutation({
     mutationFn: updatePasswordMeApi,
     onSuccess: () => {
-      showSuccessToast("Password updated successfully.")
-      reset()
+      showSuccessToast("Password updated successfully.");
+      reset();
     },
     onError: (err: ApiError) => {
-      handleError(err)
+      handleError(err);
     },
-  })
+  });
 
   const onSubmit: SubmitHandler<UpdatePasswordForm> = async (data) => {
     mutation.mutate({
       currentPassword: data.currentPassword,
       newPassword: data.newPassword,
-    })
-  }
+    });
+  };
 
   return (
     <>
@@ -52,41 +54,35 @@ const ChangePassword = () => {
           Change Password
         </Heading>
         <Box as="form" onSubmit={handleSubmit(onSubmit)}>
-          <VStack gap={4} w={{base: "100%", md: "sm"}}>
+          <VStack gap={4} w={{ base: "100%", md: "sm" }}>
             <PasswordInput
               type="currentPassword"
-              startElement={<FiLock/>}
+              startElement={<FiLock />}
               {...register("currentPassword", passwordRules())}
               placeholder="Current Password"
               errors={errors}
             />
             <PasswordInput
               type="newPassword"
-              startElement={<FiLock/>}
+              startElement={<FiLock />}
               {...register("newPassword", passwordRules())}
               placeholder="New Password"
               errors={errors}
             />
             <PasswordInput
               type="confirmPassword"
-              startElement={<FiLock/>}
+              startElement={<FiLock />}
               {...register("confirmPassword", confirmPasswordRules(getValues))}
               placeholder="Confirm Password"
               errors={errors}
             />
           </VStack>
-          <Button
-            variant="solid"
-            mt={4}
-            type="submit"
-            loading={isSubmitting}
-            disabled={!isValid}
-          >
+          <Button variant="solid" mt={4} type="submit" loading={isSubmitting} disabled={!isValid}>
             Save
           </Button>
         </Box>
       </Container>
     </>
-  )
-}
-export default ChangePassword
+  );
+};
+export default ChangePassword;

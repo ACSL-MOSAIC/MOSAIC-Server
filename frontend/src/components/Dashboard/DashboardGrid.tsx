@@ -1,12 +1,4 @@
 import {
-  getTabConfigApi,
-  updateTabConfigApi,
-} from "@/client/service/dashboard.api.ts"
-import { WidgetFactory } from "@/components/Dashboard/WidgetFactory.tsx"
-import useAuth from "@/hooks/useAuth.ts"
-import { RobotConnector, type TabConfig, type WidgetConfig } from "@/mosaic"
-import { DASHBOARD_STORAGE_KEYS } from "@/utils"
-import {
   Box,
   Button,
   Container,
@@ -16,37 +8,40 @@ import {
   Spinner,
   Text,
   VStack,
-} from "@chakra-ui/react"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Navigate, useNavigate } from "@tanstack/react-router"
-import { type Layout, Responsive, WidthProvider } from "react-grid-layout"
-import "react-grid-layout/css/styles.css"
-import "react-resizable/css/styles.css"
-import RobotConnectionPanel from "@/components/Dashboard/RobotConnectionPanel.tsx"
-import { useMosaicWebRTCConnection } from "@/hooks/useMosaicWebRTCConnection.ts"
-import { useRobotInfo } from "@/hooks/useRobotInfo.ts"
-import { useEffect, useMemo, useRef, useState } from "react"
+} from "@chakra-ui/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Navigate, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { type Layout, Responsive, WidthProvider } from "react-grid-layout";
 
-const ResponsiveGridLayout = WidthProvider(Responsive)
+import { getTabConfigApi, updateTabConfigApi } from "@/client/service/dashboard.api.ts";
+import RobotConnectionPanel from "@/components/Dashboard/RobotConnectionPanel.tsx";
+import { WidgetFactory } from "@/components/Dashboard/WidgetFactory.tsx";
+import useAuth from "@/hooks/useAuth.ts";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
+import { useMosaicWebRTCConnection } from "@/hooks/useMosaicWebRTCConnection.ts";
+import { useRobotInfo } from "@/hooks/useRobotInfo.ts";
+import { RobotConnector, type TabConfig, type WidgetConfig } from "@/mosaic";
+import { DASHBOARD_STORAGE_KEYS } from "@/utils";
+
+const ResponsiveGridLayout = WidthProvider(Responsive);
 
 const extractRobotListFromTabConfig = (tabConfig: TabConfig): string[] => {
   const robotIds = tabConfig.widgets.flatMap((widgetConfig) =>
     widgetConfig.connectors.map((connector) => connector.robotId),
-  )
-  return [...new Set(robotIds)]
-}
+  );
+  return [...new Set(robotIds)];
+};
 
-const mergeLayoutIntoWidgets = (
-  widgets: WidgetConfig[],
-  layout: Layout[],
-): WidgetConfig[] => {
-  const layoutById = new Map(layout.map((item) => [item.i, item]))
-  let hasChanged = false
+const mergeLayoutIntoWidgets = (widgets: WidgetConfig[], layout: Layout[]): WidgetConfig[] => {
+  const layoutById = new Map(layout.map((item) => [item.i, item]));
+  let hasChanged = false;
 
   const nextWidgets = widgets.map((widget) => {
-    const nextLayout = layoutById.get(widget.id)
+    const nextLayout = layoutById.get(widget.id);
     if (!nextLayout) {
-      return widget
+      return widget;
     }
 
     if (
@@ -55,10 +50,10 @@ const mergeLayoutIntoWidgets = (
       widget.position.w === nextLayout.w &&
       widget.position.h === nextLayout.h
     ) {
-      return widget
+      return widget;
     }
 
-    hasChanged = true
+    hasChanged = true;
     return {
       ...widget,
       position: {
@@ -67,32 +62,32 @@ const mergeLayoutIntoWidgets = (
         w: nextLayout.w,
         h: nextLayout.h,
       },
-    }
-  })
+    };
+  });
 
-  return hasChanged ? nextWidgets : widgets
-}
+  return hasChanged ? nextWidgets : widgets;
+};
 
 interface DashboardGridProps {
-  tabId: string
+  tabId: string;
 }
 
 export default function DashboardGrid({ tabId }: DashboardGridProps) {
-  const { user } = useAuth()
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const { robotInfos, subscribeRobots, unsubscribeRobots } = useRobotInfo()
-  const { createConnection, disconnectConnection } = useMosaicWebRTCConnection()
-  const [robotLoadError, setRobotLoadError] = useState<string | null>(null)
-  const [editableWidgets, setEditableWidgets] = useState<WidgetConfig[]>([])
-  const editableWidgetsRef = useRef<WidgetConfig[]>([])
-  const isLayoutDirtyRef = useRef(false)
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { robotInfos, subscribeRobots, unsubscribeRobots } = useRobotInfo();
+  const { createConnection, disconnectConnection } = useMosaicWebRTCConnection();
+  const [robotLoadError, setRobotLoadError] = useState<string | null>(null);
+  const [editableWidgets, setEditableWidgets] = useState<WidgetConfig[]>([]);
+  const editableWidgetsRef = useRef<WidgetConfig[]>([]);
+  const isLayoutDirtyRef = useRef(false);
 
   const { data: tabConfig, isPending: isConfigLoading } = useQuery({
     queryKey: ["parsedDashboardTabConfig", tabId],
     queryFn: async () => {
-      const tabConfigDto = await getTabConfigApi(tabId)
-      const widgets = JSON.parse(tabConfigDto.widgets).widgets as WidgetConfig[]
+      const tabConfigDto = await getTabConfigApi(tabId);
+      const widgets = JSON.parse(tabConfigDto.widgets).widgets as WidgetConfig[];
       return {
         id: tabConfigDto.id,
         name: tabConfigDto.name,
@@ -102,25 +97,22 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
             type: widget.type,
             position: widget.position,
             connectors: widget.connectors.map((connector) => {
-              return new RobotConnector(
-                connector.robotId,
-                connector.connectorId,
-              )
+              return new RobotConnector(connector.robotId, connector.connectorId);
             }),
-          }
+          };
         }),
-      } as TabConfig
+      } as TabConfig;
     },
     enabled: !!user,
-  })
+  });
 
   const saveLayoutMutation = useMutation({
     mutationFn: async ({
       targetTabId,
       widgets,
     }: {
-      targetTabId: string
-      widgets: WidgetConfig[]
+      targetTabId: string;
+      widgets: WidgetConfig[];
     }) => {
       const tabConfigJson = JSON.stringify({
         widgets: widgets.map((widget) => ({
@@ -130,115 +122,108 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
             connectorId: connector.connectorId,
           })),
         })),
-      })
+      });
 
       await updateTabConfigApi(targetTabId, {
         tabConfig: tabConfigJson,
-      })
+      });
     },
     onSuccess: async (_data, variables) => {
       await queryClient.invalidateQueries({
         queryKey: ["parsedDashboardTabConfig", variables.targetTabId],
-      })
+      });
       await queryClient.invalidateQueries({
         queryKey: ["dashboardTabConfig", variables.targetTabId],
-      })
+      });
     },
     onError: (error) => {
-      console.error("Failed to save layout:", error)
-      isLayoutDirtyRef.current = true
+      console.error("Failed to save layout:", error);
+      isLayoutDirtyRef.current = true;
     },
-  })
+  });
 
   useEffect(() => {
     if (!tabConfig) {
-      setEditableWidgets([])
-      editableWidgetsRef.current = []
-      isLayoutDirtyRef.current = false
-      return
+      setEditableWidgets([]);
+      editableWidgetsRef.current = [];
+      isLayoutDirtyRef.current = false;
+      return;
     }
 
-    setEditableWidgets(tabConfig.widgets)
-    editableWidgetsRef.current = tabConfig.widgets
-    isLayoutDirtyRef.current = false
-  }, [tabConfig])
+    setEditableWidgets(tabConfig.widgets);
+    editableWidgetsRef.current = tabConfig.widgets;
+    isLayoutDirtyRef.current = false;
+  }, [tabConfig]);
 
   const robotList = useMemo(
     () => (tabConfig ? extractRobotListFromTabConfig(tabConfig) : []),
     [tabConfig],
-  )
+  );
   const hasAllRequiredRobots = useMemo(
-    () =>
-      robotList.every((robotId) => robotInfos.some((r) => r.id === robotId)),
+    () => robotList.every((robotId) => robotInfos.some((r) => r.id === robotId)),
     [robotList, robotInfos],
-  )
+  );
 
   useEffect(() => {
-    let isActive = true
-    setRobotLoadError(null)
+    let isActive = true;
+    setRobotLoadError(null);
 
     if (robotList.length === 0) {
-      return
+      return;
     }
 
     const loadRobots = async () => {
       try {
-        await subscribeRobots(robotList)
+        await subscribeRobots(robotList);
       } catch (error) {
-        console.error("Failed to subscribe dashboard robots:", error)
+        console.error("Failed to subscribe dashboard robots:", error);
         if (isActive) {
-          setRobotLoadError("Failed to load robots for this dashboard.")
+          setRobotLoadError("Failed to load robots for this dashboard.");
         }
       }
-    }
+    };
 
-    void loadRobots()
+    void loadRobots();
 
     return () => {
-      isActive = false
-      unsubscribeRobots()
-    }
-  }, [robotList, subscribeRobots, unsubscribeRobots])
+      isActive = false;
+      unsubscribeRobots();
+    };
+  }, [robotList, subscribeRobots, unsubscribeRobots]);
 
   const handleLayoutChange = (layout: Layout[]) => {
-    const nextWidgets = mergeLayoutIntoWidgets(
-      editableWidgetsRef.current,
-      layout,
-    )
+    const nextWidgets = mergeLayoutIntoWidgets(editableWidgetsRef.current, layout);
     if (nextWidgets === editableWidgetsRef.current) {
-      return
+      return;
     }
 
-    editableWidgetsRef.current = nextWidgets
-    setEditableWidgets(nextWidgets)
-    isLayoutDirtyRef.current = true
-  }
+    editableWidgetsRef.current = nextWidgets;
+    setEditableWidgets(nextWidgets);
+    isLayoutDirtyRef.current = true;
+  };
 
   const handleLayoutCommit = (layout: Layout[]) => {
     if (!tabConfig) {
-      return
+      return;
     }
 
-    const nextWidgets = mergeLayoutIntoWidgets(
-      editableWidgetsRef.current,
-      layout,
-    )
+    const nextWidgets = mergeLayoutIntoWidgets(editableWidgetsRef.current, layout);
     if (nextWidgets !== editableWidgetsRef.current) {
-      editableWidgetsRef.current = nextWidgets
-      setEditableWidgets(nextWidgets)
-      isLayoutDirtyRef.current = true
+      editableWidgetsRef.current = nextWidgets;
+      setEditableWidgets(nextWidgets);
+      isLayoutDirtyRef.current = true;
     }
 
     if (!isLayoutDirtyRef.current) {
-      return
+      return;
     }
-    isLayoutDirtyRef.current = false
+    isLayoutDirtyRef.current = false;
 
     saveLayoutMutation.mutate({
       targetTabId: tabConfig.id,
       widgets: nextWidgets,
-    })
-  }
+    });
+  };
 
   if (isConfigLoading) {
     return (
@@ -248,28 +233,21 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
           <Text>Loading dashboard tabs...</Text>
         </HStack>
       </Container>
-    )
+    );
   }
 
   if (!tabConfig) {
-    return <Navigate to="/dashboard" />
+    return <Navigate to="/dashboard" />;
   }
 
   if (robotLoadError) {
     return (
       <Container maxW="full" py={8}>
-        <Box
-          borderWidth="1px"
-          borderColor="red.200"
-          borderRadius="md"
-          bg="red.50"
-          px={4}
-          py={3}
-        >
+        <Box borderWidth="1px" borderColor="red.200" borderRadius="md" bg="red.50" px={4} py={3}>
           <Text color="red.700">{robotLoadError}</Text>
         </Box>
       </Container>
-    )
+    );
   }
 
   if (robotList.length > 0 && !hasAllRequiredRobots) {
@@ -294,41 +272,39 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
           </HStack>
         </VStack>
       </Container>
-    )
+    );
   }
 
   const connectToRobot = async (robotId: string) => {
-    console.log(`connectToRobot: ${robotId}`)
-    await createConnection([robotId])
-  }
+    console.log(`connectToRobot: ${robotId}`);
+    await createConnection([robotId]);
+  };
 
   const disconnectFromRobot = (robotId: string) => {
-    console.log(`disconnectFromRobot: ${robotId}`)
-    disconnectConnection(robotId)
-  }
+    console.log(`disconnectFromRobot: ${robotId}`);
+    disconnectConnection(robotId);
+  };
 
   const connectAllRobots = async () => {
-    console.log("connectAllRobots")
-    const readyRobotIds = robotInfos
-      .filter((r) => r.isReadyToConnect)
-      .map((r) => r.id)
-    await createConnection(readyRobotIds)
-  }
+    console.log("connectAllRobots");
+    const readyRobotIds = robotInfos.filter((r) => r.isReadyToConnect).map((r) => r.id);
+    await createConnection(readyRobotIds);
+  };
 
   const disconnectAllRobots = () => {
-    console.log("disconnectAllRobots")
+    console.log("disconnectAllRobots");
     for (const robotId of robotList) {
-      disconnectConnection(robotId)
+      disconnectConnection(robotId);
     }
-  }
+  };
 
   const handleOpenDashboardConfig = () => {
     if (typeof window !== "undefined") {
       // Keep lastTabId for config page preselection, and force /dashboard entry to open config once.
-      window.localStorage.setItem(DASHBOARD_STORAGE_KEYS.forceConfig, "1")
+      window.localStorage.setItem(DASHBOARD_STORAGE_KEYS.forceConfig, "1");
     }
-    navigate({ to: "/dashboard/config" })
-  }
+    navigate({ to: "/dashboard/config" });
+  };
 
   return (
     <Box p={4}>
@@ -389,5 +365,5 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
         ))}
       </ResponsiveGridLayout>
     </Box>
-  )
+  );
 }

@@ -1,3 +1,5 @@
+import { createContext } from "react";
+
 import type {
   WsAuthorizeDto,
   WsAuthorizeResDto,
@@ -7,14 +9,13 @@ import type {
   WsPingPongDto,
   WsStatusSubscribeDto,
   WsStatusUpdateDto,
-} from "@/contexts/ws.dto.ts"
+} from "@/contexts/ws.dto.ts";
 import type {
   WsClosePeerConnectionDto,
   WsExchangeIceCandidateDto,
   WsSendSdpAnswerDto,
   WsSendSdpOfferDto,
-} from "@/mosaic/webrtc/signaling.dto.ts"
-import { createContext } from "react"
+} from "@/mosaic/webrtc/signaling.dto.ts";
 
 export type WsMessages =
   | WsBaseMessage<"ping.ping", WsPingPongDto>
@@ -30,27 +31,23 @@ export type WsMessages =
   | WsBaseMessage<"status.update", WsStatusUpdateDto>
   | WsBaseMessage<"status.subscribe", WsStatusSubscribeDto>
   | WsBaseMessage<"status.unsubscribe", WsStatusSubscribeDto>
-  | WsBaseMessage<"force_logout", WsForceLogoutDto>
+  | WsBaseMessage<"force_logout", WsForceLogoutDto>;
 
-export type ExtractMessageByType<T extends WsMessages["type"]> = Extract<
-  WsMessages,
-  { type: T }
->
+export type ExtractMessageByType<T extends WsMessages["type"]> = Extract<WsMessages, { type: T }>;
 
-export type ExtractDataByType<T extends WsMessages["type"]> =
-  ExtractMessageByType<T>["data"]
+export type ExtractDataByType<T extends WsMessages["type"]> = ExtractMessageByType<T>["data"];
 
-export type SendWsMessageType = (message: WsMessages) => void
+export type SendWsMessageType = (message: WsMessages) => void;
 
 export type OnWsMessageType = <T extends WsMessages["type"]>(
   type: T,
   callback: (data: ExtractDataByType<T>) => void | Promise<void>,
-) => () => void
+) => () => void;
 
 export interface WebSocketContextType {
-  sendWsMessage: SendWsMessageType
-  onWsMessage: OnWsMessageType
-  disconnectWs: () => void
+  sendWsMessage: SendWsMessageType;
+  onWsMessage: OnWsMessageType;
+  disconnectWs: () => void;
 }
 
-export const WebSocketContext = createContext<WebSocketContextType | null>(null)
+export const WebSocketContext = createContext<WebSocketContextType | null>(null);

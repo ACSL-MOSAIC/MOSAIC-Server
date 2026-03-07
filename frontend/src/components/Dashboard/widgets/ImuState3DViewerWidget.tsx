@@ -1,39 +1,34 @@
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx"
-import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts"
-import { useMosaicStore } from "@/hooks/useMosaicStore.ts"
-import type JsonReceivableStore from "@/mosaic/store/impl/json-receivable-store.ts"
-import { Box, Grid, HStack, Text, VStack } from "@chakra-ui/react"
-import {
-  Edges,
-  GizmoHelper,
-  GizmoViewport,
-  OrbitControls,
-} from "@react-three/drei"
-import { Canvas } from "@react-three/fiber"
-import { useEffect, useState } from "react"
-import * as THREE from "three"
+import { Box, Grid, HStack, Text, VStack } from "@chakra-ui/react";
+import { Edges, GizmoHelper, GizmoViewport, OrbitControls } from "@react-three/drei";
+import { Canvas } from "@react-three/fiber";
+import { useEffect, useState } from "react";
+import * as THREE from "three";
+
+import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts";
+import type JsonReceivableStore from "@/mosaic/store/impl/json-receivable-store.ts";
+
+import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 interface ImuData {
-  angular_velocity: [number, number, number]
-  linear_acceleration: [number, number, number]
-  orientation: [number, number, number, number] // [w, x, y, z]
-  position?: [number, number, number]
+  angular_velocity: [number, number, number];
+  linear_acceleration: [number, number, number];
+  orientation: [number, number, number, number]; // [w, x, y, z]
+  position?: [number, number, number];
 }
 
-const AXIS_COLORS = ["#ef4444", "#22c55e", "#3b82f6"] as const // X=red Y=green Z=blue
+const AXIS_COLORS = ["#ef4444", "#22c55e", "#3b82f6"] as const; // X=red Y=green Z=blue
 
 // Isaac Sim is Z-up, Three.js is Y-up → correct by -90° around X axis
 const ZUP_TO_YUP = new THREE.Quaternion().setFromAxisAngle(
   new THREE.Vector3(1, 0, 0),
   -Math.PI / 2,
-)
+);
 
 // orientation: [w, x, y, z] → apply Z-up correction, then build THREE.Quaternion
-function RobotModel({
-  orientation,
-}: { orientation: [number, number, number, number] }) {
-  const [w, x, y, z] = orientation
-  const q = ZUP_TO_YUP.clone().multiply(new THREE.Quaternion(x, y, z, w))
+function RobotModel({ orientation }: { orientation: [number, number, number, number] }) {
+  const [w, x, y, z] = orientation;
+  const q = ZUP_TO_YUP.clone().multiply(new THREE.Quaternion(x, y, z, w));
   return (
     <group quaternion={q}>
       {/* Main chassis */}
@@ -43,7 +38,7 @@ function RobotModel({
         <Edges color="#60a5fa" />
       </mesh>
     </group>
-  )
+  );
 }
 
 function ValueBar({
@@ -53,14 +48,14 @@ function ValueBar({
   color,
   unit,
 }: {
-  label: string
-  value: number
-  max: number
-  color: string
-  unit: string
+  label: string;
+  value: number;
+  max: number;
+  color: string;
+  unit: string;
 }) {
-  const pct = `${Math.min(Math.abs(value) / max, 1) * 100}%`
-  const isPos = value >= 0
+  const pct = `${Math.min(Math.abs(value) / max, 1) * 100}%`;
+  const isPos = value >= 0;
 
   return (
     <HStack gap={2} w="100%">
@@ -68,26 +63,11 @@ function ValueBar({
         {label}
       </Text>
       {/* Centered bidirectional bar */}
-      <HStack
-        flex={1}
-        gap={0}
-        h="8px"
-        borderRadius="sm"
-        bg="bg.subtle"
-        overflow="hidden"
-      >
+      <HStack flex={1} gap={0} h="8px" borderRadius="sm" bg="bg.subtle" overflow="hidden">
         {/* Left half: negative values */}
         <Box flex={1} h="100%" position="relative" overflow="hidden">
           {!isPos && (
-            <Box
-              position="absolute"
-              right="0"
-              top="0"
-              h="100%"
-              w={pct}
-              bg={color}
-              opacity={0.75}
-            />
+            <Box position="absolute" right="0" top="0" h="100%" w={pct} bg={color} opacity={0.75} />
           )}
         </Box>
         {/* Center divider */}
@@ -95,15 +75,7 @@ function ValueBar({
         {/* Right half: positive values */}
         <Box flex={1} h="100%" position="relative" overflow="hidden">
           {isPos && (
-            <Box
-              position="absolute"
-              left="0"
-              top="0"
-              h="100%"
-              w={pct}
-              bg={color}
-              opacity={0.75}
-            />
+            <Box position="absolute" left="0" top="0" h="100%" w={pct} bg={color} opacity={0.75} />
           )}
         </Box>
       </HStack>
@@ -122,29 +94,27 @@ function ValueBar({
         </Text>
       </Text>
     </HStack>
-  )
+  );
 }
 
 export default function ImuState3DViewerWidget({ widgetConfig }: WidgetProps) {
-  const { getOrCreateStore, releaseStore } = useMosaicStore()
-  const [data, setData] = useState<ImuData | null>(null)
+  const { getOrCreateStore, releaseStore } = useMosaicStore();
+  const [data, setData] = useState<ImuData | null>(null);
 
   useEffect(() => {
-    const connector = widgetConfig.connectors[0]
-    if (!connector) return
+    const connector = widgetConfig.connectors[0];
+    if (!connector) return;
 
-    const store = getOrCreateStore(connector) as JsonReceivableStore
-    if (store === null) return
+    const store = getOrCreateStore(connector) as JsonReceivableStore;
+    if (store === null) return;
 
-    const unsubscribe = store.subscribe((incoming) =>
-      setData(incoming as ImuData),
-    )
+    const unsubscribe = store.subscribe((incoming) => setData(incoming as ImuData));
 
     return () => {
-      unsubscribe()
-      releaseStore(connector)
-    }
-  }, [widgetConfig])
+      unsubscribe();
+      releaseStore(connector);
+    };
+  }, [widgetConfig]);
 
   return (
     <WidgetFrame widgetConfig={widgetConfig}>
@@ -220,5 +190,5 @@ export default function ImuState3DViewerWidget({ widgetConfig }: WidgetProps) {
         </Grid>
       </VStack>
     </WidgetFrame>
-  )
+  );
 }

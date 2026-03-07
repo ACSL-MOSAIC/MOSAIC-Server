@@ -1,63 +1,63 @@
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx"
-import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts"
-import { useMosaicStore } from "@/hooks/useMosaicStore.ts"
-import type { SendableStore } from "@/mosaic/store/interface/sendable-store.ts"
-import type { SimpleDirection } from "@/mosaic/store/type/simple-direction.ts"
-import { Box, Button, Grid, Text } from "@chakra-ui/react"
-import { useEffect, useRef } from "react"
+import { Box, Button, Grid, Text } from "@chakra-ui/react";
+import { useEffect, useRef } from "react";
 
-type Direction = "up" | "down" | "left" | "right" | "stop"
+import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts";
+import type { SendableStore } from "@/mosaic/store/interface/sendable-store.ts";
+import type { SimpleDirection } from "@/mosaic/store/type/simple-direction.ts";
+
+import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
+
+type Direction = "up" | "down" | "left" | "right" | "stop";
 
 const DirectionIcon = ({ direction }: { direction: Direction }) => {
   const getIcon = () => {
     switch (direction) {
       case "up":
-        return "↑"
+        return "↑";
       case "down":
-        return "↓"
+        return "↓";
       case "left":
-        return "←"
+        return "←";
       case "right":
-        return "→"
+        return "→";
       default:
-        return "•"
+        return "•";
     }
-  }
+  };
 
   return (
     <Text fontSize="lg" fontWeight="bold">
       {getIcon()}
     </Text>
-  )
-}
+  );
+};
 
 export default function WASDSenderWidget({ widgetConfig }: WidgetProps) {
-  const { getOrCreateStore, releaseStore } = useMosaicStore()
-  const storeRef = useRef<SendableStore<SimpleDirection> | null>(null)
+  const { getOrCreateStore, releaseStore } = useMosaicStore();
+  const storeRef = useRef<SendableStore<SimpleDirection> | null>(null);
 
   useEffect(() => {
-    const connector = widgetConfig.connectors[0]
+    const connector = widgetConfig.connectors[0];
     if (!connector) {
-      return
+      return;
     }
 
-    storeRef.current = getOrCreateStore(
-      connector,
-    ) as SendableStore<SimpleDirection>
+    storeRef.current = getOrCreateStore(connector) as SendableStore<SimpleDirection>;
     if (storeRef.current === null) {
-      return
+      return;
     }
 
     return () => {
-      releaseStore(connector)
-      storeRef.current = null
-    }
-  }, [widgetConfig])
+      releaseStore(connector);
+      storeRef.current = null;
+    };
+  }, [widgetConfig]);
 
   const handleClick = (direction: Direction) => {
-    console.log("direction", direction)
-    storeRef.current?.send(direction)
-  }
+    console.log("direction", direction);
+    storeRef.current?.send(direction);
+  };
 
   const DirectionButton = ({ direction }: { direction: Direction }) => {
     return (
@@ -80,8 +80,8 @@ export default function WASDSenderWidget({ widgetConfig }: WidgetProps) {
       >
         <DirectionIcon direction={direction} />
       </Button>
-    )
-  }
+    );
+  };
 
   return (
     <WidgetFrame widgetConfig={widgetConfig}>
@@ -114,5 +114,5 @@ export default function WASDSenderWidget({ widgetConfig }: WidgetProps) {
         <Box />
       </Grid>
     </WidgetFrame>
-  )
+  );
 }

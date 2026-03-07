@@ -1,19 +1,21 @@
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx"
-import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts"
-import { useMosaicStore } from "@/hooks/useMosaicStore.ts"
-import type { RobotConnector } from "@/mosaic"
+import { Box, HStack, Text, VStack } from "@chakra-ui/react";
+import { useEffect, useRef, useState } from "react";
+
+import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts";
+import type { RobotConnector } from "@/mosaic";
 import type {
   ConnectionCheckReceiverStore,
   ConnectionCheckSenderStore,
-} from "@/mosaic/store/impl/connection-checking-store.ts"
-import { Box, HStack, Text, VStack } from "@chakra-ui/react"
-import { useEffect, useRef, useState } from "react"
+} from "@/mosaic/store/impl/connection-checking-store.ts";
 
-const MAX_MESSAGES = 200
+import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
+
+const MAX_MESSAGES = 200;
 
 interface ConnectionCheckData {
-  messageCreated: number
-  messageReceived: number
+  messageCreated: number;
+  messageReceived: number;
 }
 
 // function formatTimestamp(ts: number): string {
@@ -26,98 +28,94 @@ interface ConnectionCheckData {
 // }
 
 export default function ConnectionCheckWidget({ widgetConfig }: WidgetProps) {
-  const { getOrCreateStore, releaseStore } = useMosaicStore()
+  const { getOrCreateStore, releaseStore } = useMosaicStore();
   const [connectionCheckingMessages, setConnectionCheckingMessages] = useState<
     ConnectionCheckData[]
-  >([])
+  >([]);
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const firstConnector = widgetConfig.connectors[0]
-    const secondConnector = widgetConfig.connectors[1]
+    const firstConnector = widgetConfig.connectors[0];
+    const secondConnector = widgetConfig.connectors[1];
     if (!firstConnector || !secondConnector) {
-      return
+      return;
     }
 
-    let senderConnector: RobotConnector
-    let receiverConnector: RobotConnector
+    let senderConnector: RobotConnector;
+    let receiverConnector: RobotConnector;
     if (firstConnector.connectorId.endsWith("sender")) {
-      senderConnector = firstConnector
-      receiverConnector = secondConnector
+      senderConnector = firstConnector;
+      receiverConnector = secondConnector;
     } else {
-      senderConnector = secondConnector
-      receiverConnector = firstConnector
+      senderConnector = secondConnector;
+      receiverConnector = firstConnector;
     }
 
-    const senderStore = getOrCreateStore(
-      receiverConnector,
-    ) as ConnectionCheckSenderStore
-    const receiverStore = getOrCreateStore(
-      senderConnector,
-    ) as ConnectionCheckReceiverStore
+    const senderStore = getOrCreateStore(receiverConnector) as ConnectionCheckSenderStore;
+    const receiverStore = getOrCreateStore(senderConnector) as ConnectionCheckReceiverStore;
 
     if (senderStore === null || receiverStore === null) {
-      return
+      return;
     }
 
     const unsubscribe = receiverStore.subscribe((data) => {
-      const receivedAt = performance.timeOrigin + performance.now()
+      const receivedAt = performance.timeOrigin + performance.now();
       const d: ConnectionCheckData = {
         messageCreated: data.messageCreated,
         messageReceived: receivedAt,
-      }
+      };
       setConnectionCheckingMessages((prev) => {
-        const next = [d, ...prev]
-        return next.length > MAX_MESSAGES ? next.slice(0, MAX_MESSAGES) : next
-      })
-    })
+        const next = [d, ...prev];
+        return next.length > MAX_MESSAGES ? next.slice(0, MAX_MESSAGES) : next;
+      });
+    });
     const delOnAfterConnected = senderStore.onAfterConnected(() => {
       if (intervalRef.current !== null) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
       intervalRef.current = setInterval(() => {
         senderStore.send({
           messageCreated: performance.timeOrigin + performance.now(),
-        })
-      }, 500)
-    })
+        });
+      }, 500);
+    });
     const delOnAfterDisconnected = senderStore.onAfterDisconnected(() => {
       if (intervalRef.current !== null) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
-    })
+    });
     return () => {
       if (intervalRef.current !== null) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
-      unsubscribe()
-      delOnAfterConnected()
-      delOnAfterDisconnected()
-      releaseStore(receiverConnector)
-      releaseStore(senderConnector)
-    }
-  }, [widgetConfig])
+      unsubscribe();
+      delOnAfterConnected();
+      delOnAfterDisconnected();
+      releaseStore(receiverConnector);
+      releaseStore(senderConnector);
+    };
+  }, [widgetConfig]);
 
   return (
     <WidgetFrame widgetConfig={widgetConfig}>
       <Box overflowY="auto" maxH="100%" h="100%">
         <VStack align="stretch" gap={1} p={2}>
           {connectionCheckingMessages.map((msg, i) => {
-            const latency = msg.messageReceived - msg.messageCreated
+            const latency = msg.messageReceived - msg.messageCreated;
             return (
               <HStack key={i} justify="space-between" gap={4}>
                 <Text>latency: {(latency * 0.5).toFixed(3)} ms</Text>
                 {/*<Text>created: {formatTimestamp(msg.messageCreated)}</Text>*/}
                 {/*<Text>received: {formatTimestamp(msg.messageReceived)}</Text>*/}
               </HStack>
-            )
+            );
           })}
         </VStack>
       </Box>
     </WidgetFrame>
-  )
+  );
 }

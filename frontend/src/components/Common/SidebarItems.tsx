@@ -1,40 +1,42 @@
-import {Box, Flex, Icon, IconButton, Text} from "@chakra-ui/react"
-import {Link as RouterLink} from "@tanstack/react-router"
-import {FaBars, FaRobot} from "react-icons/fa"
-import {FaLink} from "react-icons/fa"
-import {FiMap, FiSettings, FiUsers} from "react-icons/fi"
-import type {IconType} from "react-icons/lib"
+import type { IconType } from "react-icons/lib";
 
-import useAuth from "@/hooks/useAuth.ts"
-import {useState} from "react"
+import { Box, Flex, Icon, IconButton, Text } from "@chakra-ui/react";
+import { Link as RouterLink } from "@tanstack/react-router";
+import { useState } from "react";
+import { FaBars, FaRobot } from "react-icons/fa";
+import { FaLink } from "react-icons/fa";
+import { FiMap, FiSettings, FiUsers } from "react-icons/fi";
+
+import useAuth from "@/hooks/useAuth.ts";
 
 const items = [
-  {icon: FaRobot, title: "Robots", path: "/robots"},
-  {icon: FiMap, title: "Occupancy Maps", path: "/occupancy-maps"},
-  {icon: FaLink, title: "Dashboard", path: "/dashboard"},
-  {icon: FiSettings, title: "User Settings", path: "/settings"},
-]
+  { icon: FaRobot, title: "Robots", path: "/robots" },
+  { icon: FiMap, title: "Occupancy Maps", path: "/occupancy-maps" },
+  { icon: FaLink, title: "Dashboard", path: "/dashboard" },
+  { icon: FiSettings, title: "User Settings", path: "/settings" },
+];
 
 interface SidebarItemsProps {
-  onClose?: () => void
+  onClose?: () => void;
 }
 
 interface Item {
-  icon: IconType
-  title: string
-  path: string
+  icon: IconType;
+  title: string;
+  path: string;
 }
 
-const SidebarItems = ({onClose}: SidebarItemsProps) => {
-  const {user} = useAuth()
-  const [fold, setFold] = useState(true)
+const SidebarItems = ({ onClose }: SidebarItemsProps) => {
+  const { user } = useAuth();
+  const [fold, setFold] = useState(true);
 
-  const isPersonalUser = user?.email === user?.organizationName
-  const finalItems: Item[] = user?.isOrganizationAdmin && !isPersonalUser
-    ? [...items, {icon: FiUsers, title: "Admin", path: "/admin"}]
-    : items
+  const isPersonalUser = user?.email === user?.organizationName;
+  const finalItems: Item[] =
+    user?.isOrganizationAdmin && !isPersonalUser
+      ? [...items, { icon: FiUsers, title: "Admin", path: "/admin" }]
+      : items;
 
-  const listItems = finalItems.map(({icon, title, path}) => (
+  const listItems = finalItems.map(({ icon, title, path }) => (
     <RouterLink key={title} to={path} onClick={onClose}>
       <Flex
         gap={4}
@@ -48,17 +50,11 @@ const SidebarItems = ({onClose}: SidebarItemsProps) => {
         justifyContent="flex-start"
         fontSize="sm"
       >
-        <Icon
-          as={icon}
-          boxSize="16px"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        />
+        <Icon as={icon} boxSize="16px" display="flex" alignItems="center" justifyContent="center" />
         {!fold && <Text>{title}</Text>}
       </Flex>
     </RouterLink>
-  ))
+  ));
 
   return (
     <>
@@ -72,7 +68,7 @@ const SidebarItems = ({onClose}: SidebarItemsProps) => {
             minH="35px"
             color="inherit"
           >
-            <Icon as={FaBars} alignSelf="center"/>
+            <Icon as={FaBars} alignSelf="center" />
           </IconButton>
         ) : (
           <>
@@ -89,14 +85,14 @@ const SidebarItems = ({onClose}: SidebarItemsProps) => {
               minH="35px"
               color="inherit"
             >
-              <Icon as={FaBars} alignSelf="center"/>
+              <Icon as={FaBars} alignSelf="center" />
             </IconButton>
           </>
         )}
       </Flex>
       <Box minW={fold ? "0" : "10vw"}>{listItems}</Box>
     </>
-  )
-}
+  );
+};
 
-export default SidebarItems
+export default SidebarItems;

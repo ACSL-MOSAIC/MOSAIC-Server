@@ -1,6 +1,3 @@
-import {useMutation, useQueryClient} from "@tanstack/react-query"
-import {Controller, type SubmitHandler, useForm} from "react-hook-form"
-
 import {
   Button,
   DialogActionTrigger,
@@ -10,14 +7,21 @@ import {
   Input,
   Text,
   VStack,
-} from "@chakra-ui/react"
-import {useEffect, useState} from "react"
-import {FaExchangeAlt} from "react-icons/fa"
+} from "@chakra-ui/react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { Controller, type SubmitHandler, useForm } from "react-hook-form";
+import { FaExchangeAlt } from "react-icons/fa";
 
-import type {ApiError} from "@/client/core/ApiError"
-import useCustomToast from "@/hooks/useCustomToast"
-import {handleError} from "@/utils"
-import {Checkbox} from "../ui/checkbox"
+import type { ApiError } from "@/client/core/ApiError";
+import type { OrganizationUpdateUserDto } from "@/client/service/organization-user.dto.ts";
+import type { UserDto } from "@/client/service/user.dto.ts";
+
+import { updateOrganizationUserApi } from "@/client/service/organization-user.api.ts";
+import useCustomToast from "@/hooks/useCustomToast";
+import { handleError } from "@/utils";
+
+import { Checkbox } from "../ui/checkbox";
 import {
   DialogBody,
   DialogCloseTrigger,
@@ -25,75 +29,72 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog"
-import {Field} from "../ui/field"
-import type {UserDto} from "@/client/service/user.dto.ts"
-import type {OrganizationUpdateUserDto} from "@/client/service/organization-user.dto.ts"
-import {updateOrganizationUserApi} from "@/client/service/organization-user.api.ts"
+} from "../ui/dialog";
+import { Field } from "../ui/field";
 
 interface EditUserProps {
-  user: UserDto
+  user: UserDto;
 }
 
 interface UserUpdateForm extends OrganizationUpdateUserDto {
-  confirmPassword?: string
+  confirmPassword?: string;
 }
 
-const EditUser = ({user}: EditUserProps) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const queryClient = useQueryClient()
-  const {showSuccessToast} = useCustomToast()
+const EditUser = ({ user }: EditUserProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { showSuccessToast } = useCustomToast();
   const {
     control,
     register,
     handleSubmit,
     reset,
     getValues,
-    formState: {errors, isSubmitting},
+    formState: { errors, isSubmitting },
   } = useForm<UserUpdateForm>({
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: user,
-  })
+  });
 
   const mutation = useMutation({
     mutationFn: (data: UserUpdateForm) => updateOrganizationUserApi(data),
     onSuccess: () => {
-      showSuccessToast("User updated successfully.")
-      setIsOpen(false)
-      reset()
+      showSuccessToast("User updated successfully.");
+      setIsOpen(false);
+      reset();
     },
     onError: (err: ApiError) => {
-      handleError(err)
+      handleError(err);
     },
     onSettled: async () => {
-      await queryClient.invalidateQueries({queryKey: ["users"]})
+      await queryClient.invalidateQueries({ queryKey: ["users"] });
     },
-  })
+  });
 
   useEffect(() => {
     if (isOpen) {
-      reset(user)
+      reset(user);
     }
-  }, [isOpen, user, reset])
+  }, [isOpen, user, reset]);
 
   const onSubmit: SubmitHandler<UserUpdateForm> = async (data) => {
     if (data.password === "") {
-      data.password = undefined
+      data.password = undefined;
     }
-    mutation.mutate(data)
-  }
+    mutation.mutate(data);
+  };
 
   return (
     <DialogRoot
-      size={{base: "xs", md: "md"}}
+      size={{ base: "xs", md: "md" }}
       placement="center"
       open={isOpen}
-      onOpenChange={({open}) => setIsOpen(open)}
+      onOpenChange={({ open }) => setIsOpen(open)}
     >
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm">
-          <FaExchangeAlt fontSize="16px"/>
+          <FaExchangeAlt fontSize="16px" />
           Edit User
         </Button>
       </DialogTrigger>
@@ -110,12 +111,7 @@ const EditUser = ({user}: EditUserProps) => {
                 errorText={errors.fullName?.message}
                 label="Full Name"
               >
-                <Input
-                  id="name"
-                  {...register("fullName")}
-                  placeholder="Full name"
-                  type="text"
-                />
+                <Input id="name" {...register("fullName")} placeholder="Full name" type="text" />
               </Field>
 
               <Field
@@ -145,8 +141,7 @@ const EditUser = ({user}: EditUserProps) => {
                   id="confirmPassword"
                   {...register("confirmPassword", {
                     validate: (value) =>
-                      value === getValues().password ||
-                      "The passwords do not match",
+                      value === getValues().password || "The passwords do not match",
                   })}
                   placeholder="Password"
                   type="password"
@@ -158,11 +153,11 @@ const EditUser = ({user}: EditUserProps) => {
               <Controller
                 control={control}
                 name="isOrganizationAdmin"
-                render={({field}) => (
+                render={({ field }) => (
                   <Field disabled={field.disabled} colorPalette="teal">
                     <Checkbox
                       checked={field.value}
-                      onCheckedChange={({checked}) => field.onChange(checked)}
+                      onCheckedChange={({ checked }) => field.onChange(checked)}
                     >
                       Is Organization Admin?
                     </Checkbox>
@@ -172,11 +167,11 @@ const EditUser = ({user}: EditUserProps) => {
               <Controller
                 control={control}
                 name="isActive"
-                render={({field}) => (
+                render={({ field }) => (
                   <Field disabled={field.disabled} colorPalette="teal">
                     <Checkbox
                       checked={field.value}
-                      onCheckedChange={({checked}) => field.onChange(checked)}
+                      onCheckedChange={({ checked }) => field.onChange(checked)}
                     >
                       Is active?
                     </Checkbox>
@@ -188,11 +183,7 @@ const EditUser = ({user}: EditUserProps) => {
 
           <DialogFooter gap={2}>
             <DialogActionTrigger asChild>
-              <Button
-                variant="subtle"
-                colorPalette="gray"
-                disabled={isSubmitting}
-              >
+              <Button variant="subtle" colorPalette="gray" disabled={isSubmitting}>
                 Cancel
               </Button>
             </DialogActionTrigger>
@@ -200,11 +191,11 @@ const EditUser = ({user}: EditUserProps) => {
               Save
             </Button>
           </DialogFooter>
-          <DialogCloseTrigger/>
+          <DialogCloseTrigger />
         </form>
       </DialogContent>
     </DialogRoot>
-  )
-}
+  );
+};
 
-export default EditUser
+export default EditUser;

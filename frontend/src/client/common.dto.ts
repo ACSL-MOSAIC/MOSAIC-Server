@@ -1,13 +1,13 @@
 export type MessageDto = {
-  message: string
-}
+  message: string;
+};
 
 export type PageDto<T> = {
-  data: Array<T>
-  count: number
-}
+  data: Array<T>;
+  count: number;
+};
 
 export type GlobalDto<T> = {
-  resultCode: number
-  resultData: T
-}
+  resultCode: number;
+  resultData: T;
+};
