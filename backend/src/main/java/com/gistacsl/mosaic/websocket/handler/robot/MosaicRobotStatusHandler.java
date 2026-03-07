@@ -16,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
+import java.util.UUID;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -34,17 +36,21 @@ public class MosaicRobotStatusHandler {
         }
 
         RobotUpdateStatusWsDto req = this.objectMapper.convertValue(wsMessage.getData(), RobotUpdateStatusWsDto.class);
-        return this.updateRobotStatus(req.status(), wsSession)
-                .then(this.notifyToSubscribers(req.status(), wsSession));
+        return this.updateRobotStatus(req.status(), wsSession);
     }
 
-    private Mono<Void> updateRobotStatus(RobotStatus robotStatus, RobotWsSession wsSession) {
-        return this.robotService.updateRobotStatus(robotStatus, wsSession.getRobotPk(), wsSession.getOrganizationFk());
+    public Mono<Void> updateRobotStatus(RobotStatus robotStatus, RobotWsSession wsSession) {
+        return this.updateRobotStatus(robotStatus, wsSession.getRobotPk(), wsSession.getOrganizationFk());
     }
 
-    private Mono<Void> notifyToSubscribers(RobotStatus robotStatus, RobotWsSession wsSession) {
-        WsMessage<UserUpdateRobotStatusWsDto> wsMessage = new WsMessage<>(TYPE_UPDATE, new UserUpdateRobotStatusWsDto(wsSession.getRobotPk(), robotStatus));
-        this.wsSessionManager.getUserSessionsSubscribedToRobot(wsSession.getRobotPk(), wsSession.getOrganizationFk())
+    public Mono<Void> updateRobotStatus(RobotStatus robotStatus, UUID robotPk, UUID organizationFk) {
+        return this.robotService.updateRobotStatus(robotStatus, robotPk, organizationFk)
+                .then(this.notifyToSubscribers(robotStatus, robotPk, organizationFk));
+    }
+
+    private Mono<Void> notifyToSubscribers(RobotStatus robotStatus, UUID robotPk, UUID organizationFk) {
+        WsMessage<UserUpdateRobotStatusWsDto> wsMessage = new WsMessage<>(TYPE_UPDATE, new UserUpdateRobotStatusWsDto(robotPk, robotStatus));
+        this.wsSessionManager.getUserSessionsSubscribedToRobot(robotPk, organizationFk)
                 .forEach(userWsSession -> {
                     try {
                         this.wsMessageSender.sendWsMessageToUser(wsMessage, userWsSession);
