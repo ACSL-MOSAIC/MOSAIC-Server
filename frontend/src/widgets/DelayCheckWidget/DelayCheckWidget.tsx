@@ -1,12 +1,10 @@
 import { Box, Button, HStack, Switch } from "@chakra-ui/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts";
 import type { RobotConnector } from "@/mosaic";
-import type {
-  ConnectionCheckReceiverStore,
-  ConnectionCheckSenderStore,
-} from "@/mosaic/store/impl/connection-checking-store.ts";
+import type { ConnectionCheckReceiverStore } from "@/stores/ConnectionCheckReceiverStore/ConnectionCheckReceiverStore.ts";
+import type { ConnectionCheckSenderStore } from "@/stores/ConnectionCheckSenderStore/ConnectionCheckSenderStore.ts";
+import type { WidgetProps } from "@/widgets/index.ts";
 
 import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";

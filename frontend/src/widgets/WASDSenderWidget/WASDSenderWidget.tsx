@@ -1,9 +1,9 @@
 import { Box, Button, Grid, Text } from "@chakra-ui/react";
 import { useEffect, useRef } from "react";
 
-import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts";
 import type { SendableStore } from "@/mosaic/store/interface/sendable-store.ts";
-import type { SimpleDirection } from "@/mosaic/store/type/simple-direction.ts";
+import type { SimpleDirection } from "@/stores/@types/simple-direction.ts";
+import type { WidgetProps } from "@/widgets/index.ts";
 
 import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";

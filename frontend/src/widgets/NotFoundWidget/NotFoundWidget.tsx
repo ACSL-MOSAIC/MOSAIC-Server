@@ -1,7 +1,7 @@
 import { Box, Code, Flex, HStack, Icon, Text, VStack } from "@chakra-ui/react";
 import { LuPuzzle, LuWrench } from "react-icons/lu";
 
-import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts";
+import type { WidgetProps } from "@/widgets/index.ts";
 
 import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
 

@@ -1,8 +1,8 @@
 import { Box, Flex, IconButton } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
 
-import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts";
-import type { MediaStreamStore } from "@/mosaic/store/interface/media-stream-store.ts";
+import type { MediaStreamStore } from "@/stores/MediaStreamStore/MediaStreamStore.ts";
+import type { WidgetProps } from "@/widgets/index.ts";
 
 import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";

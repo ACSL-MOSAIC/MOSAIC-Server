@@ -1,11 +1,8 @@
-import type { SimpleDirection } from "@/mosaic/store/type/simple-direction.ts";
+import type { SimpleDirection } from "@/stores/@types/simple-direction.ts";
 
 import { SendableStore } from "@/mosaic/store/interface/sendable-store.ts";
 
 export class H1DirectionSenderStore extends SendableStore<SimpleDirection> {
-  static readonly connectorType = "h1_direction_sender";
-  connectorType = H1DirectionSenderStore.connectorType;
-
   public send(data: SimpleDirection): void {
     const directionData = {
       lin_vel_x: 0,
