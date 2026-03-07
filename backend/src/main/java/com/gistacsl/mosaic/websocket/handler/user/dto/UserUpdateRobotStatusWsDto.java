@@ -1,11 +1,7 @@
 package com.gistacsl.mosaic.websocket.handler.user.dto;
 
-import com.gistacsl.mosaic.robot.enumerate.RobotStatus;
-
 import java.util.UUID;
 
-public record UserUpdateRobotStatusWsDto(
-        UUID robotId,
-        RobotStatus status
-) {
-}
+import com.gistacsl.mosaic.robot.enumerate.RobotStatus;
+
+public record UserUpdateRobotStatusWsDto(UUID robotId, RobotStatus status) {}

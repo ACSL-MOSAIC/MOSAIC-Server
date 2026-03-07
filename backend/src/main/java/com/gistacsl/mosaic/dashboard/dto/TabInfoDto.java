@@ -4,8 +4,5 @@ import java.util.UUID;
 
 public class TabInfoDto {
 
-    public record Res(
-            UUID id,
-            String name
-    ) {}
+  public record Res(UUID id, String name) {}
 }

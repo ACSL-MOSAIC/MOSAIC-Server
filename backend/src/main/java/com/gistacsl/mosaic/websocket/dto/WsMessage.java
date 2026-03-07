@@ -8,7 +8,6 @@ import lombok.Data;
 @Builder
 @AllArgsConstructor
 public class WsMessage<T> {
-    private String type;
-    @Builder.Default
-    private T data = null;
+  private String type;
+  @Builder.Default private T data = null;
 }

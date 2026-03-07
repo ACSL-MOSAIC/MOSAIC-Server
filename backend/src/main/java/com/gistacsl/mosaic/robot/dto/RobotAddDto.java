@@ -5,11 +5,10 @@ import com.gistacsl.mosaic.robot.enumerate.RobotStatus;
 
 public class RobotAddDto {
 
-    public record Req(
-            String name,
-            String description,
-            RobotStatus status,
-            RobotAuthType authType,
-            String connectorConfig
-    ) {}
+  public record Req(
+      String name,
+      String description,
+      RobotStatus status,
+      RobotAuthType authType,
+      String connectorConfig) {}
 }

@@ -5,13 +5,11 @@ import java.util.UUID;
 
 public class OccupancyMapDto {
 
-    public record Res(
-            UUID id,
-            String name,
-            String pgmFilePath,
-            String yamlFilePath,
-            OffsetDateTime createdAt,
-            OffsetDateTime updatedAt
-    ) {
-    }
+  public record Res(
+      UUID id,
+      String name,
+      String pgmFilePath,
+      String yamlFilePath,
+      OffsetDateTime createdAt,
+      OffsetDateTime updatedAt) {}
 }

@@ -2,8 +2,5 @@ package com.gistacsl.mosaic.robot.dto;
 
 public class RobotConfigDto {
 
-    public record Res(
-            String connectorConfig
-    ) {
-    }
+  public record Res(String connectorConfig) {}
 }

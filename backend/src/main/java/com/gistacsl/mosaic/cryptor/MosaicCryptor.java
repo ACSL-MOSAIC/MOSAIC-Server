@@ -1,23 +1,25 @@
 package com.gistacsl.mosaic.cryptor;
 
-import javax.crypto.Cipher;
 import java.security.GeneralSecurityException;
 import java.security.Key;
 
+import javax.crypto.Cipher;
+
 public class MosaicCryptor {
 
-    public static byte[] encrypt(String transformation, Key key, byte[] data) throws GeneralSecurityException {
-        Cipher cipher = Cipher.getInstance(transformation);
-        cipher.init(Cipher.ENCRYPT_MODE, key);
+  public static byte[] encrypt(String transformation, Key key, byte[] data)
+      throws GeneralSecurityException {
+    Cipher cipher = Cipher.getInstance(transformation);
+    cipher.init(Cipher.ENCRYPT_MODE, key);
 
-        return cipher.doFinal(data);
-    }
+    return cipher.doFinal(data);
+  }
 
-    public static String decrypt(String transformation, Key key, byte[] data) throws GeneralSecurityException {
-        Cipher cipher = Cipher.getInstance(transformation);
-        cipher.init(Cipher.DECRYPT_MODE, key);
+  public static String decrypt(String transformation, Key key, byte[] data)
+      throws GeneralSecurityException {
+    Cipher cipher = Cipher.getInstance(transformation);
+    cipher.init(Cipher.DECRYPT_MODE, key);
 
-        return new String(cipher.doFinal(data));
-    }
-
+    return new String(cipher.doFinal(data));
+  }
 }

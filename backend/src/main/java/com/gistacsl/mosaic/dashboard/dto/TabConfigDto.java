@@ -4,10 +4,5 @@ import java.util.UUID;
 
 public class TabConfigDto {
 
-    public record Res(
-            UUID id,
-            String name,
-            String widgets
-    ) {
-    }
+  public record Res(UUID id, String name, String widgets) {}
 }

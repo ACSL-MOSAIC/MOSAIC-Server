@@ -2,5 +2,4 @@ package com.gistacsl.mosaic.websocket.handler.dto;
 
 import java.util.UUID;
 
-public record PongWsDto(UUID pingId) {
-}
+public record PongWsDto(UUID pingId) {}
