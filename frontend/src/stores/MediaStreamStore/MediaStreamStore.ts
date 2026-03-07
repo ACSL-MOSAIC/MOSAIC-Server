@@ -7,7 +7,6 @@ export interface StreamStats {
 }
 
 export class MediaStreamStore extends MosaicStore {
-  protected connectorType = "media";
   // @ts-ignore
   private pc: RTCPeerConnection | null = null;
   // @ts-ignore

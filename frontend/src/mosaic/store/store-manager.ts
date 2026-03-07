@@ -58,6 +58,7 @@ export class StoreManager {
 
     // If not found, create new store and resolve connector type
     const connectorType = this.resolveConnectorType(robotConnector, robotConfig);
+    if (connectorType === undefined) return null;
     const store = this.storeFactory.createStore(connectorType, robotConnector);
     if (store === null) {
       console.error(`Failed to create store for connector: ${connectorType}`);
@@ -81,12 +82,16 @@ export class StoreManager {
     return false;
   }
 
-  private resolveConnectorType(robotConnector: RobotConnector, robotConfig: RobotConfig): string {
+  private resolveConnectorType(
+    robotConnector: RobotConnector,
+    robotConfig: RobotConfig,
+  ): string | undefined {
     const connector = robotConfig.connectors.find(
       (c) => c.connectorId === robotConnector.connectorId,
     );
     if (connector === undefined) {
-      throw new Error(`Connector not found: ${robotConnector.connectorId}`);
+      console.error(`Connector not found: ${robotConnector.connectorId}`);
+      return undefined;
     }
     return connector.connectorType;
   }
