@@ -1,5 +1,6 @@
-import { Table } from "@chakra-ui/react"
-import { SkeletonText } from "../ui/skeleton"
+import { Table } from "@chakra-ui/react";
+
+import { SkeletonText } from "../ui/skeleton";
 
 const PendingUsers = () => (
   <Table.Root size={{ base: "sm", md: "md" }}>
@@ -34,6 +35,6 @@ const PendingUsers = () => (
       ))}
     </Table.Body>
   </Table.Root>
-)
+);
 
-export default PendingUsers
+export default PendingUsers;

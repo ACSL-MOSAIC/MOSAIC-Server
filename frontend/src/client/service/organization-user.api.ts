@@ -1,11 +1,13 @@
-import type {CancelablePromise, MessageDto, PageDto} from "@/client"
-import {request as __request} from "@/client/core/request.ts"
-import type {UserDto} from "./user.dto.ts"
+import type { CancelablePromise, MessageDto, PageDto } from "@/client";
+
+import { request as __request } from "@/client/core/request.ts";
+
 import type {
   OrganizationCreateUserDto,
   OrganizationDeleteUserDto,
   OrganizationUpdateUserDto,
-} from "./organization-user.dto.ts"
+} from "./organization-user.dto.ts";
+import type { UserDto } from "./user.dto.ts";
 
 export const getOrganizationUserListApi = (
   skip?: number,
@@ -18,8 +20,8 @@ export const getOrganizationUserListApi = (
       skip: skip,
       limit: limit,
     },
-  })
-}
+  });
+};
 
 export const createOrganizationUserApi = (
   requestBody: OrganizationCreateUserDto,
@@ -29,8 +31,8 @@ export const createOrganizationUserApi = (
     url: "/api/v1/organization/users",
     body: requestBody,
     mediaType: "application/json",
-  })
-}
+  });
+};
 
 export const updateOrganizationUserApi = (
   requestBody: OrganizationUpdateUserDto,
@@ -40,8 +42,8 @@ export const updateOrganizationUserApi = (
     url: "/api/v1/organization/users",
     body: requestBody,
     mediaType: "application/json",
-  })
-}
+  });
+};
 
 export const deleteOrganizationUserApi = (
   requestBody: OrganizationDeleteUserDto,
@@ -51,5 +53,5 @@ export const deleteOrganizationUserApi = (
     url: "/api/v1/organization/users",
     body: requestBody,
     mediaType: "application/json",
-  })
-}
+  });
+};

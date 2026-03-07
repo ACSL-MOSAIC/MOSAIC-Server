@@ -1,27 +1,18 @@
-import {
-  Button,
-  Container,
-  Heading,
-  Image,
-  Input,
-  Text,
-} from "@chakra-ui/react"
-import {
-  Link as RouterLink,
-  createFileRoute,
-  redirect,
-} from "@tanstack/react-router"
-import type React from "react"
-import { useState } from "react"
-import { FiLock, FiMail } from "react-icons/fi"
+import type React from "react";
 
-import type { AccountLoginReqDto } from "@/client/service/account.dto.ts"
-import { Field } from "@/components/ui/field"
-import { InputGroup } from "@/components/ui/input-group"
-import { PasswordInput } from "@/components/ui/password-input"
-import useAuth, { isLoggedIn } from "@/hooks/useAuth"
-import { emailPattern } from "@/utils"
-import Logo from "/assets/images/mosaic.svg"
+import Logo from "/assets/images/mosaic.svg";
+import { Button, Container, Heading, Image, Input, Text } from "@chakra-ui/react";
+import { Link as RouterLink, createFileRoute, redirect } from "@tanstack/react-router";
+import { useState } from "react";
+import { FiLock, FiMail } from "react-icons/fi";
+
+import type { AccountLoginReqDto } from "@/client/service/account.dto.ts";
+
+import { Field } from "@/components/ui/field";
+import { InputGroup } from "@/components/ui/input-group";
+import { PasswordInput } from "@/components/ui/password-input";
+import useAuth, { isLoggedIn } from "@/hooks/useAuth";
+import { emailPattern } from "@/utils";
 
 export const Route = createFileRoute("/login/")({
   component: Login,
@@ -29,76 +20,76 @@ export const Route = createFileRoute("/login/")({
     if (isLoggedIn()) {
       throw redirect({
         to: "/",
-      })
+      });
     }
   },
-})
+});
 
 function Login() {
-  const { loginMutation, disconnectMutation, error, resetError } = useAuth()
+  const { loginMutation, disconnectMutation, error, resetError } = useAuth();
   const [formData, setFormData] = useState<AccountLoginReqDto>({
     username: "",
     password: "",
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{
-    username?: string
-    password?: string
-  }>({})
+    username?: string;
+    password?: string;
+  }>({});
 
   const validateForm = () => {
-    const newErrors: { username?: string; password?: string } = {}
+    const newErrors: { username?: string; password?: string } = {};
 
     if (!formData.username) {
-      newErrors.username = "Username is required"
+      newErrors.username = "Username is required";
     } else if (!emailPattern.value.test(formData.username)) {
-      newErrors.username = emailPattern.message
+      newErrors.username = emailPattern.message;
     }
 
     if (!formData.password) {
-      newErrors.password = "Password is required"
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters"
+      newErrors.password = "Password must be at least 8 characters";
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    if (!validateForm() || isSubmitting) return
+    if (!validateForm() || isSubmitting) return;
 
-    setIsSubmitting(true)
-    resetError()
+    setIsSubmitting(true);
+    resetError();
 
     try {
-      const response = await loginMutation.mutateAsync(formData)
+      const response = await loginMutation.mutateAsync(formData);
       if (response.existingConnection) {
         if (
           window.confirm(
             "이미 다른 기기에서 로그인되어 있습니다. 기존 연결을 해제하고 로그인하시겠습니까?",
           )
         ) {
-          await disconnectMutation.mutateAsync()
-          await loginMutation.mutateAsync(formData)
+          await disconnectMutation.mutateAsync();
+          await loginMutation.mutateAsync(formData);
         }
       }
     } catch (error) {
-      console.error("Login error:", error)
+      console.error("Login error:", error);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-    }))
-  }
+    }));
+  };
 
   return (
     <Container
@@ -111,14 +102,7 @@ function Login() {
       gap={4}
       centerContent
     >
-      <Image
-        src={Logo}
-        alt="FastAPI logo"
-        height="auto"
-        maxW="2xs"
-        alignSelf="center"
-        mb={2}
-      />
+      <Image src={Logo} alt="FastAPI logo" height="auto" maxW="2xs" alignSelf="center" mb={2} />
       <Heading size="xl" textAlign="center" mb={6}>
         Log In
       </Heading>
@@ -159,5 +143,5 @@ function Login() {
         </RouterLink>
       </Text>
     </Container>
-  )
+  );
 }

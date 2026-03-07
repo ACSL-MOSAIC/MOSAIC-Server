@@ -1,31 +1,31 @@
-import type { RobotStatus } from "@/mosaic"
+import type { RobotStatus } from "@/mosaic";
 
 export type WsBaseMessage<T extends string = string, D = any> = {
-  type: T
-  data: D
-}
+  type: T;
+  data: D;
+};
 
 export type WsAuthorizeDto = {
-  accessToken: string
-}
+  accessToken: string;
+};
 
-export type WsAuthorizeResDto = number
+export type WsAuthorizeResDto = number;
 
-export type WsGetRobotListDto = Record<string, never> // 빈 객체
+export type WsGetRobotListDto = Record<string, never>; // 빈 객체
 
 export type WsStatusUpdateDto = {
-  robotId: string
-  status: RobotStatus
-}
+  robotId: string;
+  status: RobotStatus;
+};
 
 export type WsStatusSubscribeDto = {
-  robotIds: string[]
-}
+  robotIds: string[];
+};
 
 export type WsForceLogoutDto = {
-  message: string
-}
+  message: string;
+};
 
 export type WsPingPongDto = {
-  pingId: string
-}
+  pingId: string;
+};

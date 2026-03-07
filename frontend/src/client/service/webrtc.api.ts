@@ -1,10 +1,11 @@
-import type {CancelablePromise} from "@/client"
-import {request as __request} from "@/client/core/request.ts"
+import type { CancelablePromise } from "@/client";
 import type {
   IceServerDto,
   WebRTCConnectionReqDto,
   WebRTCConnectionResDto,
-} from "@/client/service/webrtc.dto.ts"
+} from "@/client/service/webrtc.dto.ts";
+
+import { request as __request } from "@/client/core/request.ts";
 
 /**
  * Create WebRTC Connection
@@ -21,8 +22,8 @@ export const createWebRTCConnectionApi = (
     url: "/api/v1/webrtc/connection",
     body: requestBody,
     mediaType: "application/json",
-  })
-}
+  });
+};
 
 /**
  * Get ICE Servers
@@ -34,5 +35,5 @@ export const getIceServersApi = (): CancelablePromise<IceServerDto[]> => {
   return __request({
     method: "GET",
     url: "/api/v1/webrtc/ice-servers",
-  })
-}
+  });
+};

@@ -1,20 +1,23 @@
-import type { WidgetConfig } from "@/mosaic"
-import { VStack } from "@chakra-ui/react"
-import type { ReactNode } from "react"
-import { WidgetBody } from "./WidgetBody"
-import { WidgetFooter } from "./WidgetFooter"
-import { WidgetHeader } from "./WidgetHeader"
+import type { ReactNode } from "react";
+
+import { VStack } from "@chakra-ui/react";
+
+import type { WidgetConfig } from "@/mosaic";
+
+import { WidgetBody } from "./WidgetBody";
+import { WidgetFooter } from "./WidgetFooter";
+import { WidgetHeader } from "./WidgetHeader";
 
 export interface WidgetFrameProps {
-  widgetConfig: WidgetConfig
-  children?: ReactNode
-  useBody?: boolean
-  showRobotInfo?: boolean
+  widgetConfig: WidgetConfig;
+  children?: ReactNode;
+  useBody?: boolean;
+  showRobotInfo?: boolean;
   footerInfo?: Array<{
-    label: string
-    value: string | ReactNode
-  }>
-  footerMessage?: string
+    label: string;
+    value: string | ReactNode;
+  }>;
+  footerMessage?: string;
 }
 
 export function WidgetFrame({
@@ -31,5 +34,5 @@ export function WidgetFrame({
       {useBody ? <WidgetBody>{children}</WidgetBody> : children}
       <WidgetFooter footerInfo={footerInfo} footerMessage={footerMessage} />
     </VStack>
-  )
+  );
 }

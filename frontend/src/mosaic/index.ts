@@ -1,53 +1,53 @@
-export type WidgetType = string
+export type WidgetType = string;
 
 export interface WidgetPositionConfig {
-  x: number
-  y: number
-  w: number
-  h: number
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 export class RobotConnector {
-  public robotId: string
-  public connectorId: string
+  public robotId: string;
+  public connectorId: string;
 
   constructor(robotId: string, connectorId: string) {
-    this.robotId = robotId
-    this.connectorId = connectorId
+    this.robotId = robotId;
+    this.connectorId = connectorId;
   }
 
   public static deserialize(serialized: string): RobotConnector {
-    const [robotId, connectorId] = serialized.split(":")
-    return new RobotConnector(robotId, connectorId)
+    const [robotId, connectorId] = serialized.split(":");
+    return new RobotConnector(robotId, connectorId);
   }
 
   public serialize(): string {
-    return `${this.robotId}:${this.connectorId}`
+    return `${this.robotId}:${this.connectorId}`;
   }
 }
 
 export interface WidgetConfig {
-  id: string
-  type: WidgetType
-  position: WidgetPositionConfig
-  connectors: RobotConnector[]
-  params?: any
+  id: string;
+  type: WidgetType;
+  position: WidgetPositionConfig;
+  connectors: RobotConnector[];
+  params?: any;
 }
 
 export interface TabConfig {
-  id: string
-  name: string
-  widgets: WidgetConfig[]
+  id: string;
+  name: string;
+  widgets: WidgetConfig[];
 }
 
 export interface ConnectorConfig {
-  connectorId: string
-  connectorType: string
-  params: any
+  connectorId: string;
+  connectorType: string;
+  params: any;
 }
 
 export interface RobotConfig {
-  connectors: ConnectorConfig[]
+  connectors: ConnectorConfig[];
 }
 
 export const ROBOT_STATUSES = [
@@ -58,9 +58,9 @@ export const ROBOT_STATUSES = [
   { value: 4, label: "RTC Failed" },
   { value: 5, label: "Disconnected" },
   { value: 6, label: "WS Connected" },
-] as const
+] as const;
 
-export type RobotStatus = (typeof ROBOT_STATUSES)[number]["value"]
+export type RobotStatus = (typeof ROBOT_STATUSES)[number]["value"];
 
 export enum RTCConnectionState {
   DISCONNECTED = 0,

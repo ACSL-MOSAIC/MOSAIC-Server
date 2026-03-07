@@ -1,86 +1,78 @@
-import {
-  Box,
-  Button,
-  EmptyState,
-  Flex,
-  HStack,
-  Table,
-  VStack,
-} from "@chakra-ui/react"
-import {useQuery} from "@tanstack/react-query"
-import {useNavigate} from "@tanstack/react-router"
-import {useState} from "react"
-import {FiCopy, FiDownload, FiSearch} from "react-icons/fi"
+import { Box, Button, EmptyState, Flex, HStack, Table, VStack } from "@chakra-ui/react";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { FiCopy, FiDownload, FiSearch } from "react-icons/fi";
 
 import {
   downloadOccupancyMapApi,
   getOccupancyMapsListApi,
-} from "@/client/service/occupancy-map.api.ts"
-import DeleteOccupancyMap from "@/components/OccupancyMaps/DeleteOccupancyMap"
-import PreviewOccupancyMap from "@/components/OccupancyMaps/PreviewOccupancyMap"
+} from "@/client/service/occupancy-map.api.ts";
+import DeleteOccupancyMap from "@/components/OccupancyMaps/DeleteOccupancyMap";
+import PreviewOccupancyMap from "@/components/OccupancyMaps/PreviewOccupancyMap";
 import {
   PaginationItems,
   PaginationNextTrigger,
   PaginationPrevTrigger,
   PaginationRoot,
-} from "@/components/ui/pagination.tsx"
-import useCustomToast from "@/hooks/useCustomToast"
-import {Route} from "@/routes/_layout/occupancy-maps.tsx";
+} from "@/components/ui/pagination.tsx";
+import useCustomToast from "@/hooks/useCustomToast";
+import { Route } from "@/routes/_layout/occupancy-maps.tsx";
 
-const PER_PAGE = 5
+const PER_PAGE = 5;
 
-function getOccupancyMapsQueryOptions({page}: { page: number }) {
+function getOccupancyMapsQueryOptions({ page }: { page: number }) {
   return {
     queryFn: () => getOccupancyMapsListApi((page - 1) * PER_PAGE, PER_PAGE),
-    queryKey: ["occupancy-maps", {page}],
-  }
+    queryKey: ["occupancy-maps", { page }],
+  };
 }
 
 export function OccupancyMapsTable() {
-  const navigate = useNavigate({from: Route.fullPath})
-  const {page} = Route.useSearch()
-  const [hoveredId, setHoveredId] = useState<string | null>(null)
-  const {showSuccessToast, showErrorToast} = useCustomToast()
+  const navigate = useNavigate({ from: Route.fullPath });
+  const { page } = Route.useSearch();
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const { showSuccessToast, showErrorToast } = useCustomToast();
 
-  const {data, isLoading, isPlaceholderData} = useQuery({
-    ...getOccupancyMapsQueryOptions({page}),
+  const { data, isLoading, isPlaceholderData } = useQuery({
+    ...getOccupancyMapsQueryOptions({ page }),
     placeholderData: (prevData) => prevData,
-  })
+  });
 
   const setPage = (page: number) =>
     navigate({
-      search: (prev: { [key: string]: string }) => ({...prev, page}),
-    })
+      search: (prev: { [key: string]: string }) => ({ ...prev, page }),
+    });
 
-  const occupancyMaps = data?.data.slice(0, PER_PAGE) ?? []
-  const count = data?.count ?? 0
+  const occupancyMaps = data?.data.slice(0, PER_PAGE) ?? [];
+  const count = data?.count ?? 0;
 
   const handleCopyId = async (id: string) => {
     try {
-      await navigator.clipboard.writeText(id)
-      showSuccessToast("ID copied to clipboard")
+      await navigator.clipboard.writeText(id);
+      showSuccessToast("ID copied to clipboard");
     } catch (err) {
-      console.error("Failed to copy ID:", err)
+      console.error("Failed to copy ID:", err);
     }
-  }
+  };
 
   const handleDownload = async (id: string, name: string) => {
     try {
-      const blob = await downloadOccupancyMapApi(id)
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = url
-      link.download = `${name}.zip`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-      showSuccessToast("Download started")
+      const blob = await downloadOccupancyMapApi(id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${name}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      showSuccessToast("Download started");
     } catch (err) {
-      console.error("Failed to download:", err)
-      showErrorToast("Failed to download occupancy map")
+      console.error("Failed to download:", err);
+      showErrorToast("Failed to download occupancy map");
     }
-  }
+  };
 
   if (isLoading) {
     return (
@@ -91,7 +83,7 @@ export function OccupancyMapsTable() {
           </VStack>
         </EmptyState.Content>
       </EmptyState.Root>
-    )
+    );
   }
 
   if (occupancyMaps.length === 0) {
@@ -99,24 +91,20 @@ export function OccupancyMapsTable() {
       <EmptyState.Root>
         <EmptyState.Content>
           <EmptyState.Indicator>
-            <FiSearch/>
+            <FiSearch />
           </EmptyState.Indicator>
           <VStack textAlign="center">
-            <EmptyState.Title>
-              You don't have any occupancy maps yet
-            </EmptyState.Title>
-            <EmptyState.Description>
-              Add a new occupancy map to get started
-            </EmptyState.Description>
+            <EmptyState.Title>You don't have any occupancy maps yet</EmptyState.Title>
+            <EmptyState.Description>Add a new occupancy map to get started</EmptyState.Description>
           </VStack>
         </EmptyState.Content>
       </EmptyState.Root>
-    )
+    );
   }
 
   return (
     <>
-      <Table.Root size={{base: "sm", md: "md"}}>
+      <Table.Root size={{ base: "sm", md: "md" }}>
         <Table.Header>
           <Table.Row>
             <Table.ColumnHeader w="sm">ID</Table.ColumnHeader>
@@ -129,10 +117,7 @@ export function OccupancyMapsTable() {
         </Table.Header>
         <Table.Body>
           {occupancyMaps?.map((occupancyMap) => (
-            <Table.Row
-              key={occupancyMap.id}
-              opacity={isPlaceholderData ? 0.5 : 1}
-            >
+            <Table.Row key={occupancyMap.id} opacity={isPlaceholderData ? 0.5 : 1}>
               <Table.Cell
                 truncate
                 maxW="sm"
@@ -144,9 +129,7 @@ export function OccupancyMapsTable() {
               >
                 <Box display="flex" alignItems="center" gap={2}>
                   {occupancyMap.id}
-                  {hoveredId === occupancyMap.id && (
-                    <FiCopy size={14} opacity={0.7}/>
-                  )}
+                  {hoveredId === occupancyMap.id && <FiCopy size={14} opacity={0.7} />}
                 </Box>
               </Table.Cell>
               <Table.Cell truncate maxW="sm">
@@ -159,20 +142,18 @@ export function OccupancyMapsTable() {
                 {new Date(occupancyMap.updatedAt).toLocaleString()}
               </Table.Cell>
               <Table.Cell>
-                <PreviewOccupancyMap occupancyMap={occupancyMap}/>
+                <PreviewOccupancyMap occupancyMap={occupancyMap} />
               </Table.Cell>
               <Table.Cell>
                 <HStack gap={2}>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() =>
-                      handleDownload(occupancyMap.id, occupancyMap.name)
-                    }
+                    onClick={() => handleDownload(occupancyMap.id, occupancyMap.name)}
                   >
-                    <FiDownload/>
+                    <FiDownload />
                   </Button>
-                  <DeleteOccupancyMap id={occupancyMap.id}/>
+                  <DeleteOccupancyMap id={occupancyMap.id} />
                 </HStack>
               </Table.Cell>
             </Table.Row>
@@ -183,15 +164,15 @@ export function OccupancyMapsTable() {
         <PaginationRoot
           count={count}
           pageSize={PER_PAGE}
-          onPageChange={({page}) => setPage(page)}
+          onPageChange={({ page }) => setPage(page)}
         >
           <Flex>
-            <PaginationPrevTrigger/>
-            <PaginationItems/>
-            <PaginationNextTrigger/>
+            <PaginationPrevTrigger />
+            <PaginationItems />
+            <PaginationNextTrigger />
           </Flex>
         </PaginationRoot>
       </Flex>
     </>
-  )
+  );
 }

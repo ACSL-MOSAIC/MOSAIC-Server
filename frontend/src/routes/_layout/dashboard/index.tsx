@@ -1,24 +1,25 @@
-import { getTabListApi } from "@/client/service/dashboard.api.ts"
-import useAuth from "@/hooks/useAuth.ts"
-import { DASHBOARD_STORAGE_KEYS } from "@/utils"
-import { Container, HStack, Spinner, Text } from "@chakra-ui/react"
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, Navigate } from "@tanstack/react-router"
+import { Container, HStack, Spinner, Text } from "@chakra-ui/react";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
+
+import { getTabListApi } from "@/client/service/dashboard.api.ts";
+import useAuth from "@/hooks/useAuth.ts";
+import { DASHBOARD_STORAGE_KEYS } from "@/utils";
 
 export const Route = createFileRoute("/_layout/dashboard/")({
   component: DashboardEntryPage,
-})
+});
 
 function DashboardEntryPage() {
-  const { user } = useAuth()
+  const { user } = useAuth();
   const { data: tabs = [], isLoading: isTabsLoading } = useQuery({
     queryKey: ["dashboardTabs"],
     queryFn: getTabListApi,
     enabled: !!user,
-  })
+  });
 
   if (!user) {
-    return <Navigate to="/dashboard/config" />
+    return <Navigate to="/dashboard/config" />;
   }
 
   if (isTabsLoading) {
@@ -29,28 +30,28 @@ function DashboardEntryPage() {
           <Text>Loading dashboard tabs...</Text>
         </HStack>
       </Container>
-    )
+    );
   }
 
   if (tabs.length === 0) {
-    return <Navigate to="/dashboard/config" />
+    return <Navigate to="/dashboard/config" />;
   }
 
   const shouldForceConfig =
     typeof window !== "undefined" &&
-    window.localStorage.getItem(DASHBOARD_STORAGE_KEYS.forceConfig) === "1"
+    window.localStorage.getItem(DASHBOARD_STORAGE_KEYS.forceConfig) === "1";
   if (shouldForceConfig) {
-    window.localStorage.removeItem(DASHBOARD_STORAGE_KEYS.forceConfig)
-    return <Navigate to="/dashboard/config" />
+    window.localStorage.removeItem(DASHBOARD_STORAGE_KEYS.forceConfig);
+    return <Navigate to="/dashboard/config" />;
   }
 
   const savedTabId =
     typeof window === "undefined"
       ? null
-      : window.localStorage.getItem(DASHBOARD_STORAGE_KEYS.lastTabId)
+      : window.localStorage.getItem(DASHBOARD_STORAGE_KEYS.lastTabId);
   if (savedTabId && tabs.some((tab) => tab.id === savedTabId)) {
-    return <Navigate to="/dashboard/$tabId" params={{ tabId: savedTabId }} />
+    return <Navigate to="/dashboard/$tabId" params={{ tabId: savedTabId }} />;
   }
 
-  return <Navigate to="/dashboard/config" />
+  return <Navigate to="/dashboard/config" />;
 }

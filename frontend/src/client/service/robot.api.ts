@@ -1,6 +1,8 @@
-import type { CancelablePromise, MessageDto, PageDto } from "@/client"
-import { request as __request } from "@/client/core/request.ts"
-import type { RobotAddDto, RobotInfoDto, RobotUpdateDto } from "./robot.dto.ts"
+import type { CancelablePromise, MessageDto, PageDto } from "@/client";
+
+import { request as __request } from "@/client/core/request.ts";
+
+import type { RobotAddDto, RobotInfoDto, RobotUpdateDto } from "./robot.dto.ts";
 
 export const getRobotListApi = (
   limit?: number,
@@ -13,8 +15,8 @@ export const getRobotListApi = (
       limit: limit,
       skip: skip,
     },
-  })
-}
+  });
+};
 
 /**
  * Create new robot.
@@ -22,16 +24,14 @@ export const getRobotListApi = (
  * @returns MessageDto Successful Response
  * @throws ApiError
  */
-export const addRobotApi = (
-  requestBody: RobotAddDto,
-): CancelablePromise<MessageDto> => {
+export const addRobotApi = (requestBody: RobotAddDto): CancelablePromise<MessageDto> => {
   return __request({
     method: "POST",
     url: "/api/v1/robots",
     body: requestBody,
     mediaType: "application/json",
-  })
-}
+  });
+};
 
 export const getRobotApi = (id: string): CancelablePromise<RobotInfoDto> => {
   return __request({
@@ -40,8 +40,8 @@ export const getRobotApi = (id: string): CancelablePromise<RobotInfoDto> => {
     path: {
       id: id,
     },
-  })
-}
+  });
+};
 
 /**
  * Update a robot.
@@ -62,8 +62,8 @@ export const updateRobotApi = (
     },
     body: requestBody,
     mediaType: "application/json",
-  })
-}
+  });
+};
 
 /**
  * Delete a robot.
@@ -78,5 +78,5 @@ export const deleteRobotApi = (id: string): CancelablePromise<MessageDto> => {
     path: {
       id: id,
     },
-  })
-}
+  });
+};

@@ -1,14 +1,16 @@
-import { useRobotInfo } from "@/hooks/useRobotInfo.ts"
-import type { RobotInfo } from "@/mosaic/robot-info.ts"
-import { Badge, Box, Button, Flex, Grid, Icon, Text } from "@chakra-ui/react"
-import { useCallback, useMemo } from "react"
-import { IoPower, IoPowerOutline } from "react-icons/io5"
+import { Badge, Box, Button, Flex, Grid, Icon, Text } from "@chakra-ui/react";
+import { useCallback, useMemo } from "react";
+import { IoPower, IoPowerOutline } from "react-icons/io5";
+
+import type { RobotInfo } from "@/mosaic/robot-info.ts";
+
+import { useRobotInfo } from "@/hooks/useRobotInfo.ts";
 
 interface RobotConnectionPanelProps {
-  onConnect: (robotId: string) => void
-  onDisconnect: (robotId: string) => void
-  onConnectAll: () => void
-  onDisconnectAll: () => void
+  onConnect: (robotId: string) => void;
+  onDisconnect: (robotId: string) => void;
+  onConnectAll: () => void;
+  onDisconnectAll: () => void;
 }
 
 function RobotConnectionPanel({
@@ -17,32 +19,32 @@ function RobotConnectionPanel({
   onConnectAll,
   onDisconnectAll,
 }: RobotConnectionPanelProps) {
-  const { robotInfos } = useRobotInfo()
+  const { robotInfos } = useRobotInfo();
 
   const readyRobots = useMemo(
     () =>
       robotInfos.filter((robotInfo) => {
-        return robotInfo.isReadyToConnect
+        return robotInfo.isReadyToConnect;
       }),
     [robotInfos],
-  )
+  );
   const connectedRobots = useMemo(
     () =>
       robotInfos.filter((robotInfo) => {
-        return robotInfo.isRtcConnected
+        return robotInfo.isRtcConnected;
       }),
     [robotInfos],
-  )
+  );
 
   const getStatusColor = useCallback((robotInfo: RobotInfo) => {
     if (robotInfo.isRtcConnected) {
-      return "green"
+      return "green";
     }
     if (robotInfo.isReadyToConnect) {
-      return "blue"
+      return "blue";
     }
-    return "gray"
-  }, [])
+    return "gray";
+  }, []);
 
   if (robotInfos.length === 0) {
     return (
@@ -51,7 +53,7 @@ function RobotConnectionPanel({
           No robots available for connection.
         </Text>
       </Box>
-    )
+    );
   }
 
   return (
@@ -89,11 +91,7 @@ function RobotConnectionPanel({
       </Flex>
 
       {/* Robot list */}
-      <Grid
-        templateColumns="repeat(auto-fit, minmax(260px, 340px))"
-        justifyContent="start"
-        gap={4}
-      >
+      <Grid templateColumns="repeat(auto-fit, minmax(260px, 340px))" justifyContent="start" gap={4}>
         {robotInfos.map((robotInfo) => {
           return (
             <Box
@@ -149,11 +147,11 @@ function RobotConnectionPanel({
                 )}
               </Flex>
             </Box>
-          )
+          );
         })}
       </Grid>
     </Box>
-  )
+  );
 }
 
-export default RobotConnectionPanel
+export default RobotConnectionPanel;

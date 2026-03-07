@@ -1,49 +1,44 @@
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx"
-import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts"
-import { useMosaicStore } from "@/hooks/useMosaicStore.ts"
-import type JsonReceivableStore from "@/mosaic/store/impl/json-receivable-store.ts"
-import { Code } from "@chakra-ui/react"
-import { useEffect, useState } from "react"
+import { Code } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
+
+import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts";
+import type JsonReceivableStore from "@/mosaic/store/impl/json-receivable-store.ts";
+
+import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 export default function JsonViewerWidget({ widgetConfig }: WidgetProps) {
-  const { getOrCreateStore, releaseStore } = useMosaicStore()
-  const [data, setData] = useState<any>(null)
+  const { getOrCreateStore, releaseStore } = useMosaicStore();
+  const [data, setData] = useState<any>(null);
 
   useEffect(() => {
-    const connector = widgetConfig.connectors[0]
+    const connector = widgetConfig.connectors[0];
     if (!connector) {
-      return
+      return;
     }
 
-    const store = getOrCreateStore(connector) as JsonReceivableStore
+    const store = getOrCreateStore(connector) as JsonReceivableStore;
     if (store === null) {
-      return
+      return;
     }
 
     const unsubscribe = store.subscribe((data) => {
-      setData(data)
-    })
+      setData(data);
+    });
 
     return () => {
-      unsubscribe()
-      releaseStore(connector)
-    }
-  }, [widgetConfig])
+      unsubscribe();
+      releaseStore(connector);
+    };
+  }, [widgetConfig]);
 
-  const formattedData = data ? JSON.stringify(data, null, 2) : ""
+  const formattedData = data ? JSON.stringify(data, null, 2) : "";
 
   return (
     <WidgetFrame widgetConfig={widgetConfig}>
-      <Code
-        display="block"
-        h="100%"
-        p={3}
-        borderRadius="md"
-        whiteSpace="pre"
-        overflow="auto"
-      >
+      <Code display="block" h="100%" p={3} borderRadius="md" whiteSpace="pre" overflow="auto">
         {formattedData}
       </Code>
     </WidgetFrame>
-  )
+  );
 }

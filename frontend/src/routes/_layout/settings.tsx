@@ -1,29 +1,29 @@
-import {Container, Heading, Tabs} from "@chakra-ui/react"
-import {createFileRoute} from "@tanstack/react-router"
+import { Container, Heading, Tabs } from "@chakra-ui/react";
+import { createFileRoute } from "@tanstack/react-router";
 
-import ChangePassword from "@/components/UserSettings/ChangePassword"
-import UserInformation from "@/components/UserSettings/UserInformation"
-import useAuth from "@/hooks/useAuth"
+import ChangePassword from "@/components/UserSettings/ChangePassword";
+import UserInformation from "@/components/UserSettings/UserInformation";
+import useAuth from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/_layout/settings")({
   component: UserSettings,
-})
+});
 
 const tabsConfig = [
-  {value: "my-profile", title: "My profile", component: UserInformation},
-  {value: "password", title: "Password", component: ChangePassword},
-]
+  { value: "my-profile", title: "My profile", component: UserInformation },
+  { value: "password", title: "Password", component: ChangePassword },
+];
 
 function UserSettings() {
-  const {user: currentUser} = useAuth()
+  const { user: currentUser } = useAuth();
 
   if (!currentUser) {
-    return null
+    return null;
   }
 
   return (
     <Container maxW="full">
-      <Heading size="lg" textAlign={{base: "center", md: "left"}} py={12}>
+      <Heading size="lg" textAlign={{ base: "center", md: "left" }} py={12}>
         User Settings
       </Heading>
 
@@ -37,10 +37,10 @@ function UserSettings() {
         </Tabs.List>
         {tabsConfig.map((tab) => (
           <Tabs.Content key={tab.value} value={tab.value}>
-            <tab.component/>
+            <tab.component />
           </Tabs.Content>
         ))}
       </Tabs.Root>
     </Container>
-  )
+  );
 }

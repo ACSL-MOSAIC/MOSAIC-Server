@@ -1,17 +1,10 @@
-import {
-  Box,
-  Button,
-  Code,
-  DialogTitle,
-  Flex,
-  Spinner,
-  Text,
-} from "@chakra-ui/react"
-import { useState } from "react"
-import { FiEye } from "react-icons/fi"
+import { Box, Button, Code, DialogTitle, Flex, Spinner, Text } from "@chakra-ui/react";
+import { useState } from "react";
+import { FiEye } from "react-icons/fi";
 
-import { getRobotApi } from "@/client/service/robot.api.ts"
-import type { RobotInfoDto } from "@/client/service/robot.dto.ts"
+import type { RobotInfoDto } from "@/client/service/robot.dto.ts";
+
+import { getRobotApi } from "@/client/service/robot.api.ts";
 import {
   DialogActionTrigger,
   DialogBody,
@@ -21,46 +14,44 @@ import {
   DialogHeader,
   DialogRoot,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import useCustomToast from "@/hooks/useCustomToast"
+} from "@/components/ui/dialog";
+import useCustomToast from "@/hooks/useCustomToast";
 
 interface PreviewRobotConfigProps {
-  robot: RobotInfoDto
+  robot: RobotInfoDto;
 }
 
 const PreviewRobotConfig = ({ robot }: PreviewRobotConfigProps) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [configData, setConfigData] = useState<string | null>(null)
-  const { showErrorToast } = useCustomToast()
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [configData, setConfigData] = useState<string | null>(null);
+  const { showErrorToast } = useCustomToast();
 
   const loadConfigData = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const response = await getRobotApi(robot.id)
-      setConfigData(response.connectorConfig)
+      const response = await getRobotApi(robot.id);
+      setConfigData(response.connectorConfig);
     } catch (error) {
-      console.error("Failed to load config data:", error)
-      showErrorToast("Failed to load config data")
+      console.error("Failed to load config data:", error);
+      showErrorToast("Failed to load config data");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleOpenChange = ({ open }: { open: boolean }) => {
-    setIsOpen(open)
+    setIsOpen(open);
     if (open && !configData) {
-      loadConfigData()
+      loadConfigData();
     }
     if (!open) {
-      setConfigData(null)
+      setConfigData(null);
     }
-  }
+  };
 
   // Format JSON for display
-  const formattedConfig = configData
-    ? JSON.stringify(JSON.parse(configData), null, 2)
-    : null
+  const formattedConfig = configData ? JSON.stringify(JSON.parse(configData), null, 2) : null;
 
   return (
     <DialogRoot
@@ -116,7 +107,7 @@ const PreviewRobotConfig = ({ robot }: PreviewRobotConfigProps) => {
         <DialogCloseTrigger />
       </DialogContent>
     </DialogRoot>
-  )
-}
+  );
+};
 
-export default PreviewRobotConfig
+export default PreviewRobotConfig;

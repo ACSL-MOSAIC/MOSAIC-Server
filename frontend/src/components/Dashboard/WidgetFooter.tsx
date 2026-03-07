@@ -1,12 +1,13 @@
-import { HStack, Text, VStack } from "@chakra-ui/react"
-import type { ReactNode } from "react"
+import type { ReactNode } from "react";
+
+import { HStack, Text, VStack } from "@chakra-ui/react";
 
 interface WidgetFooterProps {
   footerInfo?: Array<{
-    label: string
-    value: string | ReactNode
-  }>
-  footerMessage?: string
+    label: string;
+    value: string | ReactNode;
+  }>;
+  footerMessage?: string;
 }
 
 export function WidgetFooter({ footerInfo, footerMessage }: WidgetFooterProps) {
@@ -37,5 +38,5 @@ export function WidgetFooter({ footerInfo, footerMessage }: WidgetFooterProps) {
         </Text>
       )}
     </>
-  )
+  );
 }

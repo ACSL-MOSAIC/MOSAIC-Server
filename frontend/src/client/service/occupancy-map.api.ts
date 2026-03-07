@@ -1,6 +1,8 @@
-import type {CancelablePromise, MessageDto, PageDto} from "@/client"
-import {request as __request} from "@/client/core/request.ts"
-import type {OccupancyMapDto} from "./occupancy-map.dto.ts"
+import type { CancelablePromise, MessageDto, PageDto } from "@/client";
+
+import { request as __request } from "@/client/core/request.ts";
+
+import type { OccupancyMapDto } from "./occupancy-map.dto.ts";
 
 /**
  * Retrieve occupancy maps.
@@ -20,8 +22,8 @@ export const getOccupancyMapsListApi = (
       skip: skip,
       limit: limit,
     },
-  })
-}
+  });
+};
 
 /**
  * Create new occupancy map with file uploads.
@@ -36,18 +38,18 @@ export const createOccupancyMapApi = (
   pgmFile: File,
   yamlFile: File,
 ): CancelablePromise<MessageDto> => {
-  const formData = new FormData()
-  formData.append("name", name)
-  formData.append("pgm_file", pgmFile)
-  formData.append("yaml_file", yamlFile)
+  const formData = new FormData();
+  formData.append("name", name);
+  formData.append("pgm_file", pgmFile);
+  formData.append("yaml_file", yamlFile);
 
   return __request({
     method: "POST",
     url: "/api/v1/occupancy_map",
     body: formData,
     mediaType: "multipart/form-data",
-  })
-}
+  });
+};
 
 /**
  * Get occupancy map by ID.
@@ -55,17 +57,15 @@ export const createOccupancyMapApi = (
  * @returns OccupancyMapDto Successful Response
  * @throws ApiError
  */
-export const getOccupancyMapApi = (
-  id: string,
-): CancelablePromise<OccupancyMapDto> => {
+export const getOccupancyMapApi = (id: string): CancelablePromise<OccupancyMapDto> => {
   return __request({
     method: "GET",
     url: "/api/v1/occupancy_map/{id}",
     path: {
       id: id,
     },
-  })
-}
+  });
+};
 
 /**
  * Delete an occupancy map.
@@ -73,17 +73,15 @@ export const getOccupancyMapApi = (
  * @returns Message Successful Response
  * @throws ApiError
  */
-export const deleteOccupancyMapApi = (
-  id: string,
-): CancelablePromise<MessageDto> => {
+export const deleteOccupancyMapApi = (id: string): CancelablePromise<MessageDto> => {
   return __request({
     method: "DELETE",
     url: "/api/v1/occupancy_map/{id}",
     path: {
       id: id,
     },
-  })
-}
+  });
+};
 
 /**
  * Get PGM file of occupancy map.
@@ -102,8 +100,8 @@ export const getOccupancyMapPgmApi = (id: string): CancelablePromise<Blob> => {
     headers: {
       Accept: "application/octet-stream",
     },
-  })
-}
+  });
+};
 
 /**
  * Get YAML file of occupancy map.
@@ -122,8 +120,8 @@ export const getOccupancyMapYamlApi = (id: string): CancelablePromise<Blob> => {
     headers: {
       Accept: "application/x-yaml",
     },
-  })
-}
+  });
+};
 
 /**
  * Download occupancy map as ZIP file.
@@ -131,9 +129,7 @@ export const getOccupancyMapYamlApi = (id: string): CancelablePromise<Blob> => {
  * @returns Blob Successful Response
  * @throws ApiError
  */
-export const downloadOccupancyMapApi = (
-  id: string,
-): CancelablePromise<Blob> => {
+export const downloadOccupancyMapApi = (id: string): CancelablePromise<Blob> => {
   return __request({
     method: "GET",
     url: "/api/v1/occupancy_map/{id}/download",
@@ -144,5 +140,5 @@ export const downloadOccupancyMapApi = (
     headers: {
       Accept: "application/zip",
     },
-  })
-}
+  });
+};

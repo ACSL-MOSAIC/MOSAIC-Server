@@ -1,24 +1,24 @@
 export type WsSendSdpOfferDto = {
-  rtcConnectionId: string
-  sdpOffer: string
-}
+  rtcConnectionId: string;
+  sdpOffer: string;
+};
 
 export type WsSendSdpAnswerDto = {
-  rtcConnectionId: string
-  sdpAnswer: string
-}
+  rtcConnectionId: string;
+  sdpAnswer: string;
+};
 
 export type IceCandidate = {
-  candidate: string
-  sdpMid: string | null
-  sdpMLineIndex: number | null
-}
+  candidate: string;
+  sdpMid: string | null;
+  sdpMLineIndex: number | null;
+};
 
 export type WsExchangeIceCandidateDto = {
-  rtcConnectionId: string
-  iceCandidate: IceCandidate
-}
+  rtcConnectionId: string;
+  iceCandidate: IceCandidate;
+};
 
 export type WsClosePeerConnectionDto = {
-  rtcConnectionId: string
-}
+  rtcConnectionId: string;
+};

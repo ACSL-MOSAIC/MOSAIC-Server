@@ -1,7 +1,7 @@
 export type RobotSimpleTokenReqDto = {
-  robotId: string
-}
+  robotId: string;
+};
 
 export type RobotSimpleTokenResDto = {
-  token: string
-}
+  token: string;
+};

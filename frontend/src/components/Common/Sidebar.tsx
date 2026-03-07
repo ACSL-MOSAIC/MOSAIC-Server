@@ -1,5 +1,6 @@
-import { Box } from "@chakra-ui/react"
-import SidebarItems from "./SidebarItems"
+import { Box } from "@chakra-ui/react";
+
+import SidebarItems from "./SidebarItems";
 
 const Sidebar = () => {
   return (
@@ -17,6 +18,6 @@ const Sidebar = () => {
         </Box>
       </Box>
     </>
-  )
-}
-export default Sidebar
+  );
+};
+export default Sidebar;

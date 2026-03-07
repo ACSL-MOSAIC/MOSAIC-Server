@@ -1,28 +1,30 @@
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx"
-import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts"
-import { useMosaicStore } from "@/hooks/useMosaicStore.ts"
-import type { MediaStreamStore } from "@/mosaic/store/interface/media-stream-store.ts"
-import { Box, Flex, IconButton } from "@chakra-ui/react"
-import { useEffect, useRef, useState } from "react"
+import { Box, Flex, IconButton } from "@chakra-ui/react";
+import { useEffect, useRef, useState } from "react";
+
+import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts";
+import type { MediaStreamStore } from "@/mosaic/store/interface/media-stream-store.ts";
+
+import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
-  const { getOrCreateStore, releaseStore } = useMosaicStore()
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const connector = widgetConfig.connectors[0]
-  const connectorRobotId = connector?.robotId ?? ""
-  const connectorId = connector?.connectorId ?? ""
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { getOrCreateStore, releaseStore } = useMosaicStore();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const connector = widgetConfig.connectors[0];
+  const connectorRobotId = connector?.robotId ?? "";
+  const connectorId = connector?.connectorId ?? "";
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const configureVideo = (store: MediaStreamStore) => {
     // Set up video element
     if (videoRef.current) {
-      store.setVideoElement(videoRef.current)
+      store.setVideoElement(videoRef.current);
     }
 
     // Check MediaStream state
-    const mediaStream = store.getMediaStream()
+    const mediaStream = store.getMediaStream();
 
     if (mediaStream) {
       // Check if MediaStream is attached to the video element
@@ -30,109 +32,107 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
         // Attempt autoplay once MediaStream is connected
         if (videoRef.current.paused) {
           videoRef.current.play().catch((error) => {
-            console.error("❌ Video autoplay failed:", error)
-          })
+            console.error("❌ Video autoplay failed:", error);
+          });
         }
       }
     }
 
     // Video event handlers
-    const videoElement = videoRef.current
+    const videoElement = videoRef.current;
     if (videoElement) {
       const handlePlay = () => {
-        setIsPlaying(true)
-      }
+        setIsPlaying(true);
+      };
       const handlePause = () => {
-        setIsPlaying(false)
-      }
+        setIsPlaying(false);
+      };
       const handleLoadedMetadata = () => {
-        setError(null)
-      }
+        setError(null);
+      };
       const handleError = (e: any) => {
-        console.error("Video load error:", e)
-        setError("An error occurred while loading the video.")
-      }
+        console.error("Video load error:", e);
+        setError("An error occurred while loading the video.");
+      };
 
-      videoElement.addEventListener("play", handlePlay)
-      videoElement.addEventListener("pause", handlePause)
-      videoElement.addEventListener("loadedmetadata", handleLoadedMetadata)
-      videoElement.addEventListener("error", handleError)
+      videoElement.addEventListener("play", handlePlay);
+      videoElement.addEventListener("pause", handlePause);
+      videoElement.addEventListener("loadedmetadata", handleLoadedMetadata);
+      videoElement.addEventListener("error", handleError);
 
       return () => {
-        videoElement.removeEventListener("play", handlePlay)
-        videoElement.removeEventListener("pause", handlePause)
-        videoElement.removeEventListener("loadedmetadata", handleLoadedMetadata)
-        videoElement.removeEventListener("error", handleError)
-      }
+        videoElement.removeEventListener("play", handlePlay);
+        videoElement.removeEventListener("pause", handlePause);
+        videoElement.removeEventListener("loadedmetadata", handleLoadedMetadata);
+        videoElement.removeEventListener("error", handleError);
+      };
     }
-  }
+  };
 
   useEffect(() => {
     if (!connector || !connectorRobotId || !connectorId) {
-      return
+      return;
     }
 
-    const store = getOrCreateStore(connector) as MediaStreamStore
+    const store = getOrCreateStore(connector) as MediaStreamStore;
     if (store === null) {
-      return
+      return;
     }
 
     // Rebind immediately for already-connected sessions.
-    let cleanupVideoListeners = configureVideo(store)
+    let cleanupVideoListeners = configureVideo(store);
 
-    const unsubscribeAfterConnected = store.onAfterConnected(
-      (_robotId: string) => {
-        cleanupVideoListeners?.()
-        cleanupVideoListeners = configureVideo(store)
-      },
-    )
+    const unsubscribeAfterConnected = store.onAfterConnected((_robotId: string) => {
+      cleanupVideoListeners?.();
+      cleanupVideoListeners = configureVideo(store);
+    });
     // store.subscribe((data) => {
     //   setData(data)
     // })
     return () => {
-      cleanupVideoListeners?.()
-      unsubscribeAfterConnected()
-      releaseStore(connector)
+      cleanupVideoListeners?.();
+      unsubscribeAfterConnected();
+      releaseStore(connector);
       if (videoRef.current) {
-        videoRef.current.srcObject = null
+        videoRef.current.srcObject = null;
       }
-    }
-  }, [connectorRobotId, connectorId])
+    };
+  }, [connectorRobotId, connectorId]);
 
   const handlePlayPause = () => {
     if (videoRef.current) {
       if (isPlaying) {
-        videoRef.current.pause()
+        videoRef.current.pause();
       } else {
-        videoRef.current.play()
+        videoRef.current.play();
       }
     }
-  }
+  };
 
   const handleFullscreen = () => {
     if (videoRef.current) {
       if (!isFullscreen) {
         if (videoRef.current.requestFullscreen) {
-          videoRef.current.requestFullscreen()
+          videoRef.current.requestFullscreen();
         }
       } else {
         if (document.exitFullscreen) {
-          document.exitFullscreen()
+          document.exitFullscreen();
         }
       }
     }
-  }
+  };
 
   const handleFullscreenChange = () => {
-    setIsFullscreen(!!document.fullscreenElement)
-  }
+    setIsFullscreen(!!document.fullscreenElement);
+  };
 
   useEffect(() => {
-    document.addEventListener("fullscreenchange", handleFullscreenChange)
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange)
-    }
-  }, [])
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
 
   return (
     <WidgetFrame widgetConfig={widgetConfig}>
@@ -200,5 +200,5 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
         </>
       )}
     </WidgetFrame>
-  )
+  );
 }
