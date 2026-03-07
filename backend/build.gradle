@@ -134,12 +134,16 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+tasks.named('compileJava') {
+    dependsOn 'spotlessApply'
+}
+
 spotless {
     java {
         target 'src/*/java/**/*.java'
 
         // Use Google Java Format
-        googleJavaFormat('1.24.0').aosp().reflowLongStrings().skipJavadocFormatting()
+        googleJavaFormat('1.24.0').reflowLongStrings().skipJavadocFormatting()
 
         // Remove unused imports
         removeUnusedImports()

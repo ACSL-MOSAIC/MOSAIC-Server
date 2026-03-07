@@ -5,15 +5,13 @@ import java.util.UUID;
 
 public class UserDto {
 
-    public record Res(
-            UUID id,
-            String email,
-            Boolean isActive,
-            Boolean isOrganizationAdmin,
-            String fullName,
-            String organizationName,
-            OffsetDateTime createdAt,
-            OffsetDateTime updatedAt
-    ) {
-    }
+  public record Res(
+      UUID id,
+      String email,
+      Boolean isActive,
+      Boolean isOrganizationAdmin,
+      String fullName,
+      String organizationName,
+      OffsetDateTime createdAt,
+      OffsetDateTime updatedAt) {}
 }

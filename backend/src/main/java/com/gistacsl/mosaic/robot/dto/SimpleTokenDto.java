@@ -4,11 +4,7 @@ import java.util.UUID;
 
 public class SimpleTokenDto {
 
-    public record Req(
-            UUID robotId
-    ) {}
+  public record Req(UUID robotId) {}
 
-    public record Res(
-            String token
-    ) {}
+  public record Res(String token) {}
 }

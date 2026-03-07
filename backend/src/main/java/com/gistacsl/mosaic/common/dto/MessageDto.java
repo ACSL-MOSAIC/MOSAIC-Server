@@ -1,6 +1,3 @@
 package com.gistacsl.mosaic.common.dto;
 
-public record MessageDto(
-        String message
-) {
-}
+public record MessageDto(String message) {}
