@@ -31,8 +31,8 @@ export const isSuccess = (status: number): boolean => {
 export const base64 = (str: string): string => {
   try {
     return btoa(str);
+    // oxlint-disable-next-line no-unused-vars
   } catch (err) {
-    // @ts-ignore
     return Buffer.from(str).toString("base64");
   }
 };
@@ -311,6 +311,7 @@ export const catchErrorCodes = (options: ApiRequestOptions, result: ApiResult): 
     const errorBody = (() => {
       try {
         return JSON.stringify(result.resultData, null, 2);
+        // oxlint-disable-next-line no-unused-vars
       } catch (e) {
         return undefined;
       }

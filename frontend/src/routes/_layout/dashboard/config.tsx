@@ -471,7 +471,6 @@ function DashboardPage() {
             <Button
               ref={connectConfirmButtonRef}
               colorPalette="blue"
-              autoFocus
               onClick={handleConfirmConnect}
             >
               Connect

@@ -103,7 +103,6 @@ const AddDashboardDialog = ({ onCreated }: AddDashboardDialogProps) => {
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSubmit();
               }}
-              autoFocus
             />
           </Field>
         </DialogBody>

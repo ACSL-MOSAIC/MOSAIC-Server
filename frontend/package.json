@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "lint": "biome check --unsafe --no-errors-on-unmatched --files-ignore-unknown=true ./",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
     "preview": "vite preview",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check"
@@ -47,7 +48,7 @@
     "yaml": "^2.8.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "oxlint": "^1.51.0",
     "@playwright/test": "^1.52.0",
     "@tanstack/router-devtools": "1.19.1",
     "@tanstack/router-vite-plugin": "1.19.0",
