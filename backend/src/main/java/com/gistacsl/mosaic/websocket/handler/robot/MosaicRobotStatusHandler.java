@@ -34,12 +34,12 @@ public class MosaicRobotStatusHandler {
         }
 
         RobotUpdateStatusWsDto req = this.objectMapper.convertValue(wsMessage.getData(), RobotUpdateStatusWsDto.class);
-        return this.updateRobotStatus(req.status(), wsSession)
-                .then(this.notifyToSubscribers(req.status(), wsSession));
+        return this.updateRobotStatus(req.status(), wsSession);
     }
 
-    private Mono<Void> updateRobotStatus(RobotStatus robotStatus, RobotWsSession wsSession) {
-        return this.robotService.updateRobotStatus(robotStatus, wsSession.getRobotPk(), wsSession.getOrganizationFk());
+    public Mono<Void> updateRobotStatus(RobotStatus robotStatus, RobotWsSession wsSession) {
+        return this.robotService.updateRobotStatus(robotStatus, wsSession.getRobotPk(), wsSession.getOrganizationFk())
+                .then(this.notifyToSubscribers(robotStatus, wsSession));
     }
 
     private Mono<Void> notifyToSubscribers(RobotStatus robotStatus, RobotWsSession wsSession) {
