@@ -1,9 +1,9 @@
 import { Box } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
 
-import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts";
 import type { SendableStore } from "@/mosaic/store/interface/sendable-store.ts";
-import type { Thumbstick } from "@/mosaic/store/type/thumbstick.ts";
+import type { Thumbstick } from "@/stores/@types/thumbstick.ts";
+import type { WidgetProps } from "@/widgets/index.ts";
 
 import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
 import { Checkbox } from "@/components/ui/checkbox.tsx";

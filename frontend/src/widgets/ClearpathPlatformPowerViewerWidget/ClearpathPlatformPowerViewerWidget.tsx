@@ -4,8 +4,8 @@ import { Badge, Box, Grid, HStack, Separator, Text, VStack } from "@chakra-ui/re
 import { useEffect, useState } from "react";
 import { MdBatteryFull, MdPower } from "react-icons/md";
 
-import type { WidgetProps } from "@/components/Dashboard/widgets/index.ts";
-import type JsonReceivableStore from "@/mosaic/store/impl/json-receivable-store.ts";
+import type { JsonReceivableStore } from "@/stores/JsonReceivableStore/JsonReceivableStore.ts";
+import type { WidgetProps } from "@/widgets/index.ts";
 
 import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";

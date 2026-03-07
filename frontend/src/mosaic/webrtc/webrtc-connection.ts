@@ -1,13 +1,13 @@
 import type { RobotConnector } from "@/mosaic";
 import type { ChannelRequirement } from "@/mosaic/channel";
 import type { RobotInfo } from "@/mosaic/robot-info.ts";
-import type { MediaStreamStore } from "@/mosaic/store/interface/media-stream-store.ts";
 import type { MosaicStore } from "@/mosaic/store/interface/mosaic-store.ts";
 import type { ReceivableStore } from "@/mosaic/store/interface/receivable-store.ts";
 import type { SendableStore } from "@/mosaic/store/interface/sendable-store.ts";
 import type { ConnectorRequirement } from "@/mosaic/webrtc/index.ts";
 import type { SignalingServer } from "@/mosaic/webrtc/signaling-server.ts";
 import type { IceCandidate } from "@/mosaic/webrtc/signaling.dto.ts";
+import type { MediaStreamStore } from "@/stores/MediaStreamStore/MediaStreamStore.ts";
 
 export class WebRTCConnection {
   private readonly _rtcConnectionId: string;

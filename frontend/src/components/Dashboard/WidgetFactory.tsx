@@ -4,16 +4,16 @@ import type { WidgetConfig } from "@/mosaic";
 
 type WidgetComponent = ComponentType<{ widgetConfig: WidgetConfig }>;
 
-const modules = import.meta.glob("./widgets/*.tsx");
+const modules = import.meta.glob("../../widgets/*/*.tsx");
 const registry = new Map<string, LazyExoticComponent<WidgetComponent>>();
 const LazyNotFoundWidget = lazy(
-  () => import("./widgets/NotFoundWidget.tsx"),
+  () => import("../../widgets/NotFoundWidget/NotFoundWidget.tsx"),
 ) as LazyExoticComponent<WidgetComponent>;
 
 function getLazyWidget(type: string) {
   if (registry.has(type)) return registry.get(type)!;
 
-  const entry = Object.entries(modules).find(([path]) => path.includes(`/${type}.tsx`));
+  const entry = Object.entries(modules).find(([path]) => path.includes(`/${type}/${type}.tsx`));
   if (!entry) return null;
 
   const component = lazy(entry[1] as () => Promise<{ default: WidgetComponent }>);

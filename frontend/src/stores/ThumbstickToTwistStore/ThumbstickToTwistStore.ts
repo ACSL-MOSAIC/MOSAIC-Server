@@ -1,11 +1,8 @@
-import type { Thumbstick } from "@/mosaic/store/type/thumbstick.ts";
+import type { Thumbstick } from "@/stores/@types/thumbstick.ts";
 
 import { SendableStore } from "@/mosaic/store/interface/sendable-store.ts";
 
 export class ThumbstickToTwistStore extends SendableStore<Thumbstick> {
-  static readonly connectorType = "thumbstick-to-twist";
-  connectorType = ThumbstickToTwistStore.connectorType;
-
   public send(data: Thumbstick): void {
     const { angle, power, holonomic } = data;
     const forward = power * Math.cos(angle);
