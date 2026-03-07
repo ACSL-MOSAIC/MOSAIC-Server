@@ -3,6 +3,7 @@ package com.gistacsl.mosaic.websocket.handler.robot;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gistacsl.mosaic.common.enumerate.ResultCode;
 import com.gistacsl.mosaic.common.exception.CustomException;
+import com.gistacsl.mosaic.robot.enumerate.RobotStatus;
 import com.gistacsl.mosaic.websocket.dto.WsMessage;
 import com.gistacsl.mosaic.websocket.handler.WsMessageSender;
 import com.gistacsl.mosaic.websocket.handler.dto.PingWsDto;
@@ -30,6 +31,7 @@ public class MosaicRobotPingPongHandler {
     private final ObjectMapper objectMapper;
     private final WsMessageSender wsMessageSender;
     private final WsSessionManager wsSessionManager;
+    private final MosaicRobotStatusHandler mosaicRobotStatusHandler;
 
     private final ConcurrentHashMap<UUID, PingRecord> pendingPings = new ConcurrentHashMap<>();
 
@@ -86,11 +88,11 @@ public class MosaicRobotPingPongHandler {
                             log.info("Robot session closed due to ping timeout: {}", record.sessionId);
                             this.wsSessionManager.removeRobotSession(record.sessionId);
                         })
+                        .then(this.mosaicRobotStatusHandler.updateRobotStatus(RobotStatus.DISCONNECTED, session))
                         .doOnError(e -> log.error("Failed to close robot session: {}", record.sessionId, e))
                         .subscribe());
 
                 this.pendingPings.remove(record.sessionId);
-                // TODO: Robot status 변경하고 USER 에게도 알려야 함 -> 메소드 호출 필요
             }
         });
     }

@@ -3,6 +3,7 @@ package com.gistacsl.mosaic.websocket.scheduler;
 import com.gistacsl.mosaic.robot.RobotService;
 import com.gistacsl.mosaic.robot.enumerate.RobotStatus;
 import com.gistacsl.mosaic.websocket.handler.robot.MosaicRobotPingPongHandler;
+import com.gistacsl.mosaic.websocket.handler.robot.MosaicRobotStatusHandler;
 import com.gistacsl.mosaic.websocket.session.WsSessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ public class RobotWsScheduler {
 
     private final WsSessionManager wsSessionManager;
     private final MosaicRobotPingPongHandler robotPingPongHandler;
+    private final MosaicRobotStatusHandler mosaicRobotStatusHandler;
     private final RobotService robotService;
 
     @Scheduled(fixedDelay = 5000)
@@ -37,7 +39,7 @@ public class RobotWsScheduler {
                                     () -> {
                                         if (robot.getStatus() != RobotStatus.DISCONNECTED) {
                                             log.debug("Robot {} has no active session, updating status to DISCONNECTED", robot.getPk());
-                                            this.robotService.updateRobotStatus(
+                                            this.mosaicRobotStatusHandler.updateRobotStatus(
                                                     RobotStatus.DISCONNECTED,
                                                     robot.getPk(),
                                                     robot.getOrganizationFk()
