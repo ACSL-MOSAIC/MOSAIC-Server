@@ -7,12 +7,9 @@ import type { WidgetProps } from "@/widgets/index.ts";
 
 import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
+import AngleIndicator from "@/widgets/PPC2DViewerWidget/AngleIndicator.tsx";
 
-import AngleIndicator from "./AngleIndicator.tsx";
-import { calculateColor, calculatePointSize, type ColorMode } from "./colorMapping.ts";
-import ColorModeSelector from "./ColorModeSelector.tsx";
-
-export default function ProgressivePointCloud2DViewerV2Widget({ widgetConfig }: WidgetProps) {
+export default function PPC2DViewerWidget({ widgetConfig }: WidgetProps) {
   const { getOrCreateStore, releaseStore } = useMosaicStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -22,7 +19,6 @@ export default function ProgressivePointCloud2DViewerV2Widget({ widgetConfig }: 
   const canvasSizeRef = useRef({ width: 0, height: 0 });
   const lastPPCMetaRef = useRef<PPCMeta | null>(null);
   const lastPPCPointsRef = useRef<PPCPoint[] | null>(null);
-  const [colorMode, setColorMode] = useState<ColorMode>("height"); // Default to height-based coloring
 
   const clearCanvas = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
     ctx.fillStyle = "black";
@@ -71,13 +67,11 @@ export default function ProgressivePointCloud2DViewerV2Widget({ widgetConfig }: 
         setPointCount(meta.height * meta.width);
 
         if (lastPPCPointsRef.current === null) {
-          // First chunk of new frame - draw all points
           lastPPCPointsRef.current = points;
-          drawPoint(canvas, ctx, points, meta, false);
+          drawPoint(canvas, ctx, points, meta);
         } else {
-          // Subsequent chunks - only draw new points
-          drawPoint(canvas, ctx, points, meta, true);
           lastPPCPointsRef.current = [...lastPPCPointsRef.current, ...points];
+          drawPoint(canvas, ctx, lastPPCPointsRef.current, meta);
         }
       } catch (error) {
         console.error("Error processing PointCloud2:", error);
@@ -100,7 +94,6 @@ export default function ProgressivePointCloud2DViewerV2Widget({ widgetConfig }: 
     ctx: CanvasRenderingContext2D,
     points: PPCPoint[],
     meta: PPCMeta,
-    incremental = false, // If true, only render new points without clearing
   ) => {
     // Get actual canvas display size and set internal resolution
     const rect = canvas.getBoundingClientRect();
@@ -115,8 +108,6 @@ export default function ProgressivePointCloud2DViewerV2Widget({ widgetConfig }: 
       canvas.width = canvasWidth;
       canvas.height = canvasHeight;
       canvasSizeRef.current = { width: canvasWidth, height: canvasHeight };
-      // Clear canvas when resizing
-      clearCanvas(canvas, ctx);
     }
 
     // Check minimum size
@@ -124,25 +115,24 @@ export default function ProgressivePointCloud2DViewerV2Widget({ widgetConfig }: 
       return;
     }
 
-    // Calculate max distance for point size calculation
-    const maxDistance = Math.sqrt(meta.max_x * meta.max_x + meta.max_y * meta.max_y);
+    // Initialize depth map, height map, and intensity map for 2D projection
+    const n = canvasWidth * canvasHeight;
+    const depthMap = Array.from<number>({ length: n }).fill(Number.POSITIVE_INFINITY);
+    const heightMap = Array.from<number>({ length: n }).fill(0);
 
-    // Depth buffer to handle occlusion
-    // Store points with their screen coordinates and depth for rendering
-    interface PointData {
-      x: number;
-      y: number;
-      distance: number;
-      point: PPCPoint;
+    let minHeight = meta.min_z;
+    let maxHeight = meta.max_z;
+
+    // Set default values
+    const heightRange = maxHeight - minHeight;
+    if (heightRange === 0) {
+      minHeight = -1;
+      maxHeight = 1;
     }
 
-    const pointsToRender: PointData[] = [];
-
-    // Project all points to screen space
+    // Actual projection and mapping
     for (let i = 0; i < points.length; i++) {
-      const point = points[i];
-      const { x, y, z } = point;
-
+      const { x, y, z } = points[i];
       if (x === null || y === null || z === null) {
         continue;
       }
@@ -150,59 +140,42 @@ export default function ProgressivePointCloud2DViewerV2Widget({ widgetConfig }: 
       const distance = Math.sqrt(x * x + y * y);
       if (distance === 0) continue;
 
-      // Cylindrical projection
       const azimuth = Math.atan2(y, x);
-      const screenX = ((azimuth + Math.PI) / (2 * Math.PI)) * canvasWidth;
+      const u = Math.floor(((azimuth + Math.PI) / (2 * Math.PI)) * canvasWidth);
 
       // Map height to canvas Y coordinate (top is higher elevation)
-      const heightRange = meta.max_z - meta.min_z || 1;
-      const screenY = ((meta.max_z - z) / heightRange) * canvasHeight;
+      const v = Math.floor(((maxHeight - z) / (maxHeight - minHeight)) * (canvasHeight - 1));
 
-      pointsToRender.push({
-        x: screenX,
-        y: screenY,
-        distance,
-        point,
-      });
-    }
-
-    // Sort by distance (far to near) for proper rendering order
-    // Only sort when not doing incremental rendering for better performance
-    if (!incremental) {
-      pointsToRender.sort((a, b) => b.distance - a.distance);
-    }
-
-    // Render each point as a circle
-    for (const { x, y, distance, point } of pointsToRender) {
-      // Calculate color based on current mode
-      const [r, g, b, a] = calculateColor(point, meta, colorMode);
-
-      // Calculate point size based on distance
-      const size = calculatePointSize(distance, maxDistance);
-
-      // Set fill style with calculated color
-      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
-
-      // Draw point as a filled circle
-      ctx.beginPath();
-      ctx.arc(x, y, size / 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    setPointCount(points.length);
-    setLastUpdate(new Date());
-  };
-
-  const handleColorModeChange = (mode: ColorMode) => {
-    setColorMode(mode);
-    // Redraw with new color mode
-    if (canvasRef.current && lastPPCPointsRef.current && lastPPCMetaRef.current) {
-      const ctx = canvasRef.current.getContext("2d");
-      if (ctx) {
-        clearCanvas(canvasRef.current, ctx);
-        drawPoint(canvasRef.current, ctx, lastPPCPointsRef.current, lastPPCMetaRef.current, false);
+      // Range check
+      if (u >= 0 && u < canvasWidth && v >= 0 && v < canvasHeight) {
+        const pixelIndex = v * canvasWidth + u;
+        // Use closest distance when multiple points map to same pixel
+        if (distance < depthMap[pixelIndex]) {
+          depthMap[pixelIndex] = distance;
+          heightMap[pixelIndex] = z;
+        }
       }
     }
+
+    // Create image data
+    const imageData = ctx.createImageData(canvas.width, canvas.height);
+
+    // Convert depth map, height map, and intensity map to image
+    for (let pixelIndex = 0; pixelIndex < depthMap.length; pixelIndex++) {
+      if (depthMap[pixelIndex] !== Number.POSITIVE_INFINITY) {
+        // Set color values in image data
+        const imageIndex = pixelIndex * 4;
+        imageData.data[imageIndex] = 255; // R
+        imageData.data[imageIndex + 1] = 255; // G
+        imageData.data[imageIndex + 2] = 255; // B
+        imageData.data[imageIndex + 3] = 255; // A
+      }
+    }
+
+    // Draw image data to canvas
+    ctx.putImageData(imageData, 0, 0);
+    setPointCount(points.length);
+    setLastUpdate(new Date());
   };
 
   const footerInfo = [
@@ -213,10 +186,6 @@ export default function ProgressivePointCloud2DViewerV2Widget({ widgetConfig }: 
     {
       label: "Last Update",
       value: lastUpdate ? lastUpdate.toLocaleTimeString() : "N/A",
-    },
-    {
-      label: "Mode",
-      value: colorMode.charAt(0).toUpperCase() + colorMode.slice(1),
     },
   ];
 
@@ -237,21 +206,18 @@ export default function ProgressivePointCloud2DViewerV2Widget({ widgetConfig }: 
           <Box fontSize="sm">{error}</Box>
         </Flex>
       ) : (
-        <Flex direction="column" h="100%" position="relative">
-          <ColorModeSelector colorMode={colorMode} onChange={handleColorModeChange} />
-          <AngleIndicator />
-          <Box flex="1" position="relative">
-            <canvas
-              ref={canvasRef}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-                borderRadius: "6px",
-              }}
-            />
-          </Box>
-        </Flex>
+        <>
+          <AngleIndicator height="20px" fontSize="10px" fontColor="gray.300" />
+          <canvas
+            ref={canvasRef}
+            style={{
+              width: "100%",
+              height: "calc(100% - 20px)",
+              objectFit: "contain",
+              borderRadius: "6px",
+            }}
+          />
+        </>
       )}
     </WidgetFrame>
   );
