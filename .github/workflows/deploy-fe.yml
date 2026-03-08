@@ -104,7 +104,6 @@ jobs:
           key: ${{ needs.build-and-push.outputs.environment == 'dev' && secrets.DEV_SERVER_SSH_KEY || secrets.PROD_SERVER_SSH_KEY }}
           script: |
             cd ${{ env.DEPLOY_PATH }}
-            aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin public.ecr.aws/${{ env.ECR_REGISTRY_ALIAS }}
 
             sudo docker pull ${{ needs.build-and-push.outputs.image-uri }}
             sudo docker tag mosaic-fe:latest mosaic-fe:previous || true
