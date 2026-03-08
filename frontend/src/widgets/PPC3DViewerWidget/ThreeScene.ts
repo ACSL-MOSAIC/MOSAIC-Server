@@ -35,15 +35,24 @@ export class ThreeScene {
     this.scene.background = new THREE.Color(0x000000);
 
     // Create camera
+    // Position camera behind and above the robot, looking at the robot
+    // ROS coordinate system: X=forward, Y=left, Z=up
     const aspect = container.clientWidth / container.clientHeight;
     this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
-    this.camera.position.set(5, 5, 5);
-    this.camera.lookAt(0, 0, 0);
+    this.camera.up.set(0, 0, 1); // Set Z-axis as up (ROS convention)
+    this.camera.position.set(-5, 0, 3); // Behind (-X), centered (Y), above (+Z)
+    this.camera.lookAt(0, 0, 0); // Look at robot origin
 
     // Create renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
+
+    // Style canvas to fill container
+    this.renderer.domElement.style.width = "100%";
+    this.renderer.domElement.style.height = "100%";
+    this.renderer.domElement.style.display = "block";
+
     container.appendChild(this.renderer.domElement);
 
     // Create controls
@@ -52,6 +61,8 @@ export class ThreeScene {
     this.controls.dampingFactor = 0.05;
     this.controls.autoRotate = options.autoRotate ?? false;
     this.controls.autoRotateSpeed = 1.0;
+    this.controls.target.set(0, 0, 0); // Set orbit center to robot origin
+    this.controls.update();
 
     // Add coordinate axes
     if (this.showAxes) {
@@ -87,10 +98,10 @@ export class ThreeScene {
    * Add points to existing data (progressive rendering)
    */
   addPoints(
-    newPoints: PPCPoint[],
+    _newPoints: PPCPoint[],
     allPoints: PPCPoint[],
     meta: PPCMeta,
-    colorMode: ColorMode
+    colorMode: ColorMode,
   ): void {
     // For simplicity, recreate the entire point cloud
     // Optimized version would extend the BufferGeometry attributes
@@ -137,31 +148,6 @@ export class ThreeScene {
     // Create points object
     this.points = new THREE.Points(geometry, material);
     this.scene.add(this.points);
-
-    // Auto-fit camera to show all points
-    this.fitCameraToPoints();
-  }
-
-  /**
-   * Fit camera to show all points
-   */
-  private fitCameraToPoints(): void {
-    if (!this.points || !this.points.geometry.boundingSphere) {
-      return;
-    }
-
-    const boundingSphere = this.points.geometry.boundingSphere;
-    const center = boundingSphere.center;
-    const radius = boundingSphere.radius;
-
-    // Position camera to see all points
-    const distance = radius * 2.5; // Adjust multiplier for desired zoom level
-    this.camera.position.set(distance, distance, distance);
-    this.camera.lookAt(center);
-
-    // Update controls target
-    this.controls.target.copy(center);
-    this.controls.update();
   }
 
   /**
@@ -220,9 +206,9 @@ export class ThreeScene {
    * Reset camera to initial position
    */
   resetCamera(): void {
-    this.camera.position.set(5, 5, 5);
-    this.camera.lookAt(0, 0, 0);
-    this.controls.target.set(0, 0, 0);
+    this.camera.position.set(-5, 0, 3); // Behind and above the robot
+    this.camera.lookAt(0, 0, 0); // Look at robot origin
+    this.controls.target.set(0, 0, 0); // Set orbit target to robot origin
     this.controls.update();
   }
 

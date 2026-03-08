@@ -9,6 +9,7 @@ import { ReceivableStore } from "@/mosaic/store/interface/receivable-store.ts";
 import { ProgressivePointCloud } from "@/protobuf/proto";
 
 export class ProgressivePointCloudStore extends ReceivableStore<PPCData> {
+  public isParallelReceivable = true;
   private lastPPCMeta: PPCMeta | null = null;
   private ppcMetaHolder: Map<string, PPCMeta> = new Map();
 
@@ -160,7 +161,7 @@ export class ProgressivePointCloudStore extends ReceivableStore<PPCData> {
         chunks: [],
       };
     } catch (error) {
-      console.error("❌ Error decoding data chunk:", error);
+      // console.error("❌ Error decoding data chunk:", error);
       return null;
     }
   }
@@ -177,7 +178,7 @@ export class ProgressivePointCloudStore extends ReceivableStore<PPCData> {
         data: protoPPCChunk.data,
       };
     } catch (error) {
-      console.error("❌ Error decoding data chunk:", error);
+      // console.error("❌ Error decoding data chunk:", error);
       return null;
     }
   }

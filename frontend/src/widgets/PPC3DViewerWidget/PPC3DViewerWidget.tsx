@@ -27,7 +27,7 @@ export default function PPC3DViewerWidget({ widgetConfig }: WidgetProps) {
   const [pointSize, setPointSize] = useState(0.05);
   const [showAxes, setShowAxes] = useState(true);
   const [autoRotate, setAutoRotate] = useState(false);
-  const [cameraPosition, setCameraPosition] = useState({ x: 5, y: 5, z: 5 });
+  const [cameraPosition, setCameraPosition] = useState({ x: -5, y: 0, z: 3 });
 
   const lastPPCMetaRef = useRef<PPCMeta | null>(null);
   const lastPPCPointsRef = useRef<PPCPoint[] | null>(null);
@@ -234,7 +234,14 @@ export default function PPC3DViewerWidget({ widgetConfig }: WidgetProps) {
           />
 
           {/* Three.js Container */}
-          <Box ref={containerRef} flex="1" position="relative" borderRadius="6px" />
+          <Box
+            ref={containerRef}
+            flex="1"
+            w="100%"
+            position="relative"
+            borderRadius="6px"
+            overflow="hidden"
+          />
         </Flex>
       )}
     </WidgetFrame>

@@ -35,19 +35,21 @@ export default function ViewControls({
           <Text fontSize="xs" color="gray.400" fontWeight="medium" whiteSpace="nowrap">
             Point Size:
           </Text>
-          <Slider
-            value={pointSize * 1000}
-            onChange={(val) => onPointSizeChange(val / 1000)}
+          <Slider.Root
+            value={[pointSize * 1000]}
+            onValueChange={(details) => onPointSizeChange(details.value[0] / 1000)}
             min={10}
             max={200}
             step={5}
             w="120px"
           >
-            <Slider.Track bg="gray.700">
-              <Slider.FilledTrack bg="blue.500" />
-            </Slider.Track>
-            <Slider.Thumb />
-          </Slider>
+            <Slider.Control>
+              <Slider.Track bg="gray.700">
+                <Slider.Range bg="blue.500" />
+              </Slider.Track>
+              <Slider.Thumb index={0} />
+            </Slider.Control>
+          </Slider.Root>
           <Text fontSize="xs" color="gray.500" w="30px">
             {Math.round(pointSize * 1000)}
           </Text>
