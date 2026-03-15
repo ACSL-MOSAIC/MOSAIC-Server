@@ -40,5 +40,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Generate protobuf
+        run: npm run protobuf:gen
+
       - name: Build
         run: npm run build

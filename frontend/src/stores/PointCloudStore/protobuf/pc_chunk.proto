@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package PointCloud;
+
+message PCChunk {
+  double timestamp = 1;
+  string frame_id = 2;
+
+  uint32 chunk_index = 3;
+  uint32 point_size = 4;
+  bytes data = 5;
+}
