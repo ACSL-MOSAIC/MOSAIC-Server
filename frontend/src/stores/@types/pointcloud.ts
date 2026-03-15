@@ -1,12 +1,12 @@
-export type PPCData =
+export type PointCloudData =
   | {
       dataPresent: true;
-      meta: PPCMeta;
-      points: PPCPoint[];
+      meta: PointCloudMeta;
+      points: PointCloudPoint[];
     }
   | { dataPresent: false };
 
-export type PPCMeta = {
+export type PointCloudMeta = {
   timestamp: number;
   receivedTimestamp: number;
   frameId: string;
@@ -30,10 +30,12 @@ export type PPCMeta = {
   min_z: number;
   max_z: number;
 
-  chunks: Omit<PPCChunk, "data">[];
+  expected_chunk_num: number;
+
+  chunks: Omit<PointCloudChunk, "data">[];
 };
 
-export type PPCChunk = {
+export type PointCloudChunk = {
   timestamp: number;
   receivedTimestamp: number;
   frameId: string;
@@ -42,7 +44,7 @@ export type PPCChunk = {
   data: Uint8Array<ArrayBufferLike>;
 };
 
-export type PPCPoint = {
+export type PointCloudPoint = {
   x: number | null;
   y: number | null;
   z: number | null;
