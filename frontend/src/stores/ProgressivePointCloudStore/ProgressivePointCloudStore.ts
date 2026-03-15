@@ -16,7 +16,6 @@ export class ProgressivePointCloudStore extends ReceivableStore<PointCloudData> 
   public convertData(data: ArrayBuffer): PointCloudData {
     const ppcMeta = this.tryParseMeta(data);
     if (ppcMeta) {
-      // console.log("📥 Received PPC Meta:", ppcMeta);
       this.processPPCMeta(ppcMeta);
       return {
         dataPresent: false,
@@ -28,9 +27,8 @@ export class ProgressivePointCloudStore extends ReceivableStore<PointCloudData> 
         dataPresent: false,
       };
     }
-    // console.log("📥 Received PPC Chunk:", ppcChunk?.pointSize);
 
-    // ppc chunk 가 ppc meta 보다 먼저 도착하는 상황은 없다고 가정
+    // Assumes ppc chunk never arrives before ppc meta
     const foundPpcMeta = this.ppcMetaHolder.get(ppcChunk.frameId);
     if (!foundPpcMeta) {
       return {
@@ -50,40 +48,40 @@ export class ProgressivePointCloudStore extends ReceivableStore<PointCloudData> 
   }
 
   private processPPCMeta(ppcMeta: PointCloudMeta) {
-    // 새로운 프레임의 ppc meta 도착, 저장
+    // New frame's ppc meta arrived, save it
     this.ppcMetaHolder.set(ppcMeta.frameId, ppcMeta);
   }
 
-  // 해당 메소드에서 오래된 청크의 무시 과정이 이루어지기 때문에 받는 쪽에서는 그냥 마지막 들어온 프레임의 meta 를 기준으로 처리하면 됨
+  // This method handles ignoring outdated chunks, so the receiver can simply process based on the meta of the last arrived frame
   private processPPCChunk(ppcChunk: PointCloudChunk, ppcMeta: PointCloudMeta): PointCloudData {
-    // 이미 다음 프레임이 왔고, 청크가 왔다면 무시
+    // Ignore if the next frame has already arrived and a chunk comes in
     if (!this.lastPPCMeta) {
-      // 첫 프레임
+      // First frame
       this.lastPPCMeta = ppcMeta;
     } else if (
-      ppcMeta.frameId !== this.lastPPCMeta.frameId && // 마지막 처리한 프레임과 다름
-      ppcMeta.timestamp < this.lastPPCMeta.timestamp // 예전 프레임의 청크 도착
+      ppcMeta.frameId !== this.lastPPCMeta.frameId && // Different from the last processed frame
+      ppcMeta.timestamp < this.lastPPCMeta.timestamp // Chunk from an older frame arrived
     ) {
       return {
         dataPresent: false,
       };
     } else if (
-      ppcMeta.frameId !== this.lastPPCMeta.frameId && // 마지막 처리한 프레임과 다름
-      ppcMeta.timestamp >= this.lastPPCMeta.timestamp // 새로운 프레임의 청크 도착
+      ppcMeta.frameId !== this.lastPPCMeta.frameId && // Different from the last processed frame
+      ppcMeta.timestamp >= this.lastPPCMeta.timestamp // Chunk from a newer frame arrived
     ) {
-      this.lastPPCMeta = ppcMeta; // 새로운 프레임 프로세싱 시작
+      this.lastPPCMeta = ppcMeta; // Start processing new frame
     }
 
     const ppcPoints: PointCloudPoint[] = [];
 
     const numPoints = ppcChunk.pointSize;
-    // DataView를 한 번만 생성
+    // Create DataView only once
     const dataView = new DataView(ppcChunk.data.buffer, ppcChunk.data.byteOffset);
 
     for (let i = 0; i < numPoints; i++) {
       const pointOffset = i * ppcMeta.pointStep;
 
-      // 직접 메모리에서 읽기 (메모리 할당 없음)
+      // Read directly from memory (no memory allocation)
       const x = dataView.getFloat32(pointOffset + ppcMeta.xOffset, !ppcMeta.isBigEndian); // little-endian
       const y = dataView.getFloat32(pointOffset + ppcMeta.yOffset, !ppcMeta.isBigEndian);
       const z = dataView.getFloat32(pointOffset + ppcMeta.zOffset, !ppcMeta.isBigEndian);
@@ -94,7 +92,7 @@ export class ProgressivePointCloudStore extends ReceivableStore<PointCloudData> 
 
       const point = { x, y, z, intensity };
 
-      // 유효성 검사 (기존과 동일)
+      // Validate values (same as before)
       if (!Number.isFinite(point.x)) point.x = 0;
       if (!Number.isFinite(point.y)) point.y = 0;
       if (!Number.isFinite(point.z)) point.z = 0;
@@ -124,7 +122,7 @@ export class ProgressivePointCloudStore extends ReceivableStore<PointCloudData> 
     try {
       const protoPPCMeta = ProgressivePointCloud.PPCMeta.decode(new Uint8Array(buffer));
 
-      // 필드 매핑 생성: 필요한 필드들의 offset 정보를 찾음
+      // Build field mapping: find offset info for required fields
       const requiredFields = ["x", "y", "z", "intensity"];
       const fieldMapping: Record<string, number> = {};
 
@@ -158,10 +156,11 @@ export class ProgressivePointCloudStore extends ReceivableStore<PointCloudData> 
         min_z: protoPPCMeta.minZ || 0,
         max_z: protoPPCMeta.maxZ || 0,
 
+        expected_chunk_num: protoPPCMeta.expectedChunkNum || 0,
+
         chunks: [],
       };
-    } catch (error) {
-      // console.error("❌ Error decoding data chunk:", error);
+    } catch {
       return null;
     }
   }
@@ -177,8 +176,7 @@ export class ProgressivePointCloudStore extends ReceivableStore<PointCloudData> 
         pointSize: protoPPCChunk.pointSize,
         data: protoPPCChunk.data,
       };
-    } catch (error) {
-      // console.error("❌ Error decoding data chunk:", error);
+    } catch {
       return null;
     }
   }
@@ -187,14 +185,14 @@ export class ProgressivePointCloudStore extends ReceivableStore<PointCloudData> 
     const now = Date.now();
     for (const [frameId, ppcMeta] of this.ppcMetaHolder.entries()) {
       if (now - Number(ppcMeta.timestamp) > 30000) {
-        // 30초 이상된 메타데이터 삭제
+        // Delete metadata older than 30 seconds
         this.ppcMetaHolder.delete(frameId);
       }
     }
   }
 
   public clearAll() {
-    // TODO: 연구를 위해 우선은 모두 유지
+    // TODO: Keep all for now for research purposes
     // this.ppcMetaHolder.clear()
   }
 }

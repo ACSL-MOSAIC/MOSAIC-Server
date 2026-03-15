@@ -87,10 +87,7 @@ export default function ViewControls({
             </Button>
           </Tooltip>
 
-          <Tooltip
-            content={showAdvanced ? "Hide camera info" : "Show camera info"}
-            showArrow
-          >
+          <Tooltip content={showAdvanced ? "Hide camera info" : "Show camera info"} showArrow>
             <IconButton
               size="xs"
               variant="outline"
@@ -106,14 +103,7 @@ export default function ViewControls({
 
       {/* Advanced Info (Collapsible) */}
       {showAdvanced && cameraPosition && (
-        <Box
-          bg="whiteAlpha.50"
-          borderRadius="md"
-          px={2}
-          py={1}
-          fontSize="xs"
-          color="gray.400"
-        >
+        <Box bg="whiteAlpha.50" borderRadius="md" px={2} py={1} fontSize="xs" color="gray.400">
           <Text fontFamily="mono">
             Camera: ({cameraPosition.x.toFixed(2)}, {cameraPosition.y.toFixed(2)},{" "}
             {cameraPosition.z.toFixed(2)})
