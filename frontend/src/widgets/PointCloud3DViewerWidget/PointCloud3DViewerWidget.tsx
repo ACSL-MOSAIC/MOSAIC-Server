@@ -18,7 +18,7 @@ import ColorModeSelector from "./ColorModeSelector.tsx";
 import { ThreeScene } from "./ThreeScene.ts";
 import ViewControls from "./ViewControls.tsx";
 
-export default function PPC3DViewerWidget({ widgetConfig }: WidgetProps) {
+export default function PointCloud3DViewerWidget({ widgetConfig }: WidgetProps) {
   const { getOrCreateStore, releaseStore } = useMosaicStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const threeSceneRef = useRef<ThreeScene | null>(null);
@@ -34,8 +34,8 @@ export default function PPC3DViewerWidget({ widgetConfig }: WidgetProps) {
   const [autoRotate, setAutoRotate] = useState(false);
   const [cameraPosition, setCameraPosition] = useState({ x: -5, y: 0, z: 3 });
 
-  const lastPPCMetaRef = useRef<PointCloudMeta | null>(null);
-  const lastPPCPointsRef = useRef<PointCloudPoint[] | null>(null);
+  const lastPCMetaRef = useRef<PointCloudMeta | null>(null);
+  const lastPCPointsRef = useRef<PointCloudPoint[] | null>(null);
 
   // Initialize Three.js scene
   useEffect(() => {
@@ -112,18 +112,18 @@ export default function PPC3DViewerWidget({ widgetConfig }: WidgetProps) {
         setPointCount(meta.height * meta.width);
 
         // New frame - clear and update
-        if (!lastPPCMetaRef.current || lastPPCMetaRef.current.frameId !== meta.frameId) {
-          lastPPCMetaRef.current = meta;
-          lastPPCPointsRef.current = points;
+        if (!lastPCMetaRef.current || lastPCMetaRef.current.frameId !== meta.frameId) {
+          lastPCMetaRef.current = meta;
+          lastPCPointsRef.current = points;
           scene.clear();
           scene.updatePoints(points, meta, colorModeRef.current);
         }
         // Same frame - add points progressively
         else {
-          const allPoints = lastPPCPointsRef.current
-            ? [...lastPPCPointsRef.current, ...points]
+          const allPoints = lastPCPointsRef.current
+            ? [...lastPCPointsRef.current, ...points]
             : points;
-          lastPPCPointsRef.current = allPoints;
+          lastPCPointsRef.current = allPoints;
           scene.addPoints(points, allPoints, meta, colorModeRef.current);
         }
 
@@ -139,8 +139,8 @@ export default function PPC3DViewerWidget({ widgetConfig }: WidgetProps) {
     return () => {
       unsubscribe();
       releaseStore(connector);
-      lastPPCMetaRef.current = null;
-      lastPPCPointsRef.current = null;
+      lastPCMetaRef.current = null;
+      lastPCPointsRef.current = null;
     };
   }, [widgetConfig]);
 
@@ -149,8 +149,8 @@ export default function PPC3DViewerWidget({ widgetConfig }: WidgetProps) {
     setColorMode(mode);
     colorModeRef.current = mode;
     const scene = threeSceneRef.current;
-    if (scene && lastPPCPointsRef.current && lastPPCMetaRef.current) {
-      scene.updatePoints(lastPPCPointsRef.current, lastPPCMetaRef.current, mode);
+    if (scene && lastPCPointsRef.current && lastPCMetaRef.current) {
+      scene.updatePoints(lastPCPointsRef.current, lastPCMetaRef.current, mode);
     }
   };
 
