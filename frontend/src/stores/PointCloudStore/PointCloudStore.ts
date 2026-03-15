@@ -6,12 +6,13 @@ import type {
 } from "@/stores/@types/pointcloud.ts";
 
 import { ReceivableStore } from "@/mosaic/store/interface/receivable-store.ts";
-import { ProgressivePointCloud } from "@/protobuf/proto";
+import { PointCloud } from "@/protobuf/proto";
 
-export class ProgressivePointCloudStore extends ReceivableStore<PointCloudData> {
+export class PointCloudStore extends ReceivableStore<PointCloudData> {
   public isParallelReceivable = true;
   private lastPPCMeta: PointCloudMeta | null = null;
   private ppcMetaHolder: Map<string, PointCloudMeta> = new Map();
+  private ppcChunkHolder: Map<string, PointCloudChunk[]> = new Map();
 
   public convertData(data: ArrayBuffer): PointCloudData {
     const ppcMeta = this.tryParseMeta(data);
@@ -39,13 +40,24 @@ export class ProgressivePointCloudStore extends ReceivableStore<PointCloudData> 
     }
 
     this.savePPCChunk(ppcChunk, foundPpcMeta);
+
+    // 청크 누적
+    const accumulated = this.ppcChunkHolder.get(ppcChunk.frameId) ?? [];
+    accumulated.push(ppcChunk);
+    this.ppcChunkHolder.set(ppcChunk.frameId, accumulated);
+
+    // expected_chunk_num 개 모두 도착하기 전까지는 대기
+    if (accumulated.length < foundPpcMeta.expected_chunk_num - 1) {
+      return { dataPresent: false };
+    }
+
+    // 모든 청크 도착 → 처리 후 정리
+    this.ppcChunkHolder.delete(ppcChunk.frameId);
     try {
-      return this.processPPCChunk(ppcChunk, foundPpcMeta);
+      return this.processAllPPCChunks(accumulated, foundPpcMeta);
     } catch (error) {
       console.error("Process PPC Chunk Error:", error);
-      return {
-        dataPresent: false,
-      };
+      return { dataPresent: false };
     }
   }
 
@@ -54,53 +66,51 @@ export class ProgressivePointCloudStore extends ReceivableStore<PointCloudData> 
     this.ppcMetaHolder.set(ppcMeta.frameId, ppcMeta);
   }
 
-  // 해당 메소드에서 오래된 청크의 무시 과정이 이루어지기 때문에 받는 쪽에서는 그냥 마지막 들어온 프레임의 meta 를 기준으로 처리하면 됨
-  private processPPCChunk(ppcChunk: PointCloudChunk, ppcMeta: PointCloudMeta): PointCloudData {
-    // 이미 다음 프레임이 왔고, 청크가 왔다면 무시
+  // 모든 청크가 도착했을 때 한 번에 처리. 오래된 프레임은 무시.
+  private processAllPPCChunks(
+    ppcChunks: PointCloudChunk[],
+    ppcMeta: PointCloudMeta,
+  ): PointCloudData {
     if (!this.lastPPCMeta) {
-      // 첫 프레임
       this.lastPPCMeta = ppcMeta;
     } else if (
-      ppcMeta.frameId !== this.lastPPCMeta.frameId && // 마지막 처리한 프레임과 다름
-      ppcMeta.timestamp < this.lastPPCMeta.timestamp // 예전 프레임의 청크 도착
+      ppcMeta.frameId !== this.lastPPCMeta.frameId &&
+      ppcMeta.timestamp < this.lastPPCMeta.timestamp
     ) {
-      return {
-        dataPresent: false,
-      };
+      return { dataPresent: false };
     } else if (
-      ppcMeta.frameId !== this.lastPPCMeta.frameId && // 마지막 처리한 프레임과 다름
-      ppcMeta.timestamp >= this.lastPPCMeta.timestamp // 새로운 프레임의 청크 도착
+      ppcMeta.frameId !== this.lastPPCMeta.frameId &&
+      ppcMeta.timestamp >= this.lastPPCMeta.timestamp
     ) {
-      this.lastPPCMeta = ppcMeta; // 새로운 프레임 프로세싱 시작
+      this.lastPPCMeta = ppcMeta;
     }
 
     const ppcPoints: PointCloudPoint[] = [];
 
-    const numPoints = ppcChunk.pointSize;
-    // DataView를 한 번만 생성
-    const dataView = new DataView(ppcChunk.data.buffer, ppcChunk.data.byteOffset);
+    for (const ppcChunk of ppcChunks) {
+      const numPoints = ppcChunk.pointSize;
+      const dataView = new DataView(ppcChunk.data.buffer, ppcChunk.data.byteOffset);
 
-    for (let i = 0; i < numPoints; i++) {
-      const pointOffset = i * ppcMeta.pointStep;
+      for (let i = 0; i < numPoints; i++) {
+        const pointOffset = i * ppcMeta.pointStep;
 
-      // 직접 메모리에서 읽기 (메모리 할당 없음)
-      const x = dataView.getFloat32(pointOffset + ppcMeta.xOffset, !ppcMeta.isBigEndian); // little-endian
-      const y = dataView.getFloat32(pointOffset + ppcMeta.yOffset, !ppcMeta.isBigEndian);
-      const z = dataView.getFloat32(pointOffset + ppcMeta.zOffset, !ppcMeta.isBigEndian);
-      const intensity = dataView.getFloat32(
-        pointOffset + ppcMeta.intensityOffset,
-        !ppcMeta.isBigEndian,
-      );
+        const x = dataView.getFloat32(pointOffset + ppcMeta.xOffset, !ppcMeta.isBigEndian);
+        const y = dataView.getFloat32(pointOffset + ppcMeta.yOffset, !ppcMeta.isBigEndian);
+        const z = dataView.getFloat32(pointOffset + ppcMeta.zOffset, !ppcMeta.isBigEndian);
+        const intensity = dataView.getFloat32(
+          pointOffset + ppcMeta.intensityOffset,
+          !ppcMeta.isBigEndian,
+        );
 
-      const point = { x, y, z, intensity };
+        const point = { x, y, z, intensity };
 
-      // 유효성 검사 (기존과 동일)
-      if (!Number.isFinite(point.x)) point.x = 0;
-      if (!Number.isFinite(point.y)) point.y = 0;
-      if (!Number.isFinite(point.z)) point.z = 0;
-      if (!Number.isFinite(point.intensity)) point.intensity = 0;
+        if (!Number.isFinite(point.x)) point.x = 0;
+        if (!Number.isFinite(point.y)) point.y = 0;
+        if (!Number.isFinite(point.z)) point.z = 0;
+        if (!Number.isFinite(point.intensity)) point.intensity = 0;
 
-      ppcPoints.push(point);
+        ppcPoints.push(point);
+      }
     }
 
     return {
@@ -122,7 +132,7 @@ export class ProgressivePointCloudStore extends ReceivableStore<PointCloudData> 
 
   private tryParseMeta(buffer: ArrayBuffer): PointCloudMeta | null {
     try {
-      const protoPPCMeta = ProgressivePointCloud.PPCMeta.decode(new Uint8Array(buffer));
+      const protoPPCMeta = PointCloud.PCMeta.decode(new Uint8Array(buffer));
 
       // 필드 매핑 생성: 필요한 필드들의 offset 정보를 찾음
       const requiredFields = ["x", "y", "z", "intensity"];
@@ -158,6 +168,8 @@ export class ProgressivePointCloudStore extends ReceivableStore<PointCloudData> 
         min_z: protoPPCMeta.minZ || 0,
         max_z: protoPPCMeta.maxZ || 0,
 
+        expected_chunk_num: protoPPCMeta.expectedChunkNum || 0,
+
         chunks: [],
       };
     } catch (error) {
@@ -168,7 +180,7 @@ export class ProgressivePointCloudStore extends ReceivableStore<PointCloudData> 
 
   private tryParseChunk(buffer: ArrayBuffer): PointCloudChunk | null {
     try {
-      const protoPPCChunk = ProgressivePointCloud.PPCChunk.decode(new Uint8Array(buffer));
+      const protoPPCChunk = PointCloud.PCChunk.decode(new Uint8Array(buffer));
       return {
         timestamp: protoPPCChunk.timestamp,
         receivedTimestamp: (performance.timeOrigin + performance.now()) * 1000,
@@ -187,8 +199,9 @@ export class ProgressivePointCloudStore extends ReceivableStore<PointCloudData> 
     const now = Date.now();
     for (const [frameId, ppcMeta] of this.ppcMetaHolder.entries()) {
       if (now - Number(ppcMeta.timestamp) > 30000) {
-        // 30초 이상된 메타데이터 삭제
+        // 30초 이상된 메타데이터 및 누적 청크 삭제
         this.ppcMetaHolder.delete(frameId);
+        this.ppcChunkHolder.delete(frameId);
       }
     }
   }

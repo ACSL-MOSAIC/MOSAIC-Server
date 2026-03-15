@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ProgressivePointCloud;
+package PointCloud;
 
 message PointField {
   string name = 1;
@@ -9,7 +9,7 @@ message PointField {
   uint32 count = 4;
 }
 
-message PPCMeta {
+message PCMeta {
   double timestamp = 1;
   string frame_id = 2;
 

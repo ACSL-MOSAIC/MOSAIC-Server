@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package ProgressivePointCloud;
+package PointCloud;
 
-message PPCChunk {
+message PCChunk {
   double timestamp = 1;
   string frame_id = 2;
 

@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-import type { PPCMeta, PPCPoint } from "@/stores/@types/progressive-pointcloud.ts";
+import type { PointCloudMeta, PointCloudPoint } from "@/stores/@types/pointcloud.ts";
 
 import { calculateColor, type ColorMode } from "./colorMapping.ts";
 
@@ -81,7 +81,7 @@ export class ThreeScene {
   /**
    * Update points with new data (replaces existing points)
    */
-  updatePoints(points: PPCPoint[], meta: PPCMeta, colorMode: ColorMode): void {
+  updatePoints(points: PointCloudPoint[], meta: PointCloudMeta, colorMode: ColorMode): void {
     // Remove old points
     if (this.points) {
       this.scene.remove(this.points);
@@ -98,9 +98,9 @@ export class ThreeScene {
    * Add points to existing data (progressive rendering)
    */
   addPoints(
-    _newPoints: PPCPoint[],
-    allPoints: PPCPoint[],
-    meta: PPCMeta,
+    _newPoints: PointCloudPoint[],
+    allPoints: PointCloudPoint[],
+    meta: PointCloudMeta,
     colorMode: ColorMode,
   ): void {
     // For simplicity, recreate the entire point cloud
@@ -111,7 +111,11 @@ export class ThreeScene {
   /**
    * Create points from point cloud data
    */
-  private createPoints(points: PPCPoint[], meta: PPCMeta, colorMode: ColorMode): void {
+  private createPoints(
+    points: PointCloudPoint[],
+    meta: PointCloudMeta,
+    colorMode: ColorMode,
+  ): void {
     const positions: number[] = [];
     const colors: number[] = [];
 

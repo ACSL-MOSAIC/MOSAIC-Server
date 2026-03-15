@@ -1,4 +1,4 @@
-import type { PPCMeta, PPCPoint } from "@/stores/@types/progressive-pointcloud.ts";
+import type { PointCloudMeta, PointCloudPoint } from "@/stores/@types/pointcloud.ts";
 
 export type ColorMode = "height" | "intensity" | "depth" | "hybrid";
 
@@ -15,21 +15,17 @@ export function turboColormap(t: number): [number, number, number] {
     Math.min(
       255,
       Math.round(
-        34.61 +
-          t * (1172.33 - t * (10793.56 - t * (33300.12 - t * (38394.49 - t * 14825.05))))
-      )
-    )
+        34.61 + t * (1172.33 - t * (10793.56 - t * (33300.12 - t * (38394.49 - t * 14825.05)))),
+      ),
+    ),
   );
 
   const g = Math.max(
     0,
     Math.min(
       255,
-      Math.round(
-        23.31 +
-          t * (557.33 + t * (1225.33 - t * (3574.96 - t * (1073.77 + t * 707.56))))
-      )
-    )
+      Math.round(23.31 + t * (557.33 + t * (1225.33 - t * (3574.96 - t * (1073.77 + t * 707.56))))),
+    ),
   );
 
   const b = Math.max(
@@ -37,12 +33,9 @@ export function turboColormap(t: number): [number, number, number] {
     Math.min(
       255,
       Math.round(
-        27.2 +
-          t *
-            (3211.1 -
-              t * (15327.97 - t * (27814.0 - t * (22569.18 - t * 6838.66))))
-      )
-    )
+        27.2 + t * (3211.1 - t * (15327.97 - t * (27814.0 - t * (22569.18 - t * 6838.66)))),
+      ),
+    ),
   );
 
   return [r, g, b];
@@ -84,9 +77,9 @@ export function jetColormap(t: number): [number, number, number] {
  * Returns [R, G, B, A] values in range [0, 255]
  */
 export function calculateColor(
-  point: PPCPoint,
-  meta: PPCMeta,
-  mode: ColorMode
+  point: PointCloudPoint,
+  meta: PointCloudMeta,
+  mode: ColorMode,
 ): [number, number, number, number] {
   const { x, y, z, intensity } = point;
 

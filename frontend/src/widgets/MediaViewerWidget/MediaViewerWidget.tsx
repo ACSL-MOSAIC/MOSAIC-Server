@@ -15,6 +15,8 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
   const connectorId = connector?.connectorId ?? "";
   const [isPlaying, setIsPlaying] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [flipH, setFlipH] = useState(false);
+  const [flipV, setFlipV] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const configureVideo = (store: MediaStreamStore) => {
@@ -159,6 +161,7 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
               height: "100%",
               objectFit: "contain",
               borderRadius: "8px",
+              transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
             }}
             playsInline
             muted
@@ -185,6 +188,24 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
                 aria-label={isPlaying ? "Pause" : "Play"}
               >
                 {isPlaying ? "⏸️" : "▶️"}
+              </IconButton>
+
+              <IconButton
+                size="sm"
+                colorScheme="whiteAlpha"
+                onClick={() => setFlipH((v) => !v)}
+                aria-label="Flip Horizontal"
+              >
+                ↔
+              </IconButton>
+
+              <IconButton
+                size="sm"
+                colorScheme="whiteAlpha"
+                onClick={() => setFlipV((v) => !v)}
+                aria-label="Flip Vertical"
+              >
+                ↕
               </IconButton>
 
               <IconButton

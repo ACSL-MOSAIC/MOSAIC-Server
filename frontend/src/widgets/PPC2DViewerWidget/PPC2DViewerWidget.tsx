@@ -2,7 +2,11 @@ import { Box, Flex } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
 
 import type { ReceivableStore } from "@/mosaic/store/interface/receivable-store.ts";
-import type { PPCData, PPCMeta, PPCPoint } from "@/stores/@types/progressive-pointcloud.ts";
+import type {
+  PointCloudData,
+  PointCloudMeta,
+  PointCloudPoint,
+} from "@/stores/@types/pointcloud.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
 import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
@@ -17,8 +21,8 @@ export default function PPC2DViewerWidget({ widgetConfig }: WidgetProps) {
   const [pointCount, setPointCount] = useState(0);
 
   const canvasSizeRef = useRef({ width: 0, height: 0 });
-  const lastPPCMetaRef = useRef<PPCMeta | null>(null);
-  const lastPPCPointsRef = useRef<PPCPoint[] | null>(null);
+  const lastPPCMetaRef = useRef<PointCloudMeta | null>(null);
+  const lastPPCPointsRef = useRef<PointCloudPoint[] | null>(null);
 
   const clearCanvas = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
     ctx.fillStyle = "black";
@@ -31,7 +35,7 @@ export default function PPC2DViewerWidget({ widgetConfig }: WidgetProps) {
       return;
     }
 
-    const store = getOrCreateStore(connector) as ReceivableStore<PPCData>;
+    const store = getOrCreateStore(connector) as ReceivableStore<PointCloudData>;
     if (store === null) {
       return;
     }
@@ -92,8 +96,8 @@ export default function PPC2DViewerWidget({ widgetConfig }: WidgetProps) {
   const drawPoint = (
     canvas: HTMLCanvasElement,
     ctx: CanvasRenderingContext2D,
-    points: PPCPoint[],
-    meta: PPCMeta,
+    points: PointCloudPoint[],
+    meta: PointCloudMeta,
   ) => {
     // Get actual canvas display size and set internal resolution
     const rect = canvas.getBoundingClientRect();

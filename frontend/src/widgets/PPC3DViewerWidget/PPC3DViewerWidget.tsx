@@ -2,7 +2,11 @@ import { Box, Flex } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
 
 import type { ReceivableStore } from "@/mosaic/store/interface/receivable-store.ts";
-import type { PPCData, PPCMeta, PPCPoint } from "@/stores/@types/progressive-pointcloud.ts";
+import type {
+  PointCloudData,
+  PointCloudMeta,
+  PointCloudPoint,
+} from "@/stores/@types/pointcloud.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
 import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
@@ -24,13 +28,14 @@ export default function PPC3DViewerWidget({ widgetConfig }: WidgetProps) {
   const [error, setError] = useState<string | null>(null);
   const [pointCount, setPointCount] = useState(0);
   const [colorMode, setColorMode] = useState<ColorMode>("height");
+  const colorModeRef = useRef<ColorMode>("height");
   const [pointSize, setPointSize] = useState(0.05);
-  const [showAxes, setShowAxes] = useState(true);
+  const [showAxes, setShowAxes] = useState(false);
   const [autoRotate, setAutoRotate] = useState(false);
   const [cameraPosition, setCameraPosition] = useState({ x: -5, y: 0, z: 3 });
 
-  const lastPPCMetaRef = useRef<PPCMeta | null>(null);
-  const lastPPCPointsRef = useRef<PPCPoint[] | null>(null);
+  const lastPPCMetaRef = useRef<PointCloudMeta | null>(null);
+  const lastPPCPointsRef = useRef<PointCloudPoint[] | null>(null);
 
   // Initialize Three.js scene
   useEffect(() => {
@@ -85,7 +90,7 @@ export default function PPC3DViewerWidget({ widgetConfig }: WidgetProps) {
       return;
     }
 
-    const store = getOrCreateStore(connector) as ReceivableStore<PPCData>;
+    const store = getOrCreateStore(connector) as ReceivableStore<PointCloudData>;
     if (store === null) {
       return;
     }
@@ -111,7 +116,7 @@ export default function PPC3DViewerWidget({ widgetConfig }: WidgetProps) {
           lastPPCMetaRef.current = meta;
           lastPPCPointsRef.current = points;
           scene.clear();
-          scene.updatePoints(points, meta, colorMode);
+          scene.updatePoints(points, meta, colorModeRef.current);
         }
         // Same frame - add points progressively
         else {
@@ -119,7 +124,7 @@ export default function PPC3DViewerWidget({ widgetConfig }: WidgetProps) {
             ? [...lastPPCPointsRef.current, ...points]
             : points;
           lastPPCPointsRef.current = allPoints;
-          scene.addPoints(points, allPoints, meta, colorMode);
+          scene.addPoints(points, allPoints, meta, colorModeRef.current);
         }
 
         setLastUpdate(new Date());
@@ -137,11 +142,12 @@ export default function PPC3DViewerWidget({ widgetConfig }: WidgetProps) {
       lastPPCMetaRef.current = null;
       lastPPCPointsRef.current = null;
     };
-  }, [widgetConfig, colorMode]);
+  }, [widgetConfig]);
 
   // Handle color mode change
   const handleColorModeChange = (mode: ColorMode) => {
     setColorMode(mode);
+    colorModeRef.current = mode;
     const scene = threeSceneRef.current;
     if (scene && lastPPCPointsRef.current && lastPPCMetaRef.current) {
       scene.updatePoints(lastPPCPointsRef.current, lastPPCMetaRef.current, mode);
@@ -194,10 +200,6 @@ export default function PPC3DViewerWidget({ widgetConfig }: WidgetProps) {
       label: "Last Update",
       value: lastUpdate ? lastUpdate.toLocaleTimeString() : "N/A",
     },
-    {
-      label: "Mode",
-      value: colorMode.charAt(0).toUpperCase() + colorMode.slice(1),
-    },
   ];
 
   return (
@@ -217,7 +219,7 @@ export default function PPC3DViewerWidget({ widgetConfig }: WidgetProps) {
           <Box fontSize="sm">{error}</Box>
         </Flex>
       ) : (
-        <Flex direction="column" h="100%" position="relative">
+        <Flex direction="column" h="100%" w="100%" position="relative">
           {/* Color Mode Controls */}
           <ColorModeSelector colorMode={colorMode} onChange={handleColorModeChange} />
 
