@@ -10,12 +10,12 @@ import { RobotInfo } from "@/mosaic/robot-info.ts";
 import { ReceivableStore } from "@/mosaic/store/interface/receivable-store.ts";
 import { SendableStore } from "@/mosaic/store/interface/sendable-store.ts";
 import { MediaStreamStore } from "@/stores/MediaStreamStore/MediaStreamStore.ts";
+import { getWidgetDescriptor } from "@/widgets/_utils/widgetRegistry.ts";
 
 import { StoreDataPanel } from "./StoreDataPanel.tsx";
 import { StoreSetupPanel } from "./StoreSetupPanel.tsx";
 import { WidgetConfigPanel } from "./WidgetConfigPanel.tsx";
 import { WidgetPreviewPanel } from "./WidgetPreviewPanel.tsx";
-import { getWidgetDescriptor } from "./widgetRegistry.ts";
 import { WidgetSelector } from "./WidgetSelector.tsx";
 
 const TEST_ROBOT_ID = "__widget_test_robot__";

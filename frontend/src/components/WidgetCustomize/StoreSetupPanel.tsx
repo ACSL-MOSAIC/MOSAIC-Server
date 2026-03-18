@@ -3,7 +3,7 @@ import { CSSProperties } from "react";
 
 import type { StoreType } from "@/mosaic/store/interface/mosaic-store.ts";
 
-import { getAvailableStoreTypesByCategory } from "./storeRegistry.ts";
+import { getAvailableStoreTypesByCategory } from "@/stores/_utils/storeRegistry.ts";
 
 interface StoreSetupPanelProps {
   connectorId: string;

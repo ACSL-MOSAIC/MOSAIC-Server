@@ -26,8 +26,7 @@ export function WidgetConfigPanel({ widgetConfig }: WidgetConfigPanelProps) {
         borderRadius="md"
         p={3}
         bg="gray.50"
-        maxH="200px"
-        overflowY="auto"
+        overflowX="auto"
       >
         <Code fontSize="xs" whiteSpace="pre" display="block" bg="transparent">
           {JSON.stringify(displayConfig, null, 2)}

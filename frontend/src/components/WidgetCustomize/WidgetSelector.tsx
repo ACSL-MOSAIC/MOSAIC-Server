@@ -1,7 +1,7 @@
 import { Box, Text } from "@chakra-ui/react";
 import { CSSProperties } from "react";
 
-import { availableWidgetTypes } from "./widgetRegistry.ts";
+import { getAvailableWidgetTypes } from "@/widgets/_utils/widgetRegistry.ts";
 
 interface WidgetSelectorProps {
   value: string;
@@ -25,7 +25,7 @@ export function WidgetSelector({ value, onChange }: WidgetSelectorProps) {
       </Text>
       <select style={selectStyle} value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">Select a widget...</option>
-        {availableWidgetTypes.map((type) => (
+        {getAvailableWidgetTypes().map((type) => (
           <option key={type} value={type}>
             {type}
           </option>
