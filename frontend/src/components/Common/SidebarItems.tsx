@@ -5,7 +5,7 @@ import { Link as RouterLink } from "@tanstack/react-router";
 import { useState } from "react";
 import { FaBars, FaRobot } from "react-icons/fa";
 import { FaLink } from "react-icons/fa";
-import { FiMap, FiSettings, FiUsers } from "react-icons/fi";
+import { FiCode, FiMap, FiSettings, FiUsers } from "react-icons/fi";
 
 import useAuth from "@/hooks/useAuth.ts";
 
@@ -13,6 +13,7 @@ const items = [
   { icon: FaRobot, title: "Robots", path: "/robots" },
   { icon: FiMap, title: "Occupancy Maps", path: "/occupancy-maps" },
   { icon: FaLink, title: "Dashboard", path: "/dashboard" },
+  { icon: FiCode, title: "Widget Test", path: "/widget-customize" },
   { icon: FiSettings, title: "User Settings", path: "/settings" },
 ];
 

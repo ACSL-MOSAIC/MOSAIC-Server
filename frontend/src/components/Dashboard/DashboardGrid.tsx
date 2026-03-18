@@ -369,22 +369,21 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
         onLayoutChange={handleLayoutChange}
         onDragStop={(layout) => handleLayoutCommit(layout)}
         onResizeStop={(layout) => handleLayoutCommit(layout)}
-        isDraggable={true}
-        isResizable={true}
-        margin={[16, 16]}
+        isDraggable
+        isResizable
         draggableHandle=".draggable-header"
       >
         {editableWidgets.map((widgetConfig) => (
           <Box
             key={widgetConfig.id}
             bg="white"
-            p={4}
-            borderRadius="md"
-            boxShadow="sm"
+            p={3}
+            paddingTop={1}
+            borderRadius="sm"
+            boxShadow="xs"
             height="100%"
             display="flex"
             flexDirection="column"
-            mb={4}
           >
             <WidgetFactory widgetConfig={widgetConfig} />
           </Box>

@@ -24,4 +24,8 @@ export abstract class WidgetDescriptor {
   public validateParams(_params: Record<string, any>): string | null {
     return null;
   }
+
+  public getDefaultInjectData(): string {
+    return "";
+  }
 }

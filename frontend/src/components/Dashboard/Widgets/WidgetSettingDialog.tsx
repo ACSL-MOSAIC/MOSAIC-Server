@@ -43,9 +43,9 @@ export function WidgetSettingDialog<T extends FieldValues>({
     mutationFn: async (data: T) => {
       widgetConfig.onUpdateWidgetParams(data);
     },
-    onSuccess: () => {
-      showSuccessToast("Robot created successfully.");
-      reset();
+    onSuccess: (_, variables) => {
+      showSuccessToast("Settings saved successfully.");
+      reset(variables);
       setIsOpen(false);
     },
     onError: (err: ApiError) => {

@@ -1,5 +1,5 @@
 import { VStack } from "@chakra-ui/react";
-import { Children, isValidElement, ReactNode } from "react";
+import { Children, type ReactNode, isValidElement } from "react";
 
 import type { WidgetConfig } from "@/mosaic";
 
@@ -7,7 +7,6 @@ import { WidgetSettingDialog } from "@/components/Dashboard/Widgets/WidgetSettin
 
 import { ErrorWidget } from "./ErrorWidget.tsx";
 import { WidgetBody } from "./WidgetBody.tsx";
-import { WidgetFooter } from "./WidgetFooter.tsx";
 import { WidgetHeader } from "./WidgetHeader.tsx";
 
 interface WidgetFrameProps {
@@ -16,19 +15,16 @@ interface WidgetFrameProps {
   error?: string;
 }
 
-function WidgetRoot({ widgetConfig, children, error }: WidgetFrameProps) {
+export function WidgetRoot({ widgetConfig, children, error }: WidgetFrameProps) {
   const foundHeader = Children.toArray(children).find(
     (child) => isValidElement(child) && child.type === WidgetHeader,
   );
   const foundBody = Children.toArray(children).find(
     (child) => isValidElement(child) && child.type === WidgetBody,
   );
-  const foundFooter = Children.toArray(children).find(
-    (child) => isValidElement(child) && child.type === WidgetFooter,
-  );
 
   return (
-    <VStack gap={3} align="stretch" h="100%">
+    <VStack gap={1} align="stretch" h="100%" w="100%">
       {foundHeader || <WidgetHeader widgetConfig={widgetConfig} />}
       {error ? (
         <WidgetBody>
@@ -41,7 +37,6 @@ function WidgetRoot({ widgetConfig, children, error }: WidgetFrameProps) {
           </WidgetBody>
         )
       )}
-      {foundFooter}
     </VStack>
   );
 }
@@ -51,5 +46,4 @@ export const MosaicWidget = {
   Header: WidgetHeader,
   SettingDialog: WidgetSettingDialog,
   Body: WidgetBody,
-  Footer: WidgetFooter,
 };

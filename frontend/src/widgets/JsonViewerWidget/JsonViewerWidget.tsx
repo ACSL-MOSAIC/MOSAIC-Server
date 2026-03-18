@@ -45,7 +45,15 @@ export default function JsonViewerWidget({ widgetConfig }: WidgetProps) {
         <JsonViewerSetting widgetConfig={widgetConfig} />
       </MosaicWidget.Header>
       <MosaicWidget.Body>
-        <Code display="block" h="100%" p={3} borderRadius="md" whiteSpace="pre" overflow="auto">
+        <Code
+          display="block"
+          h="100%"
+          w="100%"
+          p={3}
+          borderRadius="md"
+          whiteSpace="pre"
+          overflow="auto"
+        >
           {formattedData}
         </Code>
       </MosaicWidget.Body>

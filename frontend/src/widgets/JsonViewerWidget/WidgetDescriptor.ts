@@ -2,6 +2,10 @@ import { WidgetDescriptor } from "@/components/Dashboard/Widgets/WidgetDescripto
 
 export default class JsonViewerWidgetDescriptor extends WidgetDescriptor {
   public getName(): string {
-    return "BaseTemplateWidget";
+    return "JsonViewerWidget";
+  }
+
+  public getDefaultInjectData(): string {
+    return '{"message": "Hello, World!"}';
   }
 }
