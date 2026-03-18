@@ -1,5 +1,5 @@
 import { Box, Heading, Separator, Text, VStack } from "@chakra-ui/react";
-import { useContext, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 
 import type { RobotConfig, WidgetConfig } from "@/mosaic";
 import type { MosaicStore } from "@/mosaic/store/interface/mosaic-store.ts";
@@ -58,9 +58,12 @@ export function WidgetCustomizePage() {
   const [connectorId, setConnectorId] = useState(() => loadSelection().connectorId);
   const [connectorType, setConnectorType] = useState(() => loadSelection().connectorType);
 
+  const requiredStoreType = getWidgetDescriptor(widgetType)?.getRequiredStoreType() ?? null;
+
   const handleWidgetTypeChange = (type: string) => {
     setWidgetType(type);
-    saveSelection({ widgetType: type, connectorId, connectorType });
+    setConnectorType("");
+    saveSelection({ widgetType: type, connectorId, connectorType: "" });
   };
 
   const handleConnectorIdChange = (id: string) => {
@@ -75,6 +78,14 @@ export function WidgetCustomizePage() {
 
   // Applied (active) config
   const [appliedConfig, setAppliedConfig] = useState<AppliedConfig | null>(null);
+
+  // Pending apply: set in handleApply, consumed after old widget unmounts
+  const [pendingApply, setPendingApply] = useState<{
+    widgetType: string;
+    connectorId: string;
+    connectorType: string;
+  } | null>(null);
+  const pendingConfigKeyRef = useRef<number>(0);
 
   // Widget params (updated by widget's own setting dialog)
   const [widgetParams, setWidgetParams] = useState<Record<string, any>>({});
@@ -91,34 +102,25 @@ export function WidgetCustomizePage() {
   const currentConnectorRef = useRef<RobotConnector | null>(null);
   const hiddenVideoRef = useRef<HTMLVideoElement | null>(null);
 
-  const handleApply = () => {
-    if (!widgetType || !connectorId || !connectorType) return;
+  // Phase 2: runs after old widget has unmounted and released its store ref
+  useEffect(() => {
+    if (pendingApply === null) return;
+    if (appliedConfig !== null) return;
 
-    // Release previous store and hidden video
-    if (currentConnectorRef.current) {
-      storeManager.releaseStore(currentConnectorRef.current);
-      currentStoreRef.current = null;
-      currentConnectorRef.current = null;
-    }
-    if (hiddenVideoRef.current) {
-      hiddenVideoRef.current.pause();
-      hiddenVideoRef.current.src = "";
-      hiddenVideoRef.current = null;
-    }
+    const { widgetType, connectorId, connectorType } = pendingApply;
+    setPendingApply(null);
 
     const connector = new RobotConnector(TEST_ROBOT_ID, connectorId);
     const fakeRobotConfig: RobotConfig = {
       connectors: [{ connectorId, connectorType, params: {} }],
     };
 
-    // Create store before widget renders so the mock DataChannel is ready
     const store = storeManager.getOrCreateStore(connector, fakeRobotConfig);
     if (!store) return;
 
     currentStoreRef.current = store;
     currentConnectorRef.current = connector;
 
-    // Set up mock DataChannel for SendableStore
     if (store instanceof SendableStore) {
       setSentDataLog([]);
       const mockChannel = {
@@ -136,16 +138,37 @@ export function WidgetCustomizePage() {
     setWidgetParams({});
     setWidgetPosition({ x: 0, y: 0, w: 8, h: 6 });
 
-    // Register fake robot so useMosaicStore (inside the widget) can find it
     updateRobotInfo(new RobotInfo(TEST_ROBOT_ID, "Test Robot", 6, fakeRobotConfig));
 
-    setAppliedConfig((prev) => ({
+    pendingConfigKeyRef.current += 1;
+    setAppliedConfig({
       widgetType,
       connectorId,
       connectorType,
-      configKey: (prev?.configKey ?? 0) + 1,
+      configKey: pendingConfigKeyRef.current,
       fakeRobotConfig,
-    }));
+    });
+  }, [pendingApply, appliedConfig]);
+
+  const handleApply = () => {
+    if (!widgetType || !connectorId || !connectorType) return;
+
+    // Release this component's own store ref (not the widget's ref)
+    if (currentConnectorRef.current) {
+      storeManager.releaseStore(currentConnectorRef.current);
+      currentStoreRef.current = null;
+      currentConnectorRef.current = null;
+    }
+    if (hiddenVideoRef.current) {
+      hiddenVideoRef.current.pause();
+      hiddenVideoRef.current.src = "";
+      hiddenVideoRef.current = null;
+    }
+
+    // Phase 1: unmount old widget so its cleanup releases its store ref,
+    // then phase 2 (useEffect above) creates the new store with correct type.
+    setAppliedConfig(null);
+    setPendingApply({ widgetType, connectorId, connectorType });
   };
 
   const handleInjectMedia = async (videoUrl: string) => {
@@ -228,6 +251,7 @@ export function WidgetCustomizePage() {
           <StoreSetupPanel
             connectorId={connectorId}
             connectorType={connectorType}
+            allowedStoreType={requiredStoreType}
             onConnectorIdChange={handleConnectorIdChange}
             onConnectorTypeChange={handleConnectorTypeChange}
             onApply={handleApply}

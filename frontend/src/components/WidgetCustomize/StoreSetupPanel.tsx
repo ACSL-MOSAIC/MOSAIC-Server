@@ -1,11 +1,14 @@
 import { Box, Button, HStack, Input, Text, VStack } from "@chakra-ui/react";
 import { CSSProperties } from "react";
 
-import { availableStoreTypes } from "./storeRegistry.ts";
+import type { StoreType } from "@/mosaic/store/interface/mosaic-store.ts";
+
+import { getAvailableStoreTypesByCategory } from "./storeRegistry.ts";
 
 interface StoreSetupPanelProps {
   connectorId: string;
   connectorType: string;
+  allowedStoreType: StoreType | null;
   onConnectorIdChange: (id: string) => void;
   onConnectorTypeChange: (type: string) => void;
   onApply: () => void;
@@ -24,11 +27,14 @@ const selectStyle: CSSProperties = {
 export function StoreSetupPanel({
   connectorId,
   connectorType,
+  allowedStoreType,
   onConnectorIdChange,
   onConnectorTypeChange,
   onApply,
   isApplyDisabled,
 }: StoreSetupPanelProps) {
+  const filteredStoreTypes = getAvailableStoreTypesByCategory(allowedStoreType);
+
   return (
     <VStack gap={3} align="stretch">
       <Text fontSize="sm" fontWeight="semibold">
@@ -50,7 +56,7 @@ export function StoreSetupPanel({
 
       <Box>
         <Text fontSize="xs" color="gray.600" mb={1}>
-          Store Type
+          Store Type{allowedStoreType && ` (${allowedStoreType} only)`}
         </Text>
         <select
           style={selectStyle}
@@ -58,7 +64,7 @@ export function StoreSetupPanel({
           onChange={(e) => onConnectorTypeChange(e.target.value)}
         >
           <option value="">Select a store type...</option>
-          {availableStoreTypes.map((type) => (
+          {filteredStoreTypes.map((type) => (
             <option key={type} value={type}>
               {type}
             </option>

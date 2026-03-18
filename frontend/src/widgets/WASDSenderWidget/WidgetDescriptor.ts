@@ -2,16 +2,12 @@ import type { StoreType } from "@/mosaic/store/interface/mosaic-store.ts";
 
 import { WidgetDescriptor } from "@/components/Dashboard/Widgets/WidgetDescriptor.ts";
 
-export default class JsonViewerWidgetDescriptor extends WidgetDescriptor {
+export default class WASDSenderWidgetDescriptor extends WidgetDescriptor {
   public getName(): string {
-    return "JsonViewerWidget";
+    return "WASDSenderWidget";
   }
 
   public getRequiredStoreType(): StoreType {
-    return "receivable";
-  }
-
-  public getDefaultInjectData(): string {
-    return '{"message": "Hello, World!"}';
+    return "sendable";
   }
 }

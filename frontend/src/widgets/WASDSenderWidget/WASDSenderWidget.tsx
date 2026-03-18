@@ -5,7 +5,7 @@ import type { SendableStore } from "@/mosaic/store/interface/sendable-store.ts";
 import type { SimpleDirection } from "@/stores/@types/simple-direction.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
+import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 type Direction = "up" | "down" | "left" | "right" | "stop";
@@ -84,35 +84,37 @@ export default function WASDSenderWidget({ widgetConfig }: WidgetProps) {
   };
 
   return (
-    <WidgetRoot widgetConfig={widgetConfig}>
-      <Grid templateColumns="repeat(3, 1fr)" gap={2} mx="auto">
-        {/* empty */}
-        <Box />
+    <MosaicWidget.Root widgetConfig={widgetConfig}>
+      <MosaicWidget.Body>
+        <Grid templateColumns="repeat(3, 1fr)" gap={2} mx="auto">
+          {/* empty */}
+          <Box />
 
-        {/* up */}
-        <DirectionButton direction="up" />
+          {/* up */}
+          <DirectionButton direction="up" />
 
-        {/* empty */}
-        <Box />
+          {/* empty */}
+          <Box />
 
-        {/* left */}
-        <DirectionButton direction="left" />
+          {/* left */}
+          <DirectionButton direction="left" />
 
-        {/* center */}
-        <DirectionButton direction="stop" />
+          {/* center */}
+          <DirectionButton direction="stop" />
 
-        {/* right */}
-        <DirectionButton direction="right" />
+          {/* right */}
+          <DirectionButton direction="right" />
 
-        {/* empty */}
-        <Box />
+          {/* empty */}
+          <Box />
 
-        {/* down */}
-        <DirectionButton direction="down" />
+          {/* down */}
+          <DirectionButton direction="down" />
 
-        {/* empty */}
-        <Box />
-      </Grid>
-    </WidgetRoot>
+          {/* empty */}
+          <Box />
+        </Grid>
+      </MosaicWidget.Body>
+    </MosaicWidget.Root>
   );
 }

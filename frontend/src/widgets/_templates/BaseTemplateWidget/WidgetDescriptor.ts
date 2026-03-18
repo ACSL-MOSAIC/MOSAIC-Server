@@ -1,3 +1,5 @@
+import type { StoreType } from "@/mosaic/store/interface/mosaic-store.ts";
+
 import { WidgetDescriptor } from "@/components/Dashboard/Widgets/WidgetDescriptor.ts";
 
 export default class BaseTemplateWidgetDescriptor extends WidgetDescriptor {
@@ -19,6 +21,10 @@ export default class BaseTemplateWidgetDescriptor extends WidgetDescriptor {
 
   public getMaxRobotConnectorNumber(): number {
     return 1;
+  }
+
+  public getRequiredStoreType(): StoreType {
+    return "receivable";
   }
 
   public validateParams(_params: Record<string, any>): string | null {

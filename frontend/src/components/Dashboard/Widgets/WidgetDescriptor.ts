@@ -1,5 +1,11 @@
+import type { StoreType } from "@/mosaic/store/interface/mosaic-store.ts";
+
 export abstract class WidgetDescriptor {
   public abstract getName(): string;
+
+  public getRequiredStoreType(): StoreType | null {
+    return null;
+  }
 
   public getMinStoreNumber(): number {
     return 1;
