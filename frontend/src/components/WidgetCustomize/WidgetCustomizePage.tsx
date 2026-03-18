@@ -9,6 +9,7 @@ import { RobotConnector } from "@/mosaic";
 import { RobotInfo } from "@/mosaic/robot-info.ts";
 import { ReceivableStore } from "@/mosaic/store/interface/receivable-store.ts";
 import { SendableStore } from "@/mosaic/store/interface/sendable-store.ts";
+import { MediaStreamStore } from "@/stores/MediaStreamStore/MediaStreamStore.ts";
 
 import { StoreDataPanel } from "./StoreDataPanel.tsx";
 import { StoreSetupPanel } from "./StoreSetupPanel.tsx";
@@ -88,15 +89,21 @@ export function WidgetCustomizePage() {
   // Keep refs for cleanup
   const currentStoreRef = useRef<MosaicStore | null>(null);
   const currentConnectorRef = useRef<RobotConnector | null>(null);
+  const hiddenVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const handleApply = () => {
     if (!widgetType || !connectorId || !connectorType) return;
 
-    // Release previous store
+    // Release previous store and hidden video
     if (currentConnectorRef.current) {
       storeManager.releaseStore(currentConnectorRef.current);
       currentStoreRef.current = null;
       currentConnectorRef.current = null;
+    }
+    if (hiddenVideoRef.current) {
+      hiddenVideoRef.current.pause();
+      hiddenVideoRef.current.src = "";
+      hiddenVideoRef.current = null;
     }
 
     const connector = new RobotConnector(TEST_ROBOT_ID, connectorId);
@@ -139,6 +146,33 @@ export function WidgetCustomizePage() {
       configKey: (prev?.configKey ?? 0) + 1,
       fakeRobotConfig,
     }));
+  };
+
+  const handleInjectMedia = async (videoUrl: string) => {
+    const store = currentStoreRef.current;
+    if (!(store instanceof MediaStreamStore)) return;
+
+    // Stop and replace previous hidden video
+    if (hiddenVideoRef.current) {
+      hiddenVideoRef.current.pause();
+      hiddenVideoRef.current.src = "";
+    }
+
+    const hiddenVideo = document.createElement("video");
+    hiddenVideo.src = videoUrl;
+    hiddenVideo.loop = true;
+    hiddenVideo.muted = true;
+    hiddenVideo.crossOrigin = "anonymous";
+    hiddenVideoRef.current = hiddenVideo;
+
+    try {
+      await hiddenVideo.play();
+      const stream = (hiddenVideo as any).captureStream() as MediaStream;
+      store.setMediaStream(stream);
+      store.notifyAfterConnected(TEST_ROBOT_ID);
+    } catch (err) {
+      console.error("Failed to capture media stream:", err);
+    }
   };
 
   const handleInjectData = (rawData: string) => {
@@ -209,6 +243,7 @@ export function WidgetCustomizePage() {
                   getWidgetDescriptor(appliedConfig.widgetType)?.getDefaultInjectData() ?? ""
                 }
                 onInject={handleInjectData}
+                onInjectMedia={handleInjectMedia}
                 sentDataLog={sentDataLog}
                 onClearLog={() => setSentDataLog([])}
               />

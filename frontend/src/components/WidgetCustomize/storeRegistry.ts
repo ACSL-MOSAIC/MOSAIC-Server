@@ -2,7 +2,7 @@ const storeModules = import.meta.glob<Record<string, unknown>>("../../stores/*/*
   eager: true,
 });
 
-const EXCLUDED_STORES = ["MediaStreamStore"];
+const EXCLUDED_STORES: string[] = [];
 
 export const availableStoreTypes: string[] = Object.keys(storeModules)
   .map((path) => path.match(/\/([^/]+)\/\1\.ts$/)?.[1])

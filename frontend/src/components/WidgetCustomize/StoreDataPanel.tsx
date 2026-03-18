@@ -1,4 +1,4 @@
-import { Badge, Box, Button, Code, HStack, Text, Textarea, VStack } from "@chakra-ui/react";
+import { Badge, Box, Button, Code, HStack, Input, Text, Textarea, VStack } from "@chakra-ui/react";
 import { useState } from "react";
 
 interface ReceivableDataPanelProps {
@@ -74,10 +74,43 @@ function SendableDataPanel({ sentDataLog, onClearLog }: SendableDataPanelProps) 
   );
 }
 
+const SAMPLE_VIDEO_URL =
+  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+
+interface MediaDataPanelProps {
+  onInjectMedia: (url: string) => void;
+}
+
+function MediaDataPanel({ onInjectMedia }: MediaDataPanelProps) {
+  const [url, setUrl] = useState(SAMPLE_VIDEO_URL);
+
+  return (
+    <VStack gap={2} align="stretch">
+      <Text fontSize="xs" color="gray.600">
+        Enter a video URL to simulate a media stream. The video will be captured and injected into
+        the store. Note: CORS must be allowed on the video server.
+      </Text>
+      <Input
+        size="sm"
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        placeholder="https://example.com/video.mp4"
+        fontFamily="mono"
+      />
+      <HStack justify="flex-end">
+        <Button size="sm" colorPalette="purple" onClick={() => onInjectMedia(url)}>
+          Load Stream
+        </Button>
+      </HStack>
+    </VStack>
+  );
+}
+
 interface StoreDataPanelProps {
   storeType: "receivable" | "sendable" | "media" | null;
   defaultInjectData: string;
   onInject: (rawData: string) => void;
+  onInjectMedia: (url: string) => void;
   sentDataLog: string[];
   onClearLog: () => void;
 }
@@ -86,6 +119,7 @@ export function StoreDataPanel({
   storeType,
   defaultInjectData,
   onInject,
+  onInjectMedia,
   sentDataLog,
   onClearLog,
 }: StoreDataPanelProps) {
@@ -98,7 +132,7 @@ export function StoreDataPanel({
         {storeType && (
           <Badge
             colorPalette={
-              storeType === "receivable" ? "green" : storeType === "sendable" ? "blue" : "gray"
+              storeType === "receivable" ? "green" : storeType === "sendable" ? "blue" : "purple"
             }
             size="sm"
           >
@@ -113,11 +147,7 @@ export function StoreDataPanel({
       {storeType === "sendable" && (
         <SendableDataPanel sentDataLog={sentDataLog} onClearLog={onClearLog} />
       )}
-      {storeType === "media" && (
-        <Text fontSize="xs" color="gray.500">
-          Media stores are not supported in the widget test page.
-        </Text>
-      )}
+      {storeType === "media" && <MediaDataPanel onInjectMedia={onInjectMedia} />}
       {!storeType && (
         <Text fontSize="xs" color="gray.400">
           Apply a connector config to enable store interaction.
