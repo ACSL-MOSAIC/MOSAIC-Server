@@ -5,7 +5,7 @@ import type { SendableStore } from "@/mosaic/store/interface/sendable-store.ts";
 import type { Thumbstick } from "@/stores/@types/thumbstick.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { Checkbox } from "@/components/ui/checkbox.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
@@ -88,7 +88,7 @@ export default function ThumbstickSenderWidget({ widgetConfig }: WidgetProps) {
   };
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
+    <WidgetRoot widgetConfig={widgetConfig}>
       <Box display="flex" flexDirection="column" h="100%" w="100%" gap={2}>
         {/* Container that fills available space */}
         <Box flex={1} minH={0} display="flex" alignItems="center" justifyContent="center">
@@ -170,6 +170,6 @@ export default function ThumbstickSenderWidget({ widgetConfig }: WidgetProps) {
           </Checkbox>
         </Box>
       </Box>
-    </WidgetFrame>
+    </WidgetRoot>
   );
 }

@@ -6,7 +6,7 @@ import type { ConnectionCheckReceiverStore } from "@/stores/ConnectionCheckRecei
 import type { ConnectionCheckSenderStore } from "@/stores/ConnectionCheckSenderStore/ConnectionCheckSenderStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 import { useRobotInfo } from "@/hooks/useRobotInfo.ts";
 
@@ -153,7 +153,7 @@ export default function DelayCheckWidget({ widgetConfig }: WidgetProps) {
   }, [widgetConfig]);
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
+    <WidgetRoot widgetConfig={widgetConfig}>
       <Box display="flex" flexDirection="column" h="100%" w="100%" gap={2}>
         {/* Stats + controls */}
         <HStack px={2} align="center" flexShrink={0} gap={4}>
@@ -265,6 +265,6 @@ export default function DelayCheckWidget({ widgetConfig }: WidgetProps) {
           </Box>
         </Box>
       </Box>
-    </WidgetFrame>
+    </WidgetRoot>
   );
 }

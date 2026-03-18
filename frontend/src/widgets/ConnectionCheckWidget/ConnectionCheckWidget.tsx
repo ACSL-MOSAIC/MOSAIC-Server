@@ -6,7 +6,7 @@ import type { ConnectionCheckReceiverStore } from "@/stores/ConnectionCheckRecei
 import type { ConnectionCheckSenderStore } from "@/stores/ConnectionCheckSenderStore/ConnectionCheckSenderStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 const MAX_MESSAGES = 200;
@@ -99,7 +99,7 @@ export default function ConnectionCheckWidget({ widgetConfig }: WidgetProps) {
   }, [widgetConfig]);
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
+    <WidgetRoot widgetConfig={widgetConfig}>
       <Box overflowY="auto" maxH="100%" h="100%">
         <VStack align="stretch" gap={1} p={2}>
           {connectionCheckingMessages.map((msg, i) => {
@@ -114,6 +114,6 @@ export default function ConnectionCheckWidget({ widgetConfig }: WidgetProps) {
           })}
         </VStack>
       </Box>
-    </WidgetFrame>
+    </WidgetRoot>
   );
 }

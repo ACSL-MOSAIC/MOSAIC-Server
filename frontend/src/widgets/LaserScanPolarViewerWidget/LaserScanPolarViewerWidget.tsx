@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { JsonReceivableStore } from "@/stores/JsonReceivableStore/JsonReceivableStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 interface LaserScanData {
@@ -153,10 +153,10 @@ export default function LaserScanPolarViewerWidget({ widgetConfig }: WidgetProps
   }, [data]);
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
+    <WidgetRoot widgetConfig={widgetConfig}>
       <Box h="100%" display="flex" alignItems="center" justifyContent="center" bg="white">
         <canvas ref={canvasRef} style={{ display: "block" }} />
       </Box>
-    </WidgetFrame>
+    </WidgetRoot>
   );
 }

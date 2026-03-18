@@ -7,7 +7,7 @@ import { MdBatteryFull, MdPower } from "react-icons/md";
 import type { JsonReceivableStore } from "@/stores/JsonReceivableStore/JsonReceivableStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 interface PowerData {
@@ -115,18 +115,18 @@ export default function ClearpathPlatformPowerViewerWidget({ widgetConfig }: Wid
 
   if (!data) {
     return (
-      <WidgetFrame widgetConfig={widgetConfig}>
+      <WidgetRoot widgetConfig={widgetConfig}>
         <Box display="flex" alignItems="center" justifyContent="center" h="100%">
           <Text color="fg.muted" fontSize="sm">
             Waiting for data...
           </Text>
         </Box>
-      </WidgetFrame>
+      </WidgetRoot>
     );
   }
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
+    <WidgetRoot widgetConfig={widgetConfig}>
       <VStack align="stretch" gap={3} p={3} h="100%" overflowY="auto">
         {/* Connection Status */}
         <VStack align="stretch" gap={2}>
@@ -187,6 +187,6 @@ export default function ClearpathPlatformPowerViewerWidget({ widgetConfig }: Wid
           {formatTimestamp(data.timestamp)}
         </Text>
       </VStack>
-    </WidgetFrame>
+    </WidgetRoot>
   );
 }

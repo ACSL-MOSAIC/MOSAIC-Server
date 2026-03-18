@@ -9,7 +9,7 @@ import type {
 } from "@/stores/@types/pointcloud.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 import AngleIndicator from "@/widgets/PointCloud2DViewerWidget/AngleIndicator.tsx";
 
@@ -194,7 +194,7 @@ export default function PointCloud2DViewerWidget({ widgetConfig }: WidgetProps) 
   ];
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig} footerInfo={footerInfo}>
+    <WidgetRoot widgetConfig={widgetConfig} footerInfo={footerInfo}>
       {error ? (
         <Flex
           direction="column"
@@ -223,6 +223,6 @@ export default function PointCloud2DViewerWidget({ widgetConfig }: WidgetProps) 
           />
         </>
       )}
-    </WidgetFrame>
+    </WidgetRoot>
   );
 }

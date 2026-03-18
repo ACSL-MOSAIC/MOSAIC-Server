@@ -41,7 +41,7 @@ export function OccupancyMapsTable() {
 
   const setPage = (page: number) =>
     navigate({
-      search: (prev: { [key: string]: string }) => ({ ...prev, page }),
+      search: (prev) => ({ ...prev, page }),
     });
 
   const occupancyMaps = data?.data.slice(0, PER_PAGE) ?? [];

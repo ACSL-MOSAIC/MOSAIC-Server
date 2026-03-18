@@ -8,7 +8,7 @@ import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import type { JsonReceivableStore } from "@/stores/JsonReceivableStore/JsonReceivableStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 import { useRobotInfo } from "@/hooks/useRobotInfo.ts";
 import "leaflet/dist/leaflet.css";
@@ -230,7 +230,7 @@ export default function OpenStreetMapViewerWidget({ widgetConfig }: WidgetProps)
   };
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig} useBody={false} showRobotInfo={false}>
+    <WidgetRoot widgetConfig={widgetConfig} useBody={false} showRobotInfo={false}>
       <Box ref={containerRef} flex="1" minH="0" position="relative">
         <MapContainer
           ref={mapRef}
@@ -308,6 +308,6 @@ export default function OpenStreetMapViewerWidget({ widgetConfig }: WidgetProps)
           </VStack>
         </Box>
       </Box>
-    </WidgetFrame>
+    </WidgetRoot>
   );
 }

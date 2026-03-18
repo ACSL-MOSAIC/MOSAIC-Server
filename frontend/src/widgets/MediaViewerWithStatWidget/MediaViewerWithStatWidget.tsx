@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MediaStreamStore, StreamStats } from "@/stores/MediaStreamStore/MediaStreamStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 import { useRobotInfo } from "@/hooks/useRobotInfo.ts";
 
@@ -163,7 +163,7 @@ export default function MediaViewerWithStatWidget({ widgetConfig }: WidgetProps)
   }, []);
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
+    <WidgetRoot widgetConfig={widgetConfig}>
       {error ? (
         <Flex
           direction="column"
@@ -259,7 +259,7 @@ export default function MediaViewerWithStatWidget({ widgetConfig }: WidgetProps)
           </HStack>
         </Box>
       )}
-    </WidgetFrame>
+    </WidgetRoot>
   );
 }
 

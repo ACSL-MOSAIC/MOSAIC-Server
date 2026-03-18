@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { MediaStreamStore } from "@/stores/MediaStreamStore/MediaStreamStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
@@ -137,7 +137,7 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
   }, []);
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
+    <WidgetRoot widgetConfig={widgetConfig}>
       {error ? (
         <Flex
           direction="column"
@@ -220,6 +220,6 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
           </Box>
         </>
       )}
-    </WidgetFrame>
+    </WidgetRoot>
   );
 }

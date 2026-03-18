@@ -16,7 +16,7 @@ import { type Layout, Responsive, WidthProvider } from "react-grid-layout";
 
 import { getTabConfigApi, updateTabConfigApi } from "@/client/service/dashboard.api.ts";
 import RobotConnectionPanel from "@/components/Dashboard/RobotConnectionPanel.tsx";
-import { WidgetFactory } from "@/components/Dashboard/WidgetFactory.tsx";
+import { WidgetFactory } from "@/components/Dashboard/Widgets/WidgetFactory.tsx";
 import useAuth from "@/hooks/useAuth.ts";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -83,29 +83,6 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
   const editableWidgetsRef = useRef<WidgetConfig[]>([]);
   const isLayoutDirtyRef = useRef(false);
 
-  const { data: tabConfig, isPending: isConfigLoading } = useQuery({
-    queryKey: ["parsedDashboardTabConfig", tabId],
-    queryFn: async () => {
-      const tabConfigDto = await getTabConfigApi(tabId);
-      const widgets = JSON.parse(tabConfigDto.widgets).widgets as WidgetConfig[];
-      return {
-        id: tabConfigDto.id,
-        name: tabConfigDto.name,
-        widgets: widgets.map((widget) => {
-          return {
-            id: widget.id,
-            type: widget.type,
-            position: widget.position,
-            connectors: widget.connectors.map((connector) => {
-              return new RobotConnector(connector.robotId, connector.connectorId);
-            }),
-          };
-        }),
-      } as TabConfig;
-    },
-    enabled: !!user,
-  });
-
   const saveLayoutMutation = useMutation({
     mutationFn: async ({
       targetTabId,
@@ -140,6 +117,55 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
       console.error("Failed to save layout:", error);
       isLayoutDirtyRef.current = true;
     },
+  });
+
+  const onUpdateWidgetParams = (widgetId: string, params?: any) => {
+    if (!tabConfig) {
+      return;
+    }
+
+    const newWidgets = editableWidgetsRef.current.map((widget) => {
+      if (widget.id !== widgetId) {
+        return widget;
+      }
+
+      return {
+        ...widget,
+        params: params,
+      };
+    });
+
+    saveLayoutMutation.mutate({
+      targetTabId: tabConfig.id,
+      widgets: newWidgets,
+    });
+  };
+
+  const { data: tabConfig, isPending: isConfigLoading } = useQuery({
+    queryKey: ["parsedDashboardTabConfig", tabId],
+    queryFn: async () => {
+      const tabConfigDto = await getTabConfigApi(tabId);
+      const widgets = JSON.parse(tabConfigDto.widgets).widgets as WidgetConfig[];
+      return {
+        id: tabConfigDto.id,
+        name: tabConfigDto.name,
+        widgets: widgets.map((widget) => {
+          return {
+            id: widget.id,
+            type: widget.type,
+            position: widget.position,
+            connectors: widget.connectors.map((connector) => {
+              return new RobotConnector(connector.robotId, connector.connectorId);
+            }),
+            params: widget.params,
+            onUpdateWidgetParams: (params?: any) => {
+              onUpdateWidgetParams(widget.id, params);
+            },
+          };
+        }),
+      } as TabConfig;
+    },
+    enabled: !!user,
   });
 
   useEffect(() => {

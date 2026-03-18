@@ -7,7 +7,7 @@ import * as THREE from "three";
 import type { JsonReceivableStore } from "@/stores/JsonReceivableStore/JsonReceivableStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 interface ImuData {
@@ -117,7 +117,7 @@ export default function ImuState3DViewerWidget({ widgetConfig }: WidgetProps) {
   }, [widgetConfig]);
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
+    <WidgetRoot widgetConfig={widgetConfig}>
       <VStack align="stretch" h="100%" gap={0}>
         {/* 3D Orientation Viewer */}
         <Box flex={1} minH={0}>
@@ -189,6 +189,6 @@ export default function ImuState3DViewerWidget({ widgetConfig }: WidgetProps) {
           </VStack>
         </Grid>
       </VStack>
-    </WidgetFrame>
+    </WidgetRoot>
   );
 }

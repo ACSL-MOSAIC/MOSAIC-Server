@@ -9,7 +9,7 @@ import type {
 } from "@/stores/@types/pointcloud.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 import type { ColorMode } from "./colorMapping.ts";
@@ -203,7 +203,7 @@ export default function PointCloud3DViewerWidget({ widgetConfig }: WidgetProps) 
   ];
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig} footerInfo={footerInfo}>
+    <WidgetRoot widgetConfig={widgetConfig} footerInfo={footerInfo}>
       {error ? (
         <Flex
           direction="column"
@@ -246,6 +246,6 @@ export default function PointCloud3DViewerWidget({ widgetConfig }: WidgetProps) 
           />
         </Flex>
       )}
-    </WidgetFrame>
+    </WidgetRoot>
   );
 }

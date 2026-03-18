@@ -3,11 +3,11 @@ import { LuPuzzle, LuWrench } from "react-icons/lu";
 
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 
 export default function NotFoundWidget({ widgetConfig }: WidgetProps) {
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
+    <WidgetRoot widgetConfig={widgetConfig}>
       <Flex h="100%" align="center" justify="center">
         <Box w="100%" h="100%" bgGradient="linear(to-b, orange.50, white)" p={4}>
           <VStack align="start" gap={4} h="100%">
@@ -60,6 +60,6 @@ export default function NotFoundWidget({ widgetConfig }: WidgetProps) {
           </VStack>
         </Box>
       </Flex>
-    </WidgetFrame>
+    </WidgetRoot>
   );
 }

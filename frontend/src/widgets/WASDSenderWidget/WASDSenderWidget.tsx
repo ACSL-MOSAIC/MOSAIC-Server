@@ -5,7 +5,7 @@ import type { SendableStore } from "@/mosaic/store/interface/sendable-store.ts";
 import type { SimpleDirection } from "@/stores/@types/simple-direction.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 type Direction = "up" | "down" | "left" | "right" | "stop";
@@ -84,7 +84,7 @@ export default function WASDSenderWidget({ widgetConfig }: WidgetProps) {
   };
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
+    <WidgetRoot widgetConfig={widgetConfig}>
       <Grid templateColumns="repeat(3, 1fr)" gap={2} mx="auto">
         {/* empty */}
         <Box />
@@ -113,6 +113,6 @@ export default function WASDSenderWidget({ widgetConfig }: WidgetProps) {
         {/* empty */}
         <Box />
       </Grid>
-    </WidgetFrame>
+    </WidgetRoot>
   );
 }

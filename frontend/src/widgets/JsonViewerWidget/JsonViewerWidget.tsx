@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { JsonReceivableStore } from "@/stores/JsonReceivableStore/JsonReceivableStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 export default function JsonViewerWidget({ widgetConfig }: WidgetProps) {
@@ -35,10 +35,10 @@ export default function JsonViewerWidget({ widgetConfig }: WidgetProps) {
   const formattedData = data ? JSON.stringify(data, null, 2) : "";
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
+    <WidgetRoot widgetConfig={widgetConfig}>
       <Code display="block" h="100%" p={3} borderRadius="md" whiteSpace="pre" overflow="auto">
         {formattedData}
       </Code>
-    </WidgetFrame>
+    </WidgetRoot>
   );
 }

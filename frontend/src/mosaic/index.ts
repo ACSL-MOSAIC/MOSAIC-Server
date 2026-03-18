@@ -32,6 +32,7 @@ export interface WidgetConfig {
   position: WidgetPositionConfig;
   connectors: RobotConnector[];
   params?: any;
+  onUpdateWidgetParams: (params?: any) => void;
 }
 
 export interface TabConfig {
