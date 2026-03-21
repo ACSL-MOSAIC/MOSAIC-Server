@@ -130,8 +130,8 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
 
   return (
     <MosaicWidget.Root widgetConfig={widgetConfig}>
-      <MosaicWidget.Header widgetConfig={widgetConfig}>
-        <MediaViewerSetting widgetConfig={widgetConfig} />
+      <MosaicWidget.Header>
+        <MediaViewerSetting />
       </MosaicWidget.Header>
       <MosaicWidget.Body>
         {error ? (

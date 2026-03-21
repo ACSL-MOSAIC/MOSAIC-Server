@@ -5,7 +5,6 @@ import { FieldValues, type SubmitHandler, UseFormReturn } from "react-hook-form"
 import { IoSettings } from "react-icons/io5";
 
 import type { ApiError } from "@/client";
-import type { WidgetConfig } from "@/mosaic";
 
 import {
   DialogBody,
@@ -19,10 +18,11 @@ import {
 import useCustomToast from "@/hooks/useCustomToast.ts";
 import { handleError } from "@/utils";
 
+import { useMosaicWidget } from "./MosaicWidgetContext.tsx";
+
 export interface WidgetSettingDialogProps<T extends FieldValues> {
   children?: ReactNode;
   useFormReturn: UseFormReturn<T>;
-  widgetConfig: WidgetConfig;
 }
 
 export function WidgetSettingDialog<T extends FieldValues>({
@@ -32,8 +32,8 @@ export function WidgetSettingDialog<T extends FieldValues>({
     reset,
     formState: { isValid, isSubmitting },
   },
-  widgetConfig,
 }: WidgetSettingDialogProps<T>) {
+  const widgetConfig = useMosaicWidget();
   const { showSuccessToast } = useCustomToast();
   const [isOpen, setIsOpen] = useState(false);
   const dialogContentRef = useRef<HTMLDivElement>(null);

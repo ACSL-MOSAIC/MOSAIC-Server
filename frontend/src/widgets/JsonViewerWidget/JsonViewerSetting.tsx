@@ -1,21 +1,17 @@
 import { VStack, Text } from "@chakra-ui/react";
 import { Controller, useForm } from "react-hook-form";
 
-import type { WidgetConfig } from "@/mosaic";
-
 import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
+import { useMosaicWidget } from "@/components/Dashboard/Widgets/MosaicWidgetContext.tsx";
 import { Checkbox } from "@/components/ui/checkbox.tsx";
 import { Field } from "@/components/ui/field.tsx";
-
-interface JsonViewerSettingProps {
-  widgetConfig: WidgetConfig;
-}
 
 export type JsonViewerParams = {
   cumulative: boolean;
 };
 
-export function JsonViewerSetting({ widgetConfig }: JsonViewerSettingProps) {
+export function JsonViewerSetting() {
+  const widgetConfig = useMosaicWidget();
   const useFormReturn = useForm<JsonViewerParams>({
     mode: "onBlur",
     criteriaMode: "all",
@@ -30,7 +26,7 @@ export function JsonViewerSetting({ widgetConfig }: JsonViewerSettingProps) {
   } = useFormReturn;
 
   return (
-    <MosaicWidget.SettingDialog widgetConfig={widgetConfig} useFormReturn={useFormReturn}>
+    <MosaicWidget.SettingDialog useFormReturn={useFormReturn}>
       <Text mb={4}>JSON Viewer Settings</Text>
       <VStack gap={4} align="start">
         <Field

@@ -3,10 +3,10 @@ import type { ReactNode } from "react";
 import { Box, Flex, HStack, Icon, Text, VStack } from "@chakra-ui/react";
 import { FiInfo } from "react-icons/fi";
 
-import type { WidgetConfig } from "@/mosaic";
-
 import { Tooltip } from "@/components/ui/tooltip.tsx";
 import { useRobotInfo } from "@/hooks/useRobotInfo.ts";
+
+import { useMosaicWidget } from "./MosaicWidgetContext.tsx";
 
 export interface AdditionalInfo {
   label: string;
@@ -15,15 +15,11 @@ export interface AdditionalInfo {
 
 export interface WidgetHeaderProps {
   children?: ReactNode;
-  widgetConfig: WidgetConfig;
   additionalInfo?: AdditionalInfo[];
 }
 
-export function WidgetHeader({
-  children,
-  widgetConfig: { type, connectors },
-  additionalInfo,
-}: WidgetHeaderProps) {
+export function WidgetHeader({ children, additionalInfo }: WidgetHeaderProps) {
+  const { type, connectors } = useMosaicWidget();
   const { robotInfos } = useRobotInfo();
 
   const tooltipContent = (

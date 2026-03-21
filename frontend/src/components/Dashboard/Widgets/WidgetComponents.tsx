@@ -3,6 +3,7 @@ import { Children, type ReactNode, isValidElement } from "react";
 
 import type { WidgetConfig } from "@/mosaic";
 
+import { MosaicWidgetContext } from "@/components/Dashboard/Widgets/MosaicWidgetContext.tsx";
 import { WidgetSettingDialog } from "@/components/Dashboard/Widgets/WidgetSettingDialog.tsx";
 
 import { ErrorWidget } from "./ErrorWidget.tsx";
@@ -24,22 +25,26 @@ export function WidgetRoot({ widgetConfig, children, error }: WidgetFrameProps) 
   );
 
   return (
-    <VStack gap={1} align="stretch" h="100%" w="100%">
-      {foundHeader || <WidgetHeader widgetConfig={widgetConfig} />}
-      {error ? (
-        <WidgetBody>
-          <ErrorWidget error={error} />
-        </WidgetBody>
-      ) : (
-        foundBody || (
+    <MosaicWidgetContext.Provider value={widgetConfig}>
+      <VStack gap={1} align="stretch" h="100%" w="100%">
+        {foundHeader || <WidgetHeader />}
+        {error ? (
           <WidgetBody>
-            <ErrorWidget error={"No Contents defined"} />
+            <ErrorWidget error={error} />
           </WidgetBody>
-        )
-      )}
-    </VStack>
+        ) : (
+          foundBody || (
+            <WidgetBody>
+              <ErrorWidget error={"No Contents defined"} />
+            </WidgetBody>
+          )
+        )}
+      </VStack>
+    </MosaicWidgetContext.Provider>
   );
 }
+
+export { useMosaicWidget } from "@/components/Dashboard/Widgets/MosaicWidgetContext.tsx";
 
 export const MosaicWidget = {
   Root: WidgetRoot,

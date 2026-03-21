@@ -41,8 +41,8 @@ export default function JsonViewerWidget({ widgetConfig }: WidgetProps) {
 
   return (
     <MosaicWidget.Root widgetConfig={widgetConfig}>
-      <MosaicWidget.Header widgetConfig={widgetConfig}>
-        <JsonViewerSetting widgetConfig={widgetConfig} />
+      <MosaicWidget.Header>
+        <JsonViewerSetting />
       </MosaicWidget.Header>
       <MosaicWidget.Body>
         <Code

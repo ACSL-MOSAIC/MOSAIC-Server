@@ -34,17 +34,13 @@ export default function BaseTemplateWidget({ widgetConfig }: WidgetProps) {
 
   return (
     <MosaicWidget.Root widgetConfig={widgetConfig}>
-      <MosaicWidget.Header widgetConfig={widgetConfig}>
-        <BaseTemplateSetting widgetConfig={widgetConfig} />
+      <MosaicWidget.Header additionalInfo={[{ label: "Info1", value: "Value1" }]}>
+        <BaseTemplateSetting />
       </MosaicWidget.Header>
       <MosaicWidget.Body>
         Customize this widget
         {data}
       </MosaicWidget.Body>
-      <MosaicWidget.Footer
-        footerInfo={[{ label: "Info1", value: "Value1" }]}
-        footerMessage={"Customize this footer message"}
-      />
     </MosaicWidget.Root>
   );
 }
