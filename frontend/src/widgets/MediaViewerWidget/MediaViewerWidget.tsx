@@ -135,7 +135,13 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
       </MosaicWidget.Header>
       <MosaicWidget.Body>
         {error ? (
-          <Flex direction="column" align="center" justify="center" color="red.500" textAlign="center">
+          <Flex
+            direction="column"
+            align="center"
+            justify="center"
+            color="red.500"
+            textAlign="center"
+          >
             <Box fontSize="2xl" mb={2}>
               ⚠️
             </Box>

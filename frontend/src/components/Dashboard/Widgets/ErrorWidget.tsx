@@ -31,14 +31,7 @@ export function ErrorWidget({ error }: ErrorWidgetProps) {
               </Text>
             </VStack>
           </HStack>
-          <Box
-            w="100%"
-            p={3}
-            border="1px solid"
-            borderColor="red.200"
-            borderRadius="md"
-            bg="white"
-          >
+          <Box w="100%" p={3} border="1px solid" borderColor="red.200" borderRadius="md" bg="white">
             <Text fontSize="xs" color="gray.500" mb={1}>
               Error
             </Text>
