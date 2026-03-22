@@ -3,63 +3,65 @@ import { LuPuzzle, LuWrench } from "react-icons/lu";
 
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
+import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 
 export default function NotFoundWidget({ widgetConfig }: WidgetProps) {
   return (
-    <WidgetRoot widgetConfig={widgetConfig}>
-      <Flex h="100%" align="center" justify="center">
-        <Box w="100%" h="100%" bgGradient="linear(to-b, orange.50, white)" p={4}>
-          <VStack align="start" gap={4} h="100%">
-            <HStack gap={2}>
-              <Flex
-                w="7"
-                h="7"
-                align="center"
-                justify="center"
-                borderRadius="full"
-                bg="orange.100"
-                color="orange.700"
+    <MosaicWidget.Root widgetConfig={widgetConfig}>
+      <MosaicWidget.Body>
+        <Flex h="100%" align="center" justify="center">
+          <Box w="100%" h="100%" bgGradient="linear(to-b, orange.50, white)" p={4}>
+            <VStack align="start" gap={4} h="100%">
+              <HStack gap={2}>
+                <Flex
+                  w="7"
+                  h="7"
+                  align="center"
+                  justify="center"
+                  borderRadius="full"
+                  bg="orange.100"
+                  color="orange.700"
+                >
+                  <Icon as={LuPuzzle} boxSize={4} />
+                </Flex>
+                <VStack align="start" gap={0}>
+                  <Text fontSize="sm" fontWeight="semibold" color="orange.800">
+                    Unsupported Widget
+                  </Text>
+                  <Text fontSize="xs" color="gray.600">
+                    This widget type is not available in this build.
+                  </Text>
+                </VStack>
+              </HStack>
+
+              <Box
+                w="100%"
+                p={3}
+                border="1px solid"
+                borderColor="orange.200"
+                borderRadius="md"
+                bg="white"
               >
-                <Icon as={LuPuzzle} boxSize={4} />
-              </Flex>
-              <VStack align="start" gap={0}>
-                <Text fontSize="sm" fontWeight="semibold" color="orange.800">
-                  Unsupported Widget
+                <Text fontSize="xs" color="gray.500" mb={1}>
+                  Requested type
                 </Text>
-                <Text fontSize="xs" color="gray.600">
-                  This widget type is not available in this build.
+                <Code fontSize="xs">{widgetConfig.type}</Code>
+              </Box>
+
+              <HStack gap={2} color="gray.600">
+                <Icon as={LuWrench} boxSize={3.5} />
+                <Text fontSize="xs">
+                  Add the matching widget component in
+                  <Code mx={1} fontSize="xs">
+                    /Dashboard/widgets
+                  </Code>
+                  and register by filename.
                 </Text>
-              </VStack>
-            </HStack>
-
-            <Box
-              w="100%"
-              p={3}
-              border="1px solid"
-              borderColor="orange.200"
-              borderRadius="md"
-              bg="white"
-            >
-              <Text fontSize="xs" color="gray.500" mb={1}>
-                Requested type
-              </Text>
-              <Code fontSize="xs">{widgetConfig.type}</Code>
-            </Box>
-
-            <HStack gap={2} color="gray.600">
-              <Icon as={LuWrench} boxSize={3.5} />
-              <Text fontSize="xs">
-                Add the matching widget component in
-                <Code mx={1} fontSize="xs">
-                  /Dashboard/widgets
-                </Code>
-                and register by filename.
-              </Text>
-            </HStack>
-          </VStack>
-        </Box>
-      </Flex>
-    </WidgetRoot>
+              </HStack>
+            </VStack>
+          </Box>
+        </Flex>
+      </MosaicWidget.Body>
+    </MosaicWidget.Root>
   );
 }

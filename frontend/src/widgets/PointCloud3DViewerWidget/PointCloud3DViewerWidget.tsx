@@ -1,4 +1,4 @@
-import { Box, Flex } from "@chakra-ui/react";
+import { Box, Button } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
 
 import type { ReceivableStore } from "@/mosaic/store/interface/receivable-store.ts";
@@ -9,14 +9,13 @@ import type {
 } from "@/stores/@types/pointcloud.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
+import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 import type { ColorMode } from "./colorMapping.ts";
 
-import ColorModeSelector from "./ColorModeSelector.tsx";
+import { PointCloud3DViewerSetting } from "./PointCloud3DViewerSetting.tsx";
 import { ThreeScene } from "./ThreeScene.ts";
-import ViewControls from "./ViewControls.tsx";
 
 export default function PointCloud3DViewerWidget({ widgetConfig }: WidgetProps) {
   const { getOrCreateStore, releaseStore } = useMosaicStore();
@@ -27,12 +26,12 @@ export default function PointCloud3DViewerWidget({ widgetConfig }: WidgetProps) 
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pointCount, setPointCount] = useState(0);
-  const [colorMode, setColorMode] = useState<ColorMode>("height");
-  const colorModeRef = useRef<ColorMode>("height");
-  const [pointSize, setPointSize] = useState(0.05);
-  const [showAxes, setShowAxes] = useState(false);
-  const [autoRotate, setAutoRotate] = useState(false);
-  const [cameraPosition, setCameraPosition] = useState({ x: -5, y: 0, z: 3 });
+
+  const colorMode = (widgetConfig.params?.colorMode as ColorMode) ?? "height";
+  const colorModeRef = useRef<ColorMode>(colorMode);
+  const pointSize = (widgetConfig.params?.pointSize as number) ?? 0.05;
+  const showAxes = (widgetConfig.params?.showAxes as boolean) ?? false;
+  const autoRotate = (widgetConfig.params?.autoRotate as boolean) ?? false;
 
   const lastPCMetaRef = useRef<PointCloudMeta | null>(null);
   const lastPCPointsRef = useRef<PointCloudPoint[] | null>(null);
@@ -62,15 +61,7 @@ export default function PointCloud3DViewerWidget({ widgetConfig }: WidgetProps) 
       resizeObserver.observe(container);
       resizeObserverRef.current = resizeObserver;
 
-      // Update camera position periodically
-      const intervalId = setInterval(() => {
-        if (scene) {
-          setCameraPosition(scene.getCameraPosition());
-        }
-      }, 100);
-
       return () => {
-        clearInterval(intervalId);
         resizeObserver.disconnect();
         scene.dispose();
         threeSceneRef.current = null;
@@ -144,54 +135,24 @@ export default function PointCloud3DViewerWidget({ widgetConfig }: WidgetProps) 
     };
   }, [widgetConfig]);
 
-  // Handle color mode change
-  const handleColorModeChange = (mode: ColorMode) => {
-    setColorMode(mode);
-    colorModeRef.current = mode;
+  // params 변경 시 Three.js scene에 즉시 반영
+  useEffect(() => {
     const scene = threeSceneRef.current;
-    if (scene && lastPCPointsRef.current && lastPCMetaRef.current) {
-      scene.updatePoints(lastPCPointsRef.current, lastPCMetaRef.current, mode);
+    if (!scene) return;
+    colorModeRef.current = colorMode;
+    scene.setPointSize(pointSize);
+    scene.setShowAxes(showAxes);
+    scene.setAutoRotate(autoRotate);
+    if (lastPCPointsRef.current && lastPCMetaRef.current) {
+      scene.updatePoints(lastPCPointsRef.current, lastPCMetaRef.current, colorMode);
     }
-  };
+  }, [colorMode, pointSize, showAxes, autoRotate]);
 
-  // Handle point size change
-  const handlePointSizeChange = (size: number) => {
-    setPointSize(size);
-    const scene = threeSceneRef.current;
-    if (scene) {
-      scene.setPointSize(size);
-    }
-  };
-
-  // Handle show axes toggle
-  const handleShowAxesToggle = () => {
-    const newValue = !showAxes;
-    setShowAxes(newValue);
-    const scene = threeSceneRef.current;
-    if (scene) {
-      scene.setShowAxes(newValue);
-    }
-  };
-
-  // Handle auto-rotate toggle
-  const handleAutoRotateToggle = () => {
-    const newValue = !autoRotate;
-    setAutoRotate(newValue);
-    const scene = threeSceneRef.current;
-    if (scene) {
-      scene.setAutoRotate(newValue);
-    }
-  };
-
-  // Handle reset camera
   const handleResetCamera = () => {
-    const scene = threeSceneRef.current;
-    if (scene) {
-      scene.resetCamera();
-    }
+    threeSceneRef.current?.resetCamera();
   };
 
-  const footerInfo = [
+  const additionalInfo = [
     {
       label: "Points",
       value: pointCount.toLocaleString(),
@@ -203,49 +164,23 @@ export default function PointCloud3DViewerWidget({ widgetConfig }: WidgetProps) 
   ];
 
   return (
-    <WidgetRoot widgetConfig={widgetConfig} footerInfo={footerInfo}>
-      {error ? (
-        <Flex
-          direction="column"
-          align="center"
-          justify="center"
+    <MosaicWidget.Root widgetConfig={widgetConfig} error={error}>
+      <MosaicWidget.Header additionalInfo={additionalInfo}>
+        <Button size="xs" variant="outline" onClick={handleResetCamera}>
+          Reset
+        </Button>
+        <PointCloud3DViewerSetting />
+      </MosaicWidget.Header>
+      <MosaicWidget.Body>
+        <Box
+          ref={containerRef}
           h="100%"
-          color="red.500"
-          textAlign="center"
-        >
-          <Box fontSize="2xl" mb={2}>
-            ⚠️
-          </Box>
-          <Box fontSize="sm">{error}</Box>
-        </Flex>
-      ) : (
-        <Flex direction="column" h="100%" w="100%" position="relative">
-          {/* Color Mode Controls */}
-          <ColorModeSelector colorMode={colorMode} onChange={handleColorModeChange} />
-
-          {/* View Controls */}
-          <ViewControls
-            pointSize={pointSize}
-            showAxes={showAxes}
-            autoRotate={autoRotate}
-            onPointSizeChange={handlePointSizeChange}
-            onShowAxesToggle={handleShowAxesToggle}
-            onAutoRotateToggle={handleAutoRotateToggle}
-            onResetCamera={handleResetCamera}
-            cameraPosition={cameraPosition}
-          />
-
-          {/* Three.js Container */}
-          <Box
-            ref={containerRef}
-            flex="1"
-            w="100%"
-            position="relative"
-            borderRadius="6px"
-            overflow="hidden"
-          />
-        </Flex>
-      )}
-    </WidgetRoot>
+          w="100%"
+          position="relative"
+          borderRadius="6px"
+          overflow="hidden"
+        />
+      </MosaicWidget.Body>
+    </MosaicWidget.Root>
   );
 }

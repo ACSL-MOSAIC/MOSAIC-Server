@@ -23,6 +23,7 @@ import "react-resizable/css/styles.css";
 import { useMosaicWebRTCConnection } from "@/hooks/useMosaicWebRTCConnection.ts";
 import { useRobotInfo } from "@/hooks/useRobotInfo.ts";
 import { RobotConnector, type TabConfig, type WidgetConfig } from "@/mosaic";
+import { getWidgetDescriptor } from "@/widgets/_utils/widgetRegistry.ts";
 import { DASHBOARD_STORAGE_KEYS } from "@/utils";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
@@ -157,7 +158,10 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
             connectors: widget.connectors.map((connector) => {
               return new RobotConnector(connector.robotId, connector.connectorId);
             }),
-            params: widget.params,
+            params: {
+              ...(getWidgetDescriptor(widget.type)?.getDefaultParams() ?? {}),
+              ...widget.params,
+            },
             onUpdateWidgetParams: (params?: any) => {
               onUpdateWidgetParams(widget.id, params);
             },

@@ -1,15 +1,11 @@
 import { VStack, Text } from "@chakra-ui/react";
 import { Controller, useForm } from "react-hook-form";
 
-import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicWidget } from "@/components/Dashboard/Widgets/MosaicWidgetContext.tsx";
+import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { Checkbox } from "@/components/ui/checkbox.tsx";
 import { Field } from "@/components/ui/field.tsx";
-
-export type MediaViewerParams = {
-  flipH: boolean;
-  flipV: boolean;
-};
+import { MediaViewerParams } from "@/widgets/MediaViewerWidget/WidgetDescriptor.ts";
 
 export function MediaViewerSetting() {
   const widgetConfig = useMosaicWidget();
@@ -31,11 +27,7 @@ export function MediaViewerSetting() {
     <MosaicWidget.SettingDialog useFormReturn={useFormReturn}>
       <Text mb={4}>Media Viewer Settings</Text>
       <VStack gap={4} align="start">
-        <Field
-          invalid={!!errors.flipH}
-          errorText={errors.flipH?.message}
-          label="Flip Horizontal"
-        >
+        <Field invalid={!!errors.flipH} errorText={errors.flipH?.message} label="Flip Horizontal">
           <Controller
             name="flipH"
             control={control}
@@ -49,11 +41,7 @@ export function MediaViewerSetting() {
             )}
           />
         </Field>
-        <Field
-          invalid={!!errors.flipV}
-          errorText={errors.flipV?.message}
-          label="Flip Vertical"
-        >
+        <Field invalid={!!errors.flipV} errorText={errors.flipV?.message} label="Flip Vertical">
           <Controller
             name="flipV"
             control={control}

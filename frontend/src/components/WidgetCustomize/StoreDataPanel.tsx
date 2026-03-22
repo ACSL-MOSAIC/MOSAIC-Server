@@ -6,8 +6,16 @@ interface ReceivableDataPanelProps {
   defaultData: string;
 }
 
+function tryFormatJson(value: string): string {
+  try {
+    return JSON.stringify(JSON.parse(value), null, 2);
+  } catch {
+    return value;
+  }
+}
+
 function ReceivableDataPanel({ onInject, defaultData }: ReceivableDataPanelProps) {
-  const [input, setInput] = useState(defaultData);
+  const [input, setInput] = useState(() => tryFormatJson(defaultData));
 
   return (
     <VStack gap={2} align="stretch">
@@ -18,9 +26,10 @@ function ReceivableDataPanel({ onInject, defaultData }: ReceivableDataPanelProps
         size="sm"
         value={input}
         onChange={(e) => setInput(e.target.value)}
+        onBlur={(e) => setInput(tryFormatJson(e.target.value))}
         placeholder="Enter raw data string..."
         fontFamily="mono"
-        rows={4}
+        rows={6}
       />
       <HStack justify="flex-end">
         <Button size="sm" colorPalette="green" onClick={() => onInject(input)}>
@@ -32,7 +41,7 @@ function ReceivableDataPanel({ onInject, defaultData }: ReceivableDataPanelProps
 }
 
 interface SendableDataPanelProps {
-  sentDataLog: string[];
+  sentDataLog: { time: string; data: string }[];
   onClearLog: () => void;
 }
 
@@ -52,8 +61,9 @@ function SendableDataPanel({ sentDataLog, onClearLog }: SendableDataPanelProps) 
         borderColor="gray.200"
         borderRadius="md"
         p={2}
-        h="150px"
-        overflowY="auto"
+        h="200px"
+        overflow="auto"
+        resize="vertical"
         bg="gray.50"
       >
         {sentDataLog.length === 0 ? (
@@ -61,11 +71,16 @@ function SendableDataPanel({ sentDataLog, onClearLog }: SendableDataPanelProps) 
             No data sent yet...
           </Text>
         ) : (
-          <VStack gap={1} align="stretch">
+          <VStack gap={2} align="stretch">
             {sentDataLog.map((entry, i) => (
-              <Code key={i} fontSize="xs" whiteSpace="pre-wrap" wordBreak="break-all">
-                {entry}
-              </Code>
+              <Box key={i}>
+                <Text fontSize="xs" color="gray.400" mb="1px">
+                  {entry.time}
+                </Text>
+                <Code fontSize="xs" whiteSpace="pre-wrap" wordBreak="break-all" display="block">
+                  {tryFormatJson(entry.data)}
+                </Code>
+              </Box>
             ))}
           </VStack>
         )}
@@ -111,7 +126,7 @@ interface StoreDataPanelProps {
   defaultInjectData: string;
   onInject: (rawData: string) => void;
   onInjectMedia: (url: string) => void;
-  sentDataLog: string[];
+  sentDataLog: { time: string; data: string }[];
   onClearLog: () => void;
 }
 

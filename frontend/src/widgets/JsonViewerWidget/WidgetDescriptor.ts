@@ -2,7 +2,11 @@ import type { StoreType } from "@/mosaic/store/interface/mosaic-store.ts";
 
 import { WidgetDescriptor } from "@/components/Dashboard/Widgets/WidgetDescriptor.ts";
 
-export default class JsonViewerWidgetDescriptor extends WidgetDescriptor {
+export type JsonViewerParams = {
+  cumulative: boolean;
+};
+
+export default class JsonViewerWidgetDescriptor extends WidgetDescriptor<JsonViewerParams> {
   public getName(): string {
     return "JsonViewerWidget";
   }
@@ -11,7 +15,19 @@ export default class JsonViewerWidgetDescriptor extends WidgetDescriptor {
     return "receivable";
   }
 
+  public supportCustomParams(): boolean {
+    return true;
+  }
+
+  public getDefaultParams(): JsonViewerParams {
+    return {
+      cumulative: false,
+    };
+  }
+
   public getDefaultInjectData(): string {
-    return '{"message": "Hello, World!"}';
+    return JSON.stringify({
+      message: "Hello, World!",
+    });
   }
 }

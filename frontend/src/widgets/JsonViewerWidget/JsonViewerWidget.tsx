@@ -23,6 +23,8 @@ export default function JsonViewerWidget({ widgetConfig }: WidgetProps) {
       return;
     }
 
+    console.log("store", store);
+
     const unsubscribe = store.subscribe((data) => {
       if (widgetConfig.params.cumulative) {
         setData((prevData) => [...prevData, data]);

@@ -8,7 +8,7 @@ import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import type { JsonReceivableStore } from "@/stores/JsonReceivableStore/JsonReceivableStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
+import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 import { useRobotInfo } from "@/hooks/useRobotInfo.ts";
 import "leaflet/dist/leaflet.css";
@@ -230,84 +230,86 @@ export default function OpenStreetMapViewerWidget({ widgetConfig }: WidgetProps)
   };
 
   return (
-    <WidgetRoot widgetConfig={widgetConfig} useBody={false} showRobotInfo={false}>
-      <Box ref={containerRef} flex="1" minH="0" position="relative">
-        <MapContainer
-          ref={mapRef}
-          center={DEFAULT_CENTER}
-          zoom={DEFAULT_ZOOM}
-          scrollWheelZoom={true}
-          style={{ height: "100%", width: "100%" }}
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          />
-          {robotsWithCoordinate.map(({ robotId, coordinate: markerCoordinate }) => (
-            <Marker
-              key={robotId}
-              position={[markerCoordinate.latitude, markerCoordinate.longitude]}
-              icon={robotMarkerIcon}
-              eventHandlers={{
-                click: () => {
-                  centerMapOnRobot(robotId);
-                },
-              }}
-            >
-              <Popup>
-                <Text fontSize="sm" fontWeight="semibold">
-                  {robotNameById[robotId] ?? robotId}
-                </Text>
-                <Text fontSize="xs">
-                  {markerCoordinate.latitude.toFixed(6)}, {markerCoordinate.longitude.toFixed(6)}
-                </Text>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-
-        <Box
-          position="absolute"
-          left={3}
-          bottom={3}
-          w={selectorPanelWidth}
-          px={3}
-          py={2}
-          bg="rgba(255,255,255,0.9)"
-          borderWidth="1px"
-          borderColor="gray.200"
-          borderRadius="md"
-          zIndex={400}
-          maxW="calc(100% - 24px)"
-        >
-          <VStack align="stretch" gap={2}>
-            {robotIds.map((robotId) => {
-              const robotName = robotNameById[robotId] ?? robotId;
-              const hasCoordinate = !!robotGpsStateMap[robotId]?.coordinate;
-              const isSelected = robotId === activeRobotId;
-
-              return (
-                <Button
-                  key={robotId}
-                  size="2xs"
-                  w="100%"
-                  justifyContent="flex-start"
-                  variant={isSelected ? "solid" : "ghost"}
-                  colorScheme={isSelected ? "green" : "gray"}
-                  onClick={() => {
+    <MosaicWidget.Root widgetConfig={widgetConfig}>
+      <MosaicWidget.Body>
+        <Box ref={containerRef} h="100%" w="100%" position="relative">
+          <MapContainer
+            ref={mapRef}
+            center={DEFAULT_CENTER}
+            zoom={DEFAULT_ZOOM}
+            scrollWheelZoom={true}
+            style={{ height: "100%", width: "100%" }}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
+            {robotsWithCoordinate.map(({ robotId, coordinate: markerCoordinate }) => (
+              <Marker
+                key={robotId}
+                position={[markerCoordinate.latitude, markerCoordinate.longitude]}
+                icon={robotMarkerIcon}
+                eventHandlers={{
+                  click: () => {
                     centerMapOnRobot(robotId);
-                  }}
-                  disabled={!hasCoordinate}
-                >
-                  <Text fontSize="xs" truncate>
-                    {robotName}
+                  },
+                }}
+              >
+                <Popup>
+                  <Text fontSize="sm" fontWeight="semibold">
+                    {robotNameById[robotId] ?? robotId}
                   </Text>
-                </Button>
-              );
-            })}
-          </VStack>
+                  <Text fontSize="xs">
+                    {markerCoordinate.latitude.toFixed(6)}, {markerCoordinate.longitude.toFixed(6)}
+                  </Text>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+
+          <Box
+            position="absolute"
+            left={3}
+            bottom={3}
+            w={selectorPanelWidth}
+            px={3}
+            py={2}
+            bg="rgba(255,255,255,0.9)"
+            borderWidth="1px"
+            borderColor="gray.200"
+            borderRadius="md"
+            zIndex={400}
+            maxW="calc(100% - 24px)"
+          >
+            <VStack align="stretch" gap={2}>
+              {robotIds.map((robotId) => {
+                const robotName = robotNameById[robotId] ?? robotId;
+                const hasCoordinate = !!robotGpsStateMap[robotId]?.coordinate;
+                const isSelected = robotId === activeRobotId;
+
+                return (
+                  <Button
+                    key={robotId}
+                    size="2xs"
+                    w="100%"
+                    justifyContent="flex-start"
+                    variant={isSelected ? "solid" : "ghost"}
+                    colorScheme={isSelected ? "green" : "gray"}
+                    onClick={() => {
+                      centerMapOnRobot(robotId);
+                    }}
+                    disabled={!hasCoordinate}
+                  >
+                    <Text fontSize="xs" truncate>
+                      {robotName}
+                    </Text>
+                  </Button>
+                );
+              })}
+            </VStack>
+          </Box>
         </Box>
-      </Box>
-    </WidgetRoot>
+      </MosaicWidget.Body>
+    </MosaicWidget.Root>
   );
 }

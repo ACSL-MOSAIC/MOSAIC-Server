@@ -2,7 +2,12 @@ import type { StoreType } from "@/mosaic/store/interface/mosaic-store.ts";
 
 import { WidgetDescriptor } from "@/components/Dashboard/Widgets/WidgetDescriptor.ts";
 
-export default class MediaViewerWidgetDescriptor extends WidgetDescriptor {
+export type MediaViewerParams = {
+  flipH: boolean;
+  flipV: boolean;
+};
+
+export default class MediaViewerWidgetDescriptor extends WidgetDescriptor<MediaViewerParams> {
   public getName(): string {
     return "MediaViewerWidget";
   }
@@ -15,7 +20,14 @@ export default class MediaViewerWidgetDescriptor extends WidgetDescriptor {
     return true;
   }
 
-  public validateParams(_params: Record<string, any>): string | null {
+  public getDefaultParams(): MediaViewerParams {
+    return {
+      flipH: false,
+      flipV: false,
+    };
+  }
+
+  public validateParams(_params: MediaViewerParams): string | null {
     return null;
   }
 }
