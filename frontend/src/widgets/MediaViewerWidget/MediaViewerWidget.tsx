@@ -129,56 +129,59 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
   }, []);
 
   return (
-    <MosaicWidget.Root widgetConfig={widgetConfig} error={error}>
+    <MosaicWidget.Root widgetConfig={widgetConfig}>
       <MosaicWidget.Header>
         <MediaViewerSetting />
       </MosaicWidget.Header>
       <MosaicWidget.Body>
-        <video
-          ref={videoRef}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-            borderRadius: "8px",
-            transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
-          }}
-          playsInline
-          muted
-          autoPlay
-        />
+          <>
+            <video
+              ref={videoRef}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                borderRadius: "8px",
+                transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
+              }}
+              playsInline
+              muted
+              autoPlay
+            />
 
-        <Box
-          position="absolute"
-          bottom={0}
-          left={0}
-          right={0}
-          bg="linear-gradient(to top, rgba(0,0,0,0.7), transparent)"
-          p={3}
-          opacity={0}
-          _hover={{ opacity: 1 }}
-          transition="opacity 0.2s"
-        >
-          <Flex justify="center" align="center" gap={2}>
-            <IconButton
-              size="sm"
-              colorScheme="whiteAlpha"
-              onClick={handlePlayPause}
-              aria-label={isPlaying ? "Pause" : "Play"}
+            <Box
+              position="absolute"
+              bottom={0}
+              left={0}
+              right={0}
+              bg="linear-gradient(to top, rgba(0,0,0,0.7), transparent)"
+              p={3}
+              opacity={0}
+              _hover={{ opacity: 1 }}
+              transition="opacity 0.2s"
             >
-              {isPlaying ? "⏸️" : "▶️"}
-            </IconButton>
+              <Flex justify="center" align="center" gap={2}>
+                <IconButton
+                  size="sm"
+                  colorScheme="whiteAlpha"
+                  onClick={handlePlayPause}
+                  aria-label={isPlaying ? "Pause" : "Play"}
+                >
+                  {isPlaying ? "⏸️" : "▶️"}
+                </IconButton>
 
-            <IconButton
-              size="sm"
-              colorScheme="whiteAlpha"
-              onClick={handleFullscreen}
-              aria-label="Fullscreen"
-            >
-              ⛶
-            </IconButton>
-          </Flex>
-        </Box>
+                <IconButton
+                  size="sm"
+                  colorScheme="whiteAlpha"
+                  onClick={handleFullscreen}
+                  aria-label="Fullscreen"
+                >
+                  ⛶
+                </IconButton>
+              </Flex>
+            </Box>
+          </>
+        )
       </MosaicWidget.Body>
     </MosaicWidget.Root>
   );
