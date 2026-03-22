@@ -206,10 +206,24 @@ export default function SegmentationMediaWidget({ widgetConfig }: WidgetProps) {
       return;
     }
 
+    const syncVideoState = () => {
+      const hasMetadata = videoElement.readyState >= HTMLMediaElement.HAVE_METADATA;
+      setIsStreamReady(hasMetadata);
+      setIsPlaying(!videoElement.paused && !videoElement.ended);
+      if (hasMetadata) {
+        setError(null);
+        setupCanvas();
+      }
+    };
+
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
     const handleLoadedMetadata = () => {
       setError(null);
+      setIsStreamReady(true);
+      setupCanvas();
+    };
+    const handleLoadedData = () => {
       setIsStreamReady(true);
       setupCanvas();
     };
@@ -218,22 +232,33 @@ export default function SegmentationMediaWidget({ widgetConfig }: WidgetProps) {
       setIsPlaying(false);
       clearOverlay();
     };
+    const handleEnded = () => setIsPlaying(false);
+    const handleStalled = () => setIsPlaying(false);
     const handleError = (event: Event) => {
       console.error("SegmentationMediaWidget video load error:", event);
       setError("Failed to load media stream.");
+      setIsStreamReady(false);
+      setIsPlaying(false);
     };
 
     videoElement.addEventListener("play", handlePlay);
     videoElement.addEventListener("pause", handlePause);
     videoElement.addEventListener("loadedmetadata", handleLoadedMetadata);
+    videoElement.addEventListener("loadeddata", handleLoadedData);
     videoElement.addEventListener("emptied", handleEmptied);
+    videoElement.addEventListener("ended", handleEnded);
+    videoElement.addEventListener("stalled", handleStalled);
     videoElement.addEventListener("error", handleError);
+    syncVideoState();
 
     return () => {
       videoElement.removeEventListener("play", handlePlay);
       videoElement.removeEventListener("pause", handlePause);
       videoElement.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      videoElement.removeEventListener("loadeddata", handleLoadedData);
       videoElement.removeEventListener("emptied", handleEmptied);
+      videoElement.removeEventListener("ended", handleEnded);
+      videoElement.removeEventListener("stalled", handleStalled);
       videoElement.removeEventListener("error", handleError);
     };
   };
@@ -311,21 +336,21 @@ export default function SegmentationMediaWidget({ widgetConfig }: WidgetProps) {
         videoRef.current.srcObject = null;
       }
     };
-  }, [
-    connector,
-    connectorRobotId,
-    connectorId,
-    getOrCreateStore,
-    releaseStore,
-    stopSegmentationLoop,
-  ]);
+  }, [connectorRobotId, connectorId, stopSegmentationLoop]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    const resizeObserver = new ResizeObserver(() => setupCanvas());
+    const handleViewportChange = () => setupCanvas();
+    const resizeObserver = new ResizeObserver(handleViewportChange);
     resizeObserver.observe(video);
-    return () => resizeObserver.disconnect();
+    window.addEventListener("resize", handleViewportChange);
+    document.addEventListener("fullscreenchange", handleViewportChange);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", handleViewportChange);
+      document.removeEventListener("fullscreenchange", handleViewportChange);
+    };
   }, [setupCanvas]);
 
   useEffect(() => {
