@@ -208,10 +208,7 @@ export function WidgetCustomizePage() {
     }
   };
 
-  const handleUpdateWidgetParams = useCallback(
-    (params?: any) => setWidgetParams(params ?? {}),
-    [],
-  );
+  const handleUpdateWidgetParams = useCallback((params?: any) => setWidgetParams(params ?? {}), []);
 
   const widgetConfig: WidgetConfig | null = useMemo(
     () =>
