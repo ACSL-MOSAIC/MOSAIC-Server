@@ -10,6 +10,4 @@ export default class MediaViewerWithStatWidgetDescriptor extends WidgetDescripto
   public getRequiredStoreType(): StoreType {
     return "media";
   }
-
-  // TODO: 미디어 스트림 위젯은 JSON inject 방식으로 테스트 불가
 }

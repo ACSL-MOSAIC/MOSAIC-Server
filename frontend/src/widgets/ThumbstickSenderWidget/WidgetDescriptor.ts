@@ -24,6 +24,4 @@ export default class ThumbstickSenderWidgetDescriptor extends WidgetDescriptor<T
       holonomic: false,
     };
   }
-
-  // TODO: sender 위젯은 수신 데이터가 없으므로 inject 불필요
 }
