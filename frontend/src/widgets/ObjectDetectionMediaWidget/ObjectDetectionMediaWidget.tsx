@@ -144,34 +144,42 @@ export default function ObjectDetectionMediaWidget({ widgetConfig }: WidgetProps
     canvas.style.top = `${offsetY}px`;
   }, []);
 
-  const drawDetections = useCallback((items: Detection[]) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+  const drawDetections = useCallback(
+    (items: Detection[]) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "#00ff00";
-    ctx.lineWidth = 3;
-    ctx.font = "20px Arial";
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "#00ff00";
+      ctx.lineWidth = 3;
+      ctx.font = "20px Arial";
 
-    for (const detection of items) {
-      const [x, y, width, height] = detection.bbox;
-      ctx.strokeRect(x, y, width, height);
+      for (const detection of items) {
+        const [x, y, width, height] = detection.bbox;
+        const mirroredX = flipH ? canvas.width - x - width : x;
+        const mirroredY = flipV ? canvas.height - y - height : y;
+        ctx.strokeRect(mirroredX, mirroredY, width, height);
 
-      const label = `${detection.class} ${(detection.score * 100).toFixed(1)}%`;
-      const textWidth = ctx.measureText(label).width;
-      const padding = 4;
-      const textHeight = 20;
-      const labelY = Math.max(y - (textHeight + padding * 2), 0);
+        const label = `${detection.class} ${(detection.score * 100).toFixed(1)}%`;
+        const textWidth = ctx.measureText(label).width;
+        const padding = 4;
+        const textHeight = 20;
+        const labelWidth = textWidth + padding * 2;
+        const labelHeight = textHeight + padding * 2;
+        const labelX = Math.min(Math.max(mirroredX, 0), Math.max(canvas.width - labelWidth, 0));
+        const labelY = Math.max(mirroredY - labelHeight, 0);
 
-      ctx.fillStyle = "rgba(0, 255, 0, 0.85)";
-      ctx.fillRect(x, labelY, textWidth + padding * 2, textHeight + padding * 2);
+        ctx.fillStyle = "rgba(0, 255, 0, 0.85)";
+        ctx.fillRect(labelX, labelY, labelWidth, labelHeight);
 
-      ctx.fillStyle = "#000";
-      ctx.fillText(label, x + padding, labelY + textHeight);
-    }
-  }, []);
+        ctx.fillStyle = "#000";
+        ctx.fillText(label, labelX + padding, labelY + textHeight);
+      }
+    },
+    [flipH, flipV],
+  );
 
   const runDetection = useCallback(async () => {
     if (!isDetectingRef.current) {
@@ -435,8 +443,6 @@ export default function ObjectDetectionMediaWidget({ widgetConfig }: WidgetProps
             position: "absolute",
             pointerEvents: "none",
             borderRadius: "8px",
-            transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
-            transformOrigin: "center center",
           }}
         />
       </MosaicWidget.Body>

@@ -145,54 +145,64 @@ export default function SegmentationMediaWidget({ widgetConfig }: WidgetProps) {
     canvas.style.top = `${offsetY}px`;
   }, []);
 
-  const drawSegmentation = useCallback((output: SegmentationOutput) => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      return;
-    }
-
-    const canvasCtx = canvas.getContext("2d");
-    if (!canvasCtx) {
-      return;
-    }
-
-    if (!tempCanvasRef.current) {
-      tempCanvasRef.current = document.createElement("canvas");
-    }
-    const tempCanvas = tempCanvasRef.current;
-    const tempCtx = tempCanvas.getContext("2d");
-    if (!tempCtx) {
-      return;
-    }
-
-    const { width, height, segmentationMap } = output;
-    tempCanvas.width = width;
-    tempCanvas.height = height;
-    const imageData = tempCtx.createImageData(width, height);
-    const data = imageData.data;
-
-    for (let i = 0; i < segmentationMap.length; i += 4) {
-      const r = segmentationMap[i] ?? 0;
-      const g = segmentationMap[i + 1] ?? 0;
-      const b = segmentationMap[i + 2] ?? 0;
-
-      if (r !== 0 || g !== 0 || b !== 0) {
-        data[i] = r;
-        data[i + 1] = g;
-        data[i + 2] = b;
-        data[i + 3] = 130;
-      } else {
-        data[i] = 0;
-        data[i + 1] = 0;
-        data[i + 2] = 0;
-        data[i + 3] = 0;
+  const drawSegmentation = useCallback(
+    (output: SegmentationOutput) => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        return;
       }
-    }
 
-    tempCtx.putImageData(imageData, 0, 0);
-    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-    canvasCtx.drawImage(tempCanvas, 0, 0, width, height, 0, 0, canvas.width, canvas.height);
-  }, []);
+      const canvasCtx = canvas.getContext("2d");
+      if (!canvasCtx) {
+        return;
+      }
+
+      if (!tempCanvasRef.current) {
+        tempCanvasRef.current = document.createElement("canvas");
+      }
+      const tempCanvas = tempCanvasRef.current;
+      const tempCtx = tempCanvas.getContext("2d");
+      if (!tempCtx) {
+        return;
+      }
+
+      const { width, height, segmentationMap } = output;
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      const imageData = tempCtx.createImageData(width, height);
+      const data = imageData.data;
+
+      for (let i = 0; i < segmentationMap.length; i += 4) {
+        const r = segmentationMap[i] ?? 0;
+        const g = segmentationMap[i + 1] ?? 0;
+        const b = segmentationMap[i + 2] ?? 0;
+
+        if (r !== 0 || g !== 0 || b !== 0) {
+          data[i] = r;
+          data[i + 1] = g;
+          data[i + 2] = b;
+          data[i + 3] = 130;
+        } else {
+          data[i] = 0;
+          data[i + 1] = 0;
+          data[i + 2] = 0;
+          data[i + 3] = 0;
+        }
+      }
+
+      tempCtx.putImageData(imageData, 0, 0);
+      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+      canvasCtx.save();
+      if (flipH || flipV) {
+        canvasCtx.translate(flipH ? canvas.width : 0, flipV ? canvas.height : 0);
+        canvasCtx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+      }
+      canvasCtx.drawImage(tempCanvas, 0, 0, width, height, 0, 0, canvas.width, canvas.height);
+      canvasCtx.restore();
+    },
+    [flipH, flipV],
+  );
 
   const runSegmentation = useCallback(async () => {
     if (!isSegmentingRef.current) {
@@ -451,8 +461,6 @@ export default function SegmentationMediaWidget({ widgetConfig }: WidgetProps) {
             position: "absolute",
             pointerEvents: "none",
             borderRadius: "8px",
-            transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
-            transformOrigin: "center center",
           }}
         />
       </MosaicWidget.Body>
