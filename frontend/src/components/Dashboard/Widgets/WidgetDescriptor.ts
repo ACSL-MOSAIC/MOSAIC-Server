@@ -1,6 +1,6 @@
 import type { StoreType } from "@/mosaic/store/interface/mosaic-store.ts";
 
-export abstract class WidgetDescriptor {
+export abstract class WidgetDescriptor<T = Record<string, any>> {
   public abstract getName(): string;
 
   public getRequiredStoreType(): StoreType | null {
@@ -27,7 +27,11 @@ export abstract class WidgetDescriptor {
     return false;
   }
 
-  public validateParams(_params: Record<string, any>): string | null {
+  public getDefaultParams(): T {
+    return {} as T;
+  }
+
+  public validateParams(_params: T): string | null {
     return null;
   }
 

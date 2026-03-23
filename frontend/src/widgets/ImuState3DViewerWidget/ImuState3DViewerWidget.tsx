@@ -7,7 +7,7 @@ import * as THREE from "three";
 import type { JsonReceivableStore } from "@/stores/JsonReceivableStore/JsonReceivableStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
+import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 interface ImuData {
@@ -117,78 +117,80 @@ export default function ImuState3DViewerWidget({ widgetConfig }: WidgetProps) {
   }, [widgetConfig]);
 
   return (
-    <WidgetRoot widgetConfig={widgetConfig}>
-      <VStack align="stretch" h="100%" gap={0}>
-        {/* 3D Orientation Viewer */}
-        <Box flex={1} minH={0}>
-          <Canvas camera={{ position: [4, 3, 5], fov: 45 }}>
-            <ambientLight intensity={0.5} />
-            <directionalLight position={[5, 8, 5]} intensity={1.2} />
-            <axesHelper args={[2.5]} />
-            {data && <RobotModel orientation={data.orientation} />}
-            <OrbitControls enablePan={false} />
-            <GizmoHelper alignment="bottom-right" margin={[60, 60]}>
-              <GizmoViewport
-                axisColors={["#ef4444", "#22c55e", "#3b82f6"]}
-                labelColor="transparent"
-              />
-            </GizmoHelper>
-          </Canvas>
-        </Box>
+    <MosaicWidget.Root widgetConfig={widgetConfig}>
+      <MosaicWidget.Body>
+        <VStack align="stretch" h="100%" gap={0}>
+          {/* 3D Orientation Viewer */}
+          <Box flex={1} minH={0}>
+            <Canvas camera={{ position: [4, 3, 5], fov: 45 }}>
+              <ambientLight intensity={0.5} />
+              <directionalLight position={[5, 8, 5]} intensity={1.2} />
+              <axesHelper args={[2.5]} />
+              {data && <RobotModel orientation={data.orientation} />}
+              <OrbitControls enablePan={false} />
+              <GizmoHelper alignment="bottom-right" margin={[60, 60]}>
+                <GizmoViewport
+                  axisColors={["#ef4444", "#22c55e", "#3b82f6"]}
+                  labelColor="transparent"
+                />
+              </GizmoHelper>
+            </Canvas>
+          </Box>
 
-        {/* Sensor Values */}
-        <Grid
-          templateColumns="repeat(2, 1fr)"
-          gap={3}
-          p={3}
-          borderTopWidth="1px"
-          borderColor="border.subtle"
-        >
-          <VStack align="stretch" gap={1.5}>
-            <Text
-              fontSize="xs"
-              fontWeight="bold"
-              color="fg.muted"
-              textTransform="uppercase"
-              letterSpacing="wider"
-            >
-              Angular Velocity
-            </Text>
-            {(["X", "Y", "Z"] as const).map((axis, i) => (
-              <ValueBar
-                key={axis}
-                label={axis}
-                value={data?.angular_velocity[i] ?? 0}
-                max={3}
-                color={AXIS_COLORS[i]}
-                unit="rad/s"
-              />
-            ))}
-          </VStack>
+          {/* Sensor Values */}
+          <Grid
+            templateColumns="repeat(2, 1fr)"
+            gap={3}
+            p={3}
+            borderTopWidth="1px"
+            borderColor="border.subtle"
+          >
+            <VStack align="stretch" gap={1.5}>
+              <Text
+                fontSize="xs"
+                fontWeight="bold"
+                color="fg.muted"
+                textTransform="uppercase"
+                letterSpacing="wider"
+              >
+                Angular Velocity
+              </Text>
+              {(["X", "Y", "Z"] as const).map((axis, i) => (
+                <ValueBar
+                  key={axis}
+                  label={axis}
+                  value={data?.angular_velocity[i] ?? 0}
+                  max={3}
+                  color={AXIS_COLORS[i]}
+                  unit="rad/s"
+                />
+              ))}
+            </VStack>
 
-          <VStack align="stretch" gap={1.5}>
-            <Text
-              fontSize="xs"
-              fontWeight="bold"
-              color="fg.muted"
-              textTransform="uppercase"
-              letterSpacing="wider"
-            >
-              Linear Accel
-            </Text>
-            {(["X", "Y", "Z"] as const).map((axis, i) => (
-              <ValueBar
-                key={axis}
-                label={axis}
-                value={data?.linear_acceleration[i] ?? 0}
-                max={15}
-                color={AXIS_COLORS[i]}
-                unit="m/s²"
-              />
-            ))}
-          </VStack>
-        </Grid>
-      </VStack>
-    </WidgetRoot>
+            <VStack align="stretch" gap={1.5}>
+              <Text
+                fontSize="xs"
+                fontWeight="bold"
+                color="fg.muted"
+                textTransform="uppercase"
+                letterSpacing="wider"
+              >
+                Linear Accel
+              </Text>
+              {(["X", "Y", "Z"] as const).map((axis, i) => (
+                <ValueBar
+                  key={axis}
+                  label={axis}
+                  value={data?.linear_acceleration[i] ?? 0}
+                  max={15}
+                  color={AXIS_COLORS[i]}
+                  unit="m/s²"
+                />
+              ))}
+            </VStack>
+          </Grid>
+        </VStack>
+      </MosaicWidget.Body>
+    </MosaicWidget.Root>
   );
 }

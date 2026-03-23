@@ -5,11 +5,7 @@ import { useMosaicWidget } from "@/components/Dashboard/Widgets/MosaicWidgetCont
 import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { Checkbox } from "@/components/ui/checkbox.tsx";
 import { Field } from "@/components/ui/field.tsx";
-
-export type MediaViewerParams = {
-  flipH: boolean;
-  flipV: boolean;
-};
+import { MediaViewerParams } from "@/widgets/MediaViewerWidget/WidgetDescriptor.ts";
 
 export function MediaViewerSetting() {
   const widgetConfig = useMosaicWidget();

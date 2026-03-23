@@ -69,6 +69,10 @@ export class StoreManager {
     return store;
   }
 
+  public forceDeleteStore(robotConnector: RobotConnector): void {
+    this.mosaicStores.delete(robotConnector);
+  }
+
   public releaseStore(robotConnector: RobotConnector): boolean {
     const store = this.mosaicStores.get(robotConnector);
     if (store === undefined) return false;

@@ -9,7 +9,7 @@ import type {
 } from "@/stores/@types/pointcloud.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
+import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 import AngleIndicator from "./AngleIndicator.tsx";
@@ -209,7 +209,7 @@ export default function PointCloud2DViewerV2Widget({ widgetConfig }: WidgetProps
     }
   };
 
-  const footerInfo = [
+  const additionalInfo = [
     {
       label: "Points",
       value: pointCount.toLocaleString(),
@@ -225,23 +225,10 @@ export default function PointCloud2DViewerV2Widget({ widgetConfig }: WidgetProps
   ];
 
   return (
-    <WidgetRoot widgetConfig={widgetConfig} footerInfo={footerInfo}>
-      {error ? (
-        <Flex
-          direction="column"
-          align="center"
-          justify="center"
-          h="100%"
-          color="red.500"
-          textAlign="center"
-        >
-          <Box fontSize="2xl" mb={2}>
-            ⚠️
-          </Box>
-          <Box fontSize="sm">{error}</Box>
-        </Flex>
-      ) : (
-        <Flex direction="column" h="100%" position="relative">
+    <MosaicWidget.Root widgetConfig={widgetConfig} error={error}>
+      <MosaicWidget.Header additionalInfo={additionalInfo} />
+      <MosaicWidget.Body>
+        <Flex direction="column" h="100%" w="100%" position="relative">
           <ColorModeSelector colorMode={colorMode} onChange={handleColorModeChange} />
           <AngleIndicator />
           <Box flex="1" position="relative">
@@ -256,7 +243,7 @@ export default function PointCloud2DViewerV2Widget({ widgetConfig }: WidgetProps
             />
           </Box>
         </Flex>
-      )}
-    </WidgetRoot>
+      </MosaicWidget.Body>
+    </MosaicWidget.Root>
   );
 }

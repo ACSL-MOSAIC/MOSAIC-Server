@@ -1,5 +1,5 @@
 import { Box, Heading, Separator, Text, VStack } from "@chakra-ui/react";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import type { RobotConfig, WidgetConfig } from "@/mosaic";
 import type { MosaicStore } from "@/mosaic/store/interface/mosaic-store.ts";
@@ -95,7 +95,7 @@ export function WidgetCustomizePage() {
 
   // Store interaction
   const [storeType, setStoreType] = useState<"receivable" | "sendable" | "media" | null>(null);
-  const [sentDataLog, setSentDataLog] = useState<string[]>([]);
+  const [sentDataLog, setSentDataLog] = useState<{ time: string; data: string }[]>([]);
 
   // Keep refs for cleanup
   const currentStoreRef = useRef<MosaicStore | null>(null);
@@ -126,16 +126,16 @@ export function WidgetCustomizePage() {
       const mockChannel = {
         readyState: "open" as RTCDataChannelState,
         send: (data: string) => {
-          setSentDataLog((prev) =>
-            [`[${new Date().toLocaleTimeString()}] ${data}`, ...prev].slice(0, 100),
-          );
+          const now = new Date();
+          const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+          setSentDataLog((prev) => [{ time, data }, ...prev].slice(0, 100));
         },
       } as unknown as RTCDataChannel;
       store.setDataChannel(mockChannel);
     }
 
     setStoreType(store.getStoreType());
-    setWidgetParams({});
+    setWidgetParams(getWidgetDescriptor(widgetType)?.getDefaultParams() ?? {});
     setWidgetPosition({ x: 0, y: 0, w: 8, h: 6 });
 
     updateRobotInfo(new RobotInfo(TEST_ROBOT_ID, "Test Robot", 6, fakeRobotConfig));
@@ -153,9 +153,10 @@ export function WidgetCustomizePage() {
   const handleApply = () => {
     if (!widgetType || !connectorId || !connectorType) return;
 
-    // Release this component's own store ref (not the widget's ref)
+    // Force-delete the store for this connector so Phase 2 always creates a fresh store
+    // of the newly selected type. The widget's own cleanup will release its ref gracefully.
     if (currentConnectorRef.current) {
-      storeManager.releaseStore(currentConnectorRef.current);
+      storeManager.forceDeleteStore(currentConnectorRef.current);
       currentStoreRef.current = null;
       currentConnectorRef.current = null;
     }
@@ -207,16 +208,22 @@ export function WidgetCustomizePage() {
     }
   };
 
-  const widgetConfig: WidgetConfig | null = appliedConfig
-    ? {
-        id: "test-widget",
-        type: appliedConfig.widgetType,
-        position: widgetPosition,
-        connectors: [new RobotConnector(TEST_ROBOT_ID, appliedConfig.connectorId)],
-        params: widgetParams,
-        onUpdateWidgetParams: (params) => setWidgetParams(params ?? {}),
-      }
-    : null;
+  const handleUpdateWidgetParams = useCallback((params?: any) => setWidgetParams(params ?? {}), []);
+
+  const widgetConfig: WidgetConfig | null = useMemo(
+    () =>
+      appliedConfig
+        ? {
+            id: "test-widget",
+            type: appliedConfig.widgetType,
+            position: widgetPosition,
+            connectors: [new RobotConnector(TEST_ROBOT_ID, appliedConfig.connectorId)],
+            params: widgetParams,
+            onUpdateWidgetParams: handleUpdateWidgetParams,
+          }
+        : null,
+    [appliedConfig, widgetPosition, widgetParams, handleUpdateWidgetParams],
+  );
 
   const isApplyDisabled = !widgetType || !connectorId || !connectorType;
 

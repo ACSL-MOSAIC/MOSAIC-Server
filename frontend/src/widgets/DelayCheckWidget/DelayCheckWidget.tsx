@@ -6,7 +6,7 @@ import type { ConnectionCheckReceiverStore } from "@/stores/ConnectionCheckRecei
 import type { ConnectionCheckSenderStore } from "@/stores/ConnectionCheckSenderStore/ConnectionCheckSenderStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetRoot } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
+import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 import { useRobotInfo } from "@/hooks/useRobotInfo.ts";
 
@@ -153,118 +153,120 @@ export default function DelayCheckWidget({ widgetConfig }: WidgetProps) {
   }, [widgetConfig]);
 
   return (
-    <WidgetRoot widgetConfig={widgetConfig}>
-      <Box display="flex" flexDirection="column" h="100%" w="100%" gap={2}>
-        {/* Stats + controls */}
-        <HStack px={2} align="center" flexShrink={0} gap={4}>
-          {/* Left: stats in two rows */}
-          <Box flex={1} minW={0} fontSize="xs" fontFamily="mono">
-            <HStack gap={4} mb={0.5}>
-              {(["Mean", "Std"] as const).map((label) => (
-                <Box key={label} textAlign="center">
-                  <Box color="gray.700">{label}</Box>
-                  <Box color="cyan.500" fontWeight="semibold" whiteSpace="nowrap">
-                    {stats?.[label.toLowerCase() as "mean" | "std"]?.toFixed(3) ?? "—"}
-                  </Box>
-                </Box>
-              ))}
-            </HStack>
-            <HStack gap={4}>
-              {(["p50", "p95", "p99"] as const).map((label) => (
-                <Box key={label} textAlign="center">
-                  <Box color="gray.700">{label}</Box>
-                  <Box color="cyan.500" fontWeight="semibold" whiteSpace="nowrap">
-                    {stats?.[label]?.toFixed(3) ?? "—"}
-                  </Box>
-                </Box>
-              ))}
-            </HStack>
-          </Box>
-
-          {/* Right: [Large + switch] | [Save CSV] */}
-          <HStack flexShrink={0} align="center" gap={2}>
-            <Box display="flex" flexDirection="column" alignItems="center" gap={0.5}>
-              <Box fontSize="xs" color="gray.500">
-                Large
-              </Box>
-              <Switch.Root
-                size="sm"
-                checked={largeMode}
-                onCheckedChange={(e: { checked: boolean }) => {
-                  largeModeRef.current = e.checked;
-                  setLargeMode(e.checked);
-                }}
-              >
-                <Switch.HiddenInput />
-                <Switch.Control>
-                  <Switch.Thumb />
-                </Switch.Control>
-              </Switch.Root>
-            </Box>
-            <Button
-              size="xs"
-              variant="outline"
-              colorPalette="teal"
-              onClick={handleSave}
-              disabled={connectionCheckingMessages.length === 0}
-            >
-              Save CSV
-            </Button>
-          </HStack>
-        </HStack>
-
-        {/* Data table */}
-        <Box overflowY="auto" flex={1} fontSize="xs" fontFamily="mono">
-          <Box as="table" w="100%" style={{ borderCollapse: "collapse" }}>
-            <Box as="thead" position="sticky" top={0} zIndex={1}>
-              <Box as="tr">
-                {TABLE_HEADERS.map((col) => (
-                  <Box
-                    key={col}
-                    as="th"
-                    px={2}
-                    py={1}
-                    textAlign="right"
-                    color="gray.900"
-                    fontWeight="semibold"
-                    borderBottom="1px solid"
-                    borderColor="gray.500"
-                    whiteSpace="nowrap"
-                  >
-                    {col}
+    <MosaicWidget.Root widgetConfig={widgetConfig}>
+      <MosaicWidget.Body>
+        <Box display="flex" flexDirection="column" h="100%" w="100%" gap={2}>
+          {/* Stats + controls */}
+          <HStack px={2} align="center" flexShrink={0} gap={4}>
+            {/* Left: stats in two rows */}
+            <Box flex={1} minW={0} fontSize="xs" fontFamily="mono">
+              <HStack gap={4} mb={0.5}>
+                {(["Mean", "Std"] as const).map((label) => (
+                  <Box key={label} textAlign="center">
+                    <Box color="gray.700">{label}</Box>
+                    <Box color="cyan.500" fontWeight="semibold" whiteSpace="nowrap">
+                      {stats?.[label.toLowerCase() as "mean" | "std"]?.toFixed(3) ?? "—"}
+                    </Box>
                   </Box>
                 ))}
-              </Box>
-            </Box>
-            <Box as="tbody">
-              {connectionCheckingMessages.map((msg, i) => {
-                const latency = (msg.messageReceived - msg.messageCreated) * 0.5;
-                return (
-                  <Box
-                    key={i}
-                    as="tr"
-                    bg={i % 2 === 0 ? "transparent" : "whiteAlpha.50"}
-                    _hover={{ bg: "whiteAlpha.100" }}
-                  >
-                    <Box as="td" px={2} py={0.5} textAlign="right" color="gray.600">
-                      {i + 1}
-                    </Box>
-                    <Box as="td" px={2} py={0.5} textAlign="right" color={latencyColor(latency)}>
-                      {latency.toFixed(3)}
-                    </Box>
-                    <Box as="td" px={2} py={0.5} textAlign="right" color="gray.700">
-                      {formatTimestamp(msg.messageCreated)}
-                    </Box>
-                    <Box as="td" px={2} py={0.5} textAlign="right" color="gray.700">
-                      {formatTimestamp(msg.messageReceived)}
+              </HStack>
+              <HStack gap={4}>
+                {(["p50", "p95", "p99"] as const).map((label) => (
+                  <Box key={label} textAlign="center">
+                    <Box color="gray.700">{label}</Box>
+                    <Box color="cyan.500" fontWeight="semibold" whiteSpace="nowrap">
+                      {stats?.[label]?.toFixed(3) ?? "—"}
                     </Box>
                   </Box>
-                );
-              })}
+                ))}
+              </HStack>
+            </Box>
+
+            {/* Right: [Large + switch] | [Save CSV] */}
+            <HStack flexShrink={0} align="center" gap={2}>
+              <Box display="flex" flexDirection="column" alignItems="center" gap={0.5}>
+                <Box fontSize="xs" color="gray.500">
+                  Large
+                </Box>
+                <Switch.Root
+                  size="sm"
+                  checked={largeMode}
+                  onCheckedChange={(e: { checked: boolean }) => {
+                    largeModeRef.current = e.checked;
+                    setLargeMode(e.checked);
+                  }}
+                >
+                  <Switch.HiddenInput />
+                  <Switch.Control>
+                    <Switch.Thumb />
+                  </Switch.Control>
+                </Switch.Root>
+              </Box>
+              <Button
+                size="xs"
+                variant="outline"
+                colorPalette="teal"
+                onClick={handleSave}
+                disabled={connectionCheckingMessages.length === 0}
+              >
+                Save CSV
+              </Button>
+            </HStack>
+          </HStack>
+
+          {/* Data table */}
+          <Box overflowY="auto" flex={1} fontSize="xs" fontFamily="mono">
+            <Box as="table" w="100%" style={{ borderCollapse: "collapse" }}>
+              <Box as="thead" position="sticky" top={0} zIndex={1}>
+                <Box as="tr">
+                  {TABLE_HEADERS.map((col) => (
+                    <Box
+                      key={col}
+                      as="th"
+                      px={2}
+                      py={1}
+                      textAlign="right"
+                      color="gray.900"
+                      fontWeight="semibold"
+                      borderBottom="1px solid"
+                      borderColor="gray.500"
+                      whiteSpace="nowrap"
+                    >
+                      {col}
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+              <Box as="tbody">
+                {connectionCheckingMessages.map((msg, i) => {
+                  const latency = (msg.messageReceived - msg.messageCreated) * 0.5;
+                  return (
+                    <Box
+                      key={i}
+                      as="tr"
+                      bg={i % 2 === 0 ? "transparent" : "whiteAlpha.50"}
+                      _hover={{ bg: "whiteAlpha.100" }}
+                    >
+                      <Box as="td" px={2} py={0.5} textAlign="right" color="gray.600">
+                        {i + 1}
+                      </Box>
+                      <Box as="td" px={2} py={0.5} textAlign="right" color={latencyColor(latency)}>
+                        {latency.toFixed(3)}
+                      </Box>
+                      <Box as="td" px={2} py={0.5} textAlign="right" color="gray.700">
+                        {formatTimestamp(msg.messageCreated)}
+                      </Box>
+                      <Box as="td" px={2} py={0.5} textAlign="right" color="gray.700">
+                        {formatTimestamp(msg.messageReceived)}
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
             </Box>
           </Box>
         </Box>
-      </Box>
-    </WidgetRoot>
+      </MosaicWidget.Body>
+    </MosaicWidget.Root>
   );
 }

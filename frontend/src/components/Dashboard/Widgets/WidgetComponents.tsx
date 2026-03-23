@@ -13,7 +13,7 @@ import { WidgetHeader } from "./WidgetHeader.tsx";
 interface WidgetFrameProps {
   children?: ReactNode;
   widgetConfig: WidgetConfig;
-  error?: string;
+  error?: string | null;
 }
 
 export function WidgetRoot({ widgetConfig, children, error }: WidgetFrameProps) {
