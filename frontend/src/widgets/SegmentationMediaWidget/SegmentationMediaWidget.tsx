@@ -1,4 +1,3 @@
-import { Box, Flex, Text } from "@chakra-ui/react";
 import * as deepLab from "@tensorflow-models/deeplab";
 import * as tf from "@tensorflow/tfjs";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -8,15 +7,40 @@ import type { WidgetProps } from "@/widgets/index.ts";
 
 import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
+import { SegmentationMediaSetting } from "@/widgets/SegmentationMediaWidget/SegmentationMediaSetting.tsx";
+import {
+  DEEPLAB_BASE_OPTIONS,
+  DeeplabBase,
+} from "@/widgets/SegmentationMediaWidget/WidgetDescriptor.ts";
 
-const SEGMENTATION_INTERVAL_MS = 100;
-const DEEPLAB_MODEL_BASE = "pascal";
+const DEFAULT_SEGMENTATION_HZ = 10;
+const DEFAULT_DEEPLAB_MODEL_BASE: DeeplabBase = "pascal";
+const MIN_SEGMENTATION_HZ = 1;
+const MAX_SEGMENTATION_HZ = 60;
 
 interface SegmentationOutput {
   width: number;
   height: number;
   segmentationMap: Uint8Array | Uint8ClampedArray | number[];
 }
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+const sanitizeSegmentationHz = (value: unknown): number => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return DEFAULT_SEGMENTATION_HZ;
+  }
+  return clamp(value, MIN_SEGMENTATION_HZ, MAX_SEGMENTATION_HZ);
+};
+
+const sanitizeDeeplabBase = (value: unknown): DeeplabBase => {
+  if (typeof value === "string" && DEEPLAB_BASE_OPTIONS.includes(value as DeeplabBase)) {
+    return value as DeeplabBase;
+  }
+  return DEFAULT_DEEPLAB_MODEL_BASE;
+};
+
+const sanitizeBoolean = (value: unknown): boolean => value === true;
 
 export default function SegmentationMediaWidget({ widgetConfig }: WidgetProps) {
   const { getOrCreateStore, releaseStore } = useMosaicStore();
@@ -36,6 +60,27 @@ export default function SegmentationMediaWidget({ widgetConfig }: WidgetProps) {
   const [isStreamReady, setIsStreamReady] = useState(false);
   const [isSegmenting, setIsSegmenting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [segmentationHz, setSegmentationHz] = useState<number>(
+    sanitizeSegmentationHz(widgetConfig.params?.segmentationHz),
+  );
+  const [deeplabBase, setDeeplabBase] = useState<DeeplabBase>(
+    sanitizeDeeplabBase(widgetConfig.params?.deeplabBase),
+  );
+  const [flipH, setFlipH] = useState<boolean>(sanitizeBoolean(widgetConfig.params?.flipH));
+  const [flipV, setFlipV] = useState<boolean>(sanitizeBoolean(widgetConfig.params?.flipV));
+  const segmentationIntervalMs = Math.round(1000 / segmentationHz);
+
+  useEffect(() => {
+    setSegmentationHz(sanitizeSegmentationHz(widgetConfig.params?.segmentationHz));
+    setDeeplabBase(sanitizeDeeplabBase(widgetConfig.params?.deeplabBase));
+    setFlipH(sanitizeBoolean(widgetConfig.params?.flipH));
+    setFlipV(sanitizeBoolean(widgetConfig.params?.flipV));
+  }, [
+    widgetConfig.params?.segmentationHz,
+    widgetConfig.params?.deeplabBase,
+    widgetConfig.params?.flipH,
+    widgetConfig.params?.flipV,
+  ]);
 
   const clearOverlay = useCallback(() => {
     if (!canvasRef.current) return;
@@ -161,7 +206,7 @@ export default function SegmentationMediaWidget({ widgetConfig }: WidgetProps) {
         animationFrameRef.current = window.requestAnimationFrame(() => {
           void runSegmentation();
         });
-      }, SEGMENTATION_INTERVAL_MS);
+      }, segmentationIntervalMs);
       return;
     }
 
@@ -184,8 +229,8 @@ export default function SegmentationMediaWidget({ widgetConfig }: WidgetProps) {
       animationFrameRef.current = window.requestAnimationFrame(() => {
         void runSegmentation();
       });
-    }, SEGMENTATION_INTERVAL_MS);
-  }, [drawSegmentation, setupCanvas]);
+    }, segmentationIntervalMs);
+  }, [drawSegmentation, segmentationIntervalMs, setupCanvas]);
 
   const configureVideo = (store: MediaStreamStore) => {
     if (videoRef.current) {
@@ -273,7 +318,7 @@ export default function SegmentationMediaWidget({ widgetConfig }: WidgetProps) {
       try {
         await tf.ready();
         const loadedModel = await deepLab.load({
-          base: DEEPLAB_MODEL_BASE,
+          base: deeplabBase,
           quantizationBytes: 2,
         });
 
@@ -307,7 +352,7 @@ export default function SegmentationMediaWidget({ widgetConfig }: WidgetProps) {
       modelRef.current = null;
       tempCanvasRef.current = null;
     };
-  }, [stopSegmentationLoop]);
+  }, [deeplabBase, stopSegmentationLoop]);
 
   useEffect(() => {
     if (!connector || !connectorRobotId || !connectorId) {
@@ -373,64 +418,43 @@ export default function SegmentationMediaWidget({ widgetConfig }: WidgetProps) {
   }, [error, isModelReady, isPlaying, isStreamReady, runSegmentation, stopSegmentationLoop]);
 
   return (
-    <MosaicWidget.Root widgetConfig={widgetConfig}>
+    <MosaicWidget.Root widgetConfig={widgetConfig} error={error}>
       <MosaicWidget.Header
         additionalInfo={[
-          { label: "Model", value: "deeplab" },
+          { label: "Model", value: `deeplab/${deeplabBase}` },
+          { label: "Frequency", value: `${segmentationHz}Hz` },
           {
             label: "Status",
             value: isModelLoading ? "Loading model..." : isSegmenting ? "Running" : "Idle",
           },
         ]}
-      />
+      >
+        <SegmentationMediaSetting />
+      </MosaicWidget.Header>
       <MosaicWidget.Body>
-        {error ? (
-          <Flex
-            direction="column"
-            align="center"
-            justify="center"
-            color="red.500"
-            textAlign="center"
-          >
-            <Box fontSize="sm">{error}</Box>
-          </Flex>
-        ) : (
-          <Box position="relative" w="100%" h="100%">
-            <video
-              ref={videoRef}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-                borderRadius: "8px",
-              }}
-              playsInline
-              muted
-              autoPlay
-            />
-            <canvas
-              ref={canvasRef}
-              style={{
-                position: "absolute",
-                pointerEvents: "none",
-                borderRadius: "8px",
-              }}
-            />
-            <Box
-              position="absolute"
-              top={2}
-              left={2}
-              bg="blackAlpha.600"
-              px={2}
-              py={1}
-              borderRadius="md"
-            >
-              <Text color="white" fontSize="xs">
-                {isModelLoading ? "Loading deeplab..." : "Segmentation overlay (deeplab)"}
-              </Text>
-            </Box>
-          </Box>
-        )}
+        <video
+          ref={videoRef}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            borderRadius: "8px",
+            transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
+          }}
+          playsInline
+          muted
+          autoPlay
+        />
+        <canvas
+          ref={canvasRef}
+          style={{
+            position: "absolute",
+            pointerEvents: "none",
+            borderRadius: "8px",
+            transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
+            transformOrigin: "center center",
+          }}
+        />
       </MosaicWidget.Body>
     </MosaicWidget.Root>
   );

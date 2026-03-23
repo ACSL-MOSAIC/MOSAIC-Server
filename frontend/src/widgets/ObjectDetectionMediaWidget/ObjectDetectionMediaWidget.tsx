@@ -1,4 +1,3 @@
-import { Box, Flex, Text } from "@chakra-ui/react";
 import * as cocoSsd from "@tensorflow-models/coco-ssd";
 import * as tf from "@tensorflow/tfjs";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -8,15 +7,38 @@ import type { WidgetProps } from "@/widgets/index.ts";
 
 import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
+import { ObjectDetectionMediaSetting } from "@/widgets/ObjectDetectionMediaWidget/ObjectDetectionMediaSetting.tsx";
 
-const DETECTION_INTERVAL_MS = 100;
-const SCORE_THRESHOLD = 0.5;
+const DEFAULT_DETECTION_HZ = 10;
+const DEFAULT_SCORE_THRESHOLD = 0.5;
+const MIN_DETECTION_HZ = 1;
+const MAX_DETECTION_HZ = 60;
+const MIN_SCORE_THRESHOLD = 0;
+const MAX_SCORE_THRESHOLD = 1;
 
 interface Detection {
   class: string;
   score: number;
   bbox: [number, number, number, number];
 }
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+const sanitizeDetectionHz = (value: unknown): number => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return DEFAULT_DETECTION_HZ;
+  }
+  return clamp(value, MIN_DETECTION_HZ, MAX_DETECTION_HZ);
+};
+
+const sanitizeScoreThreshold = (value: unknown): number => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return DEFAULT_SCORE_THRESHOLD;
+  }
+  return clamp(value, MIN_SCORE_THRESHOLD, MAX_SCORE_THRESHOLD);
+};
+
+const sanitizeBoolean = (value: unknown): boolean => value === true;
 
 export default function ObjectDetectionMediaWidget({ widgetConfig }: WidgetProps) {
   const { getOrCreateStore, releaseStore } = useMosaicStore();
@@ -36,6 +58,27 @@ export default function ObjectDetectionMediaWidget({ widgetConfig }: WidgetProps
   const [isDetecting, setIsDetecting] = useState(false);
   const [detections, setDetections] = useState<Detection[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [detectionHz, setDetectionHz] = useState<number>(
+    sanitizeDetectionHz(widgetConfig.params?.detectionHz),
+  );
+  const [scoreThreshold, setScoreThreshold] = useState<number>(
+    sanitizeScoreThreshold(widgetConfig.params?.scoreThreshold),
+  );
+  const [flipH, setFlipH] = useState<boolean>(sanitizeBoolean(widgetConfig.params?.flipH));
+  const [flipV, setFlipV] = useState<boolean>(sanitizeBoolean(widgetConfig.params?.flipV));
+  const detectionIntervalMs = Math.round(1000 / detectionHz);
+
+  useEffect(() => {
+    setDetectionHz(sanitizeDetectionHz(widgetConfig.params?.detectionHz));
+    setScoreThreshold(sanitizeScoreThreshold(widgetConfig.params?.scoreThreshold));
+    setFlipH(sanitizeBoolean(widgetConfig.params?.flipH));
+    setFlipV(sanitizeBoolean(widgetConfig.params?.flipV));
+  }, [
+    widgetConfig.params?.detectionHz,
+    widgetConfig.params?.scoreThreshold,
+    widgetConfig.params?.flipH,
+    widgetConfig.params?.flipV,
+  ]);
 
   const clearOverlay = useCallback(() => {
     if (!canvasRef.current) return;
@@ -142,7 +185,7 @@ export default function ObjectDetectionMediaWidget({ widgetConfig }: WidgetProps
         animationFrameRef.current = window.requestAnimationFrame(() => {
           void runDetection();
         });
-      }, DETECTION_INTERVAL_MS);
+      }, detectionIntervalMs);
       return;
     }
 
@@ -155,7 +198,7 @@ export default function ObjectDetectionMediaWidget({ widgetConfig }: WidgetProps
       }
 
       const filteredDetections: Detection[] = predictions
-        .filter((prediction) => prediction.score > SCORE_THRESHOLD)
+        .filter((prediction) => prediction.score > scoreThreshold)
         .map((prediction) => ({
           class: prediction.class,
           score: prediction.score,
@@ -176,8 +219,8 @@ export default function ObjectDetectionMediaWidget({ widgetConfig }: WidgetProps
       animationFrameRef.current = window.requestAnimationFrame(() => {
         void runDetection();
       });
-    }, DETECTION_INTERVAL_MS);
-  }, [drawDetections, setupCanvas]);
+    }, detectionIntervalMs);
+  }, [detectionIntervalMs, drawDetections, scoreThreshold, setupCanvas]);
 
   const configureVideo = (store: MediaStreamStore) => {
     if (videoRef.current) {
@@ -357,65 +400,45 @@ export default function ObjectDetectionMediaWidget({ widgetConfig }: WidgetProps
   }, [error, isModelReady, isPlaying, isStreamReady, runDetection, stopDetectionLoop]);
 
   return (
-    <MosaicWidget.Root widgetConfig={widgetConfig}>
+    <MosaicWidget.Root widgetConfig={widgetConfig} error={error}>
       <MosaicWidget.Header
         additionalInfo={[
           { label: "Model", value: "coco-ssd" },
           { label: "Detections", value: String(detections.length) },
+          { label: "Frequency", value: `${detectionHz}Hz` },
+          { label: "Threshold", value: scoreThreshold.toFixed(2) },
           {
             label: "Status",
             value: isModelLoading ? "Loading model..." : isDetecting ? "Running" : "Idle",
           },
         ]}
-      />
+      >
+        <ObjectDetectionMediaSetting />
+      </MosaicWidget.Header>
       <MosaicWidget.Body>
-        {error ? (
-          <Flex
-            direction="column"
-            align="center"
-            justify="center"
-            color="red.500"
-            textAlign="center"
-          >
-            <Box fontSize="sm">{error}</Box>
-          </Flex>
-        ) : (
-          <Box position="relative" w="100%" h="100%">
-            <video
-              ref={videoRef}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-                borderRadius: "8px",
-              }}
-              playsInline
-              muted
-              autoPlay
-            />
-            <canvas
-              ref={canvasRef}
-              style={{
-                position: "absolute",
-                pointerEvents: "none",
-                borderRadius: "8px",
-              }}
-            />
-            <Box
-              position="absolute"
-              top={2}
-              left={2}
-              bg="blackAlpha.600"
-              px={2}
-              py={1}
-              borderRadius="md"
-            >
-              <Text color="white" fontSize="xs">
-                {isModelLoading ? "Loading coco-ssd..." : "Object detection overlay (coco-ssd)"}
-              </Text>
-            </Box>
-          </Box>
-        )}
+        <video
+          ref={videoRef}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            borderRadius: "8px",
+            transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
+          }}
+          playsInline
+          muted
+          autoPlay
+        />
+        <canvas
+          ref={canvasRef}
+          style={{
+            position: "absolute",
+            pointerEvents: "none",
+            borderRadius: "8px",
+            transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
+            transformOrigin: "center center",
+          }}
+        />
       </MosaicWidget.Body>
     </MosaicWidget.Root>
   );
