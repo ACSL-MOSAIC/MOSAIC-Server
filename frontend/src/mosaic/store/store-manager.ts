@@ -1,8 +1,8 @@
 import type { RobotConfig, RobotConnector } from "@/mosaic";
 
-import type { MosaicStore } from "./interface/mosaic-store.ts";
+import { StoreFactory } from "@/stores/_utils/storeRegistry.ts";
 
-import { StoreFactory } from "./store-factory.ts";
+import type { MosaicStore } from "./interface/mosaic-store.ts";
 
 class RobotConnectorRefMap<V> {
   private map: Map<string, V> = new Map();
@@ -43,7 +43,7 @@ class RobotConnectorRefMap<V> {
 
 export class StoreManager {
   private mosaicStores: RobotConnectorRefMap<MosaicStore> = new RobotConnectorRefMap();
-  private storeFactory: StoreFactory = new StoreFactory();
+  private storeFactory: StoreFactory = StoreFactory.getInstance();
 
   public getOrCreateStore(
     robotConnector: RobotConnector,
@@ -67,6 +67,10 @@ export class StoreManager {
 
     this.mosaicStores.set(robotConnector, store);
     return store;
+  }
+
+  public forceDeleteStore(robotConnector: RobotConnector): void {
+    this.mosaicStores.delete(robotConnector);
   }
 
   public releaseStore(robotConnector: RobotConnector): boolean {

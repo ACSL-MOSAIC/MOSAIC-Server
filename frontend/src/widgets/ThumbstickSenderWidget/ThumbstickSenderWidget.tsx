@@ -1,13 +1,14 @@
 import { Box } from "@chakra-ui/react";
-import { useEffect, useRef, useState } from "react";
+import { CSSProperties, useEffect, useRef, useState } from "react";
 
 import type { SendableStore } from "@/mosaic/store/interface/sendable-store.ts";
 import type { Thumbstick } from "@/stores/@types/thumbstick.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
-import { Checkbox } from "@/components/ui/checkbox.tsx";
+import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
+
+import { ThumbstickSenderSetting } from "./ThumbstickSenderSetting.tsx";
 
 const SEND_INTERVAL_MS = 30;
 const KNOB_SIZE_RATIO = 0.2; // knob diameter as fraction of pad width
@@ -21,9 +22,9 @@ function toThumbstick(dx: number, dy: number, holonomic: boolean, maxRadius: num
 }
 
 export default function ThumbstickSenderWidget({ widgetConfig }: WidgetProps) {
-  const { getOrCreateStore } = useMosaicStore();
+  const { getOrCreateStore, releaseStore } = useMosaicStore();
   const storeRef = useRef<SendableStore<Thumbstick> | null>(null);
-  const [holonomic, setHolonomic] = useState(false);
+  const holonomic: boolean = widgetConfig.params?.holonomic ?? false;
   const [knobPos, setKnobPos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const isDraggingRef = useRef(false);
@@ -33,7 +34,7 @@ export default function ThumbstickSenderWidget({ widgetConfig }: WidgetProps) {
     power: 0,
     holonomic: false,
   });
-  const holonomicRef = useRef(false);
+  const holonomicRef = useRef(holonomic);
   const padRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,14 +45,9 @@ export default function ThumbstickSenderWidget({ widgetConfig }: WidgetProps) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-      // releaseStore(connector)
+      releaseStore(connector);
     };
   }, [widgetConfig]);
-
-  // Keep holonomicRef in sync with state for use inside interval callback
-  useEffect(() => {
-    holonomicRef.current = holonomic;
-  }, [holonomic]);
 
   const updateKnob = (clientX: number, clientY: number) => {
     if (!padRef.current) return;
@@ -88,14 +84,23 @@ export default function ThumbstickSenderWidget({ widgetConfig }: WidgetProps) {
   };
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
-      <Box display="flex" flexDirection="column" h="100%" w="100%" gap={2}>
-        {/* Container that fills available space */}
-        <Box flex={1} minH={0} display="flex" alignItems="center" justifyContent="center">
+    <MosaicWidget.Root widgetConfig={widgetConfig}>
+      <MosaicWidget.Header>
+        <ThumbstickSenderSetting />
+      </MosaicWidget.Header>
+      <MosaicWidget.Body>
+        {/* Square pad: fills available space, always a square */}
+        <Box
+          h="100%"
+          w="100%"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          style={{ containerType: "size" } as CSSProperties}
+        >
           <Box
             ref={padRef}
-            w="100%"
-            style={{ aspectRatio: "1", maxHeight: "100%" }}
+            style={{ width: "min(100cqw, 100cqh)", aspectRatio: "1" } as CSSProperties}
             borderRadius="full"
             bg="bg.subtle"
             borderWidth="2px"
@@ -110,6 +115,7 @@ export default function ThumbstickSenderWidget({ widgetConfig }: WidgetProps) {
               updateKnob(e.clientX, e.clientY);
               if (intervalRef.current === null) {
                 intervalRef.current = setInterval(() => {
+                  console.log("send!");
                   storeRef.current?.send(thumbstickRef.current);
                 }, SEND_INTERVAL_MS);
               }
@@ -162,14 +168,7 @@ export default function ThumbstickSenderWidget({ widgetConfig }: WidgetProps) {
             />
           </Box>
         </Box>
-
-        {/* Holonomic toggle */}
-        <Box flexShrink={0} display="flex" justifyContent="center" pb={1}>
-          <Checkbox checked={holonomic} onCheckedChange={(e) => setHolonomic(!!e.checked)}>
-            Holonomic
-          </Checkbox>
-        </Box>
-      </Box>
-    </WidgetFrame>
+      </MosaicWidget.Body>
+    </MosaicWidget.Root>
   );
 }

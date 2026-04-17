@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import type { JsonReceivableStore } from "@/stores/JsonReceivableStore/JsonReceivableStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
+import { JsonViewerSetting } from "@/widgets/JsonViewerWidget/JsonViewerSetting.tsx";
 
 export default function JsonViewerWidget({ widgetConfig }: WidgetProps) {
   const { getOrCreateStore, releaseStore } = useMosaicStore();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<any[]>([]);
 
   useEffect(() => {
     const connector = widgetConfig.connectors[0];
@@ -22,8 +23,14 @@ export default function JsonViewerWidget({ widgetConfig }: WidgetProps) {
       return;
     }
 
+    console.log("store", store);
+
     const unsubscribe = store.subscribe((data) => {
-      setData(data);
+      if (widgetConfig.params.cumulative) {
+        setData((prevData) => [...prevData, data]);
+      } else {
+        setData([data]);
+      }
     });
 
     return () => {
@@ -32,13 +39,26 @@ export default function JsonViewerWidget({ widgetConfig }: WidgetProps) {
     };
   }, [widgetConfig]);
 
-  const formattedData = data ? JSON.stringify(data, null, 2) : "";
+  const formattedData = data.map((d) => JSON.stringify(d, null, 2)).join("\n");
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
-      <Code display="block" h="100%" p={3} borderRadius="md" whiteSpace="pre" overflow="auto">
-        {formattedData}
-      </Code>
-    </WidgetFrame>
+    <MosaicWidget.Root widgetConfig={widgetConfig}>
+      <MosaicWidget.Header>
+        <JsonViewerSetting />
+      </MosaicWidget.Header>
+      <MosaicWidget.Body>
+        <Code
+          display="block"
+          h="100%"
+          w="100%"
+          p={3}
+          borderRadius="md"
+          whiteSpace="pre"
+          overflow="auto"
+        >
+          {formattedData}
+        </Code>
+      </MosaicWidget.Body>
+    </MosaicWidget.Root>
   );
 }

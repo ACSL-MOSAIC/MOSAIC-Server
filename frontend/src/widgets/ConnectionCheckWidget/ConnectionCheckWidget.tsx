@@ -6,7 +6,7 @@ import type { ConnectionCheckReceiverStore } from "@/stores/ConnectionCheckRecei
 import type { ConnectionCheckSenderStore } from "@/stores/ConnectionCheckSenderStore/ConnectionCheckSenderStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 const MAX_MESSAGES = 200;
@@ -99,21 +99,23 @@ export default function ConnectionCheckWidget({ widgetConfig }: WidgetProps) {
   }, [widgetConfig]);
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
-      <Box overflowY="auto" maxH="100%" h="100%">
-        <VStack align="stretch" gap={1} p={2}>
-          {connectionCheckingMessages.map((msg, i) => {
-            const latency = msg.messageReceived - msg.messageCreated;
-            return (
-              <HStack key={i} justify="space-between" gap={4}>
-                <Text>latency: {(latency * 0.5).toFixed(3)} ms</Text>
-                {/*<Text>created: {formatTimestamp(msg.messageCreated)}</Text>*/}
-                {/*<Text>received: {formatTimestamp(msg.messageReceived)}</Text>*/}
-              </HStack>
-            );
-          })}
-        </VStack>
-      </Box>
-    </WidgetFrame>
+    <MosaicWidget.Root widgetConfig={widgetConfig}>
+      <MosaicWidget.Body>
+        <Box overflowY="auto" maxH="100%" h="100%" w="100%">
+          <VStack align="stretch" gap={1} p={2}>
+            {connectionCheckingMessages.map((msg, i) => {
+              const latency = msg.messageReceived - msg.messageCreated;
+              return (
+                <HStack key={i} justify="space-between" gap={4}>
+                  <Text>latency: {(latency * 0.5).toFixed(3)} ms</Text>
+                  {/*<Text>created: {formatTimestamp(msg.messageCreated)}</Text>*/}
+                  {/*<Text>received: {formatTimestamp(msg.messageReceived)}</Text>*/}
+                </HStack>
+              );
+            })}
+          </VStack>
+        </Box>
+      </MosaicWidget.Body>
+    </MosaicWidget.Root>
   );
 }

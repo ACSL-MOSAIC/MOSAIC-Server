@@ -209,7 +209,6 @@ export class WebRTCConnection {
     this.peerConnection = peerConnection;
     peerConnection.onicecandidate = this.onicecandidate.bind(this);
     peerConnection.onconnectionstatechange = this.onconnectionstatechange.bind(this);
-    peerConnection.ontrack = this.ontrack.bind(this);
     return peerConnection;
   }
 
@@ -357,24 +356,6 @@ export class WebRTCConnection {
     } else if (state === "failed") {
       this.onConnectionFailed();
     }
-  }
-
-  private ontrack(event: RTCTrackEvent): void {
-    console.log(
-      `Received remote track id: ${event.track.id}, 
-      stream id: ${event.streams?.[0]?.id} 
-      kind: ${event.track.kind}`,
-    );
-
-    if (event.track.kind !== "video" || !event.streams?.[0]) {
-      console.log(`[${this.robotInfo.id}] Video track is not of kind video or has no stream`);
-      return;
-    }
-
-    const stream = event.streams[0];
-    this.mediaStreams.set(stream.id, stream);
-
-    // TODO: need to connect to the store
   }
 
   private onConnectionConnected(): void {

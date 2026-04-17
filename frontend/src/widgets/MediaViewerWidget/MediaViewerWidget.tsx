@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import type { MediaStreamStore } from "@/stores/MediaStreamStore/MediaStreamStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
+import { MediaViewerSetting } from "@/widgets/MediaViewerWidget/MediaViewerSetting.tsx";
 
 export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
   const { getOrCreateStore, releaseStore } = useMosaicStore();
@@ -15,23 +16,24 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
   const connectorId = connector?.connectorId ?? "";
   const [isPlaying, setIsPlaying] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [flipH, setFlipH] = useState(false);
-  const [flipV, setFlipV] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [flipH, setFlipH] = useState<boolean>(widgetConfig.params?.flipH ?? false);
+  const [flipV, setFlipV] = useState<boolean>(widgetConfig.params?.flipV ?? false);
+
+  useEffect(() => {
+    setFlipH(widgetConfig.params?.flipH ?? false);
+    setFlipV(widgetConfig.params?.flipV ?? false);
+  }, [widgetConfig.params?.flipH, widgetConfig.params?.flipV]);
 
   const configureVideo = (store: MediaStreamStore) => {
-    // Set up video element
     if (videoRef.current) {
       store.setVideoElement(videoRef.current);
     }
 
-    // Check MediaStream state
     const mediaStream = store.getMediaStream();
 
     if (mediaStream) {
-      // Check if MediaStream is attached to the video element
       if (videoRef.current && videoRef.current.srcObject === mediaStream) {
-        // Attempt autoplay once MediaStream is connected
         if (videoRef.current.paused) {
           videoRef.current.play().catch((error) => {
             console.error("❌ Video autoplay failed:", error);
@@ -40,18 +42,11 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
       }
     }
 
-    // Video event handlers
     const videoElement = videoRef.current;
     if (videoElement) {
-      const handlePlay = () => {
-        setIsPlaying(true);
-      };
-      const handlePause = () => {
-        setIsPlaying(false);
-      };
-      const handleLoadedMetadata = () => {
-        setError(null);
-      };
+      const handlePlay = () => setIsPlaying(true);
+      const handlePause = () => setIsPlaying(false);
+      const handleLoadedMetadata = () => setError(null);
       const handleError = (e: any) => {
         console.error("Video load error:", e);
         setError("An error occurred while loading the video.");
@@ -81,16 +76,13 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
       return;
     }
 
-    // Rebind immediately for already-connected sessions.
     let cleanupVideoListeners = configureVideo(store);
 
     const unsubscribeAfterConnected = store.onAfterConnected((_robotId: string) => {
       cleanupVideoListeners?.();
       cleanupVideoListeners = configureVideo(store);
     });
-    // store.subscribe((data) => {
-    //   setData(data)
-    // })
+
     return () => {
       cleanupVideoListeners?.();
       unsubscribeAfterConnected();
@@ -137,89 +129,57 @@ export default function MediaViewerWidget({ widgetConfig }: WidgetProps) {
   }, []);
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
-      {error ? (
-        <Flex
-          direction="column"
-          align="center"
-          justify="center"
-          h="100%"
-          color="red.500"
-          textAlign="center"
+    <MosaicWidget.Root widgetConfig={widgetConfig} error={error}>
+      <MosaicWidget.Header>
+        <MediaViewerSetting />
+      </MosaicWidget.Header>
+      <MosaicWidget.Body>
+        <video
+          ref={videoRef}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            borderRadius: "8px",
+            transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
+          }}
+          playsInline
+          muted
+          autoPlay
+        />
+
+        <Box
+          position="absolute"
+          bottom={0}
+          left={0}
+          right={0}
+          bg="linear-gradient(to top, rgba(0,0,0,0.7), transparent)"
+          p={3}
+          opacity={0}
+          _hover={{ opacity: 1 }}
+          transition="opacity 0.2s"
         >
-          <Box fontSize="2xl" mb={2}>
-            ⚠️
-          </Box>
-          <Box fontSize="sm">{error}</Box>
-        </Flex>
-      ) : (
-        <>
-          <video
-            ref={videoRef}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "contain",
-              borderRadius: "8px",
-              transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
-            }}
-            playsInline
-            muted
-            autoPlay
-          />
+          <Flex justify="center" align="center" gap={2}>
+            <IconButton
+              size="sm"
+              colorScheme="whiteAlpha"
+              onClick={handlePlayPause}
+              aria-label={isPlaying ? "Pause" : "Play"}
+            >
+              {isPlaying ? "⏸️" : "▶️"}
+            </IconButton>
 
-          {/* Overlay for video control */}
-          <Box
-            position="absolute"
-            bottom={0}
-            left={0}
-            right={0}
-            bg="linear-gradient(to top, rgba(0,0,0,0.7), transparent)"
-            p={3}
-            opacity={0}
-            _hover={{ opacity: 1 }}
-            transition="opacity 0.2s"
-          >
-            <Flex justify="center" align="center" gap={2}>
-              <IconButton
-                size="sm"
-                colorScheme="whiteAlpha"
-                onClick={handlePlayPause}
-                aria-label={isPlaying ? "Pause" : "Play"}
-              >
-                {isPlaying ? "⏸️" : "▶️"}
-              </IconButton>
-
-              <IconButton
-                size="sm"
-                colorScheme="whiteAlpha"
-                onClick={() => setFlipH((v) => !v)}
-                aria-label="Flip Horizontal"
-              >
-                ↔
-              </IconButton>
-
-              <IconButton
-                size="sm"
-                colorScheme="whiteAlpha"
-                onClick={() => setFlipV((v) => !v)}
-                aria-label="Flip Vertical"
-              >
-                ↕
-              </IconButton>
-
-              <IconButton
-                size="sm"
-                colorScheme="whiteAlpha"
-                onClick={handleFullscreen}
-                aria-label="Fullscreen"
-              >
-                ⛶
-              </IconButton>
-            </Flex>
-          </Box>
-        </>
-      )}
-    </WidgetFrame>
+            <IconButton
+              size="sm"
+              colorScheme="whiteAlpha"
+              onClick={handleFullscreen}
+              aria-label="Fullscreen"
+            >
+              ⛶
+            </IconButton>
+          </Flex>
+        </Box>
+      </MosaicWidget.Body>
+    </MosaicWidget.Root>
   );
 }

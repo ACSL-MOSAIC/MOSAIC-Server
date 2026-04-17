@@ -16,7 +16,7 @@ import { type Layout, Responsive, WidthProvider } from "react-grid-layout";
 
 import { getTabConfigApi, updateTabConfigApi } from "@/client/service/dashboard.api.ts";
 import RobotConnectionPanel from "@/components/Dashboard/RobotConnectionPanel.tsx";
-import { WidgetFactory } from "@/components/Dashboard/WidgetFactory.tsx";
+import { WidgetFactory } from "@/components/Dashboard/Widgets/WidgetFactory.tsx";
 import useAuth from "@/hooks/useAuth.ts";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -24,6 +24,7 @@ import { useMosaicWebRTCConnection } from "@/hooks/useMosaicWebRTCConnection.ts"
 import { useRobotInfo } from "@/hooks/useRobotInfo.ts";
 import { RobotConnector, type TabConfig, type WidgetConfig } from "@/mosaic";
 import { DASHBOARD_STORAGE_KEYS } from "@/utils";
+import { getWidgetDescriptor } from "@/widgets/_utils/widgetRegistry.ts";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -83,29 +84,6 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
   const editableWidgetsRef = useRef<WidgetConfig[]>([]);
   const isLayoutDirtyRef = useRef(false);
 
-  const { data: tabConfig, isPending: isConfigLoading } = useQuery({
-    queryKey: ["parsedDashboardTabConfig", tabId],
-    queryFn: async () => {
-      const tabConfigDto = await getTabConfigApi(tabId);
-      const widgets = JSON.parse(tabConfigDto.widgets).widgets as WidgetConfig[];
-      return {
-        id: tabConfigDto.id,
-        name: tabConfigDto.name,
-        widgets: widgets.map((widget) => {
-          return {
-            id: widget.id,
-            type: widget.type,
-            position: widget.position,
-            connectors: widget.connectors.map((connector) => {
-              return new RobotConnector(connector.robotId, connector.connectorId);
-            }),
-          };
-        }),
-      } as TabConfig;
-    },
-    enabled: !!user,
-  });
-
   const saveLayoutMutation = useMutation({
     mutationFn: async ({
       targetTabId,
@@ -140,6 +118,58 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
       console.error("Failed to save layout:", error);
       isLayoutDirtyRef.current = true;
     },
+  });
+
+  const onUpdateWidgetParams = (widgetId: string, params?: any) => {
+    if (!tabConfig) {
+      return;
+    }
+
+    const newWidgets = editableWidgetsRef.current.map((widget) => {
+      if (widget.id !== widgetId) {
+        return widget;
+      }
+
+      return {
+        ...widget,
+        params: params,
+      };
+    });
+
+    saveLayoutMutation.mutate({
+      targetTabId: tabConfig.id,
+      widgets: newWidgets,
+    });
+  };
+
+  const { data: tabConfig, isPending: isConfigLoading } = useQuery({
+    queryKey: ["parsedDashboardTabConfig", tabId],
+    queryFn: async () => {
+      const tabConfigDto = await getTabConfigApi(tabId);
+      const widgets = JSON.parse(tabConfigDto.widgets).widgets as WidgetConfig[];
+      return {
+        id: tabConfigDto.id,
+        name: tabConfigDto.name,
+        widgets: widgets.map((widget) => {
+          return {
+            id: widget.id,
+            type: widget.type,
+            position: widget.position,
+            connectors: widget.connectors.map((connector) => {
+              return new RobotConnector(connector.robotId, connector.connectorId);
+            }),
+            params: {
+              ...getWidgetDescriptor(widget.type)?.getDefaultParams(),
+              ...widget.params,
+            },
+            onUpdateWidgetParams: (params?: any) => {
+              onUpdateWidgetParams(widget.id, params);
+            },
+          };
+        }),
+      } as TabConfig;
+    },
+    enabled: !!user,
   });
 
   useEffect(() => {
@@ -343,22 +373,21 @@ export default function DashboardGrid({ tabId }: DashboardGridProps) {
         onLayoutChange={handleLayoutChange}
         onDragStop={(layout) => handleLayoutCommit(layout)}
         onResizeStop={(layout) => handleLayoutCommit(layout)}
-        isDraggable={true}
-        isResizable={true}
-        margin={[16, 16]}
+        isDraggable
+        isResizable
         draggableHandle=".draggable-header"
       >
         {editableWidgets.map((widgetConfig) => (
           <Box
             key={widgetConfig.id}
             bg="white"
-            p={4}
-            borderRadius="md"
-            boxShadow="sm"
+            p={3}
+            paddingTop={1}
+            borderRadius="sm"
+            boxShadow="xs"
             height="100%"
             display="flex"
             flexDirection="column"
-            mb={4}
           >
             <WidgetFactory widgetConfig={widgetConfig} />
           </Box>

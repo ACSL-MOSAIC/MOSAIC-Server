@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MediaStreamStore, StreamStats } from "@/stores/MediaStreamStore/MediaStreamStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 import { useRobotInfo } from "@/hooks/useRobotInfo.ts";
 
@@ -163,22 +163,8 @@ export default function MediaViewerWithStatWidget({ widgetConfig }: WidgetProps)
   }, []);
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
-      {error ? (
-        <Flex
-          direction="column"
-          align="center"
-          justify="center"
-          h="100%"
-          color="red.500"
-          textAlign="center"
-        >
-          <Box fontSize="2xl" mb={2}>
-            ⚠️
-          </Box>
-          <Box fontSize="sm">{error}</Box>
-        </Flex>
-      ) : (
+    <MosaicWidget.Root widgetConfig={widgetConfig} error={error}>
+      <MosaicWidget.Body>
         <Box display="flex" flexDirection="column" h="100%" w="100%">
           {/* Video area */}
           <Box flex={1} position="relative" minH={0}>
@@ -258,8 +244,8 @@ export default function MediaViewerWithStatWidget({ widgetConfig }: WidgetProps)
             </Button>
           </HStack>
         </Box>
-      )}
-    </WidgetFrame>
+      </MosaicWidget.Body>
+    </MosaicWidget.Root>
   );
 }
 

@@ -1,4 +1,3 @@
-import { Box, Flex } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
 
 import type { ReceivableStore } from "@/mosaic/store/interface/receivable-store.ts";
@@ -9,7 +8,7 @@ import type {
 } from "@/stores/@types/pointcloud.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 import AngleIndicator from "@/widgets/PointCloud2DViewerWidget/AngleIndicator.tsx";
 
@@ -182,7 +181,7 @@ export default function PointCloud2DViewerWidget({ widgetConfig }: WidgetProps) 
     setLastUpdate(new Date());
   };
 
-  const footerInfo = [
+  const additionalInfo = [
     {
       label: "Points",
       value: pointCount.toLocaleString(),
@@ -194,35 +193,20 @@ export default function PointCloud2DViewerWidget({ widgetConfig }: WidgetProps) 
   ];
 
   return (
-    <WidgetFrame widgetConfig={widgetConfig} footerInfo={footerInfo}>
-      {error ? (
-        <Flex
-          direction="column"
-          align="center"
-          justify="center"
-          h="100%"
-          color="red.500"
-          textAlign="center"
-        >
-          <Box fontSize="2xl" mb={2}>
-            ⚠️
-          </Box>
-          <Box fontSize="sm">{error}</Box>
-        </Flex>
-      ) : (
-        <>
-          <AngleIndicator height="20px" fontSize="10px" fontColor="gray.300" />
-          <canvas
-            ref={canvasRef}
-            style={{
-              width: "100%",
-              height: "calc(100% - 20px)",
-              objectFit: "contain",
-              borderRadius: "6px",
-            }}
-          />
-        </>
-      )}
-    </WidgetFrame>
+    <MosaicWidget.Root widgetConfig={widgetConfig} error={error}>
+      <MosaicWidget.Header additionalInfo={additionalInfo} />
+      <MosaicWidget.Body>
+        <AngleIndicator height="20px" fontSize="10px" fontColor="gray.300" />
+        <canvas
+          ref={canvasRef}
+          style={{
+            width: "100%",
+            height: "calc(100% - 20px)",
+            objectFit: "contain",
+            borderRadius: "6px",
+          }}
+        />
+      </MosaicWidget.Body>
+    </MosaicWidget.Root>
   );
 }

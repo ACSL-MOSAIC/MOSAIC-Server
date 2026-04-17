@@ -9,12 +9,11 @@ export interface WidgetBodyProps {
 export function WidgetBody({ children }: WidgetBodyProps) {
   return (
     <Box
-      border="1px solid"
-      borderColor="gray.200"
+      border="0.5px solid"
+      borderColor="gray.100"
       borderRadius="lg"
-      p="3"
       bg="white"
-      boxShadow="sm"
+      boxShadow="xs"
       flex="1"
       minH="250px"
       position="relative"

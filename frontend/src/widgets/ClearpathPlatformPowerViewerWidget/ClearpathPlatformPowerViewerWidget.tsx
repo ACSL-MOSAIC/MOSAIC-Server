@@ -7,7 +7,7 @@ import { MdBatteryFull, MdPower } from "react-icons/md";
 import type { JsonReceivableStore } from "@/stores/JsonReceivableStore/JsonReceivableStore.ts";
 import type { WidgetProps } from "@/widgets/index.ts";
 
-import { WidgetFrame } from "@/components/Dashboard/WidgetFrame.tsx";
+import { MosaicWidget } from "@/components/Dashboard/Widgets/WidgetComponents.tsx";
 import { useMosaicStore } from "@/hooks/useMosaicStore.ts";
 
 interface PowerData {
@@ -113,80 +113,90 @@ export default function ClearpathPlatformPowerViewerWidget({ widgetConfig }: Wid
     };
   }, [widgetConfig]);
 
-  if (!data) {
-    return (
-      <WidgetFrame widgetConfig={widgetConfig}>
-        <Box display="flex" alignItems="center" justifyContent="center" h="100%">
-          <Text color="fg.muted" fontSize="sm">
-            Waiting for data...
-          </Text>
-        </Box>
-      </WidgetFrame>
-    );
-  }
-
   return (
-    <WidgetFrame widgetConfig={widgetConfig}>
-      <VStack align="stretch" gap={3} p={3} h="100%" overflowY="auto">
-        {/* Connection Status */}
-        <VStack align="stretch" gap={2}>
-          <StatusRow
-            icon={<MdBatteryFull size={18} />}
-            label="Battery"
-            connected={data.battery_connected === 1}
-          />
-          <StatusRow
-            icon={<MdPower size={18} />}
-            label="Charger"
-            connected={data.charger_connected === 1}
-          />
-        </VStack>
-
-        <Separator />
-
-        {/* Voltages | Currents */}
-        <Grid templateColumns="repeat(2, 1fr)" gap={4} flex={1}>
-          <VStack align="stretch" gap={2}>
-            <Text
-              fontSize="xs"
-              fontWeight="bold"
-              color="fg.muted"
-              textTransform="uppercase"
-              letterSpacing="wider"
-            >
-              Voltages
+    <MosaicWidget.Root widgetConfig={widgetConfig}>
+      <MosaicWidget.Body>
+        {!data ? (
+          <Box display="flex" alignItems="center" justifyContent="center" h="100%">
+            <Text color="fg.muted" fontSize="sm">
+              Waiting for data...
             </Text>
-            <StatCard label="Battery" rawValue={data.measured_voltages.battery_voltage} />
-            <StatCard label="Left Driver" rawValue={data.measured_voltages.left_driver_voltage} />
-            <StatCard label="Right Driver" rawValue={data.measured_voltages.right_driver_voltage} />
-          </VStack>
+          </Box>
+        ) : (
+          <VStack align="stretch" gap={3} p={3} h="100%" overflowY="auto">
+            {/* Connection Status */}
+            <VStack align="stretch" gap={2}>
+              <StatusRow
+                icon={<MdBatteryFull size={18} />}
+                label="Battery"
+                connected={data.battery_connected === 1}
+              />
+              <StatusRow
+                icon={<MdPower size={18} />}
+                label="Charger"
+                connected={data.charger_connected === 1}
+              />
+            </VStack>
 
-          <VStack align="stretch" gap={2}>
-            <Text
-              fontSize="xs"
-              fontWeight="bold"
-              color="fg.muted"
-              textTransform="uppercase"
-              letterSpacing="wider"
-            >
-              Currents
+            <Separator />
+
+            {/* Voltages | Currents */}
+            <Grid templateColumns="repeat(2, 1fr)" gap={4} flex={1}>
+              <VStack align="stretch" gap={2}>
+                <Text
+                  fontSize="xs"
+                  fontWeight="bold"
+                  color="fg.muted"
+                  textTransform="uppercase"
+                  letterSpacing="wider"
+                >
+                  Voltages
+                </Text>
+                <StatCard label="Battery" rawValue={data.measured_voltages.battery_voltage} />
+                <StatCard
+                  label="Left Driver"
+                  rawValue={data.measured_voltages.left_driver_voltage}
+                />
+                <StatCard
+                  label="Right Driver"
+                  rawValue={data.measured_voltages.right_driver_voltage}
+                />
+              </VStack>
+
+              <VStack align="stretch" gap={2}>
+                <Text
+                  fontSize="xs"
+                  fontWeight="bold"
+                  color="fg.muted"
+                  textTransform="uppercase"
+                  letterSpacing="wider"
+                >
+                  Currents
+                </Text>
+                <StatCard
+                  label="Left Driver"
+                  rawValue={data.measured_currents.left_driver_current}
+                />
+                <StatCard
+                  label="MCU & Port"
+                  rawValue={data.measured_currents.mcu_and_user_port_current}
+                />
+                <StatCard
+                  label="Right Driver"
+                  rawValue={data.measured_currents.right_driver_current}
+                />
+              </VStack>
+            </Grid>
+
+            <Separator />
+
+            {/* Timestamp */}
+            <Text fontSize="xs" color="fg.subtle" fontFamily="mono">
+              {formatTimestamp(data.timestamp)}
             </Text>
-            <StatCard label="Left Driver" rawValue={data.measured_currents.left_driver_current} />
-            <StatCard
-              label="MCU & Port"
-              rawValue={data.measured_currents.mcu_and_user_port_current}
-            />
-            <StatCard label="Right Driver" rawValue={data.measured_currents.right_driver_current} />
           </VStack>
-        </Grid>
-
-        <Separator />
-
-        {/* Timestamp */}
-        <Text fontSize="xs" color="fg.subtle" fontFamily="mono">
-          {formatTimestamp(data.timestamp)}
-        </Text>
-      </VStack>
-    </WidgetFrame>
+        )}
+      </MosaicWidget.Body>
+    </MosaicWidget.Root>
   );
 }
