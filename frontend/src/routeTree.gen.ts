@@ -22,8 +22,9 @@ import { Route as LayoutRobotsImport } from './routes/_layout/robots'
 import { Route as LayoutOccupancyMapsImport } from './routes/_layout/occupancy-maps'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
 import { Route as LayoutDashboardIndexImport } from './routes/_layout/dashboard/index'
-import { Route as LayoutDashboardConfigImport } from './routes/_layout/dashboard/config'
 import { Route as LayoutDashboardTabIdImport } from './routes/_layout/dashboard/$tabId'
+import { Route as LayoutDashboardConfigIndexImport } from './routes/_layout/dashboard/config/index'
+import { Route as LayoutDashboardConfigTabIdImport } from './routes/_layout/dashboard/config/$tabId'
 
 // Create/Update Routes
 
@@ -82,15 +83,24 @@ const LayoutDashboardIndexRoute = LayoutDashboardIndexImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutDashboardConfigRoute = LayoutDashboardConfigImport.update({
-  path: '/dashboard/config',
-  getParentRoute: () => LayoutRoute,
-} as any)
-
 const LayoutDashboardTabIdRoute = LayoutDashboardTabIdImport.update({
   path: '/dashboard/$tabId',
   getParentRoute: () => LayoutRoute,
 } as any)
+
+const LayoutDashboardConfigIndexRoute = LayoutDashboardConfigIndexImport.update(
+  {
+    path: '/dashboard/config/',
+    getParentRoute: () => LayoutRoute,
+  } as any,
+)
+
+const LayoutDashboardConfigTabIdRoute = LayoutDashboardConfigTabIdImport.update(
+  {
+    path: '/dashboard/config/$tabId',
+    getParentRoute: () => LayoutRoute,
+  } as any,
+)
 
 // Populate the FileRoutesByPath interface
 
@@ -140,12 +150,16 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutDashboardTabIdImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/dashboard/config': {
-      preLoaderRoute: typeof LayoutDashboardConfigImport
-      parentRoute: typeof LayoutImport
-    }
     '/_layout/dashboard/': {
       preLoaderRoute: typeof LayoutDashboardIndexImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/dashboard/config/$tabId': {
+      preLoaderRoute: typeof LayoutDashboardConfigTabIdImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/dashboard/config/': {
+      preLoaderRoute: typeof LayoutDashboardConfigIndexImport
       parentRoute: typeof LayoutImport
     }
   }
@@ -162,8 +176,9 @@ export const routeTree = rootRoute.addChildren([
     LayoutWidgetCustomizeRoute,
     LayoutIndexRoute,
     LayoutDashboardTabIdRoute,
-    LayoutDashboardConfigRoute,
     LayoutDashboardIndexRoute,
+    LayoutDashboardConfigTabIdRoute,
+    LayoutDashboardConfigIndexRoute,
   ]),
   SignupRoute,
   LoginOrganizationRoute,
