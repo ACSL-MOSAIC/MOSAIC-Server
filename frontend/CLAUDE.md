@@ -4,24 +4,24 @@ React-based dashboard platform for remote robot control.
 
 ## Tech Stack
 
-| Category | Technology |
-|----------|-----------|
-| Framework | React 18, TypeScript 5 |
-| Build | Vite 6 + `@vitejs/plugin-react-swc` |
-| Routing | TanStack Router (file-based) |
-| Data Fetching | TanStack Query (React Query) v5 |
-| UI | Chakra UI v3 + Emotion (CSS-in-JS) |
-| HTTP | Axios |
-| Communication | WebSocket (state sync) + WebRTC (media/data channels) |
-| 3D Rendering | Three.js + `@react-three/fiber` + `@react-three/drei` |
-| Dashboard | `react-grid-layout` |
-| Maps | react-leaflet |
-| Charts | Chart.js + react-chartjs-2 |
-| AI | TensorFlow.js (object detection: CocoSSD, segmentation: DeepLab) |
-| Serialization | Protobuf (`protobufjs`) |
-| Forms | react-hook-form |
-| Linter/Formatter | oxlint + oxfmt |
-| Testing | Playwright (E2E) |
+| Category         | Technology                                                       |
+| ---------------- | ---------------------------------------------------------------- |
+| Framework        | React 18, TypeScript 5                                           |
+| Build            | Vite 6 + `@vitejs/plugin-react-swc`                              |
+| Routing          | TanStack Router (file-based)                                     |
+| Data Fetching    | TanStack Query (React Query) v5                                  |
+| UI               | Chakra UI v3 + Emotion (CSS-in-JS)                               |
+| HTTP             | Axios                                                            |
+| Communication    | WebSocket (state sync) + WebRTC (media/data channels)            |
+| 3D Rendering     | Three.js + `@react-three/fiber` + `@react-three/drei`            |
+| Dashboard        | `react-grid-layout`                                              |
+| Maps             | react-leaflet                                                    |
+| Charts           | Chart.js + react-chartjs-2                                       |
+| AI               | TensorFlow.js (object detection: CocoSSD, segmentation: DeepLab) |
+| Serialization    | Protobuf (`protobufjs`)                                          |
+| Forms            | react-hook-form                                                  |
+| Linter/Formatter | oxlint + oxfmt                                                   |
+| Testing          | Playwright (E2E)                                                 |
 
 ## Directory Structure
 
@@ -185,10 +185,18 @@ MyWidget/
 
 ```typescript
 export class MyWidgetDescriptor extends WidgetDescriptor<MyParams> {
-  getName() { return "MyWidget"; }
-  getRequiredStoreType() { return "receivable" as StoreType; }
-  supportCustomParams() { return true; }
-  getDefaultParams(): MyParams { return { someOption: true }; }
+  getName() {
+    return "MyWidget";
+  }
+  getRequiredStoreType() {
+    return "receivable" as StoreType;
+  }
+  supportCustomParams() {
+    return true;
+  }
+  getDefaultParams(): MyParams {
+    return { someOption: true };
+  }
 }
 ```
 
@@ -218,10 +226,10 @@ export default function MyWidget({ widgetConfig }: WidgetProps) {
 
 Stores live as independent folders under `src/stores/`. Auto-discovered using the **folder name = file name** convention.
 
-| Abstract Class | Purpose | Implementation Point |
-|---------------|---------|---------------------|
-| `ReceivableStore<T>` | Receive data from WebRTC data channel | Implement `convertData(ArrayBuffer): T` |
-| `SendableStore<T>` | Send data via WebRTC data channel | Implement `send(data: T)` (use `sendData()` internally) |
+| Abstract Class       | Purpose                               | Implementation Point                                    |
+| -------------------- | ------------------------------------- | ------------------------------------------------------- |
+| `ReceivableStore<T>` | Receive data from WebRTC data channel | Implement `convertData(ArrayBuffer): T`                 |
+| `SendableStore<T>`   | Send data via WebRTC data channel     | Implement `send(data: T)` (use `sendData()` internally) |
 
 **Reference counting:** `StoreManager` shares a single Store instance per `RobotConnector`. When `releaseStore()` reduces the ref count to 0, the store is cleaned up.
 
@@ -251,21 +259,21 @@ onWsMessage("status.update", (data: WsStatusUpdateDto) => { ... });
 
 No Redux. Uses layered Context + Hooks + React Query.
 
-| State Type | Solution |
-|-----------|----------|
+| State Type                           | Solution                                |
+| ------------------------------------ | --------------------------------------- |
 | Server data (tabs, robot list, user) | React Query (`useQuery`, `useMutation`) |
-| Real-time robot status | `MosaicContext` (updated via WS events) |
-| WebRTC/Store handles | `MosaicContext` |
-| WS connection | `WebSocketContext` |
-| Form state | `react-hook-form` |
-| UI state | `useState` |
+| Real-time robot status               | `MosaicContext` (updated via WS events) |
+| WebRTC/Store handles                 | `MosaicContext`                         |
+| WS connection                        | `WebSocketContext`                      |
+| Form state                           | `react-hook-form`                       |
+| UI state                             | `useState`                              |
 
 **React Query key conventions:**
+
 ```typescript
-["currentUser"]
-["dashboardTabs"]
-["parsedDashboardTabConfig", tabId]
-["robots", page, searchQuery]
+["currentUser"]["dashboardTabs"][("parsedDashboardTabConfig", tabId)][
+  ("robots", page, searchQuery)
+];
 ```
 
 ### 6. Dashboard Config Serialization
@@ -289,7 +297,7 @@ The last visited tab is remembered via `localStorage.setItem("dashboard:lastTabI
 // _layout.tsx: auth guard
 beforeLoad: async () => {
   if (!isLoggedIn()) throw redirect({ to: "/login" });
-}
+};
 ```
 
 ---
@@ -308,7 +316,7 @@ beforeLoad: async () => {
 
 `RobotInfo.isConnected`: status === 2  
 `RobotInfo.isReadyToConnect`: status === 0 or 5  
-`RobotInfo.isRtcConnected`: status === 2  
+`RobotInfo.isRtcConnected`: status === 2
 
 ---
 
